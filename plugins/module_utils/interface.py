@@ -168,8 +168,13 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
                 self.module.fail_json(msg='mtu must be above 0')
 
             interfaces = self._get_interface_list()
-            if params['interface'] not in interfaces:
-                self.module.fail_json(msg='{0} can\'t be assigned. Interface may only be one the following: {1}'.format(params['interface'], interfaces))
+            if params['interface'] not in interfaces.keys():
+                # try to search by interface descr
+                for key, value in interfaces.items():
+                  if 'descr' in value and value['descr'] == params['interface']:
+                    params['interface'] = key
+                if params['interface'] not in interfaces.keys():
+                  self.module.fail_json(msg='{0} can\'t be assigned. Interface may only be one the following: {1}'.format(params['interface'], interfaces.keys))
 
             media_modes = set(self._get_media_mode(params['interface']))
             media_modes.add('autoselect')
@@ -421,7 +426,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             "$ipsec_descrs = interface_ipsec_vti_list_all();"
             "foreach ($ipsec_descrs as $ifname => $ifdescr) $portlist[$ifname] = array('descr' => $ifdescr);"
             ""
-            "echo json_encode(array_keys($portlist), JSON_PRETTY_PRINT);")
+            "echo json_encode($portlist, JSON_PRETTY_PRINT);")
 
     def _get_media_mode(self, interface):
         """ Find all possible media options for the interface """
