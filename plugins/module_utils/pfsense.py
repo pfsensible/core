@@ -465,7 +465,7 @@ class PFSenseModule(object):
 
         return None
 
-    def find_gateway_elt(self, name, interface=None, protocol=None, dhcp=False):
+    def find_gateway_elt(self, name, interface=None, protocol=None, dhcp=False, vti=False):
         """ return gateway elt if found """
         for gw_elt in self.gateways:
             if gw_elt.tag != 'gateway_item':
@@ -499,6 +499,31 @@ class PFSenseModule(object):
                 ipaddr_elt = interface_elt.find('ipaddrv6')
                 if ipaddr_elt is not None and ipaddr_elt.text == 'dhcp6':
                     gw_name = descr_elt.text.strip().upper() + "_DHCP6"
+                    if name == gw_name and (protocol is None or protocol == 'inet6'):
+                        gw_elt = ET.Element('gateway_item')
+                        protocol_elt = ET.Element('ipprotocol')
+                        protocol_elt.text = 'inet6'
+                        gw_elt.append(protocol_elt)
+                        return gw_elt
+
+        if vti:
+            for interface_elt in self.interfaces:
+                descr_elt = interface_elt.find('descr')
+                if descr_elt is None:
+                    continue
+                if_elt = interface_elt.find('if')
+                if if_elt is not None and if_elt.text.startswith('ipsec'):
+                    gw_name = descr_elt.text.strip().upper() + "_VTIV4"
+                    if name == gw_name and (protocol is None or protocol == 'inet'):
+                        gw_elt = ET.Element('gateway_item')
+                        protocol_elt = ET.Element('ipprotocol')
+                        protocol_elt.text = 'inet'
+                        gw_elt.append(protocol_elt)
+                        return gw_elt
+
+                if_elt = interface_elt.find('if')
+                if if_elt is not None and if_elt.text.startswith('ipsec'):
+                    gw_name = descr_elt.text.strip().upper() + "_VTIV6"
                     if name == gw_name and (protocol is None or protocol == 'inet6'):
                         gw_elt = ET.Element('gateway_item')
                         protocol_elt = ET.Element('ipprotocol')
