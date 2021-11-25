@@ -108,3 +108,7 @@ venv.bak/
 
 # ansible-galaxy package
 *.tar.gz
+
+.idea
+*.retry
+*.iml
