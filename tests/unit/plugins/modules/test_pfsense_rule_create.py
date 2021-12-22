@@ -252,6 +252,12 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         command = "create rule 'one_rule' on 'lan', source='srv_admin', destination='any'"
         self.do_module_test(obj, command=command)
 
+    def test_rule_create_source_urltable_alias(self):
+        """ test creation of a new rule with a valid source urltable alias """
+        obj = dict(name='one_rule', source='acme_corp', destination='any', interface='lan')
+        command = "create rule 'one_rule' on 'lan', source='acme_corp', destination='any'"
+        self.do_module_test(obj, command=command)
+
     def test_rule_create_source_alias_invalid(self):
         """ test creation of a new rule with an invalid source alias """
         obj = dict(name='one_rule', source='acme', destination='any', interface='lan')
@@ -370,6 +376,12 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         """ test creation of a new rule with port alias """
         obj = dict(name='one_rule', source='10.10.1.1', destination='10.10.10.1:port_http', interface='lan', protocol='tcp')
         command = "create rule 'one_rule' on 'lan', source='10.10.1.1', destination='10.10.10.1:port_http', protocol='tcp'"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_urltable_port_alias(self):
+        """ test creation of a new rule with urltable port alias """
+        obj = dict(name='one_rule', source='10.10.1.1', destination='10.10.10.1:acme_corp_ports', interface='lan', protocol='tcp')
+        command = "create rule 'one_rule' on 'lan', source='10.10.1.1', destination='10.10.10.1:acme_corp_ports', protocol='tcp'"
         self.do_module_test(obj, command=command)
 
     def test_rule_create_port_range(self):
