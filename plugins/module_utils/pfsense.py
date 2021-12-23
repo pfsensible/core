@@ -369,7 +369,7 @@ class PFSenseModule(object):
     def is_port_or_alias(self, port):
         """ return True if port is a valid port number or an alias """
         if (self.find_alias(port, 'port') is not None
-           or self.find_alias(address, 'urltable_ports') is not None):
+           or self.find_alias(port, 'urltable_ports') is not None):
              return True
         try:
             if int(port) > 0 and int(port) < 65536:
