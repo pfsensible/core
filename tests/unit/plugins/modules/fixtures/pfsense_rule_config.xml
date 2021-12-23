@@ -1824,6 +1824,15 @@
 			<name>acme_corp</name>
 			<detail></detail>
 			</alias>
+		<alias>
+			<address>http://www.acme-corp.com</address>
+			<type>urltableports</type>
+			<updatefreq>10</updatefreq>
+			<url>http://www.acme-corp.com</url>
+			<descr></descr>
+			<name>acme_corp_ports</name>
+			<detail></detail>
+			</alias>
 		</aliases>
 	<proxyarp></proxyarp>
 	<cron>
