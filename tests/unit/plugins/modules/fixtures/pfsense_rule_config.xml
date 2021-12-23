@@ -1826,7 +1826,7 @@
 			</alias>
 		<alias>
 			<address>http://www.acme-corp.com</address>
-			<type>urltableports</type>
+			<type>urltable_ports</type>
 			<updatefreq>10</updatefreq>
 			<url>http://www.acme-corp.com</url>
 			<descr></descr>
