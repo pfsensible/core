@@ -582,6 +582,8 @@ class PFSenseModule(object):
         """ return schedule elt if found """
         return self.find_elt_xpath("./schedules/schedule[name='{0}']".format(name))
 
+
+
     @staticmethod
     def uniqid(prefix='', more_entropy=False):
         """ return an identifier based on time """
