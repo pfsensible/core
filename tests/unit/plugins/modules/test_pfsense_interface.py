@@ -53,76 +53,76 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
     ##############
     # tests utils
     #
-    def get_target_elt(self, interface, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get the generated interface xml definition """
         elt_filter = {}
-        elt_filter['descr'] = interface['descr']
+        elt_filter['descr'] = obj['descr']
 
         return self.assert_has_xml_tag('interfaces', elt_filter, absent=absent)
 
-    def check_target_elt(self, interface, interface_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition of interface """
-        if 'interface_descr' in interface and interface['interface_descr'] == 'uniq':
-            interface['interface'] = 'vmx0.100'
-        self.assert_xml_elt_equal(interface_elt, 'if', self.unalias_interface(interface['interface'], physical=True))
+        if 'interface_descr' in obj and obj['interface_descr'] == 'uniq':
+            obj['interface'] = 'vmx0.100'
+        self.assert_xml_elt_equal(target_elt, 'if', self.unalias_interface(obj['interface'], physical=True))
 
         # bools
-        if interface.get('enable'):
-            self.assert_xml_elt_is_none_or_empty(interface_elt, 'enable')
+        if obj.get('enable'):
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'enable')
         else:
-            self.assert_not_find_xml_elt(interface_elt, 'enable')
+            self.assert_not_find_xml_elt(target_elt, 'enable')
 
-        if interface.get('blockpriv'):
-            self.assert_xml_elt_equal(interface_elt, 'blockpriv', '')
+        if obj.get('blockpriv'):
+            self.assert_xml_elt_equal(target_elt, 'blockpriv', '')
         else:
-            self.assert_not_find_xml_elt(interface_elt, 'blockpriv')
+            self.assert_not_find_xml_elt(target_elt, 'blockpriv')
 
-        if interface.get('blockbogons'):
-            self.assert_xml_elt_equal(interface_elt, 'blockbogons', '')
+        if obj.get('blockbogons'):
+            self.assert_xml_elt_equal(target_elt, 'blockbogons', '')
         else:
-            self.assert_not_find_xml_elt(interface_elt, 'blockbogons')
+            self.assert_not_find_xml_elt(target_elt, 'blockbogons')
 
         # ipv4 type related
-        if interface.get('ipv4_type') is None or interface.get('ipv4_type') == 'none':
-            self.assert_not_find_xml_elt(interface_elt, 'ipaddr')
-            self.assert_not_find_xml_elt(interface_elt, 'subnet')
-            self.assert_not_find_xml_elt(interface_elt, 'gateway')
-        elif interface.get('ipv4_type') == 'static':
-            if interface.get('ipv4_address'):
-                self.assert_xml_elt_equal(interface_elt, 'ipaddr', interface['ipv4_address'])
-            if interface.get('ipv4_prefixlen'):
-                self.assert_xml_elt_equal(interface_elt, 'subnet', str(interface['ipv4_prefixlen']))
-            if interface.get('ipv4_gateway'):
-                self.assert_xml_elt_equal(interface_elt, 'gateway', interface['ipv4_gateway'])
+        if obj.get('ipv4_type') is None or obj.get('ipv4_type') == 'none':
+            self.assert_not_find_xml_elt(target_elt, 'ipaddr')
+            self.assert_not_find_xml_elt(target_elt, 'subnet')
+            self.assert_not_find_xml_elt(target_elt, 'gateway')
+        elif obj.get('ipv4_type') == 'static':
+            if obj.get('ipv4_address'):
+                self.assert_xml_elt_equal(target_elt, 'ipaddr', obj['ipv4_address'])
+            if obj.get('ipv4_prefixlen'):
+                self.assert_xml_elt_equal(target_elt, 'subnet', str(obj['ipv4_prefixlen']))
+            if obj.get('ipv4_gateway'):
+                self.assert_xml_elt_equal(target_elt, 'gateway', obj['ipv4_gateway'])
 
         # ipv6 type related
-        if interface.get('ipv6_type') is None or interface.get('ipv6_type') in ['none', 'slaac']:
-            self.assert_not_find_xml_elt(interface_elt, 'ipaddrv6')
-            self.assert_not_find_xml_elt(interface_elt, 'subnetv6')
-            self.assert_not_find_xml_elt(interface_elt, 'gatewayv6')
-        elif interface.get('ipv6_type') == 'static':
-            if interface.get('ipv6_address'):
-                self.assert_xml_elt_equal(interface_elt, 'ipaddrv6', interface['ipv6_address'])
-            if interface.get('ipv6_prefixlen'):
-                self.assert_xml_elt_equal(interface_elt, 'subnetv6', str(interface['ipv6_prefixlen']))
-            if interface.get('ipv6_gateway'):
-                self.assert_xml_elt_equal(interface_elt, 'gatewayv6', interface['ipv6_gateway'])
+        if obj.get('ipv6_type') is None or obj.get('ipv6_type') in ['none', 'slaac']:
+            self.assert_not_find_xml_elt(target_elt, 'ipaddrv6')
+            self.assert_not_find_xml_elt(target_elt, 'subnetv6')
+            self.assert_not_find_xml_elt(target_elt, 'gatewayv6')
+        elif obj.get('ipv6_type') == 'static':
+            if obj.get('ipv6_address'):
+                self.assert_xml_elt_equal(target_elt, 'ipaddrv6', obj['ipv6_address'])
+            if obj.get('ipv6_prefixlen'):
+                self.assert_xml_elt_equal(target_elt, 'subnetv6', str(obj['ipv6_prefixlen']))
+            if obj.get('ipv6_gateway'):
+                self.assert_xml_elt_equal(target_elt, 'gatewayv6', obj['ipv6_gateway'])
 
         # mac, mss, mtu
-        if interface.get('mac'):
-            self.assert_xml_elt_equal(interface_elt, 'spoofmac', interface['mac'])
+        if obj.get('mac'):
+            self.assert_xml_elt_equal(target_elt, 'spoofmac', obj['mac'])
         else:
-            self.assert_xml_elt_is_none_or_empty(interface_elt, 'spoofmac')
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'spoofmac')
 
-        if interface.get('mtu'):
-            self.assert_xml_elt_equal(interface_elt, 'mtu', str(interface['mtu']))
+        if obj.get('mtu'):
+            self.assert_xml_elt_equal(target_elt, 'mtu', str(obj['mtu']))
         else:
-            self.assert_not_find_xml_elt(interface_elt, 'mtu')
+            self.assert_not_find_xml_elt(target_elt, 'mtu')
 
-        if interface.get('mss'):
-            self.assert_xml_elt_equal(interface_elt, 'mss', str(interface['mss']))
+        if obj.get('mss'):
+            self.assert_xml_elt_equal(target_elt, 'mss', str(obj['mss']))
         else:
-            self.assert_not_find_xml_elt(interface_elt, 'mss')
+            self.assert_not_find_xml_elt(target_elt, 'mss')
 
     ##############
     # tests

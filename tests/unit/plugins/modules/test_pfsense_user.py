@@ -41,18 +41,18 @@ class TestPFSenseUserModule(TestPFSenseModule):
         else:
             return None
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
-        self.check_param_equal(params, target_elt, 'name')
-        self.check_param_equal(params, target_elt, 'descr')
-        self.check_param_equal(params, target_elt, 'scope', default='user')
-        self.check_param_equal(params, target_elt, 'uid', default='2001')
+        self.check_param_equal(obj, target_elt, 'name')
+        self.check_param_equal(obj, target_elt, 'descr')
+        self.check_param_equal(obj, target_elt, 'scope', default='user')
+        self.check_param_equal(obj, target_elt, 'uid', default='2001')
         # TODO - need to load groups
-        # self.check_param_equal(params, target_elt, 'groups')
-        self.check_param_equal(params, target_elt, 'password', xml_field='bcrypt-hash')
-        self.check_list_param_equal_or_not_find(params, target_elt, 'priv')
-        self.check_param_equal_or_not_find(params, target_elt, 'authorizedkeys')
+        # self.check_param_equal(obj, target_elt, 'groups')
+        self.check_param_equal(obj, target_elt, 'password', xml_field='bcrypt-hash')
+        self.check_list_param_equal_or_not_find(obj, target_elt, 'priv')
+        self.check_param_equal_or_not_find(obj, target_elt, 'authorizedkeys')
 
     ##############
     # tests

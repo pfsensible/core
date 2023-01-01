@@ -57,14 +57,14 @@ class TestPFSenseCAModule(TestPFSenseModule):
         else:
             return None
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
-        self.check_param_equal(params, target_elt, 'name', xml_field='descr')
-        self.check_param_equal_or_present(params, target_elt, 'trust')
-        self.check_param_equal_or_present(params, target_elt, 'randomserial')
-        self.check_param_equal_or_present(params, target_elt, 'serial')
-        self.check_param_equal(params, target_elt, 'certificate', xml_field='crt')
+        self.check_param_equal(obj, target_elt, 'name', xml_field='descr')
+        self.check_param_equal_or_present(obj, target_elt, 'trust')
+        self.check_param_equal_or_present(obj, target_elt, 'randomserial')
+        self.check_param_equal_or_present(obj, target_elt, 'serial')
+        self.check_param_equal(obj, target_elt, 'certificate', xml_field='crt')
 
     ##############
     # tests

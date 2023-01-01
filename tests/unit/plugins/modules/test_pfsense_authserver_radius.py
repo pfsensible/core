@@ -41,20 +41,20 @@ class TestPFSenseAuthserverRADIUSModule(TestPFSenseModule):
         else:
             return None
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
         urltype = dict({'tcp': 'Standard TCP', 'starttls': 'STARTTLS Encrypted', 'ssl': 'SSL/TLS Encrypted'})
-        self.check_param_equal(params, target_elt, 'name')
+        self.check_param_equal(obj, target_elt, 'name')
         self.assert_xml_elt_match(target_elt, 'refid', r'[0-9a-f]{13}')
         self.assert_xml_elt_equal(target_elt, 'type', 'radius')
-        self.check_param_equal(params, target_elt, 'host')
-        self.check_param_equal(params, target_elt, 'auth_port', xml_field='radius_auth_port', default=1812)
-        self.check_param_equal(params, target_elt, 'acct_port', xml_field='radius_acct_port', default=1813)
-        self.check_param_equal(params, target_elt, 'protocol', xml_field='radius_protocol', default='MSCHAPv2')
-        self.check_param_equal(params, target_elt, 'secret', xml_field='radius_secret')
-        self.check_param_equal(params, target_elt, 'timeout', xml_field='radius_timeout', default=5)
-        self.check_param_equal(params, target_elt, 'nasip_attribute', xml_field='radius_nasip_attribute', default='lan')
+        self.check_param_equal(obj, target_elt, 'host')
+        self.check_param_equal(obj, target_elt, 'auth_port', xml_field='radius_auth_port', default=1812)
+        self.check_param_equal(obj, target_elt, 'acct_port', xml_field='radius_acct_port', default=1813)
+        self.check_param_equal(obj, target_elt, 'protocol', xml_field='radius_protocol', default='MSCHAPv2')
+        self.check_param_equal(obj, target_elt, 'secret', xml_field='radius_secret')
+        self.check_param_equal(obj, target_elt, 'timeout', xml_field='radius_timeout', default=5)
+        self.check_param_equal(obj, target_elt, 'nasip_attribute', xml_field='radius_nasip_attribute', default='lan')
 
     ##############
     # tests

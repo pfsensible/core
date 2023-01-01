@@ -54,35 +54,35 @@ class TestPFSenseSetupModule(TestPFSenseModule):
     ##############
     # tests utils
     #
-    def get_target_elt(self, setup, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get the generated xml definition """
         return self.assert_find_xml_elt(self.xml_result, 'system')
 
-    def check_target_elt(self, setup, setup_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition of setup elt """
-        webgui_elt = self.assert_find_xml_elt(setup_elt, 'webgui')
+        webgui_elt = self.assert_find_xml_elt(target_elt, 'webgui')
 
         def check_param(param, elt):
-            if setup.get(param) is not None:
-                self.assert_xml_elt_equal(elt, param, setup[param])
+            if obj.get(param) is not None:
+                self.assert_xml_elt_equal(elt, param, obj[param])
 
         def check_bool_param(param, elt):
-            if setup.get(param) is not None:
-                if setup[param]:
+            if obj.get(param) is not None:
+                if obj[param]:
                     self.assert_xml_elt_is_none_or_empty(elt, param)
                 else:
                     self.assert_not_find_xml_elt(elt, param)
 
-        check_param('hostname', setup_elt)
-        check_param('domain', setup_elt)
-        check_bool_param('dnsallowoverride', setup_elt)
-        check_bool_param('dnslocalhost', setup_elt)
-        check_param('timezone', setup_elt)
-        check_param('timeservers', setup_elt)
-        check_param('language', setup_elt)
+        check_param('hostname', target_elt)
+        check_param('domain', target_elt)
+        check_bool_param('dnsallowoverride', target_elt)
+        check_bool_param('dnslocalhost', target_elt)
+        check_param('timezone', target_elt)
+        check_param('timeservers', target_elt)
+        check_param('language', target_elt)
 
-        if setup.get('webguicss') is not None:
-            self.assert_xml_elt_equal(webgui_elt, 'webguicss', setup['webguicss'] + '.css')
+        if obj.get('webguicss') is not None:
+            self.assert_xml_elt_equal(webgui_elt, 'webguicss', obj['webguicss'] + '.css')
 
         check_bool_param('webguifixedmenu', webgui_elt)
         check_param('webguihostnamemenu', webgui_elt)

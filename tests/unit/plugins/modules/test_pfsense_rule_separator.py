@@ -23,40 +23,40 @@ class TestPFSenseRuleSeparatorModule(TestPFSenseModule):
         self.config_file = 'pfsense_rule_separator_config.xml'
         self.pfmodule = PFSenseRuleSeparatorModule
 
-    def get_target_elt(self, separator, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get separator from XML """
-        if separator.get('floating'):
+        if obj.get('floating'):
             interface = 'floatingrules'
         else:
-            interface = self.unalias_interface(separator['interface'])
+            interface = self.unalias_interface(obj['interface'])
 
         filter_elt = self.assert_find_xml_elt(self.xml_result, 'filter')
         separator_elt = self.assert_find_xml_elt(filter_elt, 'separator')
         iface_elt = self.assert_find_xml_elt(separator_elt, interface)
         for separator_elt in iface_elt:
             text_elt = separator_elt.find('text')
-            if text_elt is not None and text_elt.text == separator['name']:
+            if text_elt is not None and text_elt.text == obj['name']:
                 if absent:
-                    self.fail('Separator ' + separator['name'] + ' found on interface ' + interface)
+                    self.fail('Separator ' + obj['name'] + ' found on interface ' + interface)
                 return separator_elt
 
         if not absent:
-            self.fail('Separator ' + separator['name'] + ' not found on interface ' + interface)
+            self.fail('Separator ' + obj['name'] + ' not found on interface ' + interface)
         return None
 
-    def check_target_elt(self, separator, separator_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML separator definition """
-        if separator.get('floating'):
+        if obj.get('floating'):
             interface = 'floatingrules'
         else:
-            interface = self.unalias_interface(separator['interface'])
+            interface = self.unalias_interface(obj['interface'])
 
-        self.assert_xml_elt_equal(separator_elt, 'if', interface)
+        self.assert_xml_elt_equal(target_elt, 'if', interface)
 
-        if 'color' not in separator:
-            self.assert_xml_elt_equal(separator_elt, 'color', 'bg-info')
+        if 'color' not in obj:
+            self.assert_xml_elt_equal(target_elt, 'color', 'bg-info')
         else:
-            self.assert_xml_elt_equal(separator_elt, 'color', 'bg-' + separator['color'])
+            self.assert_xml_elt_equal(target_elt, 'color', 'bg-' + obj['color'])
 
     def check_separator_idx(self, separator, expected_idx):
         """ test the logical position of separator """

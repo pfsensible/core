@@ -41,20 +41,20 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
         else:
             return None
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
-        self.check_param_equal(params, target_elt, 'name', xml_field='common_name')
-        self.check_param_bool(params, target_elt, 'disable')
-        self.check_param_bool(params, target_elt, 'block', default=False, value_true='yes')
-        self.check_param_equal(params, target_elt, 'tunnel_network')
-        self.check_param_equal(params, target_elt, 'tunnel_networkv6')
-        self.check_param_equal(params, target_elt, 'local_network')
-        self.check_param_equal(params, target_elt, 'local_networkv6')
-        self.check_param_equal(params, target_elt, 'remote_network')
-        self.check_param_equal(params, target_elt, 'remote_networkv6')
-        self.check_param_bool(params, target_elt, 'gwredir', default=False, value_true='yes')
-        self.check_param_bool(params, target_elt, 'push_reset', default=False, value_true='yes')
+        self.check_param_equal(obj, target_elt, 'name', xml_field='common_name')
+        self.check_param_bool(obj, target_elt, 'disable')
+        self.check_param_bool(obj, target_elt, 'block', default=False, value_true='yes')
+        self.check_param_equal(obj, target_elt, 'tunnel_network')
+        self.check_param_equal(obj, target_elt, 'tunnel_networkv6')
+        self.check_param_equal(obj, target_elt, 'local_network')
+        self.check_param_equal(obj, target_elt, 'local_networkv6')
+        self.check_param_equal(obj, target_elt, 'remote_network')
+        self.check_param_equal(obj, target_elt, 'remote_networkv6')
+        self.check_param_bool(obj, target_elt, 'gwredir', default=False, value_true='yes')
+        self.check_param_bool(obj, target_elt, 'push_reset', default=False, value_true='yes')
 
     ##############
     # tests

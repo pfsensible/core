@@ -86,54 +86,54 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
             return '6209e3cef1e81'
         return None
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
-        self.check_param_equal(params, target_elt, 'name', xml_field='description')
-        self.check_param_equal(params, target_elt, 'custom_options')
-        self.check_param_equal(params, target_elt, 'mode', default='ptp_tls')
-        if params['mode'] == 'server_tls_user':
-            self.check_list_param_equal(params, target_elt, 'authmode')
-        if params['mode'] == 'p2p_shared_key':
-            self.check_param_equal(params, target_elt, 'shared_key')
-        self.check_param_equal(params, target_elt, 'dev_mode', default='tun')
-        self.check_param_bool(params, target_elt, 'disabled')
-        self.check_param_equal(params, target_elt, 'interface', default='wan')
-        self.check_param_equal(params, target_elt, 'local_port', default=1194)
-        self.check_param_equal(params, target_elt, 'protocol', default='UDP4')
-        if 'tls' in params['mode']:
-            self.check_param_equal(params, target_elt, 'tls')
-            self.check_param_equal(params, target_elt, 'tls_type')
-            self.assert_xml_elt_equal(target_elt, 'caref', self.caref(params['ca']))
-            if 'crl' in params:
-                self.assert_xml_elt_equal(target_elt, 'crlref', self.crlref(params['crl']))
-            if 'cert' in params:
-                self.assert_xml_elt_equal(target_elt, 'certref', self.certref(params['cert']))
-            self.check_param_equal(params, target_elt, 'cert_depth', default=1)
+        self.check_param_equal(obj, target_elt, 'name', xml_field='description')
+        self.check_param_equal(obj, target_elt, 'custom_options')
+        self.check_param_equal(obj, target_elt, 'mode', default='ptp_tls')
+        if obj['mode'] == 'server_tls_user':
+            self.check_list_param_equal(obj, target_elt, 'authmode')
+        if obj['mode'] == 'p2p_shared_key':
+            self.check_param_equal(obj, target_elt, 'shared_key')
+        self.check_param_equal(obj, target_elt, 'dev_mode', default='tun')
+        self.check_param_bool(obj, target_elt, 'disabled')
+        self.check_param_equal(obj, target_elt, 'interface', default='wan')
+        self.check_param_equal(obj, target_elt, 'local_port', default=1194)
+        self.check_param_equal(obj, target_elt, 'protocol', default='UDP4')
+        if 'tls' in obj['mode']:
+            self.check_param_equal(obj, target_elt, 'tls')
+            self.check_param_equal(obj, target_elt, 'tls_type')
+            self.assert_xml_elt_equal(target_elt, 'caref', self.caref(obj['ca']))
+            if 'crl' in obj:
+                self.assert_xml_elt_equal(target_elt, 'crlref', self.crlref(obj['crl']))
+            if 'cert' in obj:
+                self.assert_xml_elt_equal(target_elt, 'certref', self.certref(obj['cert']))
+            self.check_param_equal(obj, target_elt, 'cert_depth', default=1)
         else:
             self.assert_not_find_xml_elt('tls')
             self.assert_not_find_xml_elt('tls_type')
-        self.check_param_bool(params, target_elt, 'strictuserdn')
-        self.check_param_equal(params, target_elt, 'dh_length', default=2048)
-        self.check_param_equal(params, target_elt, 'ecdh_curve', default='none')
-        self.check_param_equal(params, target_elt, 'data_ciphers_fallback', default='AES-256-CBC')
-        self.check_param_equal(params, target_elt, 'data_ciphers', default='AES-256-GCM,AES-128-GCM,CHACHA20-POLY1305')
-        self.check_param_bool(params, target_elt, 'ncp_enable', default=True, value_true='enabled')
-        self.check_param_equal(params, target_elt, 'digest', default='SHA256')
-        self.check_param_equal(params, target_elt, 'ecdh_curve', default='none')
-        self.check_param_equal(params, target_elt, 'allow_compression', default='no')
-        self.check_param_equal(params, target_elt, 'compression', default=None)
-        self.check_param_bool(params, target_elt, 'compression_push', default=False, value_true='yes')
-        self.check_param_equal(params, target_elt, 'ecdh_curve', default='none')
-        self.check_param_equal(params, target_elt, 'tunnel_network')
-        self.check_param_equal(params, target_elt, 'tunnel_networkv6')
-        self.check_param_equal(params, target_elt, 'local_network')
-        self.check_param_equal(params, target_elt, 'local_networkv6')
-        self.check_param_equal(params, target_elt, 'remote_network')
-        self.check_param_equal(params, target_elt, 'remote_networkv6')
-        self.check_param_bool(params, target_elt, 'gwredir', default=False, value_true='yes')
-        self.check_param_bool(params, target_elt, 'gwredir6', default=False, value_true='yes')
-        self.check_param_equal(params, target_elt, 'maxclients')
+        self.check_param_bool(obj, target_elt, 'strictuserdn')
+        self.check_param_equal(obj, target_elt, 'dh_length', default=2048)
+        self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
+        self.check_param_equal(obj, target_elt, 'data_ciphers_fallback', default='AES-256-CBC')
+        self.check_param_equal(obj, target_elt, 'data_ciphers', default='AES-256-GCM,AES-128-GCM,CHACHA20-POLY1305')
+        self.check_param_bool(obj, target_elt, 'ncp_enable', default=True, value_true='enabled')
+        self.check_param_equal(obj, target_elt, 'digest', default='SHA256')
+        self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
+        self.check_param_equal(obj, target_elt, 'allow_compression', default='no')
+        self.check_param_equal(obj, target_elt, 'compression', default=None)
+        self.check_param_bool(obj, target_elt, 'compression_push', default=False, value_true='yes')
+        self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
+        self.check_param_equal(obj, target_elt, 'tunnel_network')
+        self.check_param_equal(obj, target_elt, 'tunnel_networkv6')
+        self.check_param_equal(obj, target_elt, 'local_network')
+        self.check_param_equal(obj, target_elt, 'local_networkv6')
+        self.check_param_equal(obj, target_elt, 'remote_network')
+        self.check_param_equal(obj, target_elt, 'remote_networkv6')
+        self.check_param_bool(obj, target_elt, 'gwredir', default=False, value_true='yes')
+        self.check_param_bool(obj, target_elt, 'gwredir6', default=False, value_true='yes')
+        self.check_param_equal(obj, target_elt, 'maxclients')
 
     ##############
     # tests

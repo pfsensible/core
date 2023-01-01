@@ -33,12 +33,12 @@ class TestPFSenseIpsecP2Module(TestPFSenseModule):
         elt_filter['descr'] = descr
         return self.assert_has_xml_tag('ipsec', elt_filter, absent=absent)
 
-    def get_target_elt(self, phase2, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get the generated phase2 xml definition """
-        phase1_elt = self.get_phase1_elt(phase2['p1_descr'])
+        phase1_elt = self.get_phase1_elt(obj['p1_descr'])
 
         elt_filter = {}
-        elt_filter['descr'] = phase2['descr']
+        elt_filter['descr'] = obj['descr']
         elt_filter['ikeid'] = phase1_elt.find('ikeid').text
         return self.assert_has_xml_tag('ipsec', elt_filter, absent=absent)
 
@@ -135,57 +135,57 @@ class TestPFSenseIpsecP2Module(TestPFSenseModule):
                 if elt.tag not in params:
                     self.fail('Address param{0} found'.format(elt.tag))
 
-    def check_target_elt(self, phase2, phase2_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition of phase2 elt """
         # bools
-        if phase2.get('disabled'):
-            self.assert_xml_elt_is_none_or_empty(phase2_elt, 'disabled')
+        if obj.get('disabled'):
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'disabled')
         else:
-            self.assert_not_find_xml_elt(phase2_elt, 'disabled')
+            self.assert_not_find_xml_elt(target_elt, 'disabled')
 
-        self.assert_xml_elt_equal(phase2_elt, 'mode', phase2['mode'])
-        if phase2.get('procotol') is not None:
-            self.assert_xml_elt_equal(phase2_elt, 'protocol', phase2['protocol'])
+        self.assert_xml_elt_equal(target_elt, 'mode', obj['mode'])
+        if obj.get('procotol') is not None:
+            self.assert_xml_elt_equal(target_elt, 'protocol', obj['protocol'])
         else:
-            self.assert_xml_elt_equal(phase2_elt, 'protocol', 'esp')
-        if phase2.get('pfsgroup') is not None:
-            self.assert_xml_elt_equal(phase2_elt, 'pfsgroup', phase2['pfsgroup'])
+            self.assert_xml_elt_equal(target_elt, 'protocol', 'esp')
+        if obj.get('pfsgroup') is not None:
+            self.assert_xml_elt_equal(target_elt, 'pfsgroup', obj['pfsgroup'])
         else:
-            self.assert_xml_elt_equal(phase2_elt, 'pfsgroup', '14')
+            self.assert_xml_elt_equal(target_elt, 'pfsgroup', '14')
 
-        if phase2.get('lifetime') is not None:
-            if phase2['lifetime'] == 0:
-                self.assert_xml_elt_is_none_or_empty(phase2_elt, 'lifetime')
+        if obj.get('lifetime') is not None:
+            if obj['lifetime'] == 0:
+                self.assert_xml_elt_is_none_or_empty(target_elt, 'lifetime')
             else:
-                self.assert_xml_elt_equal(phase2_elt, 'lifetime', str(phase2['lifetime']))
+                self.assert_xml_elt_equal(target_elt, 'lifetime', str(obj['lifetime']))
         else:
-            self.assert_xml_elt_equal(phase2_elt, 'lifetime', '3600')
+            self.assert_xml_elt_equal(target_elt, 'lifetime', '3600')
 
-        if phase2.get('pinghost') is not None:
-            self.assert_xml_elt_equal(phase2_elt, 'pinghost', str(phase2['pinghost']))
+        if obj.get('pinghost') is not None:
+            self.assert_xml_elt_equal(target_elt, 'pinghost', str(obj['pinghost']))
         else:
-            self.assert_xml_elt_is_none_or_empty(phase2_elt, 'pinghost')
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'pinghost')
 
         # encryptions
-        self.check_enc(phase2, phase2_elt, 'aes', 'aes')
-        self.check_enc(phase2, phase2_elt, 'aes128gcm', 'aes128gcm')
-        self.check_enc(phase2, phase2_elt, 'aes192gcm', 'aes192gcm')
-        self.check_enc(phase2, phase2_elt, 'aes256gcm', 'aes256gcm')
-        self.check_enc(phase2, phase2_elt, 'blowfish', 'blowfish')
-        self.check_enc(phase2, phase2_elt, '3des', 'des')
-        self.check_enc(phase2, phase2_elt, 'cast128', 'cast128')
+        self.check_enc(obj, target_elt, 'aes', 'aes')
+        self.check_enc(obj, target_elt, 'aes128gcm', 'aes128gcm')
+        self.check_enc(obj, target_elt, 'aes192gcm', 'aes192gcm')
+        self.check_enc(obj, target_elt, 'aes256gcm', 'aes256gcm')
+        self.check_enc(obj, target_elt, 'blowfish', 'blowfish')
+        self.check_enc(obj, target_elt, '3des', 'des')
+        self.check_enc(obj, target_elt, 'cast128', 'cast128')
 
         # hashes
-        self.check_hash(phase2, phase2_elt, 'hmac_md5', 'md5')
-        self.check_hash(phase2, phase2_elt, 'hmac_sha1', 'sha1')
-        self.check_hash(phase2, phase2_elt, 'hmac_sha256', 'sha256')
-        self.check_hash(phase2, phase2_elt, 'hmac_sha384', 'sha384')
-        self.check_hash(phase2, phase2_elt, 'hmac_sha512', 'sha512')
-        self.check_hash(phase2, phase2_elt, 'aesxcbc', 'aesxcbc')
+        self.check_hash(obj, target_elt, 'hmac_md5', 'md5')
+        self.check_hash(obj, target_elt, 'hmac_sha1', 'sha1')
+        self.check_hash(obj, target_elt, 'hmac_sha256', 'sha256')
+        self.check_hash(obj, target_elt, 'hmac_sha384', 'sha384')
+        self.check_hash(obj, target_elt, 'hmac_sha512', 'sha512')
+        self.check_hash(obj, target_elt, 'aesxcbc', 'aesxcbc')
 
-        self.check_address(phase2, phase2_elt, 'localid', 'local')
-        self.check_address(phase2, phase2_elt, 'remoteid', 'remote')
-        self.check_address(phase2, phase2_elt, 'natlocalid', 'nat')
+        self.check_address(obj, target_elt, 'localid', 'local')
+        self.check_address(obj, target_elt, 'remoteid', 'remote')
+        self.check_address(obj, target_elt, 'natlocalid', 'nat')
 
     ##############
     # tests

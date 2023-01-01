@@ -36,23 +36,23 @@ class TestPFSenseVlanModule(TestPFSenseModule):
 
         return self.assert_has_xml_tag('vlans', elt_filter, absent=absent)
 
-    def check_target_elt(self, vlan, vlan_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition of vlan """
 
         # checking vlanif
-        self.assert_xml_elt_equal(vlan_elt, 'vlanif', '{0}.{1}'.format(self.unalias_interface(vlan['interface'], physical=True), vlan['vlan_id']))
+        self.assert_xml_elt_equal(target_elt, 'vlanif', '{0}.{1}'.format(self.unalias_interface(obj['interface'], physical=True), obj['vlan_id']))
 
         # checking descr
-        if 'descr' in vlan:
-            self.assert_xml_elt_equal(vlan_elt, 'descr', vlan['descr'])
+        if 'descr' in obj:
+            self.assert_xml_elt_equal(target_elt, 'descr', obj['descr'])
         else:
-            self.assert_xml_elt_is_none_or_empty(vlan_elt, 'descr')
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'descr')
 
         # checking priority
-        if 'priority' in vlan and vlan['priority'] is not None:
-            self.assert_xml_elt_equal(vlan_elt, 'pcp', str(vlan['priority']))
+        if 'priority' in obj and obj['priority'] is not None:
+            self.assert_xml_elt_equal(target_elt, 'pcp', str(obj['priority']))
         else:
-            self.assert_xml_elt_is_none_or_empty(vlan_elt, 'pcp')
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'pcp')
 
     ##############
     # tests

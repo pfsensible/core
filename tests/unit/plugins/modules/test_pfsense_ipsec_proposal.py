@@ -34,10 +34,10 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
     ##############
     # tests utils
     #
-    def get_target_elt(self, proposal, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get the generated proposal xml definition """
         elt_filter = {}
-        elt_filter['descr'] = proposal['descr']
+        elt_filter['descr'] = obj['descr']
 
         ipsec_elt = self.assert_has_xml_tag('ipsec', elt_filter)
         if ipsec_elt is None:
@@ -49,16 +49,16 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
 
         for item_elt in encryption_elt:
             elt = item_elt.find('dhgroup')
-            if elt is None or elt.text != str(proposal['dhgroup']):
+            if elt is None or elt.text != str(obj['dhgroup']):
                 continue
 
             elt = item_elt.find('hash-algorithm')
-            if elt is None or elt.text != proposal['hash']:
+            if elt is None or elt.text != obj['hash']:
                 continue
 
             if not self.get_version.return_value.startswith("2.4."):
                 elt = item_elt.find('prf-algorithm')
-                if elt is None or 'prf' not in proposal and elt.text != 'sha256' and elt.text != proposal['prf']:
+                if elt is None or 'prf' not in obj and elt.text != 'sha256' and elt.text != obj['prf']:
                     continue
 
             encalg_elt = item_elt.find('encryption-algorithm')
@@ -66,20 +66,20 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
                 continue
 
             elt = encalg_elt.find('name')
-            if elt is None or elt.text != proposal['encryption']:
+            if elt is None or elt.text != obj['encryption']:
                 continue
 
             elt = encalg_elt.find('keylen')
-            if (elt is None or elt.text == '') and proposal.get('key_length') is None:
+            if (elt is None or elt.text == '') and obj.get('key_length') is None:
                 return item_elt
-            if elt is not None and elt.text == str(proposal.get('key_length')):
+            if elt is not None and elt.text == str(obj.get('key_length')):
                 return item_elt
         return None
 
-    def check_target_elt(self, proposal, proposal_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition of proposal elt """
-        if proposal_elt is None:
-            self.fail('Unable to find proposal on ' + proposal['descr'])
+        if target_elt is None:
+            self.fail('Unable to find proposal on ' + obj['descr'])
 
     def strip_commands(self, commands):
         """ remove old or new parameters """

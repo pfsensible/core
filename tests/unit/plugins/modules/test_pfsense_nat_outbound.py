@@ -104,26 +104,26 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
             return '0xfdc529cc680c4e8c74efbf114ec436fb'
         return value
 
-    def check_target_elt(self, params, target_elt, target_idx=-1):
+    def check_target_elt(self, obj, target_elt, target_idx=-1):
         """ test the xml definition """
-        self.check_addr(params, target_elt, 'source', 'network', 'sourceport')
-        self.check_addr(params, target_elt, 'destination', 'address', 'dstport')
-        self.check_target_addr(params, target_elt)
+        self.check_addr(obj, target_elt, 'source', 'network', 'sourceport')
+        self.check_addr(obj, target_elt, 'destination', 'address', 'dstport')
+        self.check_target_addr(obj, target_elt)
 
-        self.check_param_equal_or_not_find(params, target_elt, 'disabled')
-        self.check_param_equal_or_not_find(params, target_elt, 'nonat')
-        self.check_param_equal_or_not_find(params, target_elt, 'invert')
-        self.check_param_equal_or_not_find(params, target_elt, 'staticnatport')
-        self.check_param_equal_or_not_find(params, target_elt, 'nosync')
-        self.check_param_equal_or_not_find(params, target_elt, 'nonat')
+        self.check_param_equal_or_not_find(obj, target_elt, 'disabled')
+        self.check_param_equal_or_not_find(obj, target_elt, 'nonat')
+        self.check_param_equal_or_not_find(obj, target_elt, 'invert')
+        self.check_param_equal_or_not_find(obj, target_elt, 'staticnatport')
+        self.check_param_equal_or_not_find(obj, target_elt, 'nosync')
+        self.check_param_equal_or_not_find(obj, target_elt, 'nonat')
 
-        self.check_value_equal(target_elt, 'interface', self.unalias_interface(params['interface']))
-        self.check_param_equal(params, target_elt, 'ipprotocol', 'inet46', not_find_val='inet46')
-        self.check_param_equal(params, target_elt, 'protocol', 'any', not_find_val='any')
-        self.check_param_equal(params, target_elt, 'poolopts')
-        self.check_value_equal(target_elt, 'source_hash_key', self.md5(params.get('source_hash_key')))
+        self.check_value_equal(target_elt, 'interface', self.unalias_interface(obj['interface']))
+        self.check_param_equal(obj, target_elt, 'ipprotocol', 'inet46', not_find_val='inet46')
+        self.check_param_equal(obj, target_elt, 'protocol', 'any', not_find_val='any')
+        self.check_param_equal(obj, target_elt, 'poolopts')
+        self.check_value_equal(target_elt, 'source_hash_key', self.md5(obj.get('source_hash_key')))
 
-        self.check_rule_idx(params, target_idx)
+        self.check_rule_idx(obj, target_idx)
 
     def check_rule_idx(self, params, target_idx):
         """ test the xml position """

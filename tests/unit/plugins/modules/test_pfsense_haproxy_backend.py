@@ -27,7 +27,7 @@ class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
     ##############
     # tests utils
     #
-    def get_target_elt(self, backend, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get the generated backend xml definition """
         pkgs_elt = self.assert_find_xml_elt(self.xml_result, 'installedpackages')
         hap_elt = self.assert_find_xml_elt(pkgs_elt, 'haproxy')
@@ -35,42 +35,42 @@ class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
 
         for item in backends_elt:
             name_elt = item.find('name')
-            if name_elt is not None and name_elt.text == backend['name']:
+            if name_elt is not None and name_elt.text == obj['name']:
                 return item
 
         if not absent:
-            self.fail('haproxy_backend ' + backend['name'] + ' not found.')
+            self.fail('haproxy_backend ' + obj['name'] + ' not found.')
         return None
 
-    def check_target_elt(self, backend, backend_elt, backend_id=100):
+    def check_target_elt(self, obj, target_elt, backend_id=100):
         """ test the xml definition of backend """
         def _check_elt(name, fname=None, default=None):
             if fname is None:
                 fname = name
 
-            if name in backend and backend[name] is not None:
-                self.assert_xml_elt_equal(backend_elt, fname, str(backend[name]))
+            if name in obj and obj[name] is not None:
+                self.assert_xml_elt_equal(target_elt, fname, str(obj[name]))
             elif default is not None:
-                self.assert_xml_elt_equal(backend_elt, fname, default)
+                self.assert_xml_elt_equal(target_elt, fname, default)
             else:
-                self.assert_xml_elt_is_none_or_empty(backend_elt, fname)
+                self.assert_xml_elt_is_none_or_empty(target_elt, fname)
 
         def _check_bool_elt(name, fname=None):
             if fname is None:
                 fname = name
 
-            if backend.get(name):
-                self.assert_xml_elt_equal(backend_elt, fname, 'yes')
+            if obj.get(name):
+                self.assert_xml_elt_equal(target_elt, fname, 'yes')
             else:
-                self.assert_xml_elt_is_none_or_empty(backend_elt, fname)
+                self.assert_xml_elt_is_none_or_empty(target_elt, fname)
 
-        self.assert_xml_elt_equal(backend_elt, 'id', str(backend_id))
+        self.assert_xml_elt_equal(target_elt, 'id', str(backend_id))
 
         # checking balance
-        if 'balance' in backend and backend['balance'] != 'none':
-            self.assert_xml_elt_equal(backend_elt, 'balance', backend['balance'])
+        if 'balance' in obj and obj['balance'] != 'none':
+            self.assert_xml_elt_equal(target_elt, 'balance', obj['balance'])
         else:
-            self.assert_xml_elt_is_none_or_empty(backend_elt, 'balance')
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'balance')
 
         # check everything else
         _check_elt('balance_urilen')

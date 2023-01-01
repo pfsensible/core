@@ -38,36 +38,36 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         filters['associated-rule-id'] = ruleid
         return self.assert_has_xml_tag('filter', filters)
 
-    def check_target_elt(self, params, target_elt, target_idx=-1):
+    def check_target_elt(self, obj, target_elt, target_idx=-1):
         """ test the xml definition """
         rules_tester = TestPFSenseRuleModule()
-        rules_tester.check_rule_elt_addr(params, target_elt, 'source')
+        rules_tester.check_rule_elt_addr(obj, target_elt, 'source')
 
         # checking destination address and ports
-        rules_tester.check_rule_elt_addr(params, target_elt, 'destination')
-        self.check_target_addr(params, target_elt)
-        self.check_param_equal_or_not_find(params, target_elt, 'disabled')
-        self.check_param_equal_or_not_find(params, target_elt, 'nordr')
-        self.check_param_equal_or_not_find(params, target_elt, 'nosync')
-        self.check_param_equal_or_not_find(params, target_elt, 'natreflection', not_find_val='system-default')
+        rules_tester.check_rule_elt_addr(obj, target_elt, 'destination')
+        self.check_target_addr(obj, target_elt)
+        self.check_param_equal_or_not_find(obj, target_elt, 'disabled')
+        self.check_param_equal_or_not_find(obj, target_elt, 'nordr')
+        self.check_param_equal_or_not_find(obj, target_elt, 'nosync')
+        self.check_param_equal_or_not_find(obj, target_elt, 'natreflection', not_find_val='system-default')
 
-        self.check_value_equal(target_elt, 'interface', self.unalias_interface(params['interface']))
-        self.check_param_equal(params, target_elt, 'protocol', 'tcp')
+        self.check_value_equal(target_elt, 'interface', self.unalias_interface(obj['interface']))
+        self.check_param_equal(obj, target_elt, 'protocol', 'tcp')
 
-        self.check_rule_idx(params, target_idx)
-        if 'associated_rule' not in params:
-            params['associated_rule'] = 'associated'
+        self.check_rule_idx(obj, target_idx)
+        if 'associated_rule' not in obj:
+            obj['associated_rule'] = 'associated'
 
-        if params['associated_rule'] == 'none' or params['associated_rule'] == 'unassociated':
+        if obj['associated_rule'] == 'none' or obj['associated_rule'] == 'unassociated':
             self.assert_xml_elt_is_none_or_empty(target_elt, 'associated-rule-id')
-        elif params['associated_rule'] == 'pass':
+        elif obj['associated_rule'] == 'pass':
             self.check_value_equal(target_elt, 'associated-rule-id', 'pass')
         else:
             ruleid_elt = self.assert_find_xml_elt(target_elt, 'associated-rule-id')
             self.assertTrue(ruleid_elt.text.startswith('nat_'))
 
-            rule_elt = self.get_associated_rule_elt(params, ruleid_elt.text)
-            self.assertEqual(rule_elt.find('descr').text, 'NAT ' + params['descr'])
+            rule_elt = self.get_associated_rule_elt(obj, ruleid_elt.text)
+            self.assertEqual(rule_elt.find('descr').text, 'NAT ' + obj['descr'])
 
     def check_rule_idx(self, params, target_idx):
         """ test the xml position """

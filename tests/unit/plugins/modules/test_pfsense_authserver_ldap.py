@@ -41,30 +41,30 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
         else:
             return None
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
         urltype = dict({'tcp': 'Standard TCP', 'starttls': 'STARTTLS Encrypted', 'ssl': 'SSL/TLS Encrypted'})
-        self.check_param_equal(params, target_elt, 'name')
+        self.check_param_equal(obj, target_elt, 'name')
         self.assert_xml_elt_match(target_elt, 'refid', r'[0-9a-f]{13}')
         self.assert_xml_elt_equal(target_elt, 'type', 'ldap')
-        self.check_param_equal(params, target_elt, 'ldap_caref', default='global')
-        self.check_param_equal(params, target_elt, 'host')
-        self.check_param_equal(params, target_elt, 'port', xml_field='ldap_port', default=389)
-        self.assert_xml_elt_equal(target_elt, 'ldap_urltype', urltype[params['transport']])
-        self.check_param_equal(params, target_elt, 'protover', xml_field='ldap_protver', default=3)
-        self.check_param_equal(params, target_elt, 'scope', xml_field='ldap_scope', default='one')
-        self.check_param_equal(params, target_elt, 'basedn', xml_field='ldap_basedn', default=None)
-        self.check_param_equal(params, target_elt, 'authcn', xml_field='ldap_authcn')
-        self.check_param_bool(params, target_elt, 'extended_enabled', xml_field='ldap_extended_enabled', value_true='yes')
-        self.check_param_equal(params, target_elt, 'extended_query', xml_field='ldap_extended_query')
-        self.check_param_equal(params, target_elt, 'attr_user', xml_field='ldap_attr_user', default='cn')
-        self.check_param_equal(params, target_elt, 'attr_group', xml_field='ldap_attr_group', default='cn')
-        self.check_param_equal(params, target_elt, 'attr_member', xml_field='ldap_attr_member', default='member')
-        self.check_param_equal(params, target_elt, 'attr_groupobj', xml_field='ldap_attr_groupobj', default='posixGroup')
-        self.check_param_equal(params, target_elt, 'pam_groupdn', xml_field='ldap_pam_groupdn', default=None)
-        self.check_param_bool(params, target_elt, 'allow_unauthenticated', xml_field='ldap_allow_unauthenticated', default=True)
-        self.check_param_equal(params, target_elt, 'timeout', xml_field='ldap_timeout', default=25)
+        self.check_param_equal(obj, target_elt, 'ldap_caref', default='global')
+        self.check_param_equal(obj, target_elt, 'host')
+        self.check_param_equal(obj, target_elt, 'port', xml_field='ldap_port', default=389)
+        self.assert_xml_elt_equal(target_elt, 'ldap_urltype', urltype[obj['transport']])
+        self.check_param_equal(obj, target_elt, 'protover', xml_field='ldap_protver', default=3)
+        self.check_param_equal(obj, target_elt, 'scope', xml_field='ldap_scope', default='one')
+        self.check_param_equal(obj, target_elt, 'basedn', xml_field='ldap_basedn', default=None)
+        self.check_param_equal(obj, target_elt, 'authcn', xml_field='ldap_authcn')
+        self.check_param_bool(obj, target_elt, 'extended_enabled', xml_field='ldap_extended_enabled', value_true='yes')
+        self.check_param_equal(obj, target_elt, 'extended_query', xml_field='ldap_extended_query')
+        self.check_param_equal(obj, target_elt, 'attr_user', xml_field='ldap_attr_user', default='cn')
+        self.check_param_equal(obj, target_elt, 'attr_group', xml_field='ldap_attr_group', default='cn')
+        self.check_param_equal(obj, target_elt, 'attr_member', xml_field='ldap_attr_member', default='member')
+        self.check_param_equal(obj, target_elt, 'attr_groupobj', xml_field='ldap_attr_groupobj', default='posixGroup')
+        self.check_param_equal(obj, target_elt, 'pam_groupdn', xml_field='ldap_pam_groupdn', default=None)
+        self.check_param_bool(obj, target_elt, 'allow_unauthenticated', xml_field='ldap_allow_unauthenticated', default=True)
+        self.check_param_equal(obj, target_elt, 'timeout', xml_field='ldap_timeout', default=25)
 
     ##############
     # tests

@@ -27,7 +27,7 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
     ##############
     # tests utils
     #
-    def get_target_elt(self, server, absent=False):
+    def get_target_elt(self, obj, absent=False):
         """ get the generated backend server xml definition """
         pkgs_elt = self.assert_find_xml_elt(self.xml_result, 'installedpackages')
         hap_elt = self.assert_find_xml_elt(pkgs_elt, 'haproxy')
@@ -35,21 +35,21 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
 
         for item in backends_elt:
             name_elt = item.find('name')
-            if name_elt is not None and name_elt.text == server['backend']:
+            if name_elt is not None and name_elt.text == obj['backend']:
                 backend_elt = item
                 break
 
         if backend_elt is None:
-            self.fail('haproxy backend ' + server['backend'] + ' not found.')
+            self.fail('haproxy backend ' + obj['backend'] + ' not found.')
 
         servers_elt = self.assert_find_xml_elt(backend_elt, 'ha_servers')
         for item in servers_elt:
             name_elt = item.find('name')
-            if name_elt is not None and name_elt.text == server['name']:
+            if name_elt is not None and name_elt.text == obj['name']:
                 return item
 
         if not absent:
-            self.fail('haproxy backend server ' + server['name'] + ' not found.')
+            self.fail('haproxy backend server ' + obj['name'] + ' not found.')
         return None
 
     @staticmethod
@@ -84,33 +84,33 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
         """ return value passed """
         return descr
 
-    def check_target_elt(self, server, server_elt, server_id):
+    def check_target_elt(self, obj, target_elt, server_id):
         """ test the xml definition of server """
         def _check_elt(name, fname=None, default=None, fvalue=self.idem):
             if fname is None:
                 fname = name
 
-            if name in server and server[name] is not None:
-                self.assert_xml_elt_equal(server_elt, fname, fvalue(str(server[name])))
+            if name in obj and obj[name] is not None:
+                self.assert_xml_elt_equal(target_elt, fname, fvalue(str(obj[name])))
             elif default is not None:
-                self.assert_xml_elt_equal(server_elt, fname, fvalue(default))
-            elif name in server:
-                self.assert_xml_elt_is_none_or_empty(server_elt, fname)
+                self.assert_xml_elt_equal(target_elt, fname, fvalue(default))
+            elif name in obj:
+                self.assert_xml_elt_is_none_or_empty(target_elt, fname)
             else:
-                self.assert_not_find_xml_elt(server_elt, fname)
+                self.assert_not_find_xml_elt(target_elt, fname)
 
         def _check_bool_elt(name, fname=None, false_exists=False):
             if fname is None:
                 fname = name
 
-            if server.get(name):
-                self.assert_xml_elt_equal(server_elt, fname, 'yes')
-            elif name in server and false_exists:
-                self.assert_xml_elt_is_none_or_empty(server_elt, fname)
+            if obj.get(name):
+                self.assert_xml_elt_equal(target_elt, fname, 'yes')
+            elif name in obj and false_exists:
+                self.assert_xml_elt_is_none_or_empty(target_elt, fname)
             else:
-                self.assert_not_find_xml_elt(server_elt, fname)
+                self.assert_not_find_xml_elt(target_elt, fname)
 
-        self.assert_xml_elt_equal(server_elt, 'id', str(server_id))
+        self.assert_xml_elt_equal(target_elt, 'id', str(server_id))
 
         _check_elt('mode', fname='status', default='active')
         _check_elt('forwardto')

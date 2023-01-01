@@ -24,22 +24,22 @@ class TestPFSenseGatewayModule(TestPFSenseModule):
         self.config_file = 'pfsense_gateway_config.xml'
         self.pfmodule = PFSenseGatewayModule
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition """
 
-        self.check_param_equal_or_not_find(params, target_elt, 'monitor')
+        self.check_param_equal_or_not_find(obj, target_elt, 'monitor')
 
-        self.check_param_equal_or_not_find(params, target_elt, 'disabled', empty=True)
-        self.check_param_equal_or_not_find(params, target_elt, 'monitor_disable', empty=True)
-        self.check_param_equal_or_not_find(params, target_elt, 'action_disable', empty=True)
-        self.check_param_equal_or_not_find(params, target_elt, 'force_down', empty=True)
-        self.check_param_equal_or_not_find(params, target_elt, 'nonlocalgateway', empty=True)
+        self.check_param_equal_or_not_find(obj, target_elt, 'disabled', empty=True)
+        self.check_param_equal_or_not_find(obj, target_elt, 'monitor_disable', empty=True)
+        self.check_param_equal_or_not_find(obj, target_elt, 'action_disable', empty=True)
+        self.check_param_equal_or_not_find(obj, target_elt, 'force_down', empty=True)
+        self.check_param_equal_or_not_find(obj, target_elt, 'nonlocalgateway', empty=True)
 
-        self.check_value_equal(target_elt, 'interface', self.unalias_interface(params['interface']))
-        self.check_param_equal(params, target_elt, 'descr')
-        self.check_param_equal(params, target_elt, 'weight', '1')
-        self.check_param_equal(params, target_elt, 'gateway')
-        self.check_param_equal(params, target_elt, 'ipprotocol', 'inet')
+        self.check_value_equal(target_elt, 'interface', self.unalias_interface(obj['interface']))
+        self.check_param_equal(obj, target_elt, 'descr')
+        self.check_param_equal(obj, target_elt, 'weight', '1')
+        self.check_param_equal(obj, target_elt, 'gateway')
+        self.check_param_equal(obj, target_elt, 'ipprotocol', 'inet')
 
     def get_target_elt(self, obj, absent=False):
         """ get the generated xml definition """

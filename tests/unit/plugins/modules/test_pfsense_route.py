@@ -40,12 +40,12 @@ class TestPFSenseRouteModule(TestPFSenseModule):
 
         self.run_command.stop()
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition """
 
-        self.check_param_equal_or_not_find(params, target_elt, 'disabled')
-        self.check_param_equal(params, target_elt, 'gateway')
-        self.check_param_equal(params, target_elt, 'network')
+        self.check_param_equal_or_not_find(obj, target_elt, 'disabled')
+        self.check_param_equal(obj, target_elt, 'gateway')
+        self.check_param_equal(obj, target_elt, 'network')
 
     def get_target_elt(self, obj, absent=False):
         """ get the generated xml definition """

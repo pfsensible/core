@@ -40,14 +40,14 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
         """ get the generated xml definition """
         return self.assert_find_xml_elt(self.xml_result, 'syslog')
 
-    def check_target_elt(self, params, target_elt):
+    def check_target_elt(self, obj, target_elt):
         """ test the xml definition of target elt """
         def check_param(param, xml_field=None):
-            if params is not None:
+            if obj is not None:
                 if xml_field is None:
                     xml_field = param
 
-                if param in params:
+                if param in obj:
                     # Special handling for sourceip
                     # Given as ip or descr but set as internal interface id
                     interface_map = {
@@ -59,9 +59,9 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
                         'Localhost': 'lo0',
                     }
                     if param == 'sourceip':
-                        self.assert_xml_elt_equal(target_elt, xml_field, interface_map.get(params[param], params[param]))
+                        self.assert_xml_elt_equal(target_elt, xml_field, interface_map.get(obj[param], obj[param]))
                     else:
-                        self.assert_xml_elt_equal(target_elt, xml_field, params[param])
+                        self.assert_xml_elt_equal(target_elt, xml_field, obj[param])
                 else:
                     if param in self.defaults:
                         self.assert_xml_elt_equal(target_elt, xml_field, self.defaults[param])
@@ -69,20 +69,20 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
                         self.assert_not_find_xml_elt(target_elt, xml_field)
 
         def check_bool_param(param, xml_field=None):
-            if params is not None:
+            if obj is not None:
                 if xml_field is None:
                     xml_field = param
 
-                if param in params:
+                if param in obj:
                     # Special handling for inverted field
                     # When nologdefaultpass is present in xml, value is False
                     if param == 'nologdefaultpass':
-                        if params[param]:
+                        if obj[param]:
                             self.assert_not_find_xml_elt(target_elt, param)
                         else:
                             self.assert_xml_elt_equal(target_elt, xml_field, '')
                     else:
-                        self.check_param_bool(params, target_elt, param, xml_field=xml_field)
+                        self.check_param_bool(obj, target_elt, param, xml_field=xml_field)
                 else:
                     if param in self.defaults:
                         if self.defaults[param]:
