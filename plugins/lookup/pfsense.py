@@ -7,7 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = """
-lookup: pfsense
+name: pfsense
 author: Frederic Bor (@f-bor)
 version_added: 0.1.0
 short_description: Generate pfSense aliases, rules and rule_separators
@@ -194,7 +194,14 @@ ports_aliases:
 from copy import copy, deepcopy
 from collections import OrderedDict
 from ansible.utils.display import Display
-from dns import resolver, exception
+
+try:
+    from dns import resolver, exception
+except ImportError as imp_exc:
+    DNS_IMPORT_ERROR = imp_exc
+else:
+    DNS_IMPORT_ERROR = None
+
 
 import argparse
 import json
@@ -244,6 +251,9 @@ def ordered_load(stream, loader_cls=yaml.Loader, object_pairs_hook=OrderedDict):
     def construct_mapping(loader, node):
         loader.flatten_mapping(node)
         return object_pairs_hook(loader.construct_pairs(node))
+
+    if DNS_IMPORT_ERROR:
+        raise AnsibleError('dns must be installed to use ordered_load from this plugin') from DNS_IMPORT_ERROR
 
     OrderedLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
@@ -357,6 +367,9 @@ def resolve_hostname(address, dns_servers=None):
             pass
         msg = "Unable to resolve: {0}".format(address)
     else:
+        if DNS_IMPORT_ERROR:
+            raise AnsibleError('dns must be installed to use ordered_load from this plugin') from DNS_IMPORT_ERROR
+
         error = None
         try:
             res = resolver.Resolver()
