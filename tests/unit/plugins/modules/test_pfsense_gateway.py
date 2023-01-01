@@ -89,7 +89,7 @@ class TestPFSenseGatewayModule(TestPFSenseModule):
     def test_gateway_create_invalid_interface(self):
         """ test """
         obj = dict(name='test_gw', interface='lan_232', gateway='192.168.1.1')
-        msg = 'Interface lan_232 not found'
+        msg = 'lan_232 is not a valid interface'
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_gateway_create_nonlocal(self):

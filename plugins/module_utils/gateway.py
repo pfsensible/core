@@ -132,7 +132,8 @@ class PFSenseGatewayModule(PFSenseModuleBase):
 
         obj['name'] = params['name']
         if params['state'] == 'present':
-            self._get_interface(params['interface'], obj)
+            obj['interface'] = self.pfsense.parse_interface(params['interface'])
+            self.interface_elt = self.pfsense.get_interface_elt(obj['interface'])
             self._get_ansible_param(obj, 'ipprotocol')
             self._get_ansible_param(obj, 'gateway')
             self._get_ansible_param(obj, 'descr')
@@ -193,16 +194,6 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     def _find_target(self):
         """ find the XML target_elt """
         return self.pfsense.find_gateway_elt(self.obj['name'])
-
-    def _get_interface(self, name, obj):
-        """ return pfsense interface by name """
-        for interface in self.pfsense.interfaces:
-            descr_elt = interface.find('descr')
-            if descr_elt is not None and descr_elt.text.strip() == name:
-                obj['interface'] = interface.tag
-                self.interface_elt = interface
-                return
-        self.module.fail_json(msg='Interface {0} not found'.format(name))
 
     @staticmethod
     def _get_params_to_remove():
