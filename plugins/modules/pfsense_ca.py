@@ -302,7 +302,7 @@ class PFSenseCAModule(PFSenseModuleBase):
             crl_stdout = ''
             crl_stderr = ''
             if self.refresh_crls:
-                if self.is_at_least_2_5_0():
+                if self.pfsense.is_at_least_2_5_0():
                     ipsec_configure = 'ipsec_configure'
                 else:
                     ipsec_configure = 'vpn_ipsec_configure'
