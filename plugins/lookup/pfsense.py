@@ -214,7 +214,7 @@ import os
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
-from ansible_collections.pfsensible.core.plugins.module_utils.compat import ipaddress
+import ipaddress
 
 OPTION_FIELDS = [
     'gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'icmptype', 'filter', 'efilter', 'ifilter', 'sched', 'quick', 'direction',
