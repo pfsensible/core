@@ -9,6 +9,6 @@
     - set_fact:
         if_groups: "{{ if_groups_line.split(' ') }}"
 
-    - fail: 
+    - fail:
         msg: "Group name {{ name }} not found in {{ ifname_map[ifname] }} groups: {{ if_groups | join(' ') }}"
       when: name is not in if_groups

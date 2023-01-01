@@ -26,7 +26,7 @@
       tags:
         - openvpn
         - openvpn_ca
-        
+
     - name: Generate new internal certificate
       pfsense_cert:
         method: internal

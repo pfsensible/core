@@ -27,7 +27,7 @@ ipsec modules, in order to make writing the configuration yaml file more natural
 * hosts: the Ansible file for pfsense hosts
 * setup_ipsec.yml: the playbook used to setup all the pfsenses
 * filter_plugins/pfsense.py: the formatting plugin
-* more.ipsecs.yaml: more VPN properties 
+* more.ipsecs.yaml: more VPN properties
 
 ## Installation
 

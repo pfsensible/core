@@ -10,7 +10,7 @@
 
     - include_tasks: tasks/test_openvpn_override_file_exists.yml
       loop_control:
-        loop_var: vpnid 
+        loop_var: vpnid
       loop: "{{ openvpn_override.vpnids }}"
 
     - set_fact:
@@ -30,6 +30,6 @@
         file_type: file
       register: csc_files
 
-    - fail: 
+    - fail:
         msg: "Unexpected override files found: {{ csc_files.files | map(attribute='path') | difference(expected_csc_files) | join(',') }}"
       when: "csc_files.files | map(attribute='path') | difference(expected_csc_files) | length > 0"

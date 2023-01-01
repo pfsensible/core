@@ -20,6 +20,6 @@
         file_type: file
       register: csc_files
 
-    - fail: 
+    - fail:
         msg: "Unexpected override files found: {{ csc_files.files | map(attribute='path') | join(',') }}"
       when: "(csc_files.files | map(attribute='path') | list | length) > 0"
