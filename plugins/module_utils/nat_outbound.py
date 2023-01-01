@@ -26,7 +26,7 @@ NAT_OUTBOUND_ARGUMENT_SPEC = dict(
     poolopts=dict(
         default='', required=False, choices=["", "round-robin", "round-robin sticky-address", "random", "random sticky-address", "source-hash", "bitmask"]
     ),
-    source_hash_key=dict(default='', type='str'),
+    source_hash_key=dict(default='', type='str', no_log=True),
     staticnatport=dict(default=False, required=False, type='bool'),
     nosync=dict(default=False, required=False, type='bool'),
     after=dict(required=False, type='str'),

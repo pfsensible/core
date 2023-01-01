@@ -55,11 +55,11 @@ options:
     type: str
   keylen:
     description: The length to use when generating a new RSA key, in bits
-    default: 2048
+    default: '2048'
     type: str
   lifetime:
     description: The length of time the signed certificate will be valid, in days
-    default: 3650
+    default: '3650'
     type: str
   dn_country:
     description: The Country Code
@@ -183,7 +183,7 @@ CERT_ARGUMENT_SPEC = dict(
     dn_organizationalunit=dict(type='str'),
     altnames=dict(type='str'),
     certificate=dict(type='str'),
-    key=dict(type='str'),
+    key=dict(type='str', no_log=True),
     state=dict(type='str', default='present', choices=['present', 'absent']),
     method=dict(type='str', default='internal', choices=['internal', 'import']),
     certtype=dict(type='str', default='user', choices=['user', 'server']),

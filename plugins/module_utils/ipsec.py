@@ -28,7 +28,7 @@ IPSEC_ARGUMENT_SPEC = dict(
     peerid_data=dict(required=False, type='str'),
     certificate=dict(required=False, type='str'),
     certificate_authority=dict(required=False, type='str'),
-    preshared_key=dict(required=False, type='str'),
+    preshared_key=dict(required=False, type='str', no_log=True),
 
     lifetime=dict(default=28800, type='int'),
     rekey_time=dict(required=False, type='int'),

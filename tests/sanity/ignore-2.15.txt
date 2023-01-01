@@ -1,0 +1,4 @@
+plugins/modules/pfsense_cert.py validate-modules:no-log-needed # Argument 'keylen' is not sensitive
+plugins/modules/pfsense_ipsec.py validate-modules:no-log-needed # Argument 'rekey_time' is not sensitive
+plugins/modules/pfsense_ipsec_aggregate.py validate-modules:no-log-needed # Argument 'rekey_time' is not sensitive
+plugins/modules/pfsense_user.py validate-modules:no-log-needed # Argument 'authorizedkeys' is not sensitive

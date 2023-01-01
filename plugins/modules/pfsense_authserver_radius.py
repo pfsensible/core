@@ -97,7 +97,7 @@ AUTHSERVER_RADIUS_SPEC = {
         'default': 'MSCHAPv2',
         'choices': ['PAP', 'CHAP_MD5', 'MSCHAPv1', 'MSCHAPv2'],
     },
-    'secret': {'type': 'str'},
+    'secret': {'type': 'str', 'no_log': True},
     'timeout': {'default': '5', 'type': 'int'},
     'nasip_attribute': {'default': 'lan', 'type': 'str'},
 }

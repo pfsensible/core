@@ -30,7 +30,7 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     cert=dict(required=False, type='str'),
     cert_depth=dict(default=1, required=False, type='int'),
     strictuserdn=dict(default=False, required=False, type='bool'),
-    shared_key=dict(required=False, type='str'),
+    shared_key=dict(required=False, type='str', no_log=True),
     dh_length=dict(default=2048, required=False, type='int'),
     ecdh_curve=dict(default='none', required=False, choices=['none', 'prime256v1', 'secp384r1', 'secp521r1']),
     ncp_enable=dict(default=True, required=False, type='bool'),

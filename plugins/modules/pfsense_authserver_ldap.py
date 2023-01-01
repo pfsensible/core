@@ -37,7 +37,7 @@ options:
     type: str
   port:
     description: Port to connect to
-    default: 389
+    default: '389'
     type: str
   transport:
     description: Transport to use
@@ -49,12 +49,12 @@ options:
     type: str
   protver:
     description: LDAP protocol version
-    default: 3
+    default: '3'
     choices: [ "2", "3" ]
     type: str
   timeout:
     description: Server timeout in seconds
-    default: 25
+    default: '25'
     type: str
   scope:
     description: Search scope
@@ -73,6 +73,7 @@ options:
     type: bool
   extended_query:
     description: Extended query
+    default: ''
     type: str
   binddn:
     description: Search bind DN

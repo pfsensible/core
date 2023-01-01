@@ -29,6 +29,7 @@ options:
     type: str
   authmode:
     description: Authentication clients.  Required if mode == client_tls_user.
+    default: []
     type: list
     elements: str
   state:
@@ -120,19 +121,19 @@ options:
     type: str
   tunnel_network:
     description: IPv4 virtual network used for private communications between this client and client hosts expressed using CIDR notation.
-    default: null
+    default: ''
     type: str
   tunnel_networkv6:
     description: IPv6 virtual network used for private communications between this client and client hosts expressed using CIDR notation.
-    default: null
+    default: ''
     type: str
   remote_network:
     description: IPv4 networks that will be routed through the tunnel.
-    default: null
+    default: ''
     type: str
   remote_networkv6:
     description: IPv6 networks that will be routed through the tunnel.
-    default: null
+    default: ''
     type: str
   gwredir:
     description: Redirect IPv4 gateway.
@@ -174,23 +175,23 @@ options:
     type: str
   dns_domain:
     description: DNS default domain.
-    default: null
+    default: ''
     type: str
   dns_client1:
     description: DNS client 1.
-    default: null
+    default: ''
     type: str
   dns_client2:
     description: DNS client 2.
-    default: null
+    default: ''
     type: str
   dns_client3:
     description: DNS client 3.
-    default: null
+    default: ''
     type: str
   dns_client4:
     description: DNS client 4.
-    default: null
+    default: ''
     type: str
   push_register_dns:
     description: Push DNS to client.

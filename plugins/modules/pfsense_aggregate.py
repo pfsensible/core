@@ -473,7 +473,7 @@ options:
         type: int
       descr:
         description: The description of the VLAN
-        default: null
+        default: ''
         type: str
       state:
         description: State in which to leave the VLAN

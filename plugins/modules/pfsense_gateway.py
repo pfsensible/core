@@ -43,6 +43,7 @@ options:
   descr:
     description: The description of the gateway
     required: false
+    default: ''
     type: str
   disabled:
     description: Set this option to disable this gateway without removing it from the list.
