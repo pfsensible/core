@@ -153,7 +153,7 @@ class PFSenseUserModule(PFSenseModuleBase):
         params = self.params
         if 'password' in params and params['password'] is not None:
             password = params['password']
-            if re.match(r'\$2b\$', str(password)):
+            if re.match(r'\$2[aby]\$', str(password)):
                 params['bcrypt-hash'] = password
             else:
                 self.module.fail_json(msg='Password (%s) does not appear to be a bcrypt hash' % password)
