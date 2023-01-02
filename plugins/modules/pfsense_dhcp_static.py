@@ -14,7 +14,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = """
 ---
 module: pfsense_dhcp_static
-version_added: "0.1"
+version_added: "0.1.0"
 author: Carlos Rodrigues (@cmarodrigues)
 short_description: Manage pfSense DHCP static mapping
 description:
@@ -166,9 +166,9 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     ddnsdomain=dict(type='str'),
     ddnsdomainprimary=dict(type='str'),
     ddnsdomainsecondary=dict(type='str'),
-    ddnsdomainkeyname=dict(type='str'),
-    ddnsdomainkeyalgorithm=dict(type='str'),
-    ddnsdomainkey=dict(type='str'),
+    ddnsdomainkeyname=dict(type='str', no_log=True),
+    ddnsdomainkeyalgorithm=dict(type='str', no_log=True),
+    ddnsdomainkey=dict(type='str', no_log=True),
     tftp=dict(type='str'),
     ldap=dict(type='str'),
     nextserver=dict(type='str'),
