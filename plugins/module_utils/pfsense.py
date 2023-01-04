@@ -657,7 +657,6 @@ class PFSenseModule(object):
         for idx, ver in enumerate(version):
             if idx == len(self.pfsense_version):
                 return True
-                
             if self.pfsense_version[idx] > ver and or_more:
                 return True
 
