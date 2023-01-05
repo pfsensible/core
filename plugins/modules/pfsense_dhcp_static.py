@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2021, Carlos Rodrigues <cmarodrigues@gmail.com>
+# Copyright: (c) 2023, Carlos Rodrigues <cmarodrigues@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -14,7 +14,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = """
 ---
 module: pfsense_dhcp_static
-version_added: "0.1.0"
+version_added: "0.5.0"
 author: Carlos Rodrigues (@cmarodrigues)
 short_description: Manage pfSense DHCP static mapping
 description:
@@ -166,8 +166,8 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     ddnsdomain=dict(type='str'),
     ddnsdomainprimary=dict(type='str'),
     ddnsdomainsecondary=dict(type='str'),
-    ddnsdomainkeyname=dict(type='str', no_log=True),
-    ddnsdomainkeyalgorithm=dict(type='str', no_log=True),
+    ddnsdomainkeyname=dict(type='str'),
+    ddnsdomainkeyalgorithm=dict(type='str'),
     ddnsdomainkey=dict(type='str', no_log=True),
     tftp=dict(type='str'),
     ldap=dict(type='str'),
