@@ -76,7 +76,7 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         check_param('hostname', target_elt)
         check_param('domain', target_elt)
         check_bool_param('dnsallowoverride', target_elt)
-        check_bool_param('dnslocalhost', target_elt)
+        check_param('dnslocalhost', target_elt)
         check_param('timezone', target_elt)
         check_param('timeservers', target_elt)
         check_param('language', target_elt)
@@ -84,7 +84,7 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         if obj.get('webguicss') is not None:
             self.assert_xml_elt_equal(webgui_elt, 'webguicss', obj['webguicss'] + '.css')
 
-        check_bool_param('webguifixedmenu', webgui_elt)
+        self.check_param_bool(obj, webgui_elt, 'webguifixedmenu', value_true='fixed')
         check_param('webguihostnamemenu', webgui_elt)
         check_param('dashboardcolumns', webgui_elt)
         check_bool_param('interfacessort', webgui_elt)
@@ -142,8 +142,8 @@ class TestPFSenseSetupModule(TestPFSenseModule):
 
     def test_setup_dnslocalhost(self):
         """ test setup dnslocalhost """
-        setup = dict(dnslocalhost=True)
-        command = "update setup general set dnslocalhost=True"
+        setup = dict(dnslocalhost='remote')
+        command = "update setup general set dnslocalhost='remote'"
         self.do_module_test(setup, command=command, state=None)
 
     def test_setup_webguifixedmenu(self):
