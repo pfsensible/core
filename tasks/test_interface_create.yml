@@ -1,6 +1,6 @@
 ---
     - name: "Define {{ interface_args.name }}"
-      pfsense_interface: "{{ interface_args }}"
+      pfsensible.core.pfsense_interface: "{{ interface_args }}"
       register: interface
 
     - fail:

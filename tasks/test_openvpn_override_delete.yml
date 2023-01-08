@@ -1,6 +1,6 @@
 ---
     - name: "Remove {{ openvpn_override_args.name }}"
-      pfsense_openvpn_override:
+      pfsensible.core.pfsense_openvpn_override:
         name: "{{ openvpn_override_args.name }}"
         state: absent
       register: openvpn_override
