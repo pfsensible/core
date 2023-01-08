@@ -23,8 +23,8 @@
       destination: "{{ item.destination }}"
       after: 'top'
       state: present
-    with_items:
-    - { name: incoming, direction: "in", source: fail2ban, destination: any }
-    - { name: outgoing, direction: "out", source: any, destination: fail2ban }
+    loop:
+      - { name: incoming, direction: "in", source: fail2ban, destination: any }
+      - { name: outgoing, direction: "out", source: any, destination: fail2ban }
 
   tags: pfsense-fail2ban

@@ -8,7 +8,7 @@
       descr: "{{ item.descr }}"
       detail: "{{ item.detail }}"
       state: present
-    with_items:
+    loop:
       - name: adservers
         type: host
         address: "172.16.10.10 172.16.10.11"
@@ -31,7 +31,7 @@
       destination: "{{ item }}"
       after: 'top'
       state: present
-    with_items:
+    loop:
       - 10.0.0.0/8
       - 192.168.0.0/16
 

@@ -23,9 +23,9 @@
       remote_src: yes
       owner: "{{ user }}"
       group: "{{ user }}"
-    with_items:
-    - .hushlogin
-    - .tcshrc
+    loop:
+      - .hushlogin
+      - .tcshrc
 
   - name: "Install authorized_keys for {{ user }}"
     copy:

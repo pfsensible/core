@@ -7,14 +7,12 @@
   - name: "Set facts"
     set_fact:
       nss_pam_ldap_pkg: http://pkg.freebsd.org/FreeBSD:11:amd64/release_2/All/nss-pam-ldapd-0.9.9.txz
-    when:
-    - ansible_distribution_version == "11.1"
+    when: ansible_distribution_version == "11.1"
 
   - name: "Set facts"
     set_fact:
       nss_pam_ldap_pkg: http://pkg.freebsd.org/FreeBSD:11:amd64/latest/All/nss-pam-ldapd-0.9.10_1.txz
-    when:
-    - ansible_distribution_version == "11.2"
+    when: ansible_distribution_version == "11.2"
 
   - name: "Install nss-pam-ldap"
   #  package:
@@ -28,10 +26,10 @@
     package:
       name: "{{ item }}"
       state: present
-    with_items:
-    - pfSense-pkg-sudo
-    # For pfsense ansible tasks
-    - py27-ipaddress
+    loop:
+      - pfSense-pkg-sudo
+      # For pfsense ansible tasks
+      - py27-ipaddress
 
   - name: "Configure nslcd"
     template:
@@ -50,9 +48,9 @@
       regexp: "^({{ item }}):"
       backrefs: yes
       line: '\1: files ldap'
-    with_items:
-    - group
-    - passwd
+    loop:
+      - group
+      - passwd
 
   # Work around https://github.com/ansible/ansible/issues/41970
   - name: "Enable nslcd in /etc/rc.conf.local"
@@ -80,8 +78,8 @@
       user: "{{ adminuser }}"
     loop_control:
       loop_var: adminuser
-    with_items:
-    - "{{ admin_users }}"
+    loop:
+      - "{{ admin_users }}"
     tags: users
 
   # Need to include sudoers.d in the GUI
