@@ -1,6 +1,6 @@
 ---
     - name: "Remove {{ openvpn_server_args.name }}"
-      pfsense_openvpn_server:
+      pfsensible.core.pfsense_openvpn_server:
         name: "{{ openvpn_server_args.name }}"
         state: absent
       register: openvpn_server

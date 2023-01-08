@@ -1,6 +1,6 @@
 ---
     - name: "Define {{ openvpn_override_args.name }}"
-      pfsense_openvpn_override: "{{ openvpn_override_args }}"
+      pfsensible.core.pfsense_openvpn_override: "{{ openvpn_override_args }}"
       register: openvpn_override
       tags: openvpn
 
