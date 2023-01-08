@@ -53,7 +53,15 @@ options:
     required: false
     type: str
   crlname:
-    description: The name of the CRL.  This will default to name + ' CRL'.
+    description:
+      >
+        The name of the CRL.  This will default to name + ' CRL'.  If multiple CRLs exist
+        with this name, you must specify crlrefid.
+    required: false
+    type: str
+    version_added: 0.5.0
+  crlrefid:
+    description: The refrence ID of the CRL.  This will default to a unique id based on time.
     required: false
     type: str
     version_added: 0.5.0
@@ -99,7 +107,8 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
     randomserial=dict(type='bool'),
     certificate=dict(type='str'),
     crl=dict(default=None, type='str'),
-    crlname=dict(type='str'),
+    crlname=dict(default=None, type='str'),
+    crlrefid=dict(default=None, type='str'),
     serial=dict(type='int'),
 )
 
@@ -118,6 +127,7 @@ class PFSenseCAModule(PFSenseModuleBase):
         self.root_elt = self.pfsense.root
         self.cas = self.pfsense.get_elements('ca')
         self.refresh_crls = False
+        self.crl = None
 
     ##############################
     # params processing
@@ -160,8 +170,12 @@ class PFSenseCAModule(PFSenseModuleBase):
         if params['state'] == 'present':
             if 'certificate' in params and params['certificate'] is not None:
                 obj['crt'] = params['certificate']
-            if 'crl' in params and params['crl'] is not None:
-                obj['crl'] = params['crl']
+            if params['crl'] is not None:
+                self.crl = {}
+                self.crl['method'] = 'existing'
+                self.crl['text'] = params['crl']
+                self._get_ansible_param(self.crl, 'crlname', fname='descr', force=True, force_value=obj['descr'] + ' CRL')
+                self._get_ansible_param(self.crl, 'crlrefid', fname='refid')
 
         self._get_ansible_param_bool(obj, 'trust', value='enabled', value_false='disabled')
         self._get_ansible_param_bool(obj, 'randomserial', value='enabled', value_false='disabled')
@@ -190,12 +204,30 @@ class PFSenseCAModule(PFSenseModuleBase):
         else:
             return len(list(self.root_elt))
 
-    def _find_crl(self, caref):
+    def _find_crl_for_ca(self, caref):
         result = self.root_elt.findall("crl[caref='{0}']".format(caref))
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple CRLs for caref {0}.'.format(caref))
+            self.module.fail_json(msg='Found multiple CRLs for caref {0}, you must specify crlname or crlrefid.'.format(caref))
+        else:
+            return None
+
+    def _find_crl_by_name(self, crlname):
+        result = self.root_elt.findall("crl[descr='{0}']".format(crlname))
+        if len(result) == 1:
+            return result[0]
+        elif len(result) > 1:
+            self.module.fail_json(msg='Found multiple CRLs for name {0}, you must specify crlrefid.'.format(crlname))
+        else:
+            return None
+
+    def _find_crl_by_refid(self, crlrefid):
+        result = self.root_elt.findall("crl[refid='{0}']".format(crlrefid))
+        if len(result) == 1:
+            return result[0]
+        elif len(result) > 1:
+            self.module.fail_json(msg='Found multiple CRLs for refid {0}.  This is an unsupported condition'.format(crlrefid))
         else:
             return None
 
@@ -209,25 +241,18 @@ class PFSenseCAModule(PFSenseModuleBase):
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
         obj = self.obj
-        crl = {}
-        if 'crl' in obj:
-            crl['method'] = 'existing'
-            crl['text'] = obj.pop('crl')
 
         obj['refid'] = self.pfsense.uniqid()
         self.pfsense.copy_dict_to_element(obj, self.target_elt)
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
         self.root_elt.insert(self._find_last_ca_index(), self.target_elt)
-        if 'text' in crl:
+        if self.crl is not None:
             crl_elt = self.pfsense.new_element('crl')
-            crl['refid'] = self.pfsense.uniqid()
-            if 'crlname' in self.params:
-                crl['descr'] = self.params['crlname']
-            else:
-                crl['descr'] = obj['descr'] + ' CRL'
-            crl['caref'] = obj['refid']
-            self.pfsense.copy_dict_to_element(crl, crl_elt)
-            self.diff['after']['crl'] = crl['text']
+            self.crl['caref'] = obj['refid']
+            if 'refid' not in self.crl:
+                self.crl['refid'] = self.pfsense.uniqid()
+            self.pfsense.copy_dict_to_element(self.crl, crl_elt)
+            self.diff['after']['crl'] = self.crl['text']
             self.pfsense.root.append(crl_elt)
             self.refresh_crls = True
 
@@ -237,35 +262,46 @@ class PFSenseCAModule(PFSenseModuleBase):
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff['before'] = before
 
-        crl = {}
-        if 'crl' in obj:
-            crl['method'] = 'existing'
-            crl['text'] = obj.pop('crl')
-
         changed = self.pfsense.copy_dict_to_element(obj, self.target_elt)
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
 
-        if 'text' in crl:
-            crl_elt = self._find_crl(self.target_elt.find('refid').text)
+        if self.crl is not None:
+            crl_elt = None
+
+            # If a crlrefid is specified, update it or create a new one with that refid
+            if self.params['crlrefid'] is not None:
+                crl_elt = self._find_crl_by_refid(self.params['crlrefid'])
+                self.crl['refid'] = self.params['crlrefid']
+            else:
+                if self.params['crlname'] is not None:
+                    crl_elt = self._find_crl_by_name(self.params['crlname'])
+                if crl_elt is None:
+                    crl_elt = self._find_crl_for_ca(self.target_elt.find('refid').text)
+
             if crl_elt is None:
                 changed = True
                 crl_elt = self.pfsense.new_element('crl')
-                crl['refid'] = self.pfsense.uniqid()
-                if 'crlname' in self.params:
-                    crl['descr'] = self.params['crlname']
-                else:
-                    crl['descr'] = obj['descr'] + ' CRL'
-                crl['caref'] = self.target_elt.find('refid').text
-                self.pfsense.copy_dict_to_element(crl, crl_elt)
+                self.crl['caref'] = self.target_elt.find('refid').text
+                if 'refid' not in self.crl:
+                    self.crl['refid'] = self.pfsense.uniqid()
+                self.pfsense.copy_dict_to_element(self.crl, crl_elt)
                 # Add after the existing ca entry
                 self.pfsense.root.insert(self._find_this_ca_index() + 1, crl_elt)
                 self.refresh_crls = True
             else:
                 before['crl'] = crl_elt.find('text').text
-                if self.pfsense.copy_dict_to_element(crl, crl_elt):
+                before['crlname'] = crl_elt.find('descr').text
+                if 'crlname' not in self.crl:
+                    self.crl['descr'] = before['crlname']
+                before['crlrefid'] = crl_elt.find('refid').text
+                if 'refid' not in self.crl:
+                    self.crl['refid'] = before['crlrefid']
+                if self.pfsense.copy_dict_to_element(self.crl, crl_elt):
                     changed = True
                     self.refresh_crls = True
-            self.diff['after']['crl'] = crl['text']
+            self.diff['after']['crl'] = self.crl['text']
+            self.diff['after']['crlname'] = self.crl['descr']
+            self.diff['after']['crlrefid'] = self.crl['refid']
 
         return (before, changed)
 
@@ -321,7 +357,7 @@ class PFSenseCAModule(PFSenseModuleBase):
         self.diff['after'] = {}
         if self.target_elt is not None:
             self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
-            crl_elt = self._find_crl(self.target_elt.find('refid').text)
+            crl_elt = self._find_crl_for_ca(self.target_elt.find('refid').text)
             self.cas.remove(self.target_elt)
             if crl_elt is not None:
                 self.diff['before']['crl'] = crl_elt.find('text').text
