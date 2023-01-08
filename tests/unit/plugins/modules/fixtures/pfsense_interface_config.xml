@@ -146,6 +146,14 @@
 			<ipaddr>172.16.151.210</ipaddr>
 			<subnet>24</subnet>
 		</opt3>
+		<opt4>
+			<descr>lan_1200</descr>
+			<if>vmx1.1200</if>
+			<enable></enable>
+			<spoofmac></spoofmac>
+			<ipaddr>172.16.152.210</ipaddr>
+			<subnet>24</subnet>
+		</opt4>
 		<opt5>
 			<if>vmx4</if>
 			<descr>vt2</descr>

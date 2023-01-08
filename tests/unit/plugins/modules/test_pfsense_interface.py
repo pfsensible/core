@@ -276,6 +276,12 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
         msg = "IP address 2001::2001/56 is being used by or overlaps with: lan (2001::2001:22/64)"
         self.do_module_test(interface, failed=True, msg=msg)
 
+    def test_interface_delete_sub(self):
+        """ test delete sub interface """
+        interface = dict(descr='lan_1200', interface='vmx1.1200', state='absent')
+        command = "delete interface 'lan_1200'"
+        self.do_module_test(interface, delete=True, command=command)
+
     def test_interface_error_not_uniq(self):
         """ test creation of a new interface with interface_descr """
         interface = dict(descr='VOICE', interface_descr='notuniq')
