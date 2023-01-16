@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
-from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from copy import deepcopy
 
