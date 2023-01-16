@@ -16,6 +16,7 @@ NAT_PORT_FORWARD_ARGUMENT_SPEC = dict(
     disabled=dict(default=False, required=False, type='bool'),
     nordr=dict(default=False, required=False, type='bool'),
     interface=dict(required=False, type='str'),
+    ipprotocol=dict(default='inet', choices=['inet', 'inet6']),
     protocol=dict(default='tcp', required=False, choices=["tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "pim", "ospf"]),
     source=dict(required=False, type='str'),
     destination=dict(required=False, type='str'),
@@ -70,6 +71,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         obj['descr'] = self.params['descr']
         if self.params['state'] == 'present':
             obj['interface'] = self.pfsense.parse_interface(self.params['interface'])
+            self._get_ansible_param(obj, 'ipprotocol')
             self._get_ansible_param(obj, 'protocol')
             self._get_ansible_param(obj, 'poolopts')
             self._get_ansible_param(obj, 'source_hash_key')
@@ -389,6 +391,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_cli_field(self.params, 'disabled', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, 'nordr', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, 'interface')
+            values += self.format_cli_field(self.params, 'ipprotocol', default='inet')
             values += self.format_cli_field(self.params, 'protocol', default='tcp')
             values += self.format_cli_field(self.params, 'source')
             values += self.format_cli_field(self.params, 'destination')
@@ -406,6 +409,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_updated_cli_field(self.obj, before, 'disabled', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'nordr', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'interface', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'ipprotocol', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'protocol', fvalue=self.fprotocol, add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'source', add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'destination', add_comma=(values))

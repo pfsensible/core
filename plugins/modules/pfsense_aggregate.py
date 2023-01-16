@@ -252,6 +252,11 @@ options:
         description: The interface for the rule
         required: false
         type: str
+      ipprotocol:
+        description: The IP protocol
+        default: inet
+        choices: [ "inet", "inet6" ]
+        type: str
       protocol:
         description: Which protocol this rule should match.
         default: tcp
