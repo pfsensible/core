@@ -123,8 +123,12 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         else:
             self.module.fail_json(msg='"%s" is not a valid redirect target IP address or host alias.' % (param))
 
-        if ports is None and self.params['protocol'] in ["tcp", "udp", "tcp/udp"]:
-            self.module.fail_json(msg='Must specify a target port with protocol "{0}".'.format(self.params['protocol']))
+        if ports is None:
+            if self.params['protocol'] in ["tcp", "udp", "tcp/udp"]:
+                self.module.fail_json(msg='Must specify a target port with protocol "{0}".'.format(self.params['protocol']))
+            else:
+                # pfSense seems to always add an empty local-port element
+                obj['local-port'] = ''
 
         if ports is not None:
             if self.params['protocol'] not in ["tcp", "udp", "tcp/udp"]:
