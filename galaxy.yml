@@ -57,6 +57,7 @@ issues: https://github.com/pfsensible/core/issues
 
 
 build_ignore:
+  - .github
   - .gitignore
   - .travis.yml
   - '*.tar.gz'
