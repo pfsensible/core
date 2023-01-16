@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2019, Frederic Bor <frederic.bor@wanadoo.fr>
+# Copyright: (c) 2023, Orion Poplwski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -120,10 +121,16 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         else:
             self.module.fail_json(msg='"%s" is not a valid redirect target IP address or host alias.' % (param))
 
-        if ports is not None and self.pfsense.is_port_or_alias(ports):
-            obj['local-port'] = ports
-        else:
-            self.module.fail_json(msg='"{0}" is not a valid redirect target port. It must be a port alias or integer between 1 and 65535.'.format(ports))
+        if ports is None and self.params['protocol'] in ["tcp", "udp", "tcp/udp"]:
+            self.module.fail_json(msg='Must specify a target port with protocol "{0}".'.format(self.params['protocol']))
+
+        if ports is not None:
+            if self.params['protocol'] not in ["tcp", "udp", "tcp/udp"]:
+                self.module.fail_json(msg='Cannot specify a target port with protocol "{0}".'.format(self.params['protocol']))
+            elif self.pfsense.is_port_or_alias(ports):
+                obj['local-port'] = ports
+            else:
+                self.module.fail_json(msg='"{0}" is not a valid redirect target port. It must be a port alias or integer between 1 and 65535.'.format(ports))
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
@@ -436,7 +443,9 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         res = {}
         res['source'] = self._obj_address_to_log_field(rule, 'source')
         res['destination'] = self._obj_address_to_log_field(rule, 'destination')
-        res['target'] = rule['target'] + ':' + rule['local-port']
+        res['target'] = rule['target']
+        if 'local-port' in rule:
+            res['target'] += ':' + rule['local-port']
         res['interface'] = self.pfsense.get_interface_display_name(rule['interface'])
 
         return res
