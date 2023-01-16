@@ -52,6 +52,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.check_param_equal_or_not_find(obj, target_elt, 'natreflection', not_find_val='system-default')
 
         self.check_value_equal(target_elt, 'interface', self.unalias_interface(obj['interface']))
+        self.check_param_equal(obj, target_elt, 'ipprotocol', 'inet')
         self.check_param_equal(obj, target_elt, 'protocol', 'tcp')
 
         self.check_rule_idx(obj, target_idx)

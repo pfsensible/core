@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2019, Frederic Bor <frederic.bor@wanadoo.fr>
+# Copyright: (c) 2023, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -37,6 +38,11 @@ options:
   interface:
     description: The interface for the rule
     required: false
+    type: str
+  ipprotocol:
+    description: The IP protocol
+    default: inet
+    choices: [ "inet", "inet6" ]
     type: str
   protocol:
     description: Which protocol this rule should match.

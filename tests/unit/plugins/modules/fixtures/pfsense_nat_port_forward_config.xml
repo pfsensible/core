@@ -268,6 +268,7 @@
 				<network>wanip</network>
 				<port>22022</port>
 			</destination>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<target>10.255.1.20</target>
 			<local-port>22</local-port>
@@ -291,6 +292,7 @@
 				<network>wanip</network>
 				<port>22022</port>
 			</destination>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<target>10.255.1.20</target>
 			<local-port>22</local-port>
@@ -314,6 +316,7 @@
 				<network>wanip</network>
 				<port>22022</port>
 			</destination>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<target>10.255.1.20</target>
 			<local-port>22</local-port>
@@ -339,6 +342,7 @@
 				<network>wanip</network>
 				<port>22022</port>
 			</destination>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<interface>wan</interface>
 			<descr>NAT last</descr>
@@ -375,6 +379,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_rule</descr>
 			<created>
@@ -399,6 +404,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<log></log>
 			<descr>test_rule_2</descr>
@@ -424,6 +430,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_lan_100_1</descr>
 			<created>
@@ -449,6 +456,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_lan_100_2</descr>
 			<created>
@@ -475,6 +483,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_lan_100_3</descr>
 			<created>
@@ -500,6 +509,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_lan_100_4</descr>
 			<created>
@@ -526,6 +536,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_lan_100_5</descr>
 			<created>
@@ -551,6 +562,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>test_rule_3</descr>
 			<created>
@@ -576,6 +588,7 @@
 				<username></username>
 				<time>1545574416</time>
 			</updated>
+			<ipprotocol>inet</ipprotocol>
 			<protocol>tcp</protocol>
 			<descr>antilock_out_3</descr>
 			<created>
@@ -601,6 +614,7 @@
 						 <username>fbor</username>
 						 <time>1545907554</time>
 				 </updated>
+				<ipprotocol>inet</ipprotocol>
 				 <protocol>tcp</protocol>
 				 <descr>test_rule_floating</descr>
 				 <created>
