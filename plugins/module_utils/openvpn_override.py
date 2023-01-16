@@ -148,7 +148,6 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         return (None, -1)
 
     def _find_last_openvpn_idx(self):
-        found = False
         i = 0
         for elt in self.openvpn_csc_elt:
             i += 1
