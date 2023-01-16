@@ -285,7 +285,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         """ update the XML target_elt """
         before = self.pfsense.element_to_dict(self.target_elt)
         # Check if local port is used
-        portused_vpnid = self._openvpn_port_used(self.params['protocol'], self.params['interface'], self.params['local_port'], before['vpnid'])
+        self._openvpn_port_used(self.params['protocol'], self.params['interface'], self.params['local_port'], before['vpnid'])
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         if self._remove_deleted_params():
             changed = True
