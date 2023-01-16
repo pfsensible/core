@@ -61,6 +61,5 @@ def check_ip_address(self, address, ipprotocol, objtype, allow_networks=False, f
 def validate_string(self, name, objtype):
     """ check string validity - similar to pfSense's do_input_validate() """
 
-    msg = None
     if len(re.findall(r'[\000-\010\013\014\016-\037]', name)) > 0:
         self.module.fail_json("The {0} name contains invalid characters.".format(objtype))
