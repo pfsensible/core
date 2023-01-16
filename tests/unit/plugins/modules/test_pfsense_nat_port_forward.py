@@ -161,6 +161,27 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         )
         self.do_module_test(obj, command=command, target_idx=1)
 
+    def test_nat_port_forward_create_icmp(self):
+        """ test """
+        obj = dict(descr='test_pf', interface='wan', protocol='icmp', source='any', destination='1.2.3.4', target='2.3.4.5', associated_rule='associated')
+        command = [
+            "create rule 'NAT test_pf' on 'wan', source='any', destination='2.3.4.5', protocol='icmp'",
+            "create nat_port_forward 'test_pf', interface='wan', protocol='icmp', source='any', destination='1.2.3.4', target='2.3.4.5'"
+        ]
+        self.do_module_test(obj, command=command, target_idx=3)
+
+    def test_nat_port_forward_create_tcp_fail_no_port(self):
+        """ test """
+        obj = dict(descr='test_pf', interface='wan', source='any', destination='1.2.3.4', target='2.3.4.5', associated_rule='associated')
+        msg = 'Must specify a target port with protocol "tcp".'
+        self.do_module_test(obj, failed=True, msg=msg)
+
+    def test_nat_port_forward_create_icmp_fail_port(self):
+        """ test """
+        obj = dict(descr='test_pf', interface='wan', protocol='icmp', source='any', destination='1.2.3.4', target='2.3.4.5:443', associated_rule='associated')
+        msg = 'Cannot specify a target port with protocol "icmp".'
+        self.do_module_test(obj, failed=True, msg=msg)
+
     def test_nat_port_forward_update_noop(self):
         """ test """
         obj = dict(descr='one', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.20:22', associated_rule='none')
