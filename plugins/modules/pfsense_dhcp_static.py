@@ -140,9 +140,6 @@ RETURN = """
 
 """
 
-import base64
-import re
-
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
