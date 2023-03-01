@@ -118,6 +118,7 @@ options:
   uefihttpboot:
     description: UEFI HTTPBoot URL
     type: str
+    version_added: "0.5.2"
   numberoptions:
     description: The number options
     type: str
