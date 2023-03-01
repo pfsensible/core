@@ -80,7 +80,7 @@ class TestPFSenseModule(ModuleTestCase):
 
         self.mock_get_version = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.get_version')
         self.get_version = self.mock_get_version.start()
-        self.get_version.return_value = "2.5.0"
+        self.get_version.return_value = "2.5.2"
 
         self.maxDiff = None
 
