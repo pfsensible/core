@@ -1,5 +1,5 @@
 <pfsense>
-	<version>18.9</version>
+	<version>22.2</version>
 	<lastchange></lastchange>
 	<system>
 		<optimization>normal</optimization>
@@ -1323,6 +1323,8 @@
             <nat_traversal>on</nat_traversal>
             <mobike>off</mobike>
             <margintime></margintime>
+            <startaction></startaction>
+            <closeaction></closeaction>
             <dpd_delay>10</dpd_delay>
             <dpd_maxfail>5</dpd_maxfail>
     </phase1>
@@ -1512,6 +1514,8 @@
             <nat_traversal>on</nat_traversal>
             <mobike>off</mobike>
             <margintime></margintime>
+            <startaction></startaction>
+            <closeaction></closeaction>
             <dpd_delay>10</dpd_delay>
             <dpd_maxfail>5</dpd_maxfail>
     </phase1>

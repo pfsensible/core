@@ -37,7 +37,8 @@ IPSEC_ARGUMENT_SPEC = dict(
 
     disable_rekey=dict(required=False, type='bool'),
     margintime=dict(required=False, type='int'),
-    responderonly=dict(default=False, type='bool'),
+    startaction=dict(default='', choices=['', 'none', 'start', 'trap']),
+    closeaction=dict(default='', choices=['', 'none', 'start', 'trap']),
     disable_reauth=dict(default=False, type='bool'),
     mobike=dict(default='off', choices=['on', 'off']),
     gw_duplicates=dict(required=False, type='bool'),
@@ -48,6 +49,9 @@ IPSEC_ARGUMENT_SPEC = dict(
     dpd_delay=dict(default=10, type='int'),
     dpd_maxfail=dict(default=5, type='int'),
     apply=dict(default=True, type='bool'),
+
+    # Dropped in 2.5.2
+    responderonly=dict(required=False, type='bool'),
 )
 
 IPSEC_REQUIRED_IF = [
@@ -209,9 +213,6 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             if params.get('disable_rekey'):
                 ipsec['rekey_enable'] = ''
 
-            if params.get('responderonly'):
-                ipsec['responderonly'] = params['responderonly']
-
             if params.get('enable_dpd'):
                 ipsec['dpd_delay'] = str(params['dpd_delay'])
                 ipsec['dpd_maxfail'] = str(params['dpd_maxfail'])
@@ -232,12 +233,20 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             else:
                 self._get_ansible_param(ipsec, 'margintime', force=True)
 
+            if self.pfsense.is_at_least_2_5_2():
+                self._get_ansible_param(ipsec, 'startaction')
+                self._get_ansible_param(ipsec, 'closeaction')
+            else:
+                if params.get('responderonly'):
+                    ipsec['responderonly'] = params['responderonly']
+
         return ipsec
 
     def _deprecated_params(self):
         return [
             ['disable_rekey', self.pfsense.is_at_least_2_5_0],
             ['margintime', self.pfsense.is_at_least_2_5_0],
+            ['responderonly', self.pfsense.is_at_least_2_5_2],
         ]
 
     def _onward_params(self):
@@ -247,6 +256,9 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             ['rekey_time', self.pfsense.is_at_least_2_5_0],
             ['reauth_time', self.pfsense.is_at_least_2_5_0],
             ['rand_time', self.pfsense.is_at_least_2_5_0],
+            # TODO - Cannot add because it has a default value
+            # ['startaction', self.pfsense.is_at_least_2_5_2],
+            # ['closeaction', self.pfsense.is_at_least_2_5_2],
         ]
 
     def _validate_params(self):
@@ -360,7 +372,11 @@ class PFSenseIpsecModule(PFSenseModuleBase):
 
             values += self.format_cli_field(self.obj, 'gw_duplicates', fvalue=self.fvalue_bool)
 
-            values += self.format_cli_field(self.params, 'responderonly', fvalue=self.fvalue_bool)
+            if self.pfsense.is_at_least_2_5_2():
+                values += self.format_cli_field(self.params, 'startaction')
+                values += self.format_cli_field(self.params, 'closeaction')
+            else:
+                values += self.format_cli_field(self.params, 'responderonly', fvalue=self.fvalue_bool)
             values += self.format_cli_field(self.obj, 'nat_traversal')
 
             values += self.format_cli_field(self.params, 'enable_dpd', fvalue=self.fvalue_bool)
@@ -408,7 +424,11 @@ class PFSenseIpsecModule(PFSenseModuleBase):
 
             values += self.format_updated_cli_field(self.obj, before, 'gw_duplicates', add_comma=(values), fvalue=self.fvalue_bool)
 
-            values += self.format_updated_cli_field(self.obj, before, 'responderonly', add_comma=(values), fvalue=self.fvalue_bool)
+            if self.pfsense.is_at_least_2_5_2():
+                values += self.format_updated_cli_field(self.obj, before, 'startaction', add_comma=(values))
+                values += self.format_updated_cli_field(self.obj, before, 'closeaction', add_comma=(values))
+            else:
+                values += self.format_updated_cli_field(self.obj, before, 'responderonly', add_comma=(values), fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.obj, before, 'nat_traversal', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'enable_dpd', add_comma=(values), fvalue=self.fvalue_bool)
             if self.params['enable_dpd']:

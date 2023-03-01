@@ -90,7 +90,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
     ##############
     # tests
     #
-    @parameterized.expand([["2.4.4"], ["2.5.0"]])
+    @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_create(self, pfsense_version):
         """ test creation of a new proposal """
         self.get_version.return_value = pfsense_version
@@ -98,7 +98,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
         command = "create ipsec_proposal 'test_tunnel', encryption='aes128gcm', key_length=128, hash='sha256', dhgroup='21', prf='sha256'"
         self.do_module_test(proposal, command=command)
 
-    @parameterized.expand([["2.4.4"], ["2.5.0"]])
+    @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_create_nokeylen(self, pfsense_version):
         """ test creation of a new proposal """
         self.get_version.return_value = pfsense_version
@@ -106,7 +106,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
         command = "create ipsec_proposal 'test_tunnel2', encryption='cast128', hash='sha256', dhgroup='21', prf='sha256'"
         self.do_module_test(proposal, command=command)
 
-    @parameterized.expand([["2.4.4"], ["2.5.0"]])
+    @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_delete(self, pfsense_version):
         """ test deletion of an ipsec proposal """
         self.get_version.return_value = pfsense_version
@@ -114,7 +114,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
         command = "delete ipsec_proposal 'test_tunnel', encryption='aes128gcm', key_length=128, hash='sha256', dhgroup='14', prf='sha256'"
         self.do_module_test(proposal, delete=True, command=command)
 
-    @parameterized.expand([["2.4.4"], ["2.5.0"]])
+    @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_update_noop(self, pfsense_version):
         """ test not updating a ipsec proposal """
         self.get_version.return_value = pfsense_version

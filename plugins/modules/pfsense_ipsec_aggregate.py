@@ -116,9 +116,20 @@ options:
         description: How long before connection expiry or keying-channel expiry should attempt to negotiate a replacement begin (deprecated with pfSense 2.5.0)
         required: false
         type: int
+      startaction:
+        description: Set this option to force specific initiation/responder behavior for child SA (P2) entries.  New in pfSense 2.5.2.
+        default: ''
+        choices: [ '', 'none', 'start', 'trap' ]
+        type: str
+      closeaction:
+        description: Set this option to control the behavior when the remote peer unexpectedly closes a child SA (P2).  New in pfSense 2.5.2.
+        default: ''
+        choices: [ '', 'none', 'start', 'trap' ]
+        type: str
+        version_added: 0.5.2
       responderonly:
-        description: Enable this option to never initiate this connection from this side, only respond to incoming requests.
-        default: false
+        description: Enable this option to never initiate this connection from this side, only respond to incoming requests.  Removed in pfSense 2.5.2.
+        required: false
         type: bool
       disable_reauth:
         description: (IKEv2 only) Whether rekeying of an IKE_SA should also reauthenticate the peer. In IKEv1, reauthentication is always done.

@@ -676,6 +676,10 @@ class PFSenseModule(object):
 
         return True
 
+    def is_at_least_2_5_2(self):
+        """ check target pfSense version """
+        return self.is_version([2, 5, 2]) or self.is_version([21, 5])
+
     def is_at_least_2_5_0(self):
         """ check target pfSense version """
         return self.is_version([2, 5, 0]) or self.is_version([21, 2])
