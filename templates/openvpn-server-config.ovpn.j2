@@ -1,4 +1,5 @@
 dev ovpns{{ openvpn_server.vpnid }}
+disable-dco
 verb {{ openvpn_server_args.verbosity_level if openvpn_server_args.verbosity_level is defined else '1' }}
 dev-type tun
 dev-node /dev/tun{{ openvpn_server.vpnid }}
@@ -55,22 +56,26 @@ push "dhcp-option DNS 10.10.10.11"
 route {{ openvpn_server_args.remote_network | ipaddr('network') }} {{ openvpn_server_args.remote_network | ipaddr('netmask') }}
 {% endif %}
 {% if 'shared_key' in openvpn_server_args.mode %}
-secret /var/etc/openvpn/server{{ openvpn_server.vpnid }}/secret
+secret /var/etc/openvpn/server{{ openvpn_server.vpnid }}/secret 
 {% endif %}
 {% if openvpn_server_args.gwredir is defined and openvpn_server_args.gwredir %}
 push "redirect-gateway def1"
 {% endif %}
 {% if 'tls' in openvpn_server_args.mode %}
 capath /var/etc/openvpn/server{{ openvpn_server.vpnid }}/ca
-cert /var/etc/openvpn/server{{ openvpn_server.vpnid }}/cert
-key /var/etc/openvpn/server{{ openvpn_server.vpnid }}/key
+cert /var/etc/openvpn/server{{ openvpn_server.vpnid }}/cert 
+key /var/etc/openvpn/server{{ openvpn_server.vpnid }}/key 
 dh /etc/dh-parameters.2048
 {% if openvpn_server_args.tls is defined %}
 tls-auth /var/etc/openvpn/server{{ openvpn_server.vpnid }}/tls-auth 0
 {% endif %}
 {% endif %}
+{% if 'p2p' in openvpn_server_args.mode %}
+cipher {{ openvpn_server_args.data_ciphers_fallback if openvpn_server_args.data_ciphers_fallback is defined else 'AES-256-CBC' }}
+{% else %}
 data-ciphers {{ openvpn_server_args.data_ciphers | join(':') if openvpn_server_args.data_ciphers is defined else 'AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305:AES-256-CBC' }}
 data-ciphers-fallback {{ openvpn_server_args.data_ciphers_fallback if openvpn_server_args.data_ciphers_fallback is defined else 'AES-256-CBC' }}
+{% endif %}
 allow-compression no
 {% if openvpn_server_args.passtos %}
 passtos
