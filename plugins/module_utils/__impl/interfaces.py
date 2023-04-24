@@ -140,3 +140,4 @@ def parse_interface(self, interface, fail=True, with_virtual=True):
     if fail:
         self.module.fail_json(msg='%s is not a valid interface' % (interface))
     return None
+
