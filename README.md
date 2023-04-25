@@ -79,6 +79,7 @@ The following modules are currently available:
 * [pfsense_openvpn_server](https://github.com/pfsensible/core/wiki/pfsense_openvpn_server) for OpenVPN server configuration
 * [pfsense_nat_outbound](https://github.com/pfsensible/core/wiki/pfsense_nat_outbound) for outbound NAT (SNAT) rules
 * [pfsense_nat_port_forward](https://github.com/pfsensible/core/wiki/pfsense_nat_port_forward) for port forwarding NAT (DNAT) rules
+* [pfsense_rewrite_config](https://github.com/pfsensible/core/wiki/pfsense_rewrite_config) to rewrite config.xml
 * [pfsense_route](https://github.com/pfsensible/core/wiki/pfsense_route) for routes
 * [pfsense_rule](https://github.com/pfsensible/core/wiki/pfsense_rule) for firewall rules
 * [pfsense_rule_separator](https://github.com/pfsensible/core/wiki/pfsense_rule_separator) for firewall rule separators
