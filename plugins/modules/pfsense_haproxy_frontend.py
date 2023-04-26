@@ -14,7 +14,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = """
 ---
 module: pfsense_haproxy_frontend
-version_added: "2.10"
+version_added: "0.6.0"
 author: Chris Morton (@cosmosified)
 short_description: Manage pfSense haproxy frontends
 description:
