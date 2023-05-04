@@ -240,7 +240,7 @@ class PFSenseCertModule(PFSenseModuleBase):
         if params['key'] is not None:
             key = params['key']
             lines = key.splitlines()
-            if re.match('^-----BEGIN (RSA )?PRIVATE KEY-----$', lines[0]) and re.match('^-----END (RSA )?PRIVATE KEY-----$', lines[-1]):
+            if re.match('^-----BEGIN ((EC|RSA) )?PRIVATE KEY-----$', lines[0]) and re.match('^-----END ((EC|RSA) )?PRIVATE KEY-----$', lines[-1]):
                 params['key'] = base64.b64encode(key.encode()).decode()
             elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', key):
                 self.module.fail_json(msg='Could not recognize key format: %s' % (key))
