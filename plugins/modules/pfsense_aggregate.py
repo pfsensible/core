@@ -595,7 +595,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.interface import (
     INTERFACE_REQUIRED_IF,
     INTERFACE_MUTUALLY_EXCLUSIVE,
 )
-from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUD_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUND_REQUIRED_IF
 from ansible_collections.pfsensible.core.plugins.module_utils.nat_port_forward import (
     PFSenseNatPortForwardModule,
     NAT_PORT_FORWARD_ARGUMENT_SPEC,
@@ -1058,7 +1058,7 @@ def main():
             type='list', elements='dict',
             options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE),
         aggregated_rules=dict(type='list', elements='dict', options=RULE_ARGUMENT_SPEC, required_if=RULE_REQUIRED_IF),
-        aggregated_nat_outbounds=dict(type='list', elements='dict', options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUD_REQUIRED_IF),
+        aggregated_nat_outbounds=dict(type='list', elements='dict', options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUND_REQUIRED_IF),
         aggregated_nat_port_forwards=dict(type='list', elements='dict', options=NAT_PORT_FORWARD_ARGUMENT_SPEC, required_if=NAT_PORT_FORWARD_REQUIRED_IF),
         aggregated_rule_separators=dict(
             type='list', elements='dict',

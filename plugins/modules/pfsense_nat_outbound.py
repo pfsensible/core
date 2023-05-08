@@ -123,13 +123,13 @@ commands:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUD_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUND_REQUIRED_IF
 
 
 def main():
     module = AnsibleModule(
         argument_spec=NAT_OUTBOUND_ARGUMENT_SPEC,
-        required_if=NAT_OUTBOUD_REQUIRED_IF,
+        required_if=NAT_OUTBOUND_REQUIRED_IF,
         supports_check_mode=True)
 
     pfmodule = PFSenseNatOutboundModule(module)

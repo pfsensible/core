@@ -33,7 +33,7 @@ NAT_OUTBOUND_ARGUMENT_SPEC = dict(
     before=dict(required=False, type='str'),
 )
 
-NAT_OUTBOUD_REQUIRED_IF = [
+NAT_OUTBOUND_REQUIRED_IF = [
     ["state", "present", ["interface", "source", "destination"]]
 ]
 
