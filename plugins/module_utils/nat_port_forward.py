@@ -71,7 +71,8 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         obj['descr'] = self.params['descr']
         if self.params['state'] == 'present':
             obj['interface'] = self.pfsense.parse_interface(self.params['interface'])
-            self._get_ansible_param(obj, 'ipprotocol')
+            if self.pfsense.is_at_least_2_5_0():
+                self._get_ansible_param(obj, 'ipprotocol')
             self._get_ansible_param(obj, 'protocol')
             self._get_ansible_param(obj, 'poolopts')
             self._get_ansible_param(obj, 'source_hash_key')
@@ -185,7 +186,8 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         params['name'] = 'NAT ' + self.params['descr']
         params['state'] = 'present'
         params['action'] = 'pass'
-        params['ipprotocol'] = 'inet'
+        if self.pfsense.is_at_least_2_5_0():
+            params['ipprotocol'] = 'inet'
         params['statetype'] = 'keep state'
         params['interface'] = self.params['interface']
         params['source'] = self.params['source']
@@ -395,7 +397,8 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_cli_field(self.params, 'disabled', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, 'nordr', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, 'interface')
-            values += self.format_cli_field(self.params, 'ipprotocol', default='inet')
+            if self.pfsense.is_at_least_2_5_0():
+                values += self.format_cli_field(self.params, 'ipprotocol', default='inet')
             values += self.format_cli_field(self.params, 'protocol', default='tcp')
             values += self.format_cli_field(self.params, 'source')
             values += self.format_cli_field(self.params, 'destination')
@@ -413,7 +416,8 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_updated_cli_field(self.obj, before, 'disabled', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'nordr', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'interface', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'ipprotocol', add_comma=(values))
+            if self.pfsense.is_at_least_2_5_0():
+                values += self.format_updated_cli_field(self.obj, before, 'ipprotocol', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'protocol', fvalue=self.fprotocol, add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'source', add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'destination', add_comma=(values))
