@@ -6,7 +6,10 @@
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
-from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
+try:
+    from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
+except ImportError:
+    from ansible_collections.pfsensible.core.plugins.module_utils.compat.ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
 import re
 
 
