@@ -217,11 +217,11 @@ from ansible.plugins.lookup import LookupBase
 import ipaddress
 
 OPTION_FIELDS = [
-    'gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'icmptype', 'filter', 'efilter', 'ifilter', 'sched', 'quick', 'direction',
+    'gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'queue_error', 'icmptype', 'filter', 'efilter', 'ifilter', 'sched', 'quick', 'direction',
     'staticnatport', 'ipprotocol',
     'associated_rule', 'natreflection',
 ]
-OUTPUT_OPTION_FIELDS = ['gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'icmptype', 'sched', 'quick', 'direction']
+OUTPUT_OPTION_FIELDS = ['gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'queue_error', 'icmptype', 'sched', 'quick', 'direction', 'ipprotocol']
 OUTPUT_SRC_NAT_OPTION_FIELDS = ['staticnatport', 'ipprotocol']
 OUTPUT_DST_NAT_OPTION_FIELDS = ['associated_rule', 'natreflection']
 
@@ -465,6 +465,19 @@ def rule_product_ports(rule, field, field_port):
     return ' '.join(list(ret))
 
 
+def get_bool(values, field):
+    """ Return boolean field value from values """
+    field_value = False
+    if isinstance(values[field], bool):
+        field_value = values[field]
+    elif isinstance(values[field], str):
+        if values[field].lower() in ['yes', 'true']:
+            field_value = True
+        elif values[field].lower() not in ['no', 'false']:
+            self._data.set_error('{0} must be yes/no or true/false (got "{1}")'.format(field, values[field]))
+    return field_value
+
+
 class PFSenseHostAlias(object):
     """ Class holding structured pfsense host alias definition """
     def __init__(self):
@@ -484,6 +497,48 @@ class PFSenseHostAlias(object):
         self.routed_interfaces = {}
 
         self._computed = False
+
+    def __deepcopy__(self, memodict={}):
+        raise AssertionError()
+
+    def copy(self):
+        copy_object = PFSenseHostAlias()
+
+        copy_object.name = self.name
+        copy_object.descr = self.descr
+        copy_object.dns = self.dns
+        copy_object.fake = self.fake
+        copy_object._computed = self._computed
+        copy_object.definition = self.definition[:]
+
+        # ips
+        for ip in self.ips:
+            new_ip = ipaddress.IPv4Address.__new__(ipaddress.IPv4Address)
+            new_ip._ip = ip._ip
+            copy_object.ips.append(new_ip)
+
+        # networks
+        for network in self.networks:
+            new_network = ipaddress.IPv4Network.__new__(ipaddress.IPv4Network)
+            new_network.network_address = ipaddress.IPv4Address.__new__(ipaddress.IPv4Address)
+            new_network.network_address._ip = network.network_address._ip
+            new_network.netmask = network.netmask
+            new_network._prefixlen = network._prefixlen
+            new_network._cache = {}
+            copy_object.networks.append(new_network)
+
+        # local_interfaces
+        for k, v in self.local_interfaces.items():
+            copy_object.local_interfaces[k] = v.copy()
+
+        # routed_interfaces
+        for k, v in self.routed_interfaces.items():
+            copy_object.routed_interfaces[k] = v.copy()
+
+        return copy_object
+
+
+
 
     def __str__(self):
         return "name={0}, descr={1}, definition={2}, ips={3}, networks={4}, local_interfaces={5}, routed_interfaces={6}, fake={7}".format(
@@ -788,10 +843,49 @@ class PFSenseRule(object):
         self.asymmetric = False
         self.invert_dst = False
         self.invert_src = False
+        self.invert_dst_nat = False
+        self.invert_src_nat = False
 
         self.sub_rules = []
         self.interfaces = None
         self.generated_names = {}
+
+    def __deepcopy__(self, memodict={}):
+        raise AssertionError()
+
+    def copy(self):
+        copy_object = PFSenseRule()
+        copy_object.name = self.name
+        copy_object.separator = self.separator
+        for alias in self.src:
+            copy_object.src.append(alias.copy())
+
+        for alias in self.dst:
+            copy_object.dst.append(alias.copy())
+
+        copy_object.src_port = self.src_port[:]
+        copy_object.dst_port = self.dst_port[:]
+        copy_object.src_nat = self.src_nat
+        copy_object.dst_nat = self.dst_nat
+        copy_object.dst_nat_port = self.dst_nat_port
+        copy_object.protocol = self.protocol
+        copy_object.action = self.action
+        copy_object.options = self.options
+        copy_object.floating = self.floating
+        copy_object.force = self.force
+        copy_object.asymmetric = self.asymmetric
+        copy_object.invert_dst = self.invert_dst
+        copy_object.invert_src = self.invert_src
+        copy_object.invert_dst_nat = self.invert_dst_nat
+        copy_object.invert_src_nat = self.invert_src_nat
+
+        for rule in self.sub_rules:
+            copy_object.sub_rules.append(rule.copy())
+
+        copy_object.interfaces = deepcopy(self.interfaces)
+        copy_object.generated_names = deepcopy(self.generated_names)
+
+        return copy_object
 
     def get_option(self, name):
         """ return option value for name """
@@ -1094,6 +1188,9 @@ class PFSenseData(object):
         self._all_aliases = copy(self._hosts_aliases)
         self._all_aliases.update(self._ports_aliases)
 
+        self._ignored_aliases = set()
+        self._ignored_rules = set()
+
     @property
     def all_aliases(self):
         """ all_aliases getter """
@@ -1103,6 +1200,11 @@ class PFSenseData(object):
     def hosts_aliases(self):
         """ hosts_aliases getter """
         return self._hosts_aliases
+
+    @property
+    def ignored_aliases(self):
+        """ ignored_aliases getter """
+        return self._ignored_aliases
 
     @property
     def hosts_aliases_obj(self):
@@ -1133,6 +1235,11 @@ class PFSenseData(object):
     def rules(self):
         """ rules getter """
         return self._rules
+
+    @property
+    def ignored_rules(self):
+        """ ignored_rules getter """
+        return self._ignored_rules
 
     @property
     def rules_separators(self):
@@ -1325,6 +1432,9 @@ class PFSenseDataParser(object):
         ret = True
         for name, alias in self._data.hosts_aliases.items():
             self.check_alias_name(name)
+            if 'ignored' in alias and get_bool(alias, 'ignored'):
+                self._data.ignored_aliases.add(name)
+                continue
 
             # ip field is mandatory
             if 'ip' not in alias and 'host' not in alias:
@@ -1334,7 +1444,7 @@ class PFSenseDataParser(object):
 
             # we check that all fields are valid
             for field in alias:
-                if field not in ['ip', 'host', 'descr', 'dns', 'ignore_dup']:
+                if field not in ['ip', 'host', 'descr', 'dns', 'ignore_dup', 'ignored']:
                     self._data.set_error(field + " is not a valid field name in alias " + name)
                     ret = False
 
@@ -1552,6 +1662,16 @@ class PFSenseDataParser(object):
             if not obj.force:
                 self._data.set_error('invert_dst must be used with force (for now)')
 
+        if 'invert_src_nat' in rule:
+            obj.invert_src_nat = _get_bool('invert_src_nat')
+            if not obj.force:
+                self._data.set_error('invert_src_nat must be used with force (for now)')
+
+        if 'invert_dst_nat' in rule:
+            obj.invert_dst_nat = _get_bool('invert_dst_nat')
+            if not obj.force:
+                self._data.set_error('invert_dst_nat must be used with force (for now)')
+
         return obj
 
     def parse_rules(self, parent=None, parent_separator=None):
@@ -1584,6 +1704,10 @@ class PFSenseDataParser(object):
                         parent_separator.name = ''
                     else:
                         parent_separator.name = parent_separator.parent.name
+                continue
+
+            if 'ignored' in rule and get_bool(rule, 'ignored'):
+                self._data.ignored_rules.add(name)
                 continue
 
             for field in ['src', 'dst']:
@@ -1634,7 +1758,7 @@ class PFSenseDataParser(object):
 
             # we check that all fields are valid
             valid_fields = ['src', 'dst', 'src_port', 'dst_port', 'protocol', 'action', 'floating', 'force']
-            valid_fields.extend(['src_nat', 'dst_nat', 'dst_nat_port', 'asymmetric', 'invert_dst', 'invert_src'])
+            valid_fields.extend(['src_nat', 'dst_nat', 'dst_nat_port', 'asymmetric', 'invert_dst', 'invert_src', 'invert_dst_nat', 'invert_src_nat', 'ignored'])
             valid_fields.extend(OPTION_FIELDS)
             for field in rule:
                 if field not in valid_fields:
@@ -2141,7 +2265,7 @@ class PFSenseRuleDecomposer(object):
         src_sep = function(field)
         if len(src_sep) > 1:
             for src in src_sep:
-                new_rule = deepcopy(rule)
+                new_rule = rule.copy()
                 setattr(new_rule, attr, [src])
                 sub_rules.append(new_rule)
 
@@ -2156,7 +2280,7 @@ class PFSenseRuleDecomposer(object):
         if len(rule.src) > 1 or len(rule.dst) > 1:
             for src in rule.src:
                 for dst in rule.dst:
-                    new_rule = deepcopy(rule)
+                    new_rule = rule.copy()
                     new_rule.src = [src]
                     new_rule.dst = [dst]
                     sub_rules.append(new_rule)
@@ -2289,7 +2413,7 @@ class PFSenseAliasFactory(object):
         return ret
 
     @staticmethod
-    def output_aliases(aliases):
+    def output_aliases(aliases, ignored_aliases):
         """ Output aliases definitions for pfsense_aggregate """
         print("          #===========================")
         print("          # Hosts & network aliases")
@@ -2318,6 +2442,16 @@ class PFSenseAliasFactory(object):
             if 'descr' in alias:
                 definition = definition + ", descr: \"" + alias['descr'] + "\""
             definition = definition + ", state: \"present\" }"
+            definitions.append(definition)
+        definitions.sort()
+        print('\n'.join(definitions))
+
+        print("          #===========================")
+        print("          # ignored aliases")
+        print("          # ")
+        definitions = list()
+        for alias in ignored_aliases:
+            definition = "          - { name: \"" + alias + "\" }"
             definitions.append(definition)
         definitions.sort()
         print('\n'.join(definitions))
@@ -2643,6 +2777,12 @@ class PFSenseRuleFactory(object):
                     definition[field] = '{0}:{1}'.format(definition[field], definition[key])
                     del definition[key]
 
+            if rule_obj.invert_src_nat and 'source' in definition:
+                definition['source'] = '!' + definition['source']
+
+            if rule_obj.invert_dst_nat and 'destination' in definition:
+                definition['destination'] = '!' + definition['destination']
+
             interfaces[interface].append(definition)
 
         base = []
@@ -2742,12 +2882,12 @@ class PFSenseRuleFactory(object):
             elif (not rule.src_nat and not rule.floating and len(subrule.src[0].networks) == 1 and
                   len(subrule.src[0].ips) == 0 and
                   subrule.src[0].networks[0] == self._data.target.interfaces[interface].local_network):
-                src = deepcopy(subrule.src[0])
+                src = subrule.src[0].copy()
                 src.name = "NET:{0}".format(interface)
             elif (not rule.src_nat and not rule.floating and len(subrule.src[0].networks) == 0 and
                   len(subrule.src[0].ips) == 1 and
                   subrule.src[0].ips[0] == self._data.target.interfaces[interface].local_ip):
-                src = deepcopy(subrule.src[0])
+                src = subrule.src[0].copy()
                 src.name = "IP:{0}".format(interface)
 
             if len(dst_group_name) != 1:
@@ -2755,12 +2895,12 @@ class PFSenseRuleFactory(object):
             elif (not rule.src_nat and not rule.floating and len(subrule.dst[0].networks) == 1 and
                   len(subrule.dst[0].ips) == 0 and
                   subrule.dst[0].networks[0] == self._data.target.interfaces[interface].local_network):
-                dst = deepcopy(subrule.dst[0])
+                dst = subrule.dst[0].copy()
                 dst.name = "NET:{0}".format(interface)
             elif (not rule.src_nat and not rule.floating and len(subrule.dst[0].networks) == 0 and
                   len(subrule.dst[0].ips) == 1 and
                   subrule.dst[0].ips[0] == self._data.target.interfaces[interface].local_ip):
-                dst = deepcopy(subrule.dst[0])
+                dst = subrule.dst[0].copy()
                 dst.name = "IP:{0}".format(interface)
 
             # when aggregating, we merge rules with same src/dst
@@ -2912,7 +3052,7 @@ class PFSenseRuleFactory(object):
 
         return (filter_rules, src_nat_rules, dst_nat_rules)
 
-    def output_rules(self, rules):
+    def output_rules(self, rules, ignored_rules):
         """ Output rules definitions for pfsense_aggregate """
         print("          #===========================")
         print("          # Rules")
@@ -2958,6 +3098,16 @@ class PFSenseRuleFactory(object):
                         definitions.append(definition)
                     else:
                         print(definition)
+        definitions.sort()
+        print('\n'.join(definitions))
+
+        print("          #===========================")
+        print("          # ignored rules")
+        print("          # ")
+        definitions = list()
+        for rule in ignored_rules:
+            definition = "          - { name: \"" + rule + "\" }"
+            definitions.append(definition)
         definitions.sort()
         print('\n'.join(definitions))
 
@@ -3178,6 +3328,8 @@ class LookupModule(LookupBase):
             res['aggregated_rule_separators'] = rule_separators
             res['aggregated_nat_outbounds'] = src_nat_rules
             res['aggregated_nat_port_forwards'] = dst_nat_rules
+            res['ignored_rules'] = list(data.ignored_rules)
+            res['ignored_aliases'] = list(data.ignored_aliases)
             return [res]
 
         return []
@@ -3227,8 +3379,8 @@ def unit_test_helper(filename, pfname):
     rule_separators = rule_separator_factory.generate_rule_separators()
     aliases = alias_factory.generate_aliases(rule_filter)
 
-    alias_factory.output_aliases(aliases)
-    rule_factory.output_rules(rules)
+    alias_factory.output_aliases(aliases, data.ignored_aliases)
+    rule_factory.output_rules(rules, data.ignored_rules)
     rule_factory.output_src_nat_rules(src_nat_rules)
     rule_factory.output_dst_nat_rules(dst_nat_rules)
     rule_separator_factory.output_rule_separators(rule_separators)
@@ -3286,8 +3438,8 @@ def main():
     print('Generating aliases...')
     aliases = alias_factory.generate_aliases(rule_filter)
 
-    alias_factory.output_aliases(aliases)
-    rule_factory.output_rules(rules)
+    alias_factory.output_aliases(aliases, data.ignored_aliases)
+    rule_factory.output_rules(rules, data.ignored_rules)
     rule_factory.output_src_nat_rules(src_nat_rules)
     rule_factory.output_dst_nat_rules(dst_nat_rules)
     if rule_filter is None:
@@ -3295,4 +3447,14 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    profile = False
+    if profile:
+        import cProfile, pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        main()
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('tottime')
+        stats.print_stats()
+    else:
+        main()
