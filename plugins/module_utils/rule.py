@@ -34,6 +34,7 @@ RULE_ARGUMENT_SPEC = dict(
     ackqueue=dict(required=False, type='str'),
     in_queue=dict(required=False, type='str'),
     out_queue=dict(required=False, type='str'),
+    queue_error=dict(default=True, type='bool'),
     gateway=dict(default='default', type='str'),
     tracker=dict(required=False, type='str'),
     icmptype=dict(default='any', required=False, type='str'),
@@ -168,10 +169,10 @@ class PFSenseRuleModule(PFSenseModuleBase):
             self.module.fail_json(msg='Acknowledge queue and default queue cannot be the same')
 
         # as in pfSense 2.4, the GUI accepts any queue defined on any interface without checking, we do the same
-        if params.get('ackqueue') and self.pfsense.find_queue(params['ackqueue'], enabled=True) is None:
+        if params.get('ackqueue') and self.pfsense.find_queue(params['ackqueue'], enabled=True) is None and params['queue_error']:
             self.module.fail_json(msg='Failed to find enabled ackqueue=%s' % params['ackqueue'])
 
-        if params.get('queue') is not None and self.pfsense.find_queue(params['queue'], enabled=True) is None:
+        if params.get('queue') is not None and self.pfsense.find_queue(params['queue'], enabled=True) is None and params['queue_error']:
             self.module.fail_json(msg='Failed to find enabled queue=%s' % params['queue'])
 
         if params.get('out_queue') is not None and params['in_queue'] is None:
