@@ -12,7 +12,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSens
 try:
     from ipaddress import ip_network
 except ImportError:
-    from ansible_collections.pfsensible.core.plugins.module_utils.compat.ipaddress import ip_network
+    from ansible_collections.community.general.plugins.module_utils.compat.ipaddress import ip_network
 
 
 INTERFACE_ARGUMENT_SPEC = dict(
