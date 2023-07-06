@@ -638,6 +638,7 @@ class PFSenseModuleAggregate(object):
         self.pfsense_rules = PFSenseRuleModule(module, self.pfsense)
         self.pfsense_rule_separators = PFSenseRuleSeparatorModule(module, self.pfsense)
         self.pfsense_vlans = PFSenseVlanModule(module, self.pfsense)
+        self.defined_rules = dict()
 
     def _update(self):
         run = False
@@ -690,6 +691,16 @@ class PFSenseModuleAggregate(object):
         if descr.text in self.module.params['ignored_rules']:
             return True
 
+        key = '{0}_{1}'.format(interface.text, floating)
+        if key not in self.defined_rules:
+            defined_rules = set()
+            self.defined_rules[key] = defined_rules
+        else:
+            defined_rules = self.defined_rules[key]
+            # a rule can only exists once on an interface
+            if descr.text in defined_rules:
+                return False
+
         for rule in rules:
             if rule['state'] == 'absent':
                 continue
@@ -703,6 +714,7 @@ class PFSenseModuleAggregate(object):
                 continue
 
             if floating or self.pfsense.parse_interface(rule['interface']) == interface.text:
+                defined_rules.add(descr.text)
                 return True
         return False
 
