@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# pylint: skip-file
+
 # This code is part of Ansible, but is an independent component.
 # This particular file, and this file only, is based on
 # Lib/ipaddress.py of cpython

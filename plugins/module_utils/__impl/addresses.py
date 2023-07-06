@@ -9,7 +9,8 @@ __metaclass__ = type
 try:
     from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
 except ImportError:
-    from ansible_collections.pfsensible.core.plugins.module_utils.compat.ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
+    from ansible_collections.pfsensible.core.plugins.module_utils.compat.ipaddress import ip_address, IPv4Address, IPv6Address
+    from ansible_collections.pfsensible.core.plugins.module_utils.compat.ipaddress import ip_network, IPv4Network, IPv6Network
 import re
 
 

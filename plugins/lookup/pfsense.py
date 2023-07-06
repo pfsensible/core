@@ -474,7 +474,7 @@ def get_bool(values, field):
         if values[field].lower() in ['yes', 'true']:
             field_value = True
         elif values[field].lower() not in ['no', 'false']:
-            self._data.set_error('{0} must be yes/no or true/false (got "{1}")'.format(field, values[field]))
+            raise AnsibleError('{0} must be yes/no or true/false (got "{1}")'.format(field, values[field]))
     return field_value
 
 
@@ -498,8 +498,8 @@ class PFSenseHostAlias(object):
 
         self._computed = False
 
-    def __deepcopy__(self, memodict={}):
-        raise AssertionError()
+    # def __deepcopy__(self, memodict=dict()):
+    #    raise AssertionError()
 
     def copy(self):
         copy_object = PFSenseHostAlias()
@@ -536,9 +536,6 @@ class PFSenseHostAlias(object):
             copy_object.routed_interfaces[k] = v.copy()
 
         return copy_object
-
-
-
 
     def __str__(self):
         return "name={0}, descr={1}, definition={2}, ips={3}, networks={4}, local_interfaces={5}, routed_interfaces={6}, fake={7}".format(
@@ -850,8 +847,8 @@ class PFSenseRule(object):
         self.interfaces = None
         self.generated_names = {}
 
-    def __deepcopy__(self, memodict={}):
-        raise AssertionError()
+    # def __deepcopy__(self, memodict={}):
+    #    raise AssertionError()
 
     def copy(self):
         copy_object = PFSenseRule()
@@ -3449,7 +3446,8 @@ def main():
 if __name__ == '__main__':
     profile = False
     if profile:
-        import cProfile, pstats
+        import cProfile
+        import pstats
         profiler = cProfile.Profile()
         profiler.enable()
         main()

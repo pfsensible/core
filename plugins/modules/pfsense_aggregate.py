@@ -537,10 +537,12 @@ options:
     description: aliases that will be ignored (won't be auto deleted)
     required: False
     type: list
+    elements: str
   ignored_rules:
     description: rules that will be ignored (won't be auto deleted)
     required: False
     type: list
+    elements: str
 """
 
 EXAMPLES = """
