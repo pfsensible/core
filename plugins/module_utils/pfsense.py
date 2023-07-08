@@ -255,7 +255,7 @@ class PFSenseModule(object):
                     for item in value:
                         new_elt = self.new_element(key)
                         if isinstance(item, dict):
-                            self.copy_dict_to_element(item, new_elt, sub=sub+1)
+                            self.copy_dict_to_element(item, new_elt, sub=sub + 1)
                         else:
                             new_elt.text = item
                         top_elt.append(new_elt)
