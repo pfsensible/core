@@ -88,7 +88,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
                 return
         self.fail('rule not found ' + str(idx))
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated xml definition """
         rules_elt = self.assert_find_xml_elt(self.xml_result, 'nat')
 
