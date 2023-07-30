@@ -71,7 +71,7 @@ class TestPFSenseCAModule(TestPFSenseModule):
         """ dummy function needed to instantiate this test module from another in python 2.7 """
         pass
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
         root_elt = self.xml_result.getroot()
         result = root_elt.findall("ca[descr='{0}']".format(obj['name']))

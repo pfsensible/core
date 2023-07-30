@@ -144,7 +144,11 @@ EXAMPLES = """
 """
 
 RETURN = """
-
+netif:
+    description: The selected interface
+    returned: success
+    type: str
+    sample: 'lan'
 """
 
 from ipaddress import ip_address, ip_network
@@ -223,10 +227,15 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
             self.module.fail_json(msg='A valid MAC address must be specified.')
 
         if params['netif'] is not None:
-            self.pfsense.parse_interface(params['netif'])
+            if self.pfsense.is_interface_group(params['netif']):
+                self.module.fail_json(msg='DHCP cannot be configured for interface groups')
+            else:
+                netif = self.pfsense.parse_interface(params['netif'])
+        else:
+            netif = None
 
         # find staticmaps and determine interface
-        self._find_staticmaps(params['netif'])
+        self._find_staticmaps(netif)
 
         if params['ipaddr'] is not None:
             addr = ip_address(u'{0}'.format(params['ipaddr']))
@@ -296,6 +305,8 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
                 self.module.fail_json(msg="No DHCP configuration")
             else:
                 self.module.fail_json(msg="No DHCP configuration found for netif='{0}'".format(netif))
+
+        self.result['netif'] = netif
 
     def _find_target(self):
         if self.params['name'] is not None and self.params['macaddr'] is not None:

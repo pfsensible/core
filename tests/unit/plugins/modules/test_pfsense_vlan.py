@@ -28,7 +28,7 @@ class TestPFSenseVlanModule(TestPFSenseModule):
     # tests utils
     #
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated vlan xml definition """
         elt_filter = {}
         elt_filter['if'] = self.unalias_interface(obj['interface'], physical=True)

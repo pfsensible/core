@@ -27,7 +27,7 @@ class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
     ##############
     # tests utils
     #
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated backend xml definition """
         pkgs_elt = self.assert_find_xml_elt(self.xml_result, 'installedpackages')
         hap_elt = self.assert_find_xml_elt(pkgs_elt, 'haproxy')

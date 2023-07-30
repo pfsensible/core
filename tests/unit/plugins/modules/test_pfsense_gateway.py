@@ -41,7 +41,7 @@ class TestPFSenseGatewayModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, 'gateway')
         self.check_param_equal(obj, target_elt, 'ipprotocol', 'inet')
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated xml definition """
         rules_elt = self.assert_find_xml_elt(self.xml_result, 'gateways')
 
