@@ -121,10 +121,10 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         # check name
         self.pfsense.validate_string(params['name'], 'openvpn_override')
 
-        if params.get('tunnel_network') and not self.pfsense.is_ipv4_network(params['tunnel_network']):
-            self.module.fail_json(msg='A valid IPv4 network must be specified for tunnel_network.')
-        if params.get('tunnel_network6') and not self.pfsense.is_ipv6_network(params['tunnel_networkv6']):
-            self.module.fail_json(msg='A valid IPv6 network must be specified for tunnel_network6.')
+        if params.get('tunnel_network') and not self.pfsense.is_ipv4_network(params['tunnel_network']) and not self.pfsense.is_ipv4_address(params['tunnel_network'].split('/')[0]):
+            self.module.fail_json(msg='A valid IPv4 network or IPv4 address must be specified for tunnel_network.')
+        if params.get('tunnel_network6') and not self.pfsense.is_ipv6_network(params['tunnel_networkv6']) and not self.pfsense.is_ipv6_address(params['tunnel_network6'].split('/')[0]):
+            self.module.fail_json(msg='A valid IPv6 network or IPv6 address must be specified for tunnel_network6.')
         if params.get('local_network') and not self.pfsense.is_ipv4_network(params['local_network']):
             self.module.fail_json(msg='A valid IPv4 network must be specified for local_network.')
         if params.get('local_network6') and not self.pfsense.is_ipv6_network(params['local_networkv6']):
