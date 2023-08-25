@@ -65,11 +65,15 @@ The following modules are currently available:
 * [pfsense_authserver_radius](https://github.com/pfsensible/core/wiki/pfsense_authserver_radius) for RADIUS authentication servers
 * [pfsense_ca](https://github.com/pfsensible/core/wiki/pfsense_ca) for Certificate Authorities
 * [pfsense_cert](https://github.com/pfsensible/core/wiki/pfsense_cert) for Certificates
+* pfsense_default_gateway.py
+* pfsense_dhcp_relay.py
 * [pfsense_dhcp_static](https://github.com/pfsensible/core/wiki/pfsense_dhcp_static) for static DHCP entries
+* pfsense_dns_resolver.py
 * [pfsense_gateway](https://github.com/pfsensible/core/wiki/pfsense_gateway) for routing gateways
 * [pfsense_group](https://github.com/pfsensible/core/wiki/pfsense_group) for user groups
 * [pfsense_interface](https://github.com/pfsensible/core/wiki/pfsense_interface) for interfaces
 * [pfsense_interface_group](https://github.com/pfsensible/core/wiki/pfsense_interface_group) for interface groups
+* pfsense_interface_facts.py
 * [pfsense_ipsec](https://github.com/pfsensible/core/wiki/pfsense_ipsec) for IPsec tunnels and phase 1 options
 * [pfsense_ipsec_proposal](https://github.com/pfsensible/core/wiki/pfsense_ipsec_proposal) for IPsec proposals
 * [pfsense_ipsec_p2](https://github.com/pfsensible/core/wiki/pfsense_ipsec_p2) for IPsec tunnels phase 2 options
@@ -78,14 +82,19 @@ The following modules are currently available:
 * [pfsense_openvpn_override](https://github.com/pfsensible/core/wiki/pfsense_openvpn_override) for OpenVPN override configuration
 * [pfsense_openvpn_server](https://github.com/pfsensible/core/wiki/pfsense_openvpn_server) for OpenVPN server configuration
 * [pfsense_nat_outbound](https://github.com/pfsensible/core/wiki/pfsense_nat_outbound) for outbound NAT (SNAT) rules
+* pfsense_nat_outbound_mode.py
 * [pfsense_nat_port_forward](https://github.com/pfsensible/core/wiki/pfsense_nat_port_forward) for port forwarding NAT (DNAT) rules
+* pfsense_ntpd.py
 * [pfsense_rewrite_config](https://github.com/pfsensible/core/wiki/pfsense_rewrite_config) to rewrite config.xml
 * [pfsense_route](https://github.com/pfsensible/core/wiki/pfsense_route) for routes
 * [pfsense_rule](https://github.com/pfsensible/core/wiki/pfsense_rule) for firewall rules
 * [pfsense_rule_separator](https://github.com/pfsensible/core/wiki/pfsense_rule_separator) for firewall rule separators
+* pfsense_service.py
 * [pfsense_setup](https://github.com/pfsensible/core/wiki/pfsense_setup) for general setup
 * [pfsense_user](https://github.com/pfsensible/core/wiki/pfsense_user) for users
+* pfsense_virtual_ip.py
 * [pfsense_vlan](https://github.com/pfsensible/core/wiki/pfsense_vlan) for VLANs
+* pfsense_widgets.py
 
 ## Bulk modules
 These modules allow you to make important changes at once and, using the purge parameters, to keep the targets configuration strictly synchronized with your playbooks:
@@ -98,6 +107,10 @@ These modules allow you to manage installed packages:
 
 * [pfsense_haproxy_backend](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend) for HAProxy backends
 * [pfsense_haproxy_backend_server](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend_server) for HAProxy backends servers
+* pfsense_snmp.py
+* pfsense_squid.py
+* pfsense_sudo.py
+* pfsense_telegraf.py
 
 ## Operation
 
