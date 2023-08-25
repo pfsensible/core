@@ -113,6 +113,10 @@ options:
   out_queue:
     description: Limiter queue for traffic leaving the chosen interface
     type: str
+  queue_error:
+    description: Raise an error if a specified queue is missing
+    type: bool
+    default: True
   gateway:
     description: Leave as C(default) to use the system routing table or choose a gateway to utilize policy based routing.
     type: str

@@ -401,6 +401,10 @@ options:
       out_queue:
         description: Limiter queue for traffic leaving the chosen interface
         type: str
+      queue_error:
+        description: Raise an error if a specified queue is missing
+        type: bool
+        default: True
       gateway:
         description: Leave as C(default) to use the system routing table or choose a gateway to utilize policy based routing.
         type: str
@@ -529,6 +533,16 @@ options:
     description: only apply rules and rules separators on those interfaces (separated by space)
     required: False
     type: str
+  ignored_aliases:
+    description: aliases that will be ignored (won't be auto deleted)
+    required: False
+    type: list
+    elements: str
+  ignored_rules:
+    description: rules that will be ignored (won't be auto deleted)
+    required: False
+    type: list
+    elements: str
 """
 
 EXAMPLES = """
@@ -595,7 +609,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.interface import (
     INTERFACE_REQUIRED_IF,
     INTERFACE_MUTUALLY_EXCLUSIVE,
 )
-from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUD_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUND_REQUIRED_IF
 from ansible_collections.pfsensible.core.plugins.module_utils.nat_port_forward import (
     PFSenseNatPortForwardModule,
     NAT_PORT_FORWARD_ARGUMENT_SPEC,
@@ -626,6 +640,7 @@ class PFSenseModuleAggregate(object):
         self.pfsense_rules = PFSenseRuleModule(module, self.pfsense)
         self.pfsense_rule_separators = PFSenseRuleSeparatorModule(module, self.pfsense)
         self.pfsense_vlans = PFSenseVlanModule(module, self.pfsense)
+        self.defined_rules = dict()
 
     def _update(self):
         run = False
@@ -675,6 +690,19 @@ class PFSenseModuleAggregate(object):
         if descr is None or interface is None:
             return True
 
+        if descr.text in self.module.params['ignored_rules']:
+            return True
+
+        key = '{0}_{1}'.format(interface.text, floating)
+        if key not in self.defined_rules:
+            defined_rules = set()
+            self.defined_rules[key] = defined_rules
+        else:
+            defined_rules = self.defined_rules[key]
+            # a rule can only exists once on an interface
+            if descr.text in defined_rules:
+                return False
+
         for rule in rules:
             if rule['state'] == 'absent':
                 continue
@@ -688,6 +716,7 @@ class PFSenseModuleAggregate(object):
                 continue
 
             if floating or self.pfsense.parse_interface(rule['interface']) == interface.text:
+                defined_rules.add(descr.text)
                 return True
         return False
 
@@ -708,14 +737,16 @@ class PFSenseModuleAggregate(object):
                 return True
         return False
 
-    @staticmethod
-    def want_alias(alias_elt, aliases):
+    def want_alias(self, alias_elt, aliases):
         """ return True if we want to keep alias_elt """
         name = alias_elt.find('name')
         alias_type = alias_elt.find('type')
 
         # probably not an alias
         if name is None or type is None:
+            return True
+
+        if name.text in self.module.params['ignored_aliases']:
             return True
 
         for alias in aliases:
@@ -1058,7 +1089,7 @@ def main():
             type='list', elements='dict',
             options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE),
         aggregated_rules=dict(type='list', elements='dict', options=RULE_ARGUMENT_SPEC, required_if=RULE_REQUIRED_IF),
-        aggregated_nat_outbounds=dict(type='list', elements='dict', options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUD_REQUIRED_IF),
+        aggregated_nat_outbounds=dict(type='list', elements='dict', options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUND_REQUIRED_IF),
         aggregated_nat_port_forwards=dict(type='list', elements='dict', options=NAT_PORT_FORWARD_ARGUMENT_SPEC, required_if=NAT_PORT_FORWARD_REQUIRED_IF),
         aggregated_rule_separators=dict(
             type='list', elements='dict',
@@ -1073,6 +1104,8 @@ def main():
         purge_rule_separators=dict(default=False, type='bool'),
         purge_vlans=dict(default=False, type='bool'),
         interface_filter=dict(required=False, type='str'),
+        ignored_aliases=dict(type='list', elements='str', default=[]),
+        ignored_rules=dict(type='list', elements='str', default=[]),
     )
 
     required_one_of = [[
