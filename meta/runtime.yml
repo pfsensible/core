@@ -1,4 +1,8 @@
+requires_ansible: ">=2.12"
 plugin_routing:
+    action:
+       pfsense_system_patch:
+            redirect: pfsensible.core.src_file_to_content
     modules:
         pfsense_haproxy_backend:
             deprecation:
@@ -8,4 +12,3 @@ plugin_routing:
             deprecation:
                 removal_version: 0.8.0
                 warning_text: Use pfsensible.haproxy.pfsense_haproxy_backend_server instead.
-requires_ansible: ">=2.12"
