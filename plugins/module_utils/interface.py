@@ -224,9 +224,17 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         if changed:
             if self.params['enable']:
                 self.setup_interface_cmds += "interface_bring_down('{0}', false);\n".format(self.target_elt.tag)
+
+                # possibly kill remaining dhclient process
+                if 'ipaddr' in before and before['ipaddr'] == 'dhcp':
+                    self.setup_interface_cmds += "kill_dhclient_process(get_real_interface({0}));\n".format(self.target_elt.tag)
+
                 self.setup_interface_cmds += "interface_configure('{0}', true);\n".format(self.target_elt.tag)
             else:
                 self.setup_interface_cmds += "interface_bring_down('{0}', true);\n".format(self.target_elt.tag)
+                # possibly kill remaining dhclient process
+                if 'ipaddr' in before and before['ipaddr'] == 'dhcp':
+                    self.setup_interface_cmds += "kill_dhclient_process(get_real_interface({0}));\n".format(self.target_elt.tag)
 
         return (before, changed)
 
