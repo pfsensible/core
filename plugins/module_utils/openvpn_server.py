@@ -214,7 +214,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             if params[param] is not None:
                 key = params[param]
                 if key == 'generate':
-                    # generate during params_to_obj
+                    # generate during _find_target (after _params_to_obj) - for just generate if not exists
                     pass
                 elif re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$', key, flags=re.MULTILINE | re.DOTALL):
                     params[param] = base64.b64encode(key.encode()).decode()
