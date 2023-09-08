@@ -90,7 +90,7 @@ options:
     default: false
     type: bool
   shared_key:
-    description: Pre-shared key for shared key modes.
+    description: Pre-shared key for shared key modes.  If set to 'generate' it will create a key if one does not already exist.
     type: str
   dh_length:
     description: DH parameter length.
