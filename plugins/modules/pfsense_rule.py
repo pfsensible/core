@@ -42,7 +42,7 @@ options:
     default: false
     type: bool
   interface:
-    description: The interface for the rule
+    description: The interface for the rule. Use 'any' to apply to all interface (for floating rules only).
     required: true
     type: str
   floating:

@@ -154,7 +154,10 @@ class PFSenseRuleModule(PFSenseModuleBase):
         """ validate param interface field when floating is true """
         res = []
         for interface in interfaces.split(','):
-            res.append(self.pfsense.parse_interface(interface))
+            if interface == 'any':
+                res.append(interface)
+            else:
+                res.append(self.pfsense.parse_interface(interface))
         self._floating_interfaces = interfaces
         return ','.join(res)
 
