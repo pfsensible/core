@@ -82,7 +82,7 @@ options:
     required: false
     default: 1
     type: int
-  strictuserdn:
+  strictusercn:
     description: Enforce a match between the common name of the client certificate and the username given at login.
     default: false
     type: bool
