@@ -223,7 +223,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
 
         params = self.params
 
-        if re.fullmatch(r'(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}', params['macaddr']) is None:
+        if params['macaddr'] is not None and re.fullmatch(r'(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}', params['macaddr']) is None:
             self.module.fail_json(msg='A valid MAC address must be specified.')
 
         if params['netif'] is not None:
