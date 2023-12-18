@@ -120,8 +120,13 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
         obj = dict(name='test_entry', macaddr='ab:ab:ab:ab:ab:hh', ipaddr='10.10.0.101', netif='opt2')
         self.do_module_test(obj, failed=True, msg=msg)
 
-    def test_dhcp_static_delete(self):
+    def test_dhcp_static_delete_macaddr(self):
         """ test """
         obj = dict(macaddr='ab:ab:ab:ab:ab:ab', netif='opt1', state='absent')
         command = "delete dhcp_static ''"
+
+    def test_dhcp_static_delete_name(self):
+        """ test """
+        obj = dict(name='dhcphostid', netif='opt1', state='absent')
+        command = "delete dhcp_static 'dhcphostid'"
         self.do_module_test(obj, command=command, delete=True)
