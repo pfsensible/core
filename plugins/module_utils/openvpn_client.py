@@ -29,7 +29,7 @@ OPENVPN_CLIENT_ARGUMENT_SPEC = dict(
     crl=dict(required=False, type='str'),
     cert=dict(required=False, type='str'),
     cert_depth=dict(default=1, required=False, type='int'),
-    strictuserdn=dict(default=False, required=False, type='bool'),
+    strictusercn=dict(default=False, required=False, type='bool'),
     shared_key=dict(required=False, type='str', no_log=True),
     dh_length=dict(default=2048, required=False, type='int'),
     ecdh_curve=dict(default='none', required=False, choices=['none', 'prime256v1', 'secp384r1', 'secp521r1']),
@@ -107,7 +107,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         if self.params['state'] == 'present':
             obj['custom_options'] = self.params['custom_options']
             self._get_ansible_param_bool(obj, 'disable')
-            self._get_ansible_param_bool(obj, 'strictuserdn')
+            self._get_ansible_param_bool(obj, 'strictusercn')
             obj['mode'] = self.params['mode']
             obj['dev_mode'] = self.params['dev_mode']
             obj['interface'] = self.params['interface']
