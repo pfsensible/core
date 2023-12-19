@@ -54,7 +54,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         """ dummy function needed to instantiate this test module from another in python 2.7 """
         pass
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
         root_elt = self.xml_result.getroot().find('openvpn')
         result = root_elt.findall("openvpn-server[description='{0}']".format(obj['name']))
@@ -113,7 +113,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         else:
             self.assert_not_find_xml_elt('tls')
             self.assert_not_find_xml_elt('tls_type')
-        self.check_param_bool(obj, target_elt, 'strictuserdn')
+        self.check_param_bool(obj, target_elt, 'strictusercn')
         self.check_param_equal(obj, target_elt, 'dh_length', default=2048)
         self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
         self.check_param_equal(obj, target_elt, 'data_ciphers_fallback', default='AES-256-CBC')

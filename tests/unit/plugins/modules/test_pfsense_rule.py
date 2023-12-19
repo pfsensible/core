@@ -77,7 +77,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
         if 'not' not in addr_dict:
             self.assert_not_find_xml_elt(addr_elt, 'not')
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
         obj['interface'] = self.unalias_interface(obj['interface'])
         if 'floating' in obj and obj['floating'] == 'yes':

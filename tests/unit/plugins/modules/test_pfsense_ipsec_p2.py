@@ -33,7 +33,7 @@ class TestPFSenseIpsecP2Module(TestPFSenseModule):
         elt_filter['descr'] = descr
         return self.assert_has_xml_tag('ipsec', elt_filter, absent=absent)
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated phase2 xml definition """
         phase1_elt = self.get_phase1_elt(obj['p1_descr'])
 

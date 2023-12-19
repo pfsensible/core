@@ -108,6 +108,7 @@ USER_PHP_COMMAND_SET = USER_PHP_COMMAND_PREFIX + """
 $a_user = &$config['system']['user'];
 $userent = $a_user[{idx}];
 local_user_set($userent);
+global $groupindex;
 foreach ({mod_groups} as $groupname) {{
     $group = &$config['system']['group'][$groupindex[$groupname]];
     local_group_set($group);
@@ -121,6 +122,7 @@ if (is_dir("/etc/inc/privhooks")) {{
 USER_PHP_COMMAND_DEL = USER_PHP_COMMAND_PREFIX + """
 $userent['name'] = '{name}';
 $userent['uid'] = {uid};
+global $groupindex;
 foreach ({mod_groups} as $groupname) {{
     $group = &$config['system']['group'][$groupindex[$groupname]];
     local_group_set($group);

@@ -110,7 +110,7 @@ class TestPFSenseModule(ModuleTestCase):
         except AttributeError:
             raise NotImplementedError()
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
         raise NotImplementedError()
 
@@ -180,12 +180,12 @@ class TestPFSenseModule(ModuleTestCase):
             self.assertEqual(result['commands'], [])
         elif delete:
             self.assertTrue(self.load_xml_result())
-            target_elt = self.get_target_elt(obj, absent=True)
+            target_elt = self.get_target_elt(obj, absent=True, module_result=result)
             self.assertIsNone(target_elt)
             self.assertEqual(result['commands'], command)
         else:
             self.assertTrue(self.load_xml_result())
-            target_elt = self.get_target_elt(obj)
+            target_elt = self.get_target_elt(obj, module_result=result)
             self.assertIsNotNone(target_elt)
             self.check_target_elt(obj, target_elt, **kwargs)
             self.assertEqual(result['commands'], command)

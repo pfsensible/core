@@ -23,7 +23,7 @@ class TestPFSenseRuleSeparatorModule(TestPFSenseModule):
         self.config_file = 'pfsense_rule_separator_config.xml'
         self.pfmodule = PFSenseRuleSeparatorModule
 
-    def get_target_elt(self, obj, absent=False):
+    def get_target_elt(self, obj, absent=False, module_result=None):
         """ get separator from XML """
         if obj.get('floating'):
             interface = 'floatingrules'

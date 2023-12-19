@@ -323,7 +323,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         else:
             if self.params['associated_rule'] == 'associated':
                 if before['associated-rule-id'].startswith('nat_'):
-                    if self.params['interface'] != before['interface']:
+                    if self.obj['interface'] != before['interface']:
                         self._delete_associated_rule(before['associated-rule-id'], before['interface'])
                     else:
                         self.obj['associated-rule-id'] = before['associated-rule-id']
