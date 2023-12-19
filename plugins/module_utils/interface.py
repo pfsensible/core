@@ -64,6 +64,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
 
         self.root_elt = self.pfsense.interfaces
         self.setup_interface_cmds = ""
+        self.setup_interface_pre_cmds = ""
 
     ##############################
     # params processing
@@ -324,7 +325,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         self._remove_all_separators(self.target_elt.tag)
         self._remove_all_rules(self.target_elt.tag)
 
-        self.setup_interface_cmds += "interface_bring_down('{0}');\n".format(self.target_elt.tag)
+        self.setup_interface_pre_cmds += "interface_bring_down('{0}');\n".format(self.target_elt.tag)
 
     def _remove_all_rules(self, interface):
         """ delete all interface rules """
@@ -462,6 +463,16 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             '}\n'
             'echo json_encode($mediaopts_list);')
 
+    def get_pre_update_cmds(self):
+        """ build and return php commands to setup interfaces before changing config """
+        cmd = 'require_once("filter.inc");\n'
+        cmd += 'require_once("interfaces.inc");\n'
+
+        if self.setup_interface_pre_cmds != "":
+            cmd += self.setup_interface_pre_cmds
+
+        return cmd
+
     def get_update_cmds(self):
         """ build and return php commands to setup interfaces """
         cmd = 'require_once("filter.inc");\n'
@@ -481,6 +492,10 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         cmd += "enable_rrd_graphing();\n"
         cmd += "if (is_subsystem_dirty('staticroutes') && (system_routing_configure() == 0)) clear_subsystem_dirty('staticroutes');"
         return cmd
+
+    def _pre_update(self):
+        """ tasks to run before making config changes """
+        return self.pfsense.phpshell(self.get_pre_update_cmds())
 
     def _update(self):
         """ make the target pfsense reload interfaces """
