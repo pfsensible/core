@@ -566,6 +566,32 @@ class PFSenseModule(object):
 
         return None
 
+    def find_active_gateways(self):
+        """ returns list of active gateways """
+        (retcode, raw_output, error) = self.phpshell("playback gatewaystatus")
+
+        write = False
+        output = []
+        lines = raw_output.split("\n")
+        for line in lines:
+            if write and line != "" and "shell:" not in line:
+                output.append(line)
+            if "started" in line:
+                write = True
+
+        head = output[0].split()
+        data = []
+
+        for line in output[1:]:
+            c = 0
+            dline = {}
+            for item in line.split():
+                dline[head[c]] = item
+                c += 1
+            if dline is not {}:
+                data.append(dline)
+        return data
+
     def find_ca_elt(self, ca, search_field='descr'):
         """ return certificate authority elt if found """
         return self.find_elt('ca', ca, search_field)
