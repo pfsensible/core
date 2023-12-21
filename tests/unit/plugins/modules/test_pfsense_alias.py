@@ -1,4 +1,5 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
+# Copyright: (c) 2023, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -55,6 +56,14 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         self.assert_has_xml_tag('aliases', dict(name=alias['name'], type=alias['type']), absent=True)
         self.assertEqual(result['commands'], [command])
 
+    def do_alias_deletion_referenced_test(self, alias, command=None):
+        """ test deletion of a referenced alias """
+        set_module_args(self.args_from_var(alias, 'absent'))
+        result = self.execute_module(changed=False)
+
+        self.assert_has_xml_tag('aliases', dict(name=alias['name'], type=alias['type']), absent=True)
+        self.assertEqual(result['commands'], [command])
+
     def do_alias_update_noop_test(self, alias):
         """ test not updating an alias """
         set_module_args(self.args_from_var(alias))
@@ -93,6 +102,11 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         alias = dict(name='ad_poc1', address='192.168.1.3', descr='', type='host', detail='')
         command = "delete alias 'ad_poc1'"
         self.do_alias_deletion_test(alias, command=command)
+
+    def test_host_delete_referenced(self):
+        """ test deletion of a referenced host alias """
+        alias = dict(name='srv_admin', state='absent')
+        self.do_module_test(alias, failed=True, msg="Alias 'srv_admin' is referenced by rule")
 
     def test_host_update_noop(self):
         """ test not updating an host alias """
