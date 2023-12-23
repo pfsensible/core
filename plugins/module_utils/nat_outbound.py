@@ -88,11 +88,10 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
             self._get_ansible_param(obj, 'poolopts')
             self._get_ansible_param(obj, 'source_hash_key')
             self._get_ansible_param(obj, 'natport')
-            self._get_ansible_param_bool(obj, 'disabled')
-            self._get_ansible_param_bool(obj, 'nonat')
-            self._get_ansible_param_bool(obj, 'invert')
-            self._get_ansible_param_bool(obj, 'staticnatport')
-            self._get_ansible_param_bool(obj, 'nosync')
+            self._get_ansible_param_bool(obj, 'disabled', value='')
+            self._get_ansible_param_bool(obj, 'nonat', value='')
+            self._get_ansible_param_bool(obj, 'staticnatport', value='')
+            self._get_ansible_param_bool(obj, 'nosync', value='')
 
             if 'after' in self.params and self.params['after'] is not None:
                 self.after = self.params['after']
@@ -102,6 +101,8 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
             self._parse_address(obj, 'source', 'sourceport', True, 'network')
             self._parse_address(obj, 'destination', 'dstport', False, 'address')
+            if self.params['invert']:
+                obj['destination']['not'] = None
             self._parse_translated_address(obj)
 
             if obj['source_hash_key'] != '' and not obj['source_hash_key'].startswith('0x'):
