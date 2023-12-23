@@ -49,12 +49,12 @@ options:
     choices: [ "any", "tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "carp", "pfsync" ]
     type: str
   source:
-    description: The matching source address, in {any,(self),ALIAS,NETWORK}[:port] format.
+    description: The matching source address, in {any,(self),ALIAS,NETWORK,NET:INTERFACE}[:port] format.
     required: false
     default: null
     type: str
   destination:
-    description: The matching destination address, in {any,ALIAS,NETWORK}[:port] format.
+    description: The matching destination address, in {any,ALIAS,NETWORK,NET:INTERFACE}[:port] format.
     required: false
     default: null
     type: str
