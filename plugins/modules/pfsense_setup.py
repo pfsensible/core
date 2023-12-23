@@ -50,14 +50,13 @@ options:
     required: false
     description: >
         Do not use the DNS Forwarder/DNS Resolver as a DNS server for the firewall.
-        "" Use local DNS, fall back to remote DNS server
-        "local" Use local DNS, ignore remote DNS server
+        "" Use local DNS (127.0.0.1), fall back to remote DNS servers (Default)
+        "local" Use local DNS (127.0.0), ignore remote DNS servers
         "remote" Use remote DNS server, ignore local DNS
         true will be mapped to "remote"
         false will be mapped to ""
     type: str
     choices: ["", "local", "remote", "true", "false"]
-    default: ""
   timezone:
     description: Select a geographic region name (Continent/Location) to determine the timezone for the firewall.
     required: false
@@ -85,18 +84,17 @@ options:
     choices: ['nohost', 'hostonly', 'fqdn']
     type: str
   session_timeout:
-    description: Time in minutes to expire idle management sessions (0 means no expiration)
+    description: >
+        Time in minutes to expire idle management sessions. The default is 4 hours (240 minutes).
+        Use 0 to never expire sessions. NOTE: This is a security risk!
     required: false
-    default: 240
     type: int
   authmode:
-    description: Authentication Server ('Local Database' means local), use name of configured ldap or radius server
+    description: Authentication Server ('Local Database' means local (Default)), use name of configured ldap or radius server
     required: false
-    default: 'Local Database'
     type: str
   shellauth:
-    description: Use Authentication Server for Shell Authentication (pfsense-CE >=2.5.0, pfsense-PLUS >=21.2)
-    default: false
+    description: Use Authentication Server for Shell Authentication (pfsense-CE >=2.5.0, pfsense-PLUS >=21.2). Default is false.
     type: bool
   dashboardcolumns:
     description: Dashboard columns
@@ -201,9 +199,9 @@ SETUP_ARGUMENT_SPEC = dict(
         type='str',
         choices=['bs', 'de_DE', 'en_US', 'es', 'es_AR', 'fr', 'ko', 'nb', 'nl', 'pl', 'pt_PT', 'pt_BR', 'ru', 'zh_CN', 'zh_Hans_CN', 'zh_HK', 'zh_TW']
     ),
-    session_timeout=dict(required=False, type='int', default=240),
-    authmode=dict(required=False, type='str', default='Local Database'),
-    shellauth=dict(required=False, type='bool', default=False),
+    session_timeout=dict(required=False, type='int'),
+    authmode=dict(required=False, type='str'),
+    shellauth=dict(required=False, type='bool'),
     webguicss=dict(required=False, type='str'),
     webguifixedmenu=dict(required=False, type='bool'),
     webguihostnamemenu=dict(required=False, type='str', choices=['nohost', 'hostonly', 'fqdn']),
