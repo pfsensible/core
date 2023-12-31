@@ -4,14 +4,12 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from copy import copy
 import pytest
 import sys
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
-from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_log_settings
 
 from .pfsense_module import TestPFSenseModule
