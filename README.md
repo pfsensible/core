@@ -67,7 +67,7 @@ The following modules are currently available:
 * [pfsense_cert](https://github.com/pfsensible/core/wiki/pfsense_cert) for Certificates
 * [pfsense_default_gateway](https://github.com/pfsensible/core/wiki/pfsense_default_gateway) for setting the default gateways
 * [pfsense_dhcp_static](https://github.com/pfsensible/core/wiki/pfsense_dhcp_static) for static DHCP entries
-* pfsense_dns_resolver for DNS resolver (unbound) settings
+* [pfsense_dns_resolver](https://github.com/pfsensible/core/wiki/pfsense_dns_resolver) for DNS resolver (unbound) settings
 * [pfsense_gateway](https://github.com/pfsensible/core/wiki/pfsense_gateway) for routing gateways
 * [pfsense_group](https://github.com/pfsensible/core/wiki/pfsense_group) for user groups
 * [pfsense_interface](https://github.com/pfsensible/core/wiki/pfsense_interface) for interfaces

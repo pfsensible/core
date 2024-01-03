@@ -122,10 +122,12 @@ options:
       descr:
         description: A description may be entered here for administrative reference.
         required: false
+        default: ""
         type: str
       aliases:
         description: Additional names for this host.
         required: false
+        default: []
         type: list
         elements: dict
         suboptions:
@@ -144,7 +146,6 @@ options:
   domainoverrides:
     description: Domains for which the resolver's standard DNS lookup should be overridden.
     required: false
-    default: []
     type: list
     elements: dict
     suboptions:
@@ -216,7 +217,7 @@ options:
   edns_buffer_size:
     description: Number of bytes to advertise as the EDNS reassembly buffer size.
     required: false
-    default: "4096"
+    default: "auto"
     choices: [ "auto", "512", "1220", "1232", "1432", "1480", "4096" ]
     type: str
   num_queries_per_thread:
@@ -303,7 +304,7 @@ import base64
 DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC = dict(
     domain=dict(required=True, type='str'),
     ip=dict(required=True, type='str'),
-    descr=dict(default='', type='str'),
+    descr=dict(type='str'),
     tls_hostname=dict(default='', type='str'),
     forward_tls_upstream=dict(default='', type='str'),
 )
@@ -347,7 +348,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     regovpnclients=dict(default=False, type='bool'),
     custom_options=dict(default="", type='str'),
     hosts=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_SPEC),
-    domainoverrides=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
+    domainoverrides=dict(type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
     # Advanced Settings
     hideidentity=dict(default=True, type='bool'),
     hideversion=dict(default=True, type='bool'),
@@ -361,7 +362,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     msgcachesize=dict(default=4, type='int', choices=[4, 10, 20, 50, 100, 250, 512]),
     outgoing_num_tcp=dict(default=10, type='int', choices=[0, 10, 20, 30, 50]),
     incoming_num_tcp=dict(default=10, type='int', choices=[0, 10, 20, 30, 50]),
-    edns_buffer_size=dict(default="4096", type='str', choices=["auto", "512", "1220", "1232", "1432", "1480", "4096"]),
+    edns_buffer_size=dict(default="auto", type='str', choices=["auto", "512", "1220", "1232", "1432", "1480", "4096"]),
     num_queries_per_thread=dict(default=512, type='int', choices=[512, 1024, 2048]),
     jostle_timeout=dict(default=200, type='int', choices=[100, 200, 500, 1000]),
     cache_max_ttl=dict(default=86400, type='int'),
@@ -462,6 +463,9 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                     host["aliases"] = {
                         "item": tmp_aliases
                     }
+                else:
+                    # Default is an empty element
+                    host["aliases"] = "\n\t\t\t"
 
         return obj
 
