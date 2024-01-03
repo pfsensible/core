@@ -11,19 +11,23 @@
     - wait_for:
         path: "/var/etc/openvpn/server{{ openvpn_server.vpnid }}/config.ovpn"
 
-    - slurp:
+    - name: Retrieve config.ovpn
+      slurp:
         src: "/var/etc/openvpn/server{{ openvpn_server.vpnid }}/config.ovpn"
       register: openvpn_config_file
 
-    - debug: msg="{{ openvpn_config_file['content'] | b64decode }}"
+    - name: Contents of config.ovpn
+      debug: msg="{{ openvpn_config_file['content'] | b64decode }}"
 
-    - template:
+    - name: Check if config.ovpn matches expected content
+      template:
         src: openvpn-server-config.ovpn.j2
         dest: /var/etc/openvpn/server{{ openvpn_server.vpnid }}/config.ovpn
         owner: root
         group: wheel
         mode: 0600
-      check_mode: yes
+      check_mode: true
+      diff: true
       register: config
 
     - fail:
@@ -31,10 +35,11 @@
       when: config.changed
 
     # TODO - Use community.general.pids with pattern (need version 3.0.0)
-    - shell: "ps xo command | grep '/openvpn --config /var/etc/openvpn/server{{ openvpn_server.vpnid }}/config.ovpn' | grep -v grep"
+    - name: Check if openvpn server is running
+      shell: "ps xo command | grep '/openvpn --config /var/etc/openvpn/server{{ openvpn_server.vpnid }}/config.ovpn' | grep -v grep"
       register: openvpn_server_process
-      ignore_errors: yes
-      changed_when: no
+      ignore_errors: true
+      changed_when: false
 
     - fail:
         msg: OpenVPN server process is not running
