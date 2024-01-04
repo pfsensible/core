@@ -94,7 +94,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseOpenVPNClientModule, self).__init__(module, pfsense)
         self.name = "pfsense_openvpn"
-        self.root_elt = self.pfsense.get_element('openvpn')
+        self.root_elt = self.pfsense.get_element('openvpn', create_node=True)
         self.obj = dict()
 
     ##############################
@@ -180,13 +180,19 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
                     self.module.fail_json(msg='Cannot find authentication client {0}.'.format(authsrv))
 
         # validate key
-        if params['shared_key'] is not None:
-            key = params['shared_key']
-            lines = key.splitlines()
-            if lines[0] == '-----BEGIN OpenVPN Static key V1-----' and lines[-1] == '-----END OpenVPN Static key V1-----':
-                params['shared_key'] = base64.b64encode(key.encode()).decode()
-            elif not re.match('LS0tLS1CRUdJTiBPcGVuVlBOIFN0YXRpYyBrZXkgVjEtLS0tLQ', key):
-                self.module.fail_json(msg='Could not recognize key format: %s' % (key))
+        for param in ['shared_key', 'tls']:
+            if params[param] is not None:
+                key = params[param]
+                if key == 'generate':
+                    # generate during params_to_obj
+                    pass
+                elif re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$', key, flags=re.MULTILINE | re.DOTALL):
+                    params[param] = base64.b64encode(key.encode()).decode()
+                else:
+                    key_decoded = base64.b64decode(key.encode()).decode()
+                    if not re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$',
+                                     key_decoded, flags=re.MULTILINE | re.DOTALL):
+                        self.module.fail_json(msg='Could not recognize {0} key format: {1}'.format(param, key_decoded))
 
     def _nextvpnid(self):
         """ find next available vpnid """
@@ -216,16 +222,9 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
-        before = self.pfsense.element_to_dict(self.target_elt)
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        if self._remove_deleted_params():
-            changed = True
+        (before, changed) = super(PFSenseOpenVPNClientModule, self)._copy_and_update_target()
 
-        self.diff['before'] = before
-        if changed:
-            self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-            self.result['changed'] = True
-        else:
+        if not changed:
             self.diff['after'] = self.obj
 
         return (before, changed)
@@ -243,6 +242,16 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     def _find_target(self):
         """ find the XML target_elt """
         (target_elt, self.idx) = self._find_openvpn_client(self.obj['description'])
+        for param in ['shared_key', 'tls']:
+            current_elt = self.pfsense.get_element(param, target_elt)
+            if self.params[param] == 'generate':
+                if current_elt is None:
+                    (dummy, key, stderr) = self.module.run_command('/usr/local/sbin/openvpn --genkey secret /dev/stdout')
+                    if stderr != "":
+                        self.module.fail_json(msg='generate for "{0}" secret key: {1}'.format(param, stderr))
+                    self.obj[param] = base64.b64encode(key.encode()).decode()
+                else:
+                    self.obj[param] = current_elt.text
         return target_elt
 
     def _remove_target_elt(self):
