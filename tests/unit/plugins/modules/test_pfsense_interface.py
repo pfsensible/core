@@ -165,13 +165,13 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
 
     def test_interface_delete(self):
         """ test deletion of an interface """
-        interface = dict(descr='vt1', state='absent')
+        interface = dict(descr='vt1')
         command = "delete interface 'vt1'"
         self.do_module_test(interface, delete=True, command=command)
 
     def test_interface_delete_lan(self):
         """ test deletion of an interface """
-        interface = dict(descr='lan', state='absent')
+        interface = dict(descr='lan')
         commands = [
             "delete rule_separator 'test_separator', interface='lan'",
             "update rule 'floating_rule_2' on 'floating(lan,wan,lan_1100)' set interface='wan,lan_1100'",
@@ -182,6 +182,12 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
             "delete interface 'lan'"
         ]
         self.do_module_test(interface, delete=True, command=commands)
+
+    def test_interface_delete_fails(self):
+        """ test deletion of an interface that is part of a group """
+        interface = dict(descr='lan_1100')
+        msg = "The interface is part of the group IFGROUP1. Please remove it from the group first."
+        self.do_module_test(interface, delete=True, failed=True, msg=msg)
 
     def test_interface_update_noop(self):
         """ test not updating a interface """
@@ -278,7 +284,7 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
 
     def test_interface_delete_sub(self):
         """ test delete sub interface """
-        interface = dict(descr='lan_1200', interface='vmx1.1200', state='absent')
+        interface = dict(descr='lan_1200', interface='vmx1.1200')
         command = "delete interface 'lan_1200'"
         self.do_module_test(interface, delete=True, command=command)
 
