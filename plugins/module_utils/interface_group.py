@@ -188,6 +188,6 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
             values += self.format_cli_field(self.obj, 'descr')
             values += self.format_cli_field(self.obj, 'members')
         else:
-            values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values), log_none=False)
             values += self.format_updated_cli_field(self.obj, before, 'members', add_comma=(values))
         return values
