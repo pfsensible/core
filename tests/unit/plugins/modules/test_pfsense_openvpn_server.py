@@ -4,6 +4,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import base64
 import pytest
 import sys
 
@@ -12,6 +13,7 @@ if sys.version_info < (2, 7):
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_openvpn_server
 from .pfsense_module import TestPFSenseModule
+from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 
 CERTIFICATE = (
     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlFQ0RDQ0F2Q2dBd0lCQWdJSUZqRk9oczFuTXpRd0RRWUpLb1pJaHZjTkFRRUxCUUF3WERFVE1CRUdBMVVFDQpBeE1LYjNCbGJuWndiaTFqWVRF"
@@ -46,6 +48,21 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         super(TestPFSenseOpenVPNServerModule, self).__init__(*args, **kwargs)
         self.config_file = 'pfsense_openvpn_config.xml'
         self.pfmodule = pfsense_openvpn_server.PFSenseOpenVPNServerModule
+
+    def setUp(self):
+        """ mocking up """
+
+        super(TestPFSenseOpenVPNServerModule, self).setUp()
+
+        self.mock_run_command = patch('ansible.module_utils.basic.AnsibleModule.run_command')
+        self.run_command = self.mock_run_command.start()
+        self.run_command.return_value = (0, base64.b64decode(TLSKEY.encode()).decode(), '')
+
+    def tearDown(self):
+        """ mocking down """
+        super(TestPFSenseOpenVPNServerModule, self).tearDown()
+
+        self.run_command.stop()
 
     @staticmethod
     def runTest():
@@ -87,6 +104,12 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
     def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
+        # Use "generated" key
+        if 'shared_key' in obj and obj['shared_key'] == 'generate':
+            obj['shared_key'] = TLSKEY
+        if 'tls' in obj and obj['tls'] == 'generate':
+            obj['tls'] = TLSKEY
+
         self.check_param_equal(obj, target_elt, 'name', xml_field='description')
         self.check_param_equal(obj, target_elt, 'custom_options')
         self.check_param_equal(obj, target_elt, 'mode', default='ptp_tls')
@@ -100,6 +123,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, 'local_port', default=1194)
         self.check_param_equal(obj, target_elt, 'protocol', default='UDP4')
         if 'tls' in obj['mode']:
+            self.check_param_equal(obj, target_elt, 'tls')
             self.check_param_equal(obj, target_elt, 'tls')
             self.check_param_equal(obj, target_elt, 'tls_type')
             self.assert_xml_elt_equal(target_elt, 'caref', self.caref(obj['ca']))
@@ -139,6 +163,11 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
     def test_openvpn_server_create(self):
         """ test creation of a new OpenVPN server """
         obj = dict(name='ovpns3', mode='p2p_tls', ca='OpenVPN CA', local_port=1196)
+        self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
+
+    def test_openvpn_server_create_generate(self):
+        """ test creation of a new OpenVPN server """
+        obj = dict(name='ovpns3', mode='p2p_tls', ca='OpenVPN CA', local_port=1196, tls='generate')
         self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
 
     def test_openvpn_server_delete(self):
