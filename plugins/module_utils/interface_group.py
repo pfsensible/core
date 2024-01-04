@@ -13,8 +13,12 @@ INTERFACE_GROUP_ARGUMENT_SPEC = dict(
     state=dict(default='present', choices=['present', 'absent']),
     name=dict(required=True, type='str'),
     descr=dict(type='str'),
-    members=dict(required=True, type='list', elements='str'),
+    members=dict(type='list', elements='str'),
 )
+
+INTERFACE_GROUP_REQUIRED_IF = [
+    ['state', 'present', ['members']],
+]
 
 INTERFACE_GROUP_PHP_COMMAND = '''
 require_once("interfaces.inc");
@@ -78,8 +82,9 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
         if re.match('[0-9]$', params['name']) is not None:
             self.module.fail_json(msg='Group name cannot end with a digit.')
         # Make sure list of interfaces is a unique set
-        if len(params['members']) > len(set(params['members'])):
-            self.module.fail_json(msg='List of members is not unique.')
+        if params['state'] == 'present':
+            if len(params['members']) > len(set(params['members'])):
+                self.module.fail_json(msg='List of members is not unique.')
         # TODO - check that name isn't in use by any interfaces
 
     ##############################
@@ -186,9 +191,3 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'members', add_comma=(values))
         return values
-
-    def _log_update(self, before):
-        """ generate pseudo-CLI command to update an interface """
-        log = "update {0}".format(self._get_module_name(True))
-        values = self._log_fields(before)
-        self.result['commands'].append(log + ' set ' + values)

@@ -82,6 +82,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.interface_group im
 def main():
     module = AnsibleModule(
         argument_spec=INTERFACE_GROUP_ARGUMENT_SPEC,
+        required_if=INTERFACE_GROUP_REQUIRED_IF,
         supports_check_mode=True)
 
     pfmodule = PFSenseInterfaceGroupModule(module)
