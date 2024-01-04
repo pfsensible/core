@@ -37,7 +37,6 @@ options:
   members:
     description: The members of the interface group.
     type: list
-    required: yes
     elements: str
 """
 
@@ -76,7 +75,11 @@ member_ifnames:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.interface_group import PFSenseInterfaceGroupModule, INTERFACE_GROUP_ARGUMENT_SPEC
+from ansible_collections.pfsensible.core.plugins.module_utils.interface_group import (
+    PFSenseInterfaceGroupModule,
+    INTERFACE_GROUP_ARGUMENT_SPEC,
+    INTERFACE_GROUP_REQUIRED_IF
+)
 
 
 def main():
