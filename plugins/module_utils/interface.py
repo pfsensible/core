@@ -147,9 +147,6 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         else:
             self.target_elt = self._get_interface_elt_by_display_name(self.obj['descr'])
 
-        if self.target_elt is not None:
-            self.result['ifname'] = self.target_elt.tag
-
         return obj
 
     def _validate_params(self):
@@ -214,6 +211,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         """ create the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.setup_interface_cmds += "interface_configure('{0}', true);\n".format(self.target_elt.tag)
+        self.result['ifname'] = self.target_elt.tag
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
@@ -229,6 +227,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             else:
                 self.setup_interface_cmds += "interface_bring_down('{0}', true);\n".format(self.target_elt.tag)
 
+        self.result['ifname'] = self.target_elt.tag
         return (before, changed)
 
     def _create_target(self):
@@ -326,6 +325,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         self._remove_all_rules(self.target_elt.tag)
 
         self.setup_interface_pre_cmds += "interface_bring_down('{0}');\n".format(self.target_elt.tag)
+        self.result['ifname'] = self.target_elt.tag
 
     def _remove_all_rules(self, interface):
         """ delete all interface rules """
