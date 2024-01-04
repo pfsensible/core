@@ -321,11 +321,19 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         """ processing before removing elt """
         self.obj['if'] = self.target_elt.find('if').text
 
-        self._remove_all_separators(self.target_elt.tag)
-        self._remove_all_rules(self.target_elt.tag)
+        ifname = self.target_elt.tag
+        if self.pfsense.ifgroups is not None:
+            for ifgroup_elt in self.pfsense.ifgroups.findall("ifgroupentry"):
+                members = ifgroup_elt.find('members').text.split()
+                if ifname in members:
+                    self.module.fail_json(msg='The interface is part of the group {0}. Please remove it from the group first.'.format(
+                                          ifgroup_elt.find('ifname').text))
 
-        self.setup_interface_pre_cmds += "interface_bring_down('{0}');\n".format(self.target_elt.tag)
-        self.result['ifname'] = self.target_elt.tag
+        self._remove_all_separators(ifname)
+        self._remove_all_rules(ifname)
+
+        self.setup_interface_pre_cmds += "interface_bring_down('{0}');\n".format(ifname)
+        self.result['ifname'] = ifname
 
     def _remove_all_rules(self, interface):
         """ delete all interface rules """
