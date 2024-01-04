@@ -331,6 +331,11 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     def _pre_remove_target_elt(self):
         """ processing before removing elt """
         self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
+
+        if len(self.pfsense.interfaces.findall("*[if='ovpns{0}']".format(self.diff['before']['vpnid']))) > 0:
+            self.module.fail_json(msg='Cannot delete the OpenVPN instance while the interface ovpns{0} is assigned. Remove the interface assignment first.'
+                                      .format(self.diff['before']['vpnid']))
+
         self.result['vpnid'] = int(self.diff['before']['vpnid'])
         self.command_output = self.pfsense.phpshell(OPENVPN_SERVER_PHP_COMMAND_DEL.format(idx=self.idx))
 
