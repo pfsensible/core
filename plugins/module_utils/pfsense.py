@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 from tempfile import mkstemp
 
 
+# Return an element in node, but return an empty element instead of None if not found
 def xml_find(node, elt):
     res = node.find(elt)
     if res is None:
@@ -342,17 +343,29 @@ class PFSenseModule(object):
                 res[elt.tag] = value
         return res
 
+    def get_refid(self, node, name):
+        """ get refid of name in specific nodes """
+        elt = self.find_elt(node, name)
+        if elt is not None:
+            return xml_find(elt, 'refid').text
+        else:
+            return None
+
     def get_caref(self, name):
         """ get CA refid for name """
         # global is a special case
         if name == 'global':
             return 'global'
-        # Otherwise search for added CAs
-        cas = self.get_elements('ca')
-        for elt in cas:
-            if xml_find(elt, 'descr').text == name:
-                return xml_find(elt, 'refid').text
-        return None
+        # Otherwise search the ca elements
+        return self.get_refid('ca', name)
+
+    def get_certref(self, name):
+        """ get Cert refid for name """
+        return self.get_refid('cert', name)
+
+    def get_crlref(self, name):
+        """ get CRL refid for name """
+        return self.get_refid('crl', name)
 
     @staticmethod
     def get_username():
