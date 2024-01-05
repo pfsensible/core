@@ -172,6 +172,13 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         # check name
         self.pfsense.validate_string(params['name'], 'openvpn')
 
+        if params['state'] == 'absent':
+            return True
+
+        # check tunnel_networks - can be network alias or non-strict IP CIDR network
+        self.pfsense.validate_openvpn_tunnel_network(params.get('tunnel_network'), 'ipv4')
+        self.pfsense.validate_openvpn_tunnel_network(params.get('tunnel_network6'), 'ipv6')
+
         # Check auth clients
         if len(params['authmode']) > 0:
             system = self.pfsense.get_element('system')
