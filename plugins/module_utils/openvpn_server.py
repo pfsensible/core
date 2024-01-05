@@ -321,6 +321,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                     if stderr != "":
                         self.module.fail_json(msg='generate for "{0}" secret key: {1}'.format(param, stderr))
                     self.obj[param] = base64.b64encode(key.encode()).decode()
+                    self.result[param] = self.obj[param]
                 else:
                     self.obj[param] = current_elt.text
         return target_elt
