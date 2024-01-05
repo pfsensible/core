@@ -74,7 +74,7 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
 
     def test_openvpn_override_update_network(self):
         """ test updating network of a OpenVPN override """
-        obj = dict(name='delvpnuser', gwredir=True, server_list=1, custom_options='ifconfig-push 10.8.0.1 255.255.255.0', tunnel_network='10.10.10.0/24')
+        obj = dict(name='delvpnuser', gwredir=True, server_list=1, custom_options='ifconfig-push 10.8.0.1 255.255.255.0', tunnel_network='10.10.10.10/24')
         self.do_module_test(obj, command="update openvpn_override 'delvpnuser' set ")
 
     ##############

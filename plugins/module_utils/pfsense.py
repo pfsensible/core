@@ -56,7 +56,12 @@ class PFSenseModule(object):
         parse_ip_network,
         parse_port,
     )
-    from ansible_collections.pfsensible.core.plugins.module_utils.__impl.checks import check_name, check_ip_address, validate_string
+    from ansible_collections.pfsensible.core.plugins.module_utils.__impl.checks import (
+        check_name,
+        check_ip_address,
+        validate_string,
+        validate_openvpn_tunnel_network,
+    )
 
     def __init__(self, module, config='/cf/conf/config.xml'):
         self.module = module

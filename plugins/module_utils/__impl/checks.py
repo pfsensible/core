@@ -58,6 +58,25 @@ def check_ip_address(self, address, ipprotocol, objtype, allow_networks=False, f
             self.module.fail_json(msg='IPv4 and IPv6 addresses can not be used in objects that apply to both IPv4 and IPv6 (except within an alias).')
 
 
+def validate_openvpn_tunnel_network(self, network, ipproto):
+    """ check openvpn tunnel network validity - based on pfSense's openvpn_validate_tunnel_network() """
+    if network is not None and network != '':
+        alias_elt = self.find_alias(network, aliastype='network')
+        if alias_elt is not None:
+            networks = alias_elt.find('address').text.split()
+            if len(networks) > 1:
+                self.module.fail_json("The alias {0} contains more than one network".format(network))
+            network = networks[0]
+
+        if not self.is_ipv4_network(network, strict=False) and ipproto == 'ipv4':
+            self.module.fail_json("{0} is not a valid IPv4 network".format(network))
+        if not self.is_ipv6_network(network, strict=False) and ipproto == 'ipv6':
+            self.module.fail_json("{0} is not a valid IPv6 network".format(network))
+        return True
+
+    return True
+
+
 def validate_string(self, name, objtype):
     """ check string validity - similar to pfSense's do_input_validate() """
 
