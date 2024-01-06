@@ -159,7 +159,7 @@ class PFSenseModule(object):
             if multiple_ok:
                 return result
             else:
-                self.module.fail_json(msg='Found multiple groups for name {0}.'.format(self.obj['name']))
+                self.module.fail_json(msg='Found multiple elements for name {0}.'.format(self.obj['name']))
         return None
 
     @staticmethod
