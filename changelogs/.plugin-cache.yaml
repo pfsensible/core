@@ -1,0 +1,184 @@
+objects:
+  role: {}
+plugins:
+  become: {}
+  cache: {}
+  callback: {}
+  cliconf: {}
+  connection: {}
+  filter: {}
+  httpapi: {}
+  inventory: {}
+  lookup:
+    pfsense:
+      description: Generate pfSense aliases, rules and rule_separators
+      name: pfsense
+      version_added: 0.1.0
+  module:
+    pfsense_aggregate:
+      description: Manage multiple pfSense firewall aliases, rules, and rule separators,
+        plus interfaces and VLANs
+      name: pfsense_aggregate
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_alias:
+      description: Manage pfSense aliases
+      name: pfsense_alias
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_authserver_ldap:
+      description: Manage pfSense LDAP authentication servers
+      name: pfsense_authserver_ldap
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_authserver_radius:
+      description: Manage pfSense RADIUS authentication servers
+      name: pfsense_authserver_radius
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_ca:
+      description: Manage pfSense Certificate Authorities
+      name: pfsense_ca
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_cert:
+      description: Manage pfSense certificates
+      name: pfsense_cert
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_default_gateway:
+      description: Manage pfSense default gateway
+      name: pfsense_default_gateway
+      namespace: ''
+      version_added: 0.6.0
+    pfsense_dhcp_static:
+      description: Manage pfSense DHCP static mapping
+      name: pfsense_dhcp_static
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_dns_resolver:
+      description: Manage pfSense DNS resolver (unbound) settings
+      name: pfsense_dns_resolver
+      namespace: ''
+      version_added: 0.6.0
+    pfsense_gateway:
+      description: Manage pfSense gateways
+      name: pfsense_gateway
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_group:
+      description: Manage pfSense user groups
+      name: pfsense_group
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_haproxy_backend:
+      description: Manage pfSense HAProxy backends
+      name: pfsense_haproxy_backend
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_haproxy_backend_server:
+      description: Manage pfSense haproxy backend servers
+      name: pfsense_haproxy_backend_server
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_interface:
+      description: Manage pfSense interfaces
+      name: pfsense_interface
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_interface_group:
+      description: Manage pfSense interface groups
+      name: pfsense_interface_group
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_ipsec:
+      description: Manage pfSense IPsec tunnels and phase 1 options
+      name: pfsense_ipsec
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_ipsec_aggregate:
+      description: Manage multiple pfSense IPsec tunnels, phases 1, phases 2 and proposals
+      name: pfsense_ipsec_aggregate
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_ipsec_p2:
+      description: Manage pfSense IPsec tunnels phase 2 options
+      name: pfsense_ipsec_p2
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_ipsec_proposal:
+      description: Manage pfSense IPsec proposals
+      name: pfsense_ipsec_proposal
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_log_settings:
+      description: Manage pfSense syslog settings
+      name: pfsense_log_settings
+      namespace: ''
+      version_added: 0.4.2
+    pfsense_nat_outbound:
+      description: Manage pfSense Outbound NAT (SNAT) rules
+      name: pfsense_nat_outbound
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_nat_port_forward:
+      description: Manage pfSense port forwarding NAT (DNAT) rules
+      name: pfsense_nat_port_forward
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_openvpn_client:
+      description: Manage pfSense OpenVPN configuration
+      name: pfsense_openvpn_client
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_openvpn_override:
+      description: Manage pfSense OpenVPN Client Specific Overrides
+      name: pfsense_openvpn_override
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_openvpn_server:
+      description: Manage pfSense OpenVPN server configuration
+      name: pfsense_openvpn_server
+      namespace: ''
+      version_added: 0.5.0
+    pfsense_rewrite_config:
+      description: Rewrite pfSense config.xml
+      name: pfsense_rewrite_config
+      namespace: ''
+      version_added: 0.5.3
+    pfsense_route:
+      description: Manage pfSense routes
+      name: pfsense_route
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_rule:
+      description: Manage pfSense firewall rules
+      name: pfsense_rule
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_rule_separator:
+      description: Manage pfSense firewall rule separators
+      name: pfsense_rule_separator
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_setup:
+      description: Manage pfSense general setup
+      name: pfsense_setup
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_user:
+      description: Manage pfSense users
+      name: pfsense_user
+      namespace: ''
+      version_added: 0.1.0
+    pfsense_vlan:
+      description: Manage pfSense VLANs
+      name: pfsense_vlan
+      namespace: ''
+      version_added: 0.1.0
+  netconf: {}
+  shell: {}
+  strategy: {}
+  test: {}
+  vars: {}
+version: 0.6.0
