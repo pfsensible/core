@@ -101,9 +101,7 @@ These modules allow you to manage installed packages:
 * [pfsense_haproxy_backend](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend) for HAProxy backends
 * [pfsense_haproxy_backend_server](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend_server) for HAProxy backends servers
 
-## Change Log
-
-(https://github.com/pfsensible/core/CHANGELOG.rst)
+## [Change Log](https://github.com/pfsensible/core/blob/master/CHANGELOG.rst)
 
 ## Operation
 
