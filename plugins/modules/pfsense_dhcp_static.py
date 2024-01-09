@@ -122,6 +122,11 @@ options:
   numberoptions:
     description: The number options
     type: str
+  arp_table_static_entry:
+    description: Create an ARP Table Static Entry for this MAC & IP Address pair
+    type: bool
+    required: false
+    default: false
   state:
     description: State in which to leave the configuration
     default: present
@@ -189,6 +194,7 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     filename64arm=dict(type='str'),
     uefihttpboot=dict(type='str'),
     numberoptions=dict(type='str'),
+    arp_table_static_entry=dict(default=False, type='bool'),
     state=dict(type='str', default='present', choices=['present', 'absent']),
 )
 
@@ -268,6 +274,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
                 self._get_ansible_param(obj, option)
             # Defaulted options
             self._get_ansible_param(obj, 'ddnsdomainkeyalgorithm', force_value='hmac-md5', force=True)
+            self._get_ansible_param_bool(obj, "arp_table_static_entry", value="")
 
         return obj
 
