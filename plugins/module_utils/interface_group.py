@@ -38,11 +38,8 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseInterfaceGroupModule, self).__init__(module, pfsense)
+        super(PFSenseInterfaceGroupModule, self).__init__(module, pfsense, root='ifgroups', node='ifgroupentry', key='ifname')
         self.name = "pfsense_interface_group"
-        self.obj = dict()
-
-        self.root_elt = self.pfsense.get_element('ifgroups')
 
     ##############################
     # params processing
@@ -90,26 +87,6 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _create_target(self):
-        """ create the XML target_elt """
-        self.diff['before'] = ''
-        self.diff['after'] = self.obj
-        return self.pfsense.new_element('ifgroupentry')
-
-    def _find_target(self):
-        """ find the XML target_elt """
-        result = self.root_elt.findall("ifgroupentry[ifname='{0}']".format(self.obj['ifname']))
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple interface groups for name {0}.'.format(self.obj['ifname']))
-        else:
-            return None
-
-    def _pre_remove_target_elt(self):
-        """ processing before removing elt """
-        self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
-
     def _remove_all_rules(self, interface):
         """ delete all interface rules """
 
