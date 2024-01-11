@@ -37,10 +37,8 @@ class PFSenseAliasModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseAliasModule, self).__init__(module, pfsense)
+        super(PFSenseAliasModule, self).__init__(module, pfsense, root='aliases', node='alias')
         self.name = "pfsense_alias"
-        self.root_elt = self.pfsense.get_element('aliases')
-        self.obj = dict()
 
     ##############################
     # params processing
@@ -103,43 +101,13 @@ class PFSenseAliasModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _copy_and_update_target(self):
-        """ update the XML target_elt """
-        before = self.pfsense.element_to_dict(self.target_elt)
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        if self._remove_deleted_params():
-            changed = True
-
-        self.diff['before'] = before
-        if changed:
-            self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-            self.result['changed'] = True
-        else:
-            self.diff['after'] = self.obj
-
-        return (before, changed)
-
-    def _create_target(self):
-        """ create the XML target_elt """
-        target_elt = self.pfsense.new_element('alias')
-        self.diff['before'] = ''
-        self.diff['after'] = self.obj
-        self.result['changed'] = True
-        return target_elt
-
     def _find_target(self):
         """ find the XML target_elt """
-        return self.pfsense.find_alias(self.obj['name'])
+        return self.pfsense.find_alias(self.obj['name'], aliastype=self.obj.get('type'))
 
     ##############################
     # run
     #
-    def _remove(self):
-        """ delete obj """
-        self.diff['after'] = ''
-        self.diff['before'] = ''
-        super(PFSenseAliasModule, self)._remove()
-
     def _update(self):
         """ make the target pfsense reload """
         return self.pfsense.phpshell('''require_once("filter.inc");
