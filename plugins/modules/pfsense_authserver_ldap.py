@@ -298,23 +298,8 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
         """ create the XML target_elt """
         elt = self.pfsense.new_element('authserver')
         elt.append(self.pfsense.new_element('ldap_allow_unauthenticated', text=None))
+        elt.append(self.pfsense.new_element('refid', text=self.pfsense.uniqid()))
         return elt
-
-    def _copy_and_add_target(self):
-        """ populate the XML target_elt """
-        obj = self.obj
-        obj['refid'] = self.pfsense.uniqid()
-        self.pfsense.copy_dict_to_element(obj, self.target_elt)
-        self.diff['after'] = obj
-        self.root_elt.insert(self._find_last_index(), self.target_elt)
-
-    def _copy_and_update_target(self):
-        """ update the XML target_elt """
-        before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-        return (before, changed)
 
     ##############################
     # Logging
