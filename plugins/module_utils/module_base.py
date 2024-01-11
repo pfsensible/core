@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2019, Frederic Bor <frederic.bor@wanadoo.fr>
+# Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -68,8 +69,10 @@ class PFSenseModuleBase(object):
         if self.params.get(name) is not None:
             if self.params.get(name):
                 obj[fname] = value
-            elif force:
+            elif value_false is not None:
                 obj[fname] = value_false
+            elif force:
+                obj[fname] = None
         elif force:
             obj[fname] = value_false
 
