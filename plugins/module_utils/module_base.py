@@ -21,7 +21,7 @@ class PFSenseModuleBase(object):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, root=None, root_is_exclusive=True, create_root=False, node=None):
+    def __init__(self, module, pfsense=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr'):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
@@ -44,16 +44,17 @@ class PFSenseModuleBase(object):
                     self.root_is_exclusive = root_is_exclusive
         else:
             self.root_elt = None
-            self.root_is_exclusive = None
+            self.root_is_exclusive = root_is_exclusive
         self.root = root
 
         # List of elements named node
         if node is not None:
             self.elements = self.pfsense.get_elements(node)
         else:
-            self.elememts = None
+            self.elements = None
         self.node = node
 
+        self.key = key          # item that identifies a target element
         self.obj = dict()       # dict holding target pfsense parameters
         self.target_elt = None  # xml object holding target pfsense parameters
 
@@ -143,7 +144,10 @@ class PFSenseModuleBase(object):
         """ create the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff['after'] = self.obj
-        self.root_elt.append(self.target_elt)
+        if self.root_is_exclusive:
+            self.root_elt.append(self.target_elt)
+        else:
+            self.root_elt.insert(self._find_last_element_index(), self.target_elt)
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
@@ -174,12 +178,12 @@ class PFSenseModuleBase(object):
 
     def _find_target(self):
         """ find the XML target_elt """
-        if self.root_is_exclusive is False and self.node is not None:
-            result = self.root_elt.findall("{node}[descr='{descr}']".format(node=self.node, descr=self.obj['descr']))
+        if self.node is not None:
+            result = self.root_elt.findall("{node}[{key}='{value}']".format(node=self.node, key=self.key, value=self.obj[self.key]))
             if len(result) == 1:
                 return result[0]
             elif len(result) > 1:
-                self.module.fail_json(msg='Found multiple {node}s for descr {descr}.'.format(node=self.node, descr=self.obj['descr']))
+                self.module.fail_json(msg='Found multiple {node}s for {key} {value}.'.format(node=self.node, key=self.key, value=self.obj[self.key]))
             else:
                 return None
         else:
@@ -319,7 +323,7 @@ class PFSenseModuleBase(object):
 
     def _get_obj_name(self):
         """ return obj's name """
-        raise NotImplementedError()
+        return "'{0}'".format(self.obj[self.key])
 
     def _get_module_name(self, strip=False):
         """ return ansible module's name """
