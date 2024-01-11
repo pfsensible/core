@@ -340,24 +340,14 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
 
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
-        obj = self.obj
-
-        self.diff['after'] = obj
-        self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.root_elt.append(self.target_elt)
+        super(PFSenseDHCPStaticModule, self)._copy_and_add_target()
         # Reset static map list
         self.staticmaps = self.root_elt.findall('staticmap')
 
-    def _copy_and_update_target(self):
-        """ update the XML target_elt """
-
-        before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
-
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-
-        return (before, changed)
+    @staticmethod
+    def _get_params_to_remove():
+        """ returns the list of params to remove if they are not set """
+        return ['arp_table_static_entry']
 
     ##############################
     # Logging
