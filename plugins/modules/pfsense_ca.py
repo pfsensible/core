@@ -122,10 +122,8 @@ class PFSenseCAModule(PFSenseModuleBase):
         return PFSENSE_CA_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseCAModule, self).__init__(module, pfsense)
+        super(PFSenseCAModule, self).__init__(module, pfsense, root='pfsense', node='ca')
         self.name = "pfsense_ca"
-        self.root_elt = self.pfsense.root
-        self.cas = self.pfsense.get_elements('ca')
         self.refresh_crls = False
         self.crl = None
 
@@ -186,24 +184,6 @@ class PFSenseCAModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _find_target(self):
-        result = self.root_elt.findall("ca[descr='{0}']".format(self.obj['descr']))
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple certificate authorities for name {0}.'.format(self.obj['descr']))
-        else:
-            return None
-
-    def _find_this_ca_index(self):
-        return self.cas.index(self.target_elt)
-
-    def _find_last_ca_index(self):
-        if len(self.cas):
-            return list(self.root_elt).index(self.cas[len(self.cas) - 1])
-        else:
-            return len(list(self.root_elt))
-
     def _find_crl_for_ca(self, caref):
         result = self.root_elt.findall("crl[caref='{0}']".format(caref))
         if len(result) == 1:
@@ -247,7 +227,7 @@ class PFSenseCAModule(PFSenseModuleBase):
         """ populate the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-        self.root_elt.insert(self._find_last_ca_index(), self.target_elt)
+        self.root_elt.insert(self._find_last_element_index(), self.target_elt)
         if self.crl is not None:
             crl_elt = self.pfsense.new_element('crl')
             self.crl['caref'] = self.obj['refid']
@@ -283,7 +263,7 @@ class PFSenseCAModule(PFSenseModuleBase):
                     self.crl['refid'] = self.pfsense.uniqid()
                 self.pfsense.copy_dict_to_element(self.crl, crl_elt)
                 # Add after the existing ca entry
-                self.pfsense.root.insert(self._find_this_ca_index() + 1, crl_elt)
+                self.pfsense.root.insert(self._find_this_element_index() + 1, crl_elt)
                 self.refresh_crls = True
             else:
                 before['crl'] = crl_elt.find('text').text
@@ -355,7 +335,7 @@ class PFSenseCAModule(PFSenseModuleBase):
         if self.target_elt is not None:
             self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
             crl_elt = self._find_crl_for_ca(self.target_elt.find('refid').text)
-            self.cas.remove(self.target_elt)
+            self.elements.remove(self.target_elt)
             if crl_elt is not None:
                 self.diff['before']['crl'] = crl_elt.find('text').text
                 self.root_elt.remove(crl_elt)
