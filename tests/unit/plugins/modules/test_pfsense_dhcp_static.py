@@ -97,6 +97,14 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
         )
         self.do_module_test(obj, command=command)
 
+    def test_dhcp_static_create_arp_table_static_entry(self):
+        """ test create with arp_table_static_entry """
+        obj = dict(name='test_entry', macaddr='ab:ab:ab:ab:ab:ab', ipaddr='10.0.0.101', netif='opt1', arp_table_static_entry=True)
+        command = (
+            "create dhcp_static 'test_entry', macaddr='ab:ab:ab:ab:ab:ab', ipaddr='10.0.0.101', arp_table_static_entry=True"
+        )
+        self.do_module_test(obj, command=command)
+
     def test_dhcp_static_create_wrong_subnet(self):
         """ test create with IP address in the wrong subnet """
         obj = dict(name='test_entry', macaddr='ab:ab:ab:ab:ab:ab', ipaddr='1.2.3.4', netif='opt1')
