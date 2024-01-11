@@ -198,6 +198,10 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     state=dict(type='str', default='present', choices=['present', 'absent']),
 )
 
+DHCP_STATIC_REQUIRED_IF = [
+    ['arp_table_static_entry', True, ['ipaddr']],
+]
+
 DHCP_STATIC_REQUIRED_ONE_OF = [
     ('name', 'macaddr'),
 ]
@@ -399,6 +403,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
 def main():
     module = AnsibleModule(
         argument_spec=DHCP_STATIC_ARGUMENT_SPEC,
+        required_if=DHCP_STATIC_REQUIRED_IF,
         required_one_of=DHCP_STATIC_REQUIRED_ONE_OF,
         supports_check_mode=True)
 
