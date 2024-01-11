@@ -21,7 +21,7 @@ class PFSenseModuleBase(object):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, root=None, node=None, create_node=False):
+    def __init__(self, module, pfsense=None, root=None, root_is_exclusive=True, create_root=False, node=None):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
@@ -35,10 +35,16 @@ class PFSenseModuleBase(object):
         if root is not None:
             if root == 'pfsense':
                 self.root_elt = self.pfsense.root
+                self.root_is_exclusive = False
             else:
-                self.root_elt = self.pfsense.get_element(root, create_node=create_node)
+                self.root_elt = self.pfsense.get_element(root, create_node=create_root)
+                if root in ['system']:
+                    self.root_is_exclusive = False
+                else:
+                    self.root_is_exclusive = root_is_exclusive
         else:
             self.root_elt = None
+            self.root_is_exclusive = None
         self.root = root
 
         # List of elements named node
@@ -48,7 +54,7 @@ class PFSenseModuleBase(object):
             self.elememts = None
         self.node = node
 
-        self.obj = None         # dict holding target pfsense parameters
+        self.obj = dict()       # dict holding target pfsense parameters
         self.target_elt = None  # xml object holding target pfsense parameters
 
         self.change_descr = ''
@@ -168,7 +174,7 @@ class PFSenseModuleBase(object):
 
     def _find_target(self):
         """ find the XML target_elt """
-        if self.node is not None:
+        if self.root_is_exclusive is False and self.node is not None:
             result = self.root_elt.findall("{node}[descr='{descr}']".format(node=self.node, descr=self.obj['descr']))
             if len(result) == 1:
                 return result[0]
