@@ -362,9 +362,11 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         if before is None:
             values += self.format_cli_field(self.params, 'macaddr')
             values += self.format_cli_field(self.params, 'ipaddr')
+            values += self.format_cli_field(self.params, 'arp_table_static_entry', fvalue=self.fvalue_bool, default=False)
         else:
             values += self.format_updated_cli_field(self.obj, before, 'macaddr', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'ipaddr', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'arp_table_static_entry', fvalue=self.fvalue_bool, add_comma=(values))
         return values
 
     ##############################
