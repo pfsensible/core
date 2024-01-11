@@ -207,10 +207,8 @@ class PFSenseCertModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseCertModule, self).__init__(module, pfsense)
+        super(PFSenseCertModule, self).__init__(module, pfsense, root='pfsense', node='cert')
         self.name = "pfsense_cert"
-        self.root_elt = self.pfsense.root
-        self.certs = self.pfsense.get_elements('cert')
 
     ##############################
     # params processing
@@ -275,21 +273,6 @@ class PFSenseCertModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _find_target(self):
-        result = self.root_elt.findall("cert[descr='{0}']".format(self.obj['descr']))
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple certificates for descr {0}.'.format(self.obj['descr']))
-        else:
-            return None
-
-    def _find_this_cert_index(self):
-        return self.certs.index(self.target_elt)
-
-    def _find_last_cert_index(self):
-        return list(self.root_elt).index(self.certs[len(self.certs) - 1])
-
     def _find_ca(self, caref):
         result = self.root_elt.findall("ca[descr='{0}']".format(caref))
         if len(result) == 1:
@@ -305,10 +288,6 @@ class PFSenseCertModule(PFSenseModuleBase):
             else:
                 return None
 
-    def _create_target(self):
-        """ create the XML target_elt """
-        return self.pfsense.new_element('cert')
-
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
         obj = self.obj
@@ -316,9 +295,7 @@ class PFSenseCertModule(PFSenseModuleBase):
         obj['refid'] = self.pfsense.uniqid()
         self.diff['after'] = obj
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.root_elt.insert(self._find_last_cert_index(), self.target_elt)
-        # Reset certs list
-        self.certs = self.root_elt.findall('cert')
+        self.root_elt.insert(self._find_last_element_index(), self.target_elt)
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
@@ -439,7 +416,7 @@ class PFSenseCertModule(PFSenseModuleBase):
         self.diff['after'] = {}
         if self.target_elt is not None:
             self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
-            self.certs.remove(self.target_elt)
+            self.elements.remove(self.target_elt)
         else:
             self.diff['before'] = {}
 
