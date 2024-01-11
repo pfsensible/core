@@ -21,7 +21,7 @@ class PFSenseModuleBase(object):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None):
+    def __init__(self, module, pfsense=None, root=None, node=None, create_node=False):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
@@ -31,9 +31,25 @@ class PFSenseModuleBase(object):
         self.pfsense = pfsense  # helper module
         self.apply = True       # apply configuration at the end
 
+        # xml parent of target_elt, node named by root
+        if root is not None:
+            if root == 'pfsense':
+                self.root_elt = self.pfsense.root
+            else:
+                self.root_elt = self.pfsense.get_element(root, create_node=create_node)
+        else:
+            self.root_elt = None
+        self.root = root
+
+        # List of elements named node
+        if node is not None:
+            self.elements = self.pfsense.get_elements(node)
+        else:
+            self.elememts = None
+        self.node = node
+
         self.obj = None         # dict holding target pfsense parameters
         self.target_elt = None  # xml object holding target pfsense parameters
-        self.root_elt = None    # xml parent of target_elt
 
         self.change_descr = ''
 
@@ -136,11 +152,32 @@ class PFSenseModuleBase(object):
 
     def _create_target(self):
         """ create the XML target_elt """
-        raise NotImplementedError()
+        if self.node is not None:
+            return self.pfsense.new_element(self.node)
+        else:
+            raise NotImplementedError()
+
+    def _find_this_element_index(self):
+        return self.elements.index(self.target_elt)
+
+    def _find_last_element_index(self):
+        if len(self.elements):
+            return list(self.root_elt).index(self.elements[len(self.elements) - 1])
+        else:
+            return len(list(self.root_elt))
 
     def _find_target(self):
         """ find the XML target_elt """
-        raise NotImplementedError()
+        if self.node is not None:
+            result = self.root_elt.findall("{node}[descr='{descr}']".format(node=self.node, descr=self.obj['descr']))
+            if len(result) == 1:
+                return result[0]
+            elif len(result) > 1:
+                self.module.fail_json(msg='Found multiple {node}s for descr {descr}.'.format(node=self.node, descr=self.obj['descr']))
+            else:
+                return None
+        else:
+            raise NotImplementedError()
 
     @staticmethod
     def _get_params_to_remove():
