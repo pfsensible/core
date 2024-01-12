@@ -15,7 +15,8 @@ def check_name(self, name, objtype):
 
     msg = None
     if len(name) >= 32 or len(re.findall(r'(^_*$|^\d*$|[^a-zA-Z0-9_])', name)) > 0:
-        msg = "The {0} name must be less than 32 characters long, may not consist of only numbers, may not consist of only underscores, ".format(objtype)
+        msg = "The {0} name '{1}' must be less than 32 characters long, may not consist of only numbers, may not consist of only underscores, ".format(
+            objtype, name)
         msg += "and may only contain the following characters: a-z, A-Z, 0-9, _"
     elif name in ["port", "pass"]:
         msg = "The {0} name must not be either of the reserved words 'port' or 'pass'".format(objtype)

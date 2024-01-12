@@ -82,8 +82,8 @@ class TestPFSenseGatewayModule(TestPFSenseModule):
     def test_gateway_create_invalid_name(self):
         """ test """
         obj = dict(name='___', interface='lan', gateway='192.168.1.1')
-        msg = 'The gateway name must be less than 32 characters long, may not consist of only numbers, '
-        msg += 'may not consist of only underscores, and may only contain the following characters: a-z, A-Z, 0-9, _'
+        msg = "The gateway name '___' must be less than 32 characters long, may not consist of only numbers, "
+        msg += "may not consist of only underscores, and may only contain the following characters: a-z, A-Z, 0-9, _"
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_gateway_create_invalid_interface(self):
