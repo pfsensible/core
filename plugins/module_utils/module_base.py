@@ -21,11 +21,16 @@ class PFSenseModuleBase(object):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr'):
+    def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
-        self.name = None        # ansible module name
+        if name is not None:    # ansible module name
+            self.name = name
+        elif node is not None:
+            self.name = 'pfsense_' + node
+        else:
+            self.name = None
         self.params = None      # ansible input parameters
 
         self.pfsense = pfsense  # helper module
@@ -57,6 +62,8 @@ class PFSenseModuleBase(object):
         self.key = key          # item that identifies a target element
         self.obj = dict()       # dict holding target pfsense parameters
         self.target_elt = None  # xml object holding target pfsense parameters
+
+        self.update_php = update_php  # php code to update configuration
 
         self.change_descr = ''
 
@@ -269,10 +276,12 @@ class PFSenseModuleBase(object):
         """ tasks to run before making config changes """
         return ('', '', '')
 
-    @staticmethod
-    def _update():
+    def _update(self):
         """ make the target pfsense reload """
-        return ('', '', '')
+        if self.update_php is not None:
+            return self.pfsense.phpshell(self.update_php)
+        else:
+            return ('', '', '')
 
     def run(self, params):
         """ process input params to add/update/delete """
