@@ -32,13 +32,18 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     # First we run the module
     # Then, we check return values
     # Finally, we check the xml
-    def do_alias_creation_test(self, alias, failed=False, msg='', command=None):
+    def do_alias_creation_test(self, alias, set_after=None, unset_after=None, failed=False, msg='', command=None):
         """ test creation of a new alias """
         set_module_args(self.args_from_var(alias))
         result = self.execute_module(changed=True, failed=failed, msg=msg)
 
         if not failed:
             diff = dict(before={}, after=alias)
+            if set_after is not None:
+                diff['after'].update(set_after)
+            if unset_after is not None:
+                for n in unset_after:
+                    del diff['after'][n]
             self.assertEqual(result['diff'], diff)
             self.assert_xml_elt_dict('aliases', dict(name=alias['name'], type=alias['type']), diff['after'])
             self.assertEqual(result['commands'], [command])
@@ -76,7 +81,10 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         if set_after is not None:
             diff['after'].update(set_after)
         self.assertEqual(result['diff'], diff)
-        self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'address', diff['after']['address'])
+        if alias['type'] in ['host', 'port', 'network']:
+            self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'address', diff['after']['address'])
+        else:
+            self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'url', diff['after']['url'])
         self.assertEqual(result['commands'], [command])
 
     ##############
@@ -181,49 +189,59 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_urltable_create(self):
         """ test creation of a new urltable alias """
         alias = dict(name='acme_table', address='http://www.acme.com', descr='', type='urltable', updatefreq='10', detail='')
-        alias['url'] = alias['address']
-        command = "create alias 'acme_table', type='urltable', address='http://www.acme.com', updatefreq='10', descr='', detail=''"
+        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', updatefreq='10', descr='', detail=''"
+        self.do_alias_creation_test(alias, command=command, set_after=dict(url='http://www.acme.com'), unset_after=['address'])
+
+    def test_urltable_create_url(self):
+        """ test creation of a new urltable alias """
+        alias = dict(name='acme_table', url='http://www.acme.com', descr='', type='urltable', updatefreq='10', detail='')
+        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', updatefreq='10', descr='', detail=''"
         self.do_alias_creation_test(alias, command=command)
+
+    def test_urltable_create_exclusive(self):
+        """ test creattion of a urltable alias with both address and url - fails """
+        alias = dict(
+            name='acme_corp', address='http://www.acme-corp.com', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
+        self.do_alias_creation_test(alias, failed=True, msg='parameters are mutually exclusive: address|url')
 
     def test_urltable_delete(self):
         """ test deletion of a urltable alias """
         alias = dict(
-            name='acme_corp', address='http://www.acme-corp.com', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
+            name='acme_corp', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
         command = "delete alias 'acme_corp'"
         self.do_alias_deletion_test(alias, command=command)
 
     def test_urltable_update_noop(self):
         """ test not updating a urltable alias """
         alias = dict(
-            name='acme_corp', address='http://www.acme-corp.com', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
+            name='acme_corp', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
         self.do_alias_update_noop_test(alias)
 
     def test_urltable_update_url(self):
-        """ test updating address of a urltable alias """
+        """ test updating url of a urltable alias """
         alias = dict(
-            name='acme_corp', address='http://www.acme-corp.com', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
-        command = "update alias 'acme_corp' set address='http://www.new-acme-corp.com'"
-        self.do_alias_update_field(alias, address='http://www.new-acme-corp.com', set_after=dict(url='http://www.new-acme-corp.com'), command=command)
+            name='acme_corp', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
+        command = "update alias 'acme_corp' set url='http://www.new-acme-corp.com'"
+        self.do_alias_update_field(alias, url='http://www.new-acme-corp.com', set_after=dict(url='http://www.new-acme-corp.com'), command=command)
 
     def test_urltable_update_descr(self):
         """ test updating descr of a urltable alias """
         alias = dict(
-            name='acme_corp', address='http://www.acme-corp.com', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
+            name='acme_corp', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
         command = "update alias 'acme_corp' set descr='acme corp urls'"
         self.do_alias_update_field(alias, descr='acme corp urls', command=command)
 
     def test_urltable_update_freq(self):
         """ test updating updatefreq of a urltable alias """
         alias = dict(
-            name='acme_corp', address='http://www.acme-corp.com', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
+            name='acme_corp', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
         command = "update alias 'acme_corp' set updatefreq='20'"
         self.do_alias_update_field(alias, updatefreq='20', command=command)
 
     def test_urltable_ports_create(self):
         """ test creation of a new urltable_ports alias """
-        alias = dict(name='acme_table', address='http://www.acme.com', descr='', type='urltable_ports', updatefreq='10', detail='')
-        alias['url'] = alias['address']
-        command = "create alias 'acme_table', type='urltable_ports', address='http://www.acme.com', updatefreq='10', descr='', detail=''"
+        alias = dict(name='acme_table', url='http://www.acme.com', descr='', type='urltable_ports', updatefreq='10', detail='')
+        command = "create alias 'acme_table', type='urltable_ports', url='http://www.acme.com', updatefreq='10', descr='', detail=''"
         self.do_alias_creation_test(alias, command=command)
 
     ##############
@@ -237,7 +255,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_create_alias_invalid_name(self):
         """ test creation of a new alias with invalid name """
         alias = dict(name='ads-ervers', address='10.0.0.1 10.0.0.2', type='host')
-        msg = "The alias name must be less than 32 characters long, may not consist of only numbers, may not consist of only underscores, "
+        msg = "The alias name 'ads-ervers' must be less than 32 characters long, may not consist of only numbers, may not consist of only underscores, "
         msg += "and may only contain the following characters: a-z, A-Z, 0-9, _"
         self.do_alias_creation_test(alias, failed=True, msg=msg)
 
@@ -259,7 +277,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_create_alias_without_address(self):
         """ test creation of a new host alias without address """
         alias = dict(name='adservers', type='host')
-        self.do_alias_creation_test(alias, failed=True, msg='state is present but all of the following are missing: address')
+        self.do_alias_creation_test(alias, failed=True, msg='type is host but all of the following are missing: address')
 
     def test_create_alias_invalid_details(self):
         """ test creation of a new host alias with invalid details """

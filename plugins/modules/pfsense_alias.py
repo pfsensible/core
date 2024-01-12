@@ -37,7 +37,11 @@ options:
     default: null
     type: str
   address:
-    description: The address of the alias. Use a space separator for multiple values
+    description: The address of the alias for `host`, `network` or `port` types. Use a space separator for multiple values
+    default: null
+    type: str
+  url:
+    description: The URL of the alias for `urltable` or `urltable_ports` types. Use a space separator for multiple values
     default: null
     type: str
   descr:
@@ -81,12 +85,13 @@ diff:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.alias import PFSenseAliasModule, ALIAS_ARGUMENT_SPEC, ALIAS_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.alias import PFSenseAliasModule, ALIAS_ARGUMENT_SPEC, ALIAS_MUTUALLY_EXCLUSIVE, ALIAS_REQUIRED_IF
 
 
 def main():
     module = AnsibleModule(
         argument_spec=ALIAS_ARGUMENT_SPEC,
+        mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE,
         required_if=ALIAS_REQUIRED_IF,
         supports_check_mode=True)
 
