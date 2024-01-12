@@ -154,10 +154,6 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     ##############################
     # Logging
     #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return "'{0}'".format(self.obj['ifname'])
-
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
         values = ''
