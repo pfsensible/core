@@ -29,11 +29,9 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseDefaultGatewayModule, self).__init__(module, pfsense)
+        super(PFSenseDefaultGatewayModule, self).__init__(module, pfsense, root='gateways')
         self.name = "pfsense_default_gateway"
-        self.root_elt = self.pfsense.get_element('gateways')
         self.target_elt = self.root_elt
-        self.obj = dict()
         self.interface_elt = None
         self.read_only = False
 
