@@ -41,16 +41,10 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseGatewayModule, self).__init__(module, pfsense)
+        super(PFSenseGatewayModule, self).__init__(module, pfsense, root='gateways', create_root=True, node='gateway_item', key='name')
         self.name = "pfsense_gateway"
-        self.root_elt = self.pfsense.get_element('gateways')
-        self.obj = dict()
         self.interface_elt = None
         self.dynamic = False
-
-        if self.root_elt is None:
-            self.root_elt = self.pfsense.new_element('gateways')
-            self.pfsense.root.append(self.root_elt)
 
     ##############################
     # params processing
@@ -187,14 +181,6 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _create_target(self):
-        """ create the XML target_elt """
-        return self.pfsense.new_element('gateway_item')
-
-    def _find_target(self):
-        """ find the XML target_elt """
-        return self.pfsense.find_gateway_elt(self.obj['name'])
-
     @staticmethod
     def _get_params_to_remove():
         """ returns the list of params to remove if they are not set """
