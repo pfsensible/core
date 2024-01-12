@@ -21,10 +21,13 @@ class PFSenseModuleBase(object):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None):
+    def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None,
+                 map_param_if=None, param_force=None):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
+        self.argument_spec = module.argument_spec  # Allow for being overrriden for use with aggregate
+
         if name is not None:    # ansible module name
             self.name = name
         elif node is not None:
@@ -61,6 +64,8 @@ class PFSenseModuleBase(object):
 
         self.key = key          # item that identifies a target element
         self.obj = dict()       # dict holding target pfsense parameters
+        self.map_param_if = map_param_if  # rules for mapping parameters
+        self.param_force = param_force    # parameters that are forced to be present
         self.target_elt = None  # xml object holding target pfsense parameters
 
         self.update_php = update_php  # php code to update configuration
@@ -106,10 +111,24 @@ class PFSenseModuleBase(object):
         elif force:
             obj[fname] = value_false
 
-    @staticmethod
-    def _params_to_obj():
+    def _params_to_obj(self):
         """ return a dict from module params """
-        raise NotImplementedError()
+        obj = dict()
+        obj[self.key] = self.params[self.key]
+        if self.params.get('state') == 'present':
+            for param in [n for n in self.argument_spec.keys() if n != 'state']:
+                force = False
+                if param in self.param_force:
+                    force = True
+                self._get_ansible_param(obj, param, force=force)
+
+        for map_param, map_value, map_tuple in self.map_param_if:
+            if self.params.get(map_param) == map_value and map_tuple[0] in obj:
+                if map_tuple[1] not in obj:
+                    obj[map_tuple[1]] = obj[map_tuple[0]]
+                del obj[map_tuple[0]]
+
+        return obj
 
     @staticmethod
     def _validate_params():
