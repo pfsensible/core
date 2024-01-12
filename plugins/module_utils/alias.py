@@ -24,6 +24,11 @@ ALIAS_REQUIRED_IF = [
     ["type", "urltable_ports", ["updatefreq"]],
 ]
 
+ALIAS_PHP_COMMAND_SET = """
+require_once("filter.inc");
+if (filter_configure() == 0) { clear_subsystem_dirty('aliases'); }
+"""
+
 
 class PFSenseAliasModule(PFSenseModuleBase):
     """ module managing pfsense aliases """
@@ -37,8 +42,7 @@ class PFSenseAliasModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseAliasModule, self).__init__(module, pfsense, root='aliases', node='alias')
-        self.name = "pfsense_alias"
+        super(PFSenseAliasModule, self).__init__(module, pfsense, root='aliases', node='alias', key='name', update_php=ALIAS_PHP_COMMAND_SET)
 
     ##############################
     # params processing
@@ -97,21 +101,6 @@ class PFSenseAliasModule(PFSenseModuleBase):
             for detail in details:
                 if detail.startswith('|') or detail.endswith('|'):
                     self.module.fail_json(msg='Vertical bars (|) at start or end of descriptions not allowed')
-
-    ##############################
-    # XML processing
-    #
-    def _find_target(self):
-        """ find the XML target_elt """
-        return self.pfsense.find_alias(self.obj['name'], aliastype=self.obj.get('type'))
-
-    ##############################
-    # run
-    #
-    def _update(self):
-        """ make the target pfsense reload """
-        return self.pfsense.phpshell('''require_once("filter.inc");
-if (filter_configure() == 0) { clear_subsystem_dirty('aliases'); }''')
 
     ##############################
     # Logging
