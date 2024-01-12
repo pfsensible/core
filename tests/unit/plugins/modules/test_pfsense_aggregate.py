@@ -154,9 +154,9 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
         set_module_args(args)
         result = self.execute_module(changed=True)
         result_aliases = []
-        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
-        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
-        result_aliases.append("update alias 'port_ssh' set address='2222', descr=none, detail=none")
+        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7', descr='', detail=''")
+        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6', descr='', detail=''")
+        result_aliases.append("update alias 'port_ssh' set address='2222'")
         result_aliases.append("delete alias 'port_http'")
 
         self.assertEqual(result['result_aliases'], result_aliases)
@@ -183,9 +183,9 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
         set_module_args(args)
         result = self.execute_module(changed=True)
         result_aliases = []
-        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
-        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
-        result_aliases.append("update alias 'port_ssh' set address='2222', descr=none, detail=none")
+        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7', descr='', detail=''")
+        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6', descr='', detail=''")
+        result_aliases.append("update alias 'port_ssh' set address='2222'")
         result_aliases.append("delete alias 'port_http'")
 
         self.assertEqual(result['result_aliases'], result_aliases)
@@ -207,9 +207,9 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
         set_module_args(args)
         result = self.execute_module(changed=True)
         result_aliases = []
-        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
-        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
-        result_aliases.append("update alias 'port_ssh' set address='2222', descr=none, detail=none")
+        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7', descr='', detail=''")
+        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6', descr='', detail=''")
+        result_aliases.append("update alias 'port_ssh' set address='2222'")
         result_aliases.append("delete alias 'port_http'")
         result_aliases.append("delete alias 'port_dns'")
 
