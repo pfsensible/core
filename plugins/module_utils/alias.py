@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2018, Orion Poplawski <orion@nwra.com>
+# Copyright: (c) 2018-2024, Orion Poplawski <orion@nwra.com>
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -11,7 +11,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 ALIAS_ARGUMENT_SPEC = dict(
     name=dict(required=True, type='str'),
     state=dict(default='present', choices=['present', 'absent']),
-    type=dict(default=None, required=False, choices=['host', 'network', 'port', 'urltable', 'urltable_ports']),
+    type=dict(required=False, choices=['host', 'network', 'port', 'urltable', 'urltable_ports']),
     address=dict(default=None, required=False, type='str'),
     url=dict(default=None, required=False, type='str'),
     descr=dict(default=None, required=False, type='str'),
@@ -87,26 +87,22 @@ class PFSenseAliasModule(PFSenseModuleBase):
                     if params['type'] != alias_elt.find('type').text:
                         self.module.fail_json(msg='An alias with this name and a different type already exists: \'{0}\''.format(params['name']))
 
+            # Aliases cannot have the same name as an interface description
             if self.pfsense.get_interface_by_display_name(params['name']) is not None:
                 self.module.fail_json(msg='An interface description with this name already exists: \'{0}\''.format(params['name']))
-
-            missings = ['type']
-            for param, value in params.items():
-                if param in missings and value is not None and value != '':
-                    missings.remove(param)
-            if missings:
-                self.module.fail_json(msg='state is present but all of the following are missing: ' + ','.join(missings))
 
             # updatefreq is for urltable only
             if params['updatefreq'] is not None and params['type'] != 'urltable' and params['type'] != 'urltable_ports':
                 self.module.fail_json(msg='updatefreq is only valid with type urltable or urltable_ports')
 
-            # check details count
             details = params['detail'].split('||') if params['detail'] is not None else []
             if params['address'] is not None:
+                # check details count
                 addresses = params['address'].split(' ')
                 if len(details) > len(addresses):
                     self.module.fail_json(msg='Too many details in relation to addresses')
+
+                # warn if address is used with urltable to urltable_ports
                 if params['type'] in ['urltable', 'urltable_ports']:
                     self.module.warn('Use of "address" with {type} is depracated, please use "url" instead'.format(type=params['type']))
 
@@ -114,29 +110,3 @@ class PFSenseAliasModule(PFSenseModuleBase):
             for detail in details:
                 if detail.startswith('|') or detail.endswith('|'):
                     self.module.fail_json(msg='Vertical bars (|) at start or end of descriptions not allowed')
-
-    ##############################
-    # Logging
-    #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return "'" + self.obj['name'] + "'"
-
-    def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
-        if before is None:
-            values += self.format_cli_field(self.obj, 'type')
-            values += self.format_cli_field(self.obj, 'address')
-            values += self.format_cli_field(self.obj, 'url')
-            values += self.format_cli_field(self.obj, 'updatefreq')
-            values += self.format_cli_field(self.obj, 'descr')
-            values += self.format_cli_field(self.obj, 'detail')
-        else:
-            values += self.format_updated_cli_field(self.obj, before, 'type', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'address', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'url', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'updatefreq', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'detail', add_comma=(values))
-        return values
