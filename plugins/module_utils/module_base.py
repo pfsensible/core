@@ -336,7 +336,14 @@ class PFSenseModuleBase(object):
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        raise NotImplementedError()
+        values = ''
+        if before is None:
+            for param in [n for n in self.argument_spec.keys() if n != 'state' and n != self.key]:
+                values += self.format_cli_field(self.obj, param)
+        else:
+            for param in [n for n in self.argument_spec.keys() if n != 'state' and n != self.key]:
+                values += self.format_updated_cli_field(self.obj, before, param, add_comma=(values))
+        return values
 
     @staticmethod
     def _log_fields_delete():
