@@ -34,7 +34,6 @@ options:
   type:
     description: The type of the alias
     choices: [ "host", "network", "port", "urltable", "urltable_ports" ]
-    default: null
     type: str
   address:
     description: The address of the alias for `host`, `network` or `port` types. Use a space separator for multiple values

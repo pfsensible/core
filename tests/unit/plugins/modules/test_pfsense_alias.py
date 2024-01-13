@@ -189,13 +189,13 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_urltable_create(self):
         """ test creation of a new urltable alias """
         alias = dict(name='acme_table', address='http://www.acme.com', descr='', type='urltable', updatefreq='10', detail='')
-        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', updatefreq='10', descr='', detail=''"
+        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', descr='', detail='', updatefreq='10'"
         self.do_alias_creation_test(alias, command=command, set_after=dict(url='http://www.acme.com'), unset_after=['address'])
 
     def test_urltable_create_url(self):
         """ test creation of a new urltable alias """
         alias = dict(name='acme_table', url='http://www.acme.com', descr='', type='urltable', updatefreq='10', detail='')
-        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', updatefreq='10', descr='', detail=''"
+        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', descr='', detail='', updatefreq='10'"
         self.do_alias_creation_test(alias, command=command)
 
     def test_urltable_create_exclusive(self):
@@ -241,7 +241,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_urltable_ports_create(self):
         """ test creation of a new urltable_ports alias """
         alias = dict(name='acme_table', url='http://www.acme.com', descr='', type='urltable_ports', updatefreq='10', detail='')
-        command = "create alias 'acme_table', type='urltable_ports', url='http://www.acme.com', updatefreq='10', descr='', detail=''"
+        command = "create alias 'acme_table', type='urltable_ports', url='http://www.acme.com', descr='', detail='', updatefreq='10'"
         self.do_alias_creation_test(alias, command=command)
 
     ##############
