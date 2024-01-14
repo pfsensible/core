@@ -113,7 +113,7 @@ options:
     description: Shell Authentication Group DN (pfsense-CE >=2.5.0, pfsense-PLUS >=21.2)
     type: str
   ldap_allow_unauthenticated:
-    description: Allow unauthenticated bind (pfsense-CE >=2.5.0, pfsense-PLUS >=21.2)
+    description: Allow unauthenticated bind (pfsense-CE >=2.5.0, pfsense-PLUS >=21.2). Defaults to true.
     type: bool
 """
 
@@ -185,20 +185,26 @@ PFSENSE_AUTHSERVER_LDAP_SPEC = {
     'ldap_allow_unauthenticated': {'required': False, 'type': 'bool'},
 }
 
+AUTHSERVER_LDAP_CREATE_DEFAULT = dict(
+    ldap_allow_unauthenticated=None
+)
+
 
 class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
     """ module managing pfsense LDAP authentication """
 
+    ##############################
+    # unit tests
+    #
+    # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
         """ return argument spec """
         return PFSENSE_AUTHSERVER_LDAP_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseAuthserverLDAPModule, self).__init__(module, pfsense)
-        self.name = "pfsense_authserver_ldap"
-        self.root_elt = self.pfsense.get_element('system')
-        self.authservers = self.root_elt.findall('authserver')
+        super(PFSenseAuthserverLDAPModule, self).__init__(module, pfsense, name='pfsense_authserver_ldap', root='system', node='authserver', key='name',
+                                                          have_refid=True, create_default=AUTHSERVER_LDAP_CREATE_DEFAULT)
 
     ##############################
     # params processing
@@ -214,7 +220,6 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
         params = self.params
 
         obj = dict()
-        self.obj = obj
 
         obj['name'] = params['name']
         if params['state'] == 'present':
@@ -284,34 +289,6 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
             self.module.fail_json(msg='Found multiple ldap authentication servers for name {0}.'.format(self.obj['name']))
         else:
             return None
-
-    def _find_this_index(self):
-        return self.authservers.index(self.target_elt)
-
-    def _find_last_index(self):
-        if self.authservers:
-            return list(self.root_elt).index(self.authservers[len(self.authservers) - 1])
-        else:
-            return 0
-
-    def _create_target(self):
-        """ create the XML target_elt """
-        elt = self.pfsense.new_element('authserver')
-        elt.append(self.pfsense.new_element('ldap_allow_unauthenticated', text=None))
-        elt.append(self.pfsense.new_element('refid', text=self.pfsense.uniqid()))
-        return elt
-
-    ##############################
-    # Logging
-    #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return "'{0}'".format(self.obj['name'])
-
-    def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
-        return values
 
 
 def main():

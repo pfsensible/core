@@ -70,7 +70,7 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
     def test_authserver_create(self):
         """ test creation of a new authserver """
         obj = dict(name='authserver1', host='ldap.example.com', transport='tcp', scope='one', authcn='CN=Users')
-        self.do_module_test(obj, command="create authserver_ldap 'authserver1'")
+        self.do_module_test(obj, command="create authserver_ldap 'authserver1', host='ldap.example.com'")
 
     def test_authserver_delete(self):
         """ test deletion of a authserver """
@@ -85,7 +85,7 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
     def test_authserver_update_host(self):
         """ test updating host of a authserver """
         obj = dict(name='DELLDAP', ldap_timeout=5, host='ldap2.blah.com', transport='tcp', scope='one', authcn='CN=Users')
-        self.do_module_test(obj, command="update authserver_ldap 'DELLDAP' set ")
+        self.do_module_test(obj, command="update authserver_ldap 'DELLDAP' set host='ldap2.blah.com', ldap_pam_groupdn=none, ldap_allow_unauthenticated=none")
 
     ##############
     # misc
