@@ -1,0 +1,123 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright: (c) {{ year }}, {{ author_name }} <{{ author_email }}>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+DOCUMENTATION = r'''
+---
+module: {{ module_name }}
+
+short_description: Manage pfSense {{ module_node }}s
+
+version_added: "0.6.0"
+
+description:
+  - Manage pfSense {{ module_node }}s
+
+options:
+  name:
+    description: The name of the {{ module_node }}
+    required: true
+    type: str
+  state:
+    description: State in which to leave the {{ module_node }}
+    choices: [ "present", "absent" ]
+    type: str
+{% for param in params %}
+  {{ param }}:
+    description: {{ params[param]['description'] | default('') }}
+{% if 'choices' in params[param] %}
+    choices: {{ params[param]['choices'] | default('') }}
+{% endif %}
+    type: {{ params[param]['type'] | default('') }}
+{% endfor %}
+
+author: {{ author_name }} (@{{ author_handle }})
+'''
+
+EXAMPLES = r'''
+- name: Add myitem {{ module_node }}
+  pfsensible.core.{{ module_name }}:
+    name: myitem
+{% for name, param in params.items() %}
+{% if param['example'] is defined %}
+    {{ name }}: {{ param['example'] }}
+{% else %}
+    {{ name }}: {% if param['type'] == 'bool' %}false{% elif param['type'] == 'list' %}{% if 'choices' in param %}['{{ param['choices'][0:1] | join("', '") }}']{% else %}{{ param['choices'][0] }}{% endif %}{% elif param['type'] == 'str' %}{{ param['choices'][0] if 'choices' in param else '' }}{% endif %}
+
+{% endif %}
+{% endfor %}
+    state: present
+
+- name: Remove myitem {{ module_node }}
+  pfsensible.core.{{ module_name }}:
+    name: myitem
+    state: absent
+'''
+RETURN = r'''
+commands:
+    description: the set of commands that would be pushed to the remote device (if pfSense had a CLI)
+    returned: always
+    type: list
+    sample: ["create {{ module_node }} 'myitem'", "update {{ module_node }} 'myitem' set ...", "delete {{ module_node }} 'myitem'"]
+'''
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
+
+# Change to name of module, extend for needed parameters
+{{ module_node | upper() }}_ARGUMENT_SPEC = {
+    'name': {'required': True, 'type': 'str'},
+    'state': {
+        'default': 'present',
+        'choices': ['present', 'absent']
+    },
+{% for param in params %}
+    '{{ param }}': {
+{% if 'choices' in params[param] %}
+        'choices': {{ params[param]['choices'] }},
+{% endif %}
+        'type': '{{ params[param]['type'] | default('') }}',
+    },
+{% endfor %}
+}
+
+
+class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
+    """ module managing pfsense {{ module_node }} """
+
+    def __init__(self, module, pfsense=None):
+        super(PFSenseMODULEModule, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}')
+
+    ##############################
+    # params processing
+    #
+    def _validate_params(self):
+        """ do some extra checks on input parameters """
+        params = self.params
+
+        # check name
+        self.pfsense.check_name(params['{{ module_key }}'], '<TYPE>')
+
+        if params['state'] == 'present':
+            #  ... more checks, e.g.:
+            if int(params['timeout']) < 1:
+                self.module.fail_json(msg='timeout {0} must be greater than 1'.format(params['timeout']))
+
+
+def main():
+    module = AnsibleModule(
+        argument_spec={{ module_node | upper() }}_ARGUMENT_SPEC,
+        supports_check_mode=True)
+
+    pfmodule = PFSense{{ module_node | capitalize() }}Module(module)
+    pfmodule.run(module.params)
+    pfmodule.commit_changes()
+
+
+if __name__ == '__main__':
+    main()
