@@ -25,6 +25,7 @@ options:
     type: str
   state:
     description: State in which to leave the {{ module_node }}
+    default: present
     choices: [ "present", "absent" ]
     type: str
 {% for param in params %}
@@ -71,6 +72,8 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 # Change to name of module, extend for needed parameters
 {{ module_node | upper() }}_ARGUMENT_SPEC = {
+    # Only name should be required here - othewise you cannot remove an item with just 'name'
+    # Required arguments for creation should be note in {{ module_node | upper() }}_REQUIRED_IF = ['state', 'present', ...] below
     'name': {'required': True, 'type': 'str'},
     'state': {
         'default': 'present',
@@ -86,6 +89,9 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 {% endfor %}
 }
 
+{{ module_node | upper() }}_REQUIRED_IF = {
+    ['state', 'present', []],
+}
 
 class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
     """ module managing pfsense {{ module_node }} """
@@ -121,6 +127,7 @@ class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
 def main():
     module = AnsibleModule(
         argument_spec={{ module_node | upper() }}_ARGUMENT_SPEC,
+        required_if={{ module_node | upper() }}_REQUIRED_IF,
         supports_check_mode=True)
 
     pfmodule = PFSense{{ module_node | capitalize() }}Module(module)
