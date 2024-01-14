@@ -90,6 +90,15 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
     """ module managing pfsense {{ module_node }} """
 
+    ##############################
+    # unit tests
+    #
+    # Must be class method for unit test usage
+    @staticmethod
+    def get_argument_spec():
+        """ return argument spec """
+        return {{ module_node | upper() }}_ARGUMENT_SPEC
+
     def __init__(self, module, pfsense=None):
         super(PFSenseMODULEModule, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}')
 

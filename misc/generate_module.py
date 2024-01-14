@@ -6,6 +6,7 @@ import git
 import jinja2
 import lxml.etree as ET
 import lxml.html
+import os
 from paramiko import SSHClient
 import re
 import requests
@@ -43,8 +44,12 @@ if args.url is not None:
 
     # Construct a likely module name from the URL
     if args.module_name is None:
-        module_name = re.sub(r'^/(?:firewall_)?(.*)(?:_edit)\.php.*$', r'pfsense_\1', parsed_uri.path)
-        module_name = re.sub(r'ses$', 's', module_name)
+        module_name = re.sub(r'^/(?:firewall_|system_)?(.*)(?:_edit)?\.php.*$', r'pfsense_\1', parsed_uri.path)
+        module_name_singular = re.sub(r'ses$', 's', module_name)
+        if module_name_singular != module_name:
+            module_name = module_name_singular
+        else:
+            module_name = re.sub(r's$', '', module_name)
     else:
         module_name = args.module_name
 
@@ -66,6 +71,9 @@ if args.url is not None:
     # Retrieve the configuration web page and parse it
     r = client.get(args.url, verify=False)
     html = lxml.html.fromstring(r.text)
+    f = open(f'{module_name}.html', 'w')
+    f.write(r.text)
+    f.close()
 
 elif args.urlfile is not None:
     # Use a cached copy of the web page - get rid of this?  Need to specify host and module name
@@ -75,47 +83,6 @@ elif args.urlfile is not None:
 
 else:
     sys.exit('You must specify one of --url or --urlfile')
-
-# The web page should have a single form
-if len(html.forms) != 1:
-    sys.exit(f'Found {len(html.forms)} forms instead of a single one!')
-
-# Collected parameters from the web form
-params = dict()
-
-# Collect the input elements
-for input in html.forms[0].inputs:
-    # Skip internal items
-    if input.name == '__csrf_magic':
-        continue
-
-    param = dict()
-    print(f'attrib={input.attrib}')
-    if isinstance(input, lxml.html.InputElement):
-        print(f'input name={input.name} id={input.get("id")} type={input.type} value={input.value} '
-              'text={input.text} title={input.get("title")} tail={input.tail}')
-        if input.type == 'checkbox':
-            param['type'] = 'bool'
-            param['value'] = input.attrib['value']
-            param['example'] = 'true'
-        elif input.type == 'text':
-            param['type'] = 'str'
-        # Text sometimes is after the input element inside the enclosing <label>
-        if input.tail:
-            param['description'] = input.tail.strip()
-    elif isinstance(input, lxml.html.SelectElement):
-        print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
-        if input.value_options is not None:
-            param['choices'] = input.value_options
-            if input.multiple:
-                param['type'] = 'list'
-            else:
-                param['type'] = 'str'
-            param['multiple'] = input.multiple
-    params[input.name] = param
-
-# Debug
-print(f'Web paramters: {params.keys()}')
 
 # Collect the /cf/conf/config.xml file
 ssh = SSHClient()
@@ -140,9 +107,6 @@ else:
 
 # This element should be the key for the items
 module_key = key_elt.tag
-
-# Key is handled separately from other parameters so remove it
-del params[module_key]
 
 # The full node configuration element will be the parent
 node_elt = key_elt.find('..')
@@ -170,8 +134,83 @@ for elt in full_elt:
         continue
     params_full[elt.tag] = elt.text
 
+if 'type' in params_full:
+    module_type = params_full['type']
+else:
+    module_type = None
 
 print('')
+
+# The web page should have a single form
+if len(html.forms) != 1:
+    sys.exit(f'Found {len(html.forms)} forms instead of a single one!')
+
+# Collected parameters from the web form
+params = dict()
+
+# Collect the input elements
+for input in html.forms[0].inputs:
+    # Skip internal items
+    if input.name == '__csrf_magic':
+        continue
+
+    param = dict(description='')
+    print(f'attrib={input.attrib}')
+    if isinstance(input, lxml.html.InputElement):
+        print(f'input name={input.name} id={input.get("id")} type={input.type} value={input.value} '
+              f'text={input.text} title={input.get("title")} tail={input.tail}')
+
+        if input.type == 'checkbox':
+            param['type'] = 'bool'
+            param['value'] = input.attrib['value'].strip()
+            param['example'] = 'true'
+        elif input.type == 'text':
+            param['type'] = 'str'
+        # Text sometimes is after the input element inside the enclosing <label>
+        if input.tail:
+            param['description'] = input.tail.strip()
+    elif isinstance(input, lxml.html.SelectElement):
+        print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
+        if input.value_options is not None:
+            param['choices'] = input.value_options
+            if input.multiple:
+                param['type'] = 'list'
+            else:
+                param['type'] = 'str'
+            param['multiple'] = input.multiple
+
+#  <div class="form-group">
+#    <label class="col-sm-2 control-label">
+#       <span class="element-required">Hostname or IP address</span>
+#    </label>
+#    <div class="col-sm-10">
+#      <input class="form-control" name="ldap_host" id="ldap_host" type="text">
+#      <span class="help-block">NOTE: When using SSL/TLS or STARTTLS, this hostname MUST match a Subject Alternative Name (SAN) or the Common Name (CN) of the LDAP server SSL/TLS Certificate.</span>
+#    </div>
+#  </div> 
+
+    div1 = input.find('..')
+    div2 = div1.find('..')
+    if div2.tag == 'div' and div2.attrib['class'] == 'form-group':
+        descr_elt = div2.find('*span')
+        if descr_elt.text:
+            print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
+            param['description'] += f'{descr_elt.text.strip()} of the {module_node}'
+        help_elt = div1.find('span[@class="help-block"]')
+        if help_elt is not None:
+            print(f'help_elt text {help_elt.text.strip()}')
+            param['description'] += f'. {help_elt.text.strip()}'
+
+    params[input.name] = param
+
+# Key is handled separately from other parameters so remove it
+# TODO - keep the description, etc?
+del params[module_key]
+
+# Debug
+print(f'Web paramters: {params.keys()}')
+
+# Consistency
 params_web_only = list(set(params.keys()) - set(params_full.keys()))
 print('Web parameters not in xml: ' + str(params_web_only))
 
@@ -180,14 +219,22 @@ for param in params_web_only:
     # See if the items are numbered, likely maps to an unnumbered XML tag
     newp = re.sub(r'0$', '', param)
     if newp != param:
-        if newp in params_full.keys():
+        if newp in params_full:
+            print(f'Renaming {param} to {newp}')
+            params[newp] = params.pop(param)
+            continue
+
+    # See if the items are prefixed by a type, likely maps to un-prefixed XML tag
+    newp = re.sub(f'^{module_type}_', '', param)
+    if newp != param:
+        if newp in params_full and newp not in params:
             print(f'Renaming {param} to {newp}')
             params[newp] = params.pop(param)
             continue
 
     # Common renamings
     for f, t in [('dst', 'destination'), ('src', 'source')]:
-        if param == f and t in params_full.keys():
+        if param == f and t in params_full:
             print(f'Renaming {f} to {t}')
             params[t] = params.pop(f)
             break
@@ -196,6 +243,12 @@ for param in params_web_only:
         if param in params:
             print(f'Removing {param}')
             del params[param]
+
+print('')
+params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
+print('XML parameters not in web: ' + str(params_xml_only))
+for param in params_xml_only:
+    params[param] = dict(type='str', example=params_full[param])
 
 # Create some sample descriptions and example values
 for name, param in params.items():
@@ -223,7 +276,10 @@ environment = jinja2.Environment(loader=jinja2.FileSystemLoader("misc/"), trim_b
 template = environment.get_template("pfsense_module.py.j2")
 
 # Todo - prompt for overwrite
-print(f'Writing plugins/modules/{module_name}.py with {context}')
-f = open(f'plugins/modules/{module_name}.py', 'w')
+filename = f'plugins/modules/{module_name}.py'
+if os.path.isfile(filename):
+    sys.exit(f'{filename} already exists!')
+print(f'Writing {filename} with {context}')
+f = open(f'{filename}', 'w')
 f.write(template.render(context))
 f.close()
