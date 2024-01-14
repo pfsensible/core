@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import git
 import jinja2
 import lxml.etree as ET
 import lxml.html
@@ -12,11 +13,18 @@ from scp import SCPClient
 import sys
 from urllib.parse import urlparse
 
+gitconfig = git.GitConfigParser()
+author_name = gitconfig.get_value('user', 'name')
+author_email = gitconfig.get_value('user', 'email')
+
 parser = argparse.ArgumentParser(description='Generate a pfsensible module.')
 parser.add_argument('--url', help='The URL to scrape')
 parser.add_argument('--urlfile', help='A local file copy of the URL to scrape')
 parser.add_argument('--user', default='admin', help='The user to connect as')
 parser.add_argument('--password', default='changeme', help='The password of user')
+parser.add_argument('--author_name', default=author_name, help='The full name of the module author')
+parser.add_argument('--author_email', default=author_email, help='The email address of the module author')
+parser.add_argument('--author_handle', default='', help='The github handle of the module author')
 parser.add_argument('--module_name', help='The name of the module to generate - defaults to being based on the url')
 parser.add_argument('--item_min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
 parser.add_argument('--item_full', default='item_full',
@@ -204,9 +212,9 @@ context = dict(
     module_node=module_node,
     module_key=module_key,
     params=params,
-    author_name='Orion Poplawski',
-    author_handle='opoplawski',
-    author_email='orion@nwra.com',
+    author_name=args.author_name,
+    author_email=args.author_email,
+    author_handle=args.author_handle,
     year=datetime.date.today().year,
 )
 
