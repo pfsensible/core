@@ -13,6 +13,10 @@ from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFS
 class PFSenseModuleBase(object):
     """ class providing base services for pfSense modules """
 
+    ##############################
+    # unit tests
+    #
+    # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
         """ return argument spec """
@@ -22,7 +26,7 @@ class PFSenseModuleBase(object):
     # init
     #
     def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None,
-                 map_param_if=None, param_force=None):
+                 map_param_if=None, param_force=None, have_refid=False, create_default=None):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
@@ -66,6 +70,8 @@ class PFSenseModuleBase(object):
         self.obj = dict()       # dict holding target pfsense parameters
         self.map_param_if = map_param_if  # rules for mapping parameters
         self.param_force = param_force    # parameters that are forced to be present
+        self.create_default = create_default  # default values for a created target
+        self.have_refid = have_refid      # if the element has a refid item
         self.target_elt = None  # xml object holding target pfsense parameters
 
         self.update_php = update_php  # php code to update configuration
@@ -189,7 +195,12 @@ class PFSenseModuleBase(object):
     def _create_target(self):
         """ create the XML target_elt """
         if self.node is not None:
-            return self.pfsense.new_element(self.node)
+            elt = self.pfsense.new_element(self.node)
+            if self.have_refid:
+                elt.append(self.pfsense.new_element('refid', text=self.pfsense.uniqid()))
+            if self.create_default is not None:
+                self.pfsense.copy_dict_to_element(self.create_default, elt)
+            return elt
         else:
             raise NotImplementedError()
 
