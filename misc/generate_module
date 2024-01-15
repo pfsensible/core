@@ -4,7 +4,6 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 # TODO:
-#   - collect .php file and scan source for update and validation code
 #   - validation for addresses
 #   - bool type determination and paramter list
 
@@ -55,8 +54,11 @@ if args.url is not None:
     # Login using just the base URL
     login_url = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
 
-    # Collect to host for later use to scp config.xml
+    # Collect host for later use to scp config.xml
     host = f'{parsed_uri.netloc}'
+
+    # Collect phpfile to scp later
+    phpfile = re.sub(r'^/(.*\.php).*$', r'\1', parsed_uri.path)
 
     # Construct a likely module name from the URL
     if args.module_name is None:
@@ -103,6 +105,8 @@ ssh.load_system_host_keys()
 ssh.connect(host, username='root', password=args.password)
 scp = SCPClient(ssh.get_transport())
 scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
+if phpfile is not None:
+    scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
 scp.close()
 
 # Parse the config.xml file
@@ -166,6 +170,30 @@ else:
     module_type = None
 
 print('')
+
+# Parse the php file
+if phpfile is not None:
+    php_requires = ''
+    php_save = ''
+    php_subsystem = ''
+    found_save = False
+    with open(f'{tmpdir.name}/{phpfile}', 'r') as f:
+        for line in f:
+             if re.match(r'require_once', line):
+                 php_requires += line
+                 continue
+             if re.search(r'if \(\$_POST\[\'save\']', line):
+                 found_save = True
+                 continue
+             if found_save:
+                 if re.match(r'}', line):
+                     found_save = False
+                 else:
+                     php_save += re.sub(r'\t', '    ', re.sub(r'^\t', '', line))
+                     subsystem_search = re.search(r'subsystem_dirty\(\'(.*)\'\)', line)
+                     if subsystem_search:
+                         php_subsystem = subsystem_search.group(1)
+
 
 # The web page should have a single form
 if len(html.forms) != 1:
@@ -307,6 +335,9 @@ context = dict(
     author_name=args.author_name,
     author_email=args.author_email,
     author_handle=args.author_handle,
+    php_requires=php_requires,
+    php_save=php_save,
+    php_subsystem=php_subsystem,
     year=datetime.date.today().year,
 )
 

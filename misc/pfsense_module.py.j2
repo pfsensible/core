@@ -98,6 +98,13 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 {% endif %}
 ]
 
+{% if 'filter.inc' in php_requires %}
+{{ module_node | upper() }}_PHP_COMMAND_SET = r'''
+require_once("filter.inc");
+if (filter_configure() == 0) { clear_subsystem_dirty('{{ php_subsystem }}'); }
+'''
+
+{% endif %}
 
 class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
     """ module managing pfsense {{ module_node }} """
@@ -112,7 +119,7 @@ class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
         return {{ module_node | upper() }}_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSense{{ module_node | capitalize() }}Module, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}')
+        super(PFSense{{ module_node | capitalize() }}Module, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}'{{ ', update_php=' ~ module_node | upper() ~ '_PHP_COMMAND_SET' if 'filter.inc' in php_requires else '' }})
 
     ##############################
     # params processing
@@ -128,6 +135,14 @@ class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
             #  ... more checks, e.g.:
             if int(params['timeout']) < 1:
                 self.module.fail_json(msg='timeout {0} must be greater than 1'.format(params['timeout']))
+
+
+# TODO - review this for clues for input validation.  Search for functions in the below require_once files in /etc and /usr/local/pfSense/include
+PHP_VALIDATION = r'''
+{{ php_requires }}
+
+{{ php_save }}
+'''
 
 
 def main():
