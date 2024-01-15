@@ -25,16 +25,16 @@ options:
     type: str
   state:
     description: State in which to leave the {{ module_node }}
+    choices: ['present', 'absent']
     default: present
-    choices: [ "present", "absent" ]
     type: str
-{% for param in params %}
-  {{ param }}:
-    description: {{ params[param]['description'] | default('') }}
-{% if 'choices' in params[param] %}
-    choices: {{ params[param]['choices'] | default('') }}
+{% for name, param in params.items() %}
+  {{ name }}:
+    description: {{ "'" if ':' in param['description'] else '' }}{{ param['description'] | default('') }}{{ "'" if ':' in param['description'] else '' }}
+{% if 'choices' in param %}
+    choices: {{ param['choices'] }}
 {% endif %}
-    type: {{ params[param]['type'] | default('') }}
+    type: {{ param['type'] | default('') }}
 {% endfor %}
 
 author: {{ author_name }} (@{{ author_handle }})
@@ -89,9 +89,10 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 {% endfor %}
 }
 
-{{ module_node | upper() }}_REQUIRED_IF = {
+{{ module_node | upper() }}_REQUIRED_IF = [
     ['state', 'present', []],
-}
+]
+
 
 class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
     """ module managing pfsense {{ module_node }} """
@@ -106,7 +107,7 @@ class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
         return {{ module_node | upper() }}_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseMODULEModule, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}')
+        super(PFSense{{ module_node | capitalize() }}Module, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}')
 
     ##############################
     # params processing
