@@ -90,7 +90,12 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 }
 
 {{ module_node | upper() }}_REQUIRED_IF = [
-    ['state', 'present', []],
+{% if module_type is none %}
+    ['state', 'present', ['{{ params | dict2items | selectattr('value.required', 'defined') | select('key') | join("', '") }}]],
+{% else %}
+    ['state', 'present', ['type']],
+    ['type', '{{ params['type']['example'] }}', ['{{ params | dict2items | rejectattr('key', 'equalto', 'type') | selectattr('value.required', 'defined') | map(attribute='key') | join("', '") }}']],
+{% endif %}
 ]
 
 
@@ -107,7 +112,7 @@ class PFSense{{ module_node | capitalize() }}Module(PFSenseModuleBase):
         return {{ module_node | upper() }}_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSense{{ module_node | capitalize() }}Module, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}')
+        super(PFSense{{ module_node | capitalize() }}Module, self).__init__(module, pfsense, root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}')
 
     ##############################
     # params processing
