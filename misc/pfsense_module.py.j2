@@ -89,12 +89,23 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 {% endfor %}
 }
 
+# Compact style
+{{ module_node | upper() }}_ARGUMENT_SPEC = dict(
+    # Only name should be required here - othewise you cannot remove an item with just 'name'
+    # Required arguments for creation should be note in {{ module_node | upper() }}_REQUIRED_IF = ['state', 'present', ...] below
+    name=dict(required=True, typ='str'),
+    state=dict(default='present', choices=['present', 'absent']),
+{% for param in params %}
+    {{ param }}=dict(type='{{ params[param]['type'] | default('') }}'{% if 'choices' in params[param] %}, choices={{ params[param]['choices'] }},{% endif %}),
+{% endfor %}
+)
+
 {{ module_node | upper() }}_REQUIRED_IF = [
 {% if module_type %}
     ['state', 'present', ['type']],
     ['type', '{{ params['type']['example'] }}', ['{{ params | dict2items | rejectattr('key', 'equalto', 'type') | selectattr('value.required', 'defined') | map(attribute='key') | join("', '") }}']],
 {% else %}
-    ['state', 'present', ['{{ params | dict2items | selectattr('value.required', 'defined') | select('key') | join("', '") }}']],
+    ['state', 'present', ['{{ params | dict2items | selectattr('value.required', 'defined') | select(attribue='key') | join("', '") }}']],
 {% endif %}
 ]
 
