@@ -14,20 +14,19 @@ from ansible_collections.pfsensible.core.plugins.modules import pfsense_ca
 from .pfsense_module import TestPFSenseModule
 
 CERTIFICATE = (
-    "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlFQ0RDQ0F2Q2dBd0lCQWdJSUZqRk9oczFuTXpRd0RRWUpLb1pJaHZjTkFRRUxCUUF3WERFVE1CRUdBMVVFDQpBeE1LYjNCbGJuWndiaTFqWVRF"
-    "TE1Ba0dBMVVFQmhNQ1ZWTXhFVEFQQmdOVkJBZ1RDRU52Ykc5eVlXUnZNUkF3DQpEZ1lEVlFRSEV3ZENiM1ZzWkdWeU1STXdFUVlEVlFRS0V3cHdabE5sYm5OcFlteGxNQjRYRFRJeU1ESXhOREExDQpN"
-    "RGd6TVZvWERUTXlNREl4TWpBMU1EZ3pNVm93WERFVE1CRUdBMVVFQXhNS2IzQmxiblp3YmkxallURUxNQWtHDQpBMVVFQmhNQ1ZWTXhFVEFQQmdOVkJBZ1RDRU52Ykc5eVlXUnZNUkF3RGdZRFZRUUhF"
-    "d2RDYjNWc1pHVnlNUk13DQpFUVlEVlFRS0V3cHdabE5sYm5OcFlteGxNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDDQpBUUVBbXN2aUpNRTFFVGVkNGZPdGJrSHBGM2Q5ZU0r"
-    "NjQwOFhQbmE4dEpHZEJxM1VBQ3hFem9hQktSdDJ5MWN0DQo2elFEZTVGRjRBQXZ0VjF1Y1pwc2w1bzREUy9JR1NibjZkM1lNaytqOGpBUTNFbXpSOEdPb2huZ2YxUTlBWEM2DQpvaDRyQlA1c1g0WTh1"
-    "WThrSjNZclg1cVRwRlk1S0hMVTFBb1BleVE3eXlNWkhMb2t0OW5jK0ZGWnd3VTdSQ0dTDQpjTkxaaVZ4Q1FRSzVwOGs5bUE4Ymd4bHFZa2YwbUF5Qk53OU1BZlBVY1VrcUY2UDBnV1BIbElySFovdWhn"
-    "N2RVDQorMjJhb2NLVUVOaXY5bXFhK0I2Y1VnTFRGVDZzMFZTRXNYL2RBZWg2MllMZ2ZtWEpnNmROSFFJK01nNlNrZWxwDQprOVZSVGVqaUVUSUVWOEpnZHYyTjdSU201d0lEQVFBQm80SE5NSUhLTUIw"
-    "R0ExVWREZ1FXQkJSazVvQS8wcWEyDQpLUHdnb1hKcUtNdCtBb0tKZ1RDQmpRWURWUjBqQklHRk1JR0NnQlJrNW9BLzBxYTJLUHdnb1hKcUtNdCtBb0tKDQpnYUZncEY0d1hERVRNQkVHQTFVRUF4TUti"
-    "M0JsYm5ad2JpMWpZVEVMTUFrR0ExVUVCaE1DVlZNeEVUQVBCZ05WDQpCQWdUQ0VOdmJHOXlZV1J2TVJBd0RnWURWUVFIRXdkQ2IzVnNaR1Z5TVJNd0VRWURWUVFLRXdwd1psTmxibk5wDQpZbXhsZ2dn"
-    "V01VNkd6V2N6TkRBTUJnTlZIUk1FQlRBREFRSC9NQXNHQTFVZER3UUVBd0lCQmpBTkJna3Foa2lHDQo5dzBCQVFzRkFBT0NBUUVBVUg5S0NkbUpkb0FKbFUwd0JKSFl4akxyS2xsUFk2T05ienI1SmJo"
-    "Q002OUh4eFlODQpCa2lpbXd1N09mRmFGZkZDT25NSjhvcStKVGxjMG9vREoxM2xCdHRONkdybnZrUTNQMXdZYkNFTmJuaWxPYVVCDQpUSXJpSHl0TkRRYW91TmEvS1dzN0ZhdW9iY3RCbDF3OWF0b0ha"
-    "c041b2VoVDNyQVR2MUNDQXRqcGFUSklmSlIzDQowSVFPWWtlNG9ZNkRrSXdIcDJ2UFBtb29HZ0l0YlR3M1UrRTQxWVplN3FDbUUvN3pMVFNaa0lNMmx4NnpENDZqDQpEZjRyZ044TVVMNnhpd09Mbzly"
-    "QUp5ckRNM2JEeTJ1QjY0QkVzRFFMa2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4DQpoMS9nekRaSURpK1dYQ1lBY2JnTGhaVkJxdG42MnVtRnBNUkl1dz09DQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t"
-    "DQo=")
+    "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVDRENDQXZDZ0F3SUJBZ0lJRmpGT2hzMW5NelF3RFFZSktvWklodmNOQVFFTEJRQXdYREVUTUJFR0ExVUUKQXhNS2IzQmxiblp3YmkxallURUxN"
+    "QWtHQTFVRUJoTUNWVk14RVRBUEJnTlZCQWdUQ0VOdmJHOXlZV1J2TVJBdwpEZ1lEVlFRSEV3ZENiM1ZzWkdWeU1STXdFUVlEVlFRS0V3cHdabE5sYm5OcFlteGxNQjRYRFRJeU1ESXhOREExCk1EZ3pN"
+    "Vm9YRFRNeU1ESXhNakExTURnek1Wb3dYREVUTUJFR0ExVUVBeE1LYjNCbGJuWndiaTFqWVRFTE1Ba0cKQTFVRUJoTUNWVk14RVRBUEJnTlZCQWdUQ0VOdmJHOXlZV1J2TVJBd0RnWURWUVFIRXdkQ2Iz"
+    "VnNaR1Z5TVJNdwpFUVlEVlFRS0V3cHdabE5sYm5OcFlteGxNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDCkFRRUFtc3ZpSk1FMUVUZWQ0Zk90YmtIcEYzZDllTSs2NDA4WFBu"
+    "YTh0SkdkQnEzVUFDeEV6b2FCS1J0MnkxY3QKNnpRRGU1RkY0QUF2dFYxdWNacHNsNW80RFMvSUdTYm42ZDNZTWsrajhqQVEzRW16UjhHT29obmdmMVE5QVhDNgpvaDRyQlA1c1g0WTh1WThrSjNZclg1"
+    "cVRwRlk1S0hMVTFBb1BleVE3eXlNWkhMb2t0OW5jK0ZGWnd3VTdSQ0dTCmNOTFppVnhDUVFLNXA4azltQThiZ3hscVlrZjBtQXlCTnc5TUFmUFVjVWtxRjZQMGdXUEhsSXJIWi91aGc3ZFUKKzIyYW9j"
+    "S1VFTml2OW1xYStCNmNVZ0xURlQ2czBWU0VzWC9kQWVoNjJZTGdmbVhKZzZkTkhRSStNZzZTa2VscAprOVZSVGVqaUVUSUVWOEpnZHYyTjdSU201d0lEQVFBQm80SE5NSUhLTUIwR0ExVWREZ1FXQkJS"
+    "azVvQS8wcWEyCktQd2dvWEpxS010K0FvS0pnVENCalFZRFZSMGpCSUdGTUlHQ2dCUms1b0EvMHFhMktQd2dvWEpxS010K0FvS0oKZ2FGZ3BGNHdYREVUTUJFR0ExVUVBeE1LYjNCbGJuWndiaTFqWVRF"
+    "TE1Ba0dBMVVFQmhNQ1ZWTXhFVEFQQmdOVgpCQWdUQ0VOdmJHOXlZV1J2TVJBd0RnWURWUVFIRXdkQ2IzVnNaR1Z5TVJNd0VRWURWUVFLRXdwd1psTmxibk5wCllteGxnZ2dXTVU2R3pXY3pOREFNQmdO"
+    "VkhSTUVCVEFEQVFIL01Bc0dBMVVkRHdRRUF3SUJCakFOQmdrcWhraUcKOXcwQkFRc0ZBQU9DQVFFQVVIOUtDZG1KZG9BSmxVMHdCSkhZeGpMcktsbFBZNk9OYnpyNUpiaENNNjlIeHhZTgpCa2lpbXd1"
+    "N09mRmFGZkZDT25NSjhvcStKVGxjMG9vREoxM2xCdHRONkdybnZrUTNQMXdZYkNFTmJuaWxPYVVCClRJcmlIeXRORFFhb3VOYS9LV3M3RmF1b2JjdEJsMXc5YXRvSFpzTjVvZWhUM3JBVHYxQ0NBdGpw"
+    "YVRKSWZKUjMKMElRT1lrZTRvWTZEa0l3SHAydlBQbW9vR2dJdGJUdzNVK0U0MVlaZTdxQ21FLzd6TFRTWmtJTTJseDZ6RDQ2agpEZjRyZ044TVVMNnhpd09MbzlyQUp5ckRNM2JEeTJ1QjY0QkVzRFFM"
+    "a2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4CmgxL2d6RFpJRGkrV1hDWUFjYmdMaFpWQnF0bjYydW1GcE1SSXV3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=")
 CRL1 = (
     "LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0tCk1JSUNkRENDQVZ3Q0FRRXdEUVlKS29aSWh2Y05BUUVGQlFBd1hERVRNQkVHQTFVRUF4TUtiM0JsYm5ad2JpMWoKWVRFTE1Ba0dBMVVFQmhNQ1ZWTXhFVEFQ"
     "QmdOVkJBZ1RDRU52Ykc5eVlXUnZNUkF3RGdZRFZRUUhFd2RDYjNWcwpaR1Z5TVJNd0VRWURWUVFLRXdwd1psTmxibk5wWW14bEZ3MHlNakF5TVRrd05UVXhNRFphRncwME9UQTNNRFl3Ck5UVXhNRFph"
@@ -97,22 +96,22 @@ class TestPFSenseCAModule(TestPFSenseModule):
     def test_ca_create(self):
         """ test creation of a new ca """
         obj = dict(name='ca1', certificate=CERTIFICATE)
-        self.do_module_test(obj, command='create ca ca1')
+        self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_add_crl(self):
         """ test adding a CRL """
         obj = dict(name='ca1', certificate=CERTIFICATE, crl=CRL1)
-        self.do_module_test(obj, command='create ca ca1')
+        self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_change_crl(self):
         """ test adding a CRL """
         obj = dict(name='ca1', certificate=CERTIFICATE, crl=CRL2)
-        self.do_module_test(obj, command='create ca ca1')
+        self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_delete(self):
         """ test deletion of a ca """
         obj = dict(name='testdel')
-        self.do_module_test(obj, command='delete ca testdel', delete=True)
+        self.do_module_test(obj, command="delete ca 'testdel'", delete=True)
 
     def test_ca_update_noop(self):
         """ test not updating a ca """
@@ -122,12 +121,12 @@ class TestPFSenseCAModule(TestPFSenseModule):
     def test_ca_update_serial(self):
         """ test updating serial of a ca """
         obj = dict(name='testdel', certificate=CERTIFICATE, serial=10)
-        self.do_module_test(obj, command='update ca testdel set ')
+        self.do_module_test(obj, command="update ca 'testdel' set serial='10'")
 
     def test_ca_update_trust(self):
         """ test updating trust of a ca """
         obj = dict(name='testdel', certificate=CERTIFICATE, trust=False)
-        self.do_module_test(obj, command='update ca testdel set ')
+        self.do_module_test(obj, command="update ca 'testdel' set ")
 
     ##############
     # misc

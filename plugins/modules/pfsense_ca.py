@@ -112,6 +112,13 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
     serial=dict(type='int'),
 )
 
+# These are default but not enforced values
+CA_CREATE_DEFAULT = dict(
+    randomserial='disabled',
+    serial='0',
+    trust='disabled',
+)
+
 
 class PFSenseCAModule(PFSenseModuleBase):
     """ module managing pfsense certificate authorities """
@@ -122,7 +129,7 @@ class PFSenseCAModule(PFSenseModuleBase):
         return PFSENSE_CA_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseCAModule, self).__init__(module, pfsense, root='pfsense', node='ca')
+        super(PFSenseCAModule, self).__init__(module, pfsense, root='pfsense', node='ca', have_refid=True, create_default=CA_CREATE_DEFAULT)
         self.name = "pfsense_ca"
         self.refresh_crls = False
         self.crl = None
@@ -162,8 +169,6 @@ class PFSenseCAModule(PFSenseModuleBase):
         params = self.params
 
         obj = dict()
-        self.obj = obj
-
         obj['descr'] = params['name']
         if params['state'] == 'present':
             if 'certificate' in params and params['certificate'] is not None:
@@ -210,18 +215,6 @@ class PFSenseCAModule(PFSenseModuleBase):
             self.module.fail_json(msg='Found multiple CRLs for refid {0}.  This is an unsupported condition'.format(crlrefid))
         else:
             return None
-
-    def _create_target(self):
-        """ create the XML target_elt """
-        elt = self.pfsense.new_element('ca')
-        # We need this later in _copy_and_add_target()
-        self.obj['refid'] = self.pfsense.uniqid()
-        elt.append(self.pfsense.new_element('refid', text=self.obj['refid']))
-        # These are default but not enforced values
-        elt.append(self.pfsense.new_element('randomserial', text='disabled'))
-        elt.append(self.pfsense.new_element('serial', text='0'))
-        elt.append(self.pfsense.new_element('trust', text='disabled'))
-        return elt
 
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
@@ -283,18 +276,6 @@ class PFSenseCAModule(PFSenseModuleBase):
         return (before, changed)
 
     ##############################
-    # Logging
-    #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return self.obj['descr']
-
-    def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
-        return values
-
-    ##############################
     # run
     #
     def _update(self):
@@ -315,20 +296,16 @@ class PFSenseCAModule(PFSenseModuleBase):
             crl_stdout = ''
             crl_stderr = ''
             if self.refresh_crls:
-                if self.pfsense.is_at_least_2_5_0():
-                    ipsec_configure = 'ipsec_configure'
-                else:
-                    ipsec_configure = 'vpn_ipsec_configure'
                 (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
                     require_once("openvpn.inc");
                     openvpn_refresh_crls();
                     require_once("vpn.inc");
-                    {0}();""".format(ipsec_configure))
+                    ipsec_configure();""")
                 return (dummy, stdout + crl_stdout, stderr + crl_stderr)
 
             return (dummy, stdout + crl_stdout, stderr + crl_stderr)
         else:
-            return (None, '', '')
+            return ('', '', '')
 
     def _pre_remove_target_elt(self):
         self.diff['after'] = {}
