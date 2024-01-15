@@ -122,6 +122,11 @@ options:
   numberoptions:
     description: The number options
     type: str
+  arp_table_static_entry:
+    description: Create an ARP Table Static Entry for this MAC & IP Address pair
+    type: bool
+    required: false
+    default: false
   state:
     description: State in which to leave the configuration
     default: present
@@ -189,8 +194,13 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     filename64arm=dict(type='str'),
     uefihttpboot=dict(type='str'),
     numberoptions=dict(type='str'),
+    arp_table_static_entry=dict(default=False, type='bool'),
     state=dict(type='str', default='present', choices=['present', 'absent']),
 )
+
+DHCP_STATIC_REQUIRED_IF = [
+    ['arp_table_static_entry', True, ['ipaddr']],
+]
 
 DHCP_STATIC_REQUIRED_ONE_OF = [
     ('name', 'macaddr'),
@@ -268,6 +278,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
                 self._get_ansible_param(obj, option)
             # Defaulted options
             self._get_ansible_param(obj, 'ddnsdomainkeyalgorithm', force_value='hmac-md5', force=True)
+            self._get_ansible_param_bool(obj, "arp_table_static_entry", value="")
 
         return obj
 
@@ -329,24 +340,14 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
 
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
-        obj = self.obj
-
-        self.diff['after'] = obj
-        self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.root_elt.append(self.target_elt)
+        super(PFSenseDHCPStaticModule, self)._copy_and_add_target()
         # Reset static map list
         self.staticmaps = self.root_elt.findall('staticmap')
 
-    def _copy_and_update_target(self):
-        """ update the XML target_elt """
-
-        before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
-
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-
-        return (before, changed)
+    @staticmethod
+    def _get_params_to_remove():
+        """ returns the list of params to remove if they are not set """
+        return ['arp_table_static_entry']
 
     ##############################
     # Logging
@@ -361,9 +362,11 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         if before is None:
             values += self.format_cli_field(self.params, 'macaddr')
             values += self.format_cli_field(self.params, 'ipaddr')
+            values += self.format_cli_field(self.params, 'arp_table_static_entry', fvalue=self.fvalue_bool, default=False)
         else:
             values += self.format_updated_cli_field(self.obj, before, 'macaddr', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'ipaddr', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'arp_table_static_entry', fvalue=self.fvalue_bool, add_comma=(values))
         return values
 
     ##############################
@@ -392,6 +395,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
 def main():
     module = AnsibleModule(
         argument_spec=DHCP_STATIC_ARGUMENT_SPEC,
+        required_if=DHCP_STATIC_REQUIRED_IF,
         required_one_of=DHCP_STATIC_REQUIRED_ONE_OF,
         supports_check_mode=True)
 

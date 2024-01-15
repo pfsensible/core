@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2019, Frederic Bor <frederic.bor@wanadoo.fr>
+# Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -68,8 +69,10 @@ class PFSenseModuleBase(object):
         if self.params.get(name) is not None:
             if self.params.get(name):
                 obj[fname] = value
-            elif force:
+            elif value_false is not None:
                 obj[fname] = value_false
+            elif force:
+                obj[fname] = None
         elif force:
             obj[fname] = value_false
 
@@ -185,10 +188,15 @@ class PFSenseModuleBase(object):
         self.result['stdout'] = ''
         self.result['stderr'] = ''
         if self.result['changed'] and not self.module.check_mode:
+            if self.apply:
+                (dummy, self.result['stdout'], self.result['stderr']) = self._pre_update()
+
             self.pfsense.write_config(descr=self.change_descr)
 
             if self.apply:
-                (dummy, self.result['stdout'], self.result['stderr']) = self._update()
+                (dummy, stdout, stderr) = self._update()
+                self.result['stdout'] += stdout
+                self.result['stderr'] += stderr
 
         self.module.exit_json(**self.result)
 
@@ -208,6 +216,11 @@ class PFSenseModuleBase(object):
             self._remove_target_elt()
             self._post_remove_target_elt()
             self.change_descr = 'ansible {0} removed {1}'.format(self._get_module_name(), self._get_obj_name())
+
+    @staticmethod
+    def _pre_update():
+        """ tasks to run before making config changes """
+        return ('', '', '')
 
     @staticmethod
     def _update():

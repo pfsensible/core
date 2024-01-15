@@ -66,6 +66,17 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         command = "create rule 'one_rule' on 'floating(lan)', source='any', destination='any', direction='any'"
         self.do_module_test(obj, command=command)
 
+    def test_rule_create_floating_any(self):
+        """ test creation of a new floating rule with any interface """
+        obj = dict(name='one_rule', source='any', destination='any', interface='any', floating='yes', direction='any')
+        command = "create rule 'one_rule' on 'floating(any)', source='any', destination='any', direction='any'"
+
+    def test_rule_create_non_floating_any(self):
+        """ test creation of a new rule with any interface """
+        obj = dict(name='one_rule', source='any', destination='any', interface='any', floating='no', direction='any')
+        msg = "any is not a valid interface"
+        self.do_module_test(obj, failed=True, msg=msg)
+
     def test_rule_create_floating_quick(self):
         """ test creation of a new floating rule with quick match """
         obj = dict(name='one_rule', source='any', destination='any', interface='lan', floating='yes', direction='any', quick='yes')

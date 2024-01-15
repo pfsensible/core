@@ -13,8 +13,12 @@ INTERFACE_GROUP_ARGUMENT_SPEC = dict(
     state=dict(default='present', choices=['present', 'absent']),
     name=dict(required=True, type='str'),
     descr=dict(type='str'),
-    members=dict(required=True, type='list', elements='str'),
+    members=dict(type='list', elements='str'),
 )
+
+INTERFACE_GROUP_REQUIRED_IF = [
+    ['state', 'present', ['members']],
+]
 
 INTERFACE_GROUP_PHP_COMMAND = '''
 require_once("interfaces.inc");
@@ -77,31 +81,15 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
             self.module.fail_json(msg='Group name cannot have more than 15 characters.')
         if re.match('[0-9]$', params['name']) is not None:
             self.module.fail_json(msg='Group name cannot end with a digit.')
+        # Make sure list of interfaces is a unique set
+        if params['state'] == 'present':
+            if len(params['members']) > len(set(params['members'])):
+                self.module.fail_json(msg='List of members is not unique.')
         # TODO - check that name isn't in use by any interfaces
 
     ##############################
     # XML processing
     #
-    def _copy_and_add_target(self):
-        """ create the XML target_elt """
-        self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-
-    def _copy_and_update_target(self):
-        """ update the XML target_elt """
-        before = self.pfsense.element_to_dict(self.target_elt)
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        if self._remove_deleted_params():
-            changed = True
-
-        self.diff['before'] = before
-        if changed:
-            self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-            self.result['changed'] = True
-        else:
-            self.diff['after'] = self.obj
-
-        return (before, changed)
-
     def _create_target(self):
         """ create the XML target_elt """
         self.diff['before'] = ''
@@ -110,8 +98,13 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
 
     def _find_target(self):
         """ find the XML target_elt """
-        target_elt = self.root_elt.findall("ifgroupentry[ifname='{0}']".format(self.obj['ifname']))[0]
-        return target_elt
+        result = self.root_elt.findall("ifgroupentry[ifname='{0}']".format(self.obj['ifname']))
+        if len(result) == 1:
+            return result[0]
+        elif len(result) > 1:
+            self.module.fail_json(msg='Found multiple interface groups for name {0}.'.format(self.obj['ifname']))
+        else:
+            return None
 
     def _pre_remove_target_elt(self):
         """ processing before removing elt """
@@ -195,12 +188,6 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
             values += self.format_cli_field(self.obj, 'descr')
             values += self.format_cli_field(self.obj, 'members')
         else:
-            values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values), log_none=False)
             values += self.format_updated_cli_field(self.obj, before, 'members', add_comma=(values))
         return values
-
-    def _log_update(self, before):
-        """ generate pseudo-CLI command to update an interface """
-        log = "update {0}".format(self._get_module_name(True))
-        values = self._log_fields(before)
-        self.result['commands'].append(log + ' set ' + values)

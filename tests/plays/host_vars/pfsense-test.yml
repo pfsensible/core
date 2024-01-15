@@ -1,0 +1,4 @@
+---
+# IP address of the interfaces
+interface_ips:
+  wan: 192.168.122.228

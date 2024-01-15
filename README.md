@@ -65,7 +65,9 @@ The following modules are currently available:
 * [pfsense_authserver_radius](https://github.com/pfsensible/core/wiki/pfsense_authserver_radius) for RADIUS authentication servers
 * [pfsense_ca](https://github.com/pfsensible/core/wiki/pfsense_ca) for Certificate Authorities
 * [pfsense_cert](https://github.com/pfsensible/core/wiki/pfsense_cert) for Certificates
+* [pfsense_default_gateway](https://github.com/pfsensible/core/wiki/pfsense_default_gateway) for setting the default gateways
 * [pfsense_dhcp_static](https://github.com/pfsensible/core/wiki/pfsense_dhcp_static) for static DHCP entries
+* [pfsense_dns_resolver](https://github.com/pfsensible/core/wiki/pfsense_dns_resolver) for DNS resolver (unbound) settings
 * [pfsense_gateway](https://github.com/pfsensible/core/wiki/pfsense_gateway) for routing gateways
 * [pfsense_group](https://github.com/pfsensible/core/wiki/pfsense_group) for user groups
 * [pfsense_interface](https://github.com/pfsensible/core/wiki/pfsense_interface) for interfaces
@@ -98,6 +100,8 @@ These modules allow you to manage installed packages:
 
 * [pfsense_haproxy_backend](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend) for HAProxy backends
 * [pfsense_haproxy_backend_server](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend_server) for HAProxy backends servers
+
+## [Change Log](https://github.com/pfsensible/core/blob/master/CHANGELOG.rst)
 
 ## Operation
 

@@ -7,14 +7,6 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 from ansible.errors import AnsibleFilterError
-from ipaddress import ip_network
-import re
-
-try:
-    from __main__ import display
-except ImportError:
-    from ansible.utils.display import Display
-    display = Display()
 
 
 def format_ipsec_aggregate_ipsecs(all_tunnels, pfname):

@@ -76,9 +76,10 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
         obj = dict()
         obj['descr'] = self.params['descr']
-        if self.params['state'] == 'present':
+        params = self.params
+        if params['state'] == 'present':
             obj['sourceport'] = ''
-            obj['interface'] = self.pfsense.parse_interface(self.params['interface'])
+            obj['interface'] = self.pfsense.parse_interface(params['interface'])
             self._get_ansible_param(obj, 'ipprotocol')
             if obj['ipprotocol'] == 'inet46':
                 del obj['ipprotocol']
@@ -88,20 +89,21 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
             self._get_ansible_param(obj, 'poolopts')
             self._get_ansible_param(obj, 'source_hash_key')
             self._get_ansible_param(obj, 'natport')
-            self._get_ansible_param_bool(obj, 'disabled')
-            self._get_ansible_param_bool(obj, 'nonat')
-            self._get_ansible_param_bool(obj, 'invert')
-            self._get_ansible_param_bool(obj, 'staticnatport')
-            self._get_ansible_param_bool(obj, 'nosync')
+            self._get_ansible_param_bool(obj, 'disabled', value='')
+            self._get_ansible_param_bool(obj, 'nonat', value='')
+            self._get_ansible_param_bool(obj, 'staticnatport', value='')
+            self._get_ansible_param_bool(obj, 'nosync', value='')
 
-            if 'after' in self.params and self.params['after'] is not None:
-                self.after = self.params['after']
+            if 'after' in params and params['after'] is not None:
+                self.after = params['after']
 
-            if 'before' in self.params and self.params['before'] is not None:
-                self.before = self.params['before']
+            if 'before' in params and params['before'] is not None:
+                self.before = params['before']
 
             self._parse_address(obj, 'source', 'sourceport', True, 'network')
-            self._parse_address(obj, 'destination', 'dstport', False, 'address')
+            self._parse_address(obj, 'destination', 'dstport', False, 'network')
+            if params['invert']:
+                obj['destination']['not'] = None
             self._parse_translated_address(obj)
 
             if obj['source_hash_key'] != '' and not obj['source_hash_key'].startswith('0x'):
@@ -119,32 +121,49 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
         param = self.params[field]
         addr = param.split(':')
-        if len(addr) > 2:
+        if len(addr) > 3:
             self.module.fail_json(msg='Cannot parse address %s' % (param))
 
         address = addr[0]
 
         ret = dict()
-        ports = addr[1] if len(addr) > 1 else None
-        if address == 'any':
-            if field == 'source':
-                ret[target] = 'any'
-            else:
-                ret['any'] = ''
-        # rule with this firewall
-        elif allow_self and address == '(self)':
-            ret[target] = '(self)'
-        elif self.pfsense.is_ipv4_address(address):
-            ret[target] = address + '/32'
-        elif self.pfsense.is_ipv4_network(address, False):
-            (addr, bits) = self.pfsense.parse_ip_network(address, False, False)
-            ret[target] = addr + '/' + str(bits)
-        elif self.pfsense.find_alias(address, 'host') is not None or self.pfsense.find_alias(address, 'network') is not None:
-            ret[target] = address
-        else:
-            self.module.fail_json(msg='Cannot parse address %s, not IP or alias' % (address))
 
-        self._parse_ports(obj, ports, field_port, param)
+        if address == 'NET':
+            interface = addr[1] if len(addr) > 1 else None
+            ports = addr[2] if len(addr) > 2 else None
+            if interface is None or interface == '':
+                self.module.fail_json(msg='Cannot parse address %s' % (param))
+
+            ret['network'] = self.pfsense.parse_interface(interface)
+        else:
+            ports = addr[1] if len(addr) > 1 else None
+            if address == 'any':
+                if field == 'source':
+                    ret[target] = 'any'
+                else:
+                    ret['any'] = ''
+            # rule with this firewall
+            elif allow_self and address == '(self)':
+                ret[target] = '(self)'
+            elif self.params['ipprotocol'] != 'inet6' and self.pfsense.is_ipv4_address(address):
+                ret[target] = address + '/32'
+                self.module.warn('Specifying an address without a CIDR prefix is depracated.  Please add /32 if you want a single host address')
+            elif self.params['ipprotocol'] != 'inet4' and self.pfsense.is_ipv6_address(address):
+                ret[target] = address + '/128'
+                self.module.warn('Specifying an address without a CIDR prefix is depracated.  Please add /128 if you want a single host address')
+            elif self.params['ipprotocol'] != 'inet6' and self.pfsense.is_ipv4_network(address, False):
+                (addr, bits) = self.pfsense.parse_ip_network(address, False, False)
+                ret[target] = addr + '/' + str(bits)
+            elif self.params['ipprotocol'] != 'inet4' and self.pfsense.is_ipv6_network(address, False):
+                (addr, bits) = self.pfsense.parse_ip_network(address, False, False)
+                ret[target] = addr + '/' + str(bits)
+            elif self.pfsense.find_alias(address, 'host') is not None or self.pfsense.find_alias(address, 'network') is not None:
+                ret[target] = address
+            else:
+                self.module.fail_json(msg='Cannot parse address %s, not %s network or alias' % (address, self.params['ipprotocol']))
+
+        if ports is not None:
+            self._parse_ports(obj, ports, field_port, param)
 
         obj[field] = ret
 
@@ -426,13 +445,14 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
 
         return values
 
-    @staticmethod
-    def _obj_address_to_log_field(rule, addr, target, port):
+    def _obj_address_to_log_field(self, rule, addr, target, port):
         """ return formated address from dict """
         field = ''
         if addr in rule:
             if target in rule[addr]:
-                field = rule[addr][target]
+                if self.pfsense.interfaces.find(rule[addr][target]):
+                    field = 'NET:'
+                field += rule[addr][target]
             elif addr == 'destination' and 'any' in rule[addr]:
                 field = 'any'
 
@@ -446,7 +466,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         """ return formated source and destination from dict """
         res = {}
         res['source'] = self._obj_address_to_log_field(rule, 'source', 'network', 'sourceport')
-        res['destination'] = self._obj_address_to_log_field(rule, 'destination', 'address', 'dstport')
+        res['destination'] = self._obj_address_to_log_field(rule, 'destination', 'network', 'dstport')
         res['interface'] = self.pfsense.get_interface_display_name(rule['interface'])
 
         if rule['target'] == 'other-subnet':

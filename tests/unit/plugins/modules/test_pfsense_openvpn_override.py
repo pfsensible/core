@@ -10,10 +10,8 @@ import sys
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
-from xml.etree.ElementTree import fromstring, ElementTree
-from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_openvpn_override
-from .pfsense_module import TestPFSenseModule, load_fixture
+from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
@@ -76,7 +74,7 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
 
     def test_openvpn_override_update_network(self):
         """ test updating network of a OpenVPN override """
-        obj = dict(name='delvpnuser', gwredir=True, server_list=1, custom_options='ifconfig-push 10.8.0.1 255.255.255.0', tunnel_network='10.10.10.0/24')
+        obj = dict(name='delvpnuser', gwredir=True, server_list=1, custom_options='ifconfig-push 10.8.0.1 255.255.255.0', tunnel_network='10.10.10.10/24')
         self.do_module_test(obj, command="update openvpn_override 'delvpnuser' set ")
 
     ##############

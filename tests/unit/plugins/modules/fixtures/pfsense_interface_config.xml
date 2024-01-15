@@ -1606,6 +1606,13 @@
 			<domain>acme.com</domain>
 		</system>
 	</wizardtemp>
+        <ifgroups>
+                <ifgroupentry>
+                        <ifname>IFGROUP1</ifname>
+                        <descr></descr>
+                        <members>opt1 opt3</members>
+                </ifgroupentry>
+        </ifgroups>
 	<vlans>
 		<vlan>
 			<if>vmx0</if>

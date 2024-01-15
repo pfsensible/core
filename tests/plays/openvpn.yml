@@ -195,6 +195,39 @@
         - openvpn
         - openvpn_psk
 
+    - name: Create OpenVPN Server generate
+      import_tasks: tasks/test_openvpn_server_create.yml
+      vars:
+        openvpn_server_args:
+          name: OpenVPN Server generate
+          mode: server_tls_user
+          authmode:
+            - RADIUS
+          interface: wan
+          local_port: 1197
+          tls: generate
+          tls_type: auth
+          ca: OpenVPN CA
+          cert: pfsense-test
+          data_ciphers:
+            - AES-256-GCM
+            - AES-128-GCM
+            - AES-256-CBC
+          tunnel_network: 10.100.1.0/24
+          compression: ""
+          gwredir: yes
+          passtos: yes
+          dns_domain: example.com
+          dns_server1: 10.10.10.10
+          dns_server2: 10.10.10.11
+          custom_options: |-
+            tls-version-min 1.2;
+          username_as_common_name: no
+        openvpn_server_vpnid: 4
+      tags:
+        - openvpn
+        - openvpn_generate
+
     - name: Create OpenVPN override vpnuser
       import_tasks: tasks/test_openvpn_override_create.yml
       vars:
@@ -282,6 +315,34 @@
         - openvpn
         - openvpn_override
 
+    - name: Delete VPN1 interfce (fails)
+      pfsensible.core.pfsense_interface:
+        descr: VPN1
+        state: absent
+      register: interface
+      failed_when: interface.msg != "The interface is part of the group VPN. Please remove it from the group first."
+      tags:
+        - openvpn
+        - openvpn_interface_delete
+
+    - name: Delete OpenVPN Server 1 (fails)
+      pfsensible.core.pfsense_openvpn_server:
+        name: OpenVPN Server 1
+        state: absent
+      tags:
+        - openvpn
+        - openvpn_delete
+      register: openvpn_server
+      failed_when: openvpn_server.msg != "Cannot delete the OpenVPN instance while the interface ovpns1 is assigned. Remove the interface assignment first."
+
+    - name: Delete VPN interface_group
+      pfsensible.core.pfsense_interface_group:
+        name: VPN
+        state: absent
+      tags:
+        - openvpn
+        - openvpn_interface_delete
+
     - name: Delete OpenVPN Server 1
       import_tasks: tasks/test_openvpn_server_delete.yml
       vars:
@@ -308,6 +369,16 @@
         openvpn_server_args:
           name: OpenVPN Server 3
         openvpn_server_vpnid: 3
+      tags:
+        - openvpn
+        - openvpn_delete
+
+    - name: Delete OpenVPN Server generate
+      import_tasks: tasks/test_openvpn_server_delete.yml
+      vars:
+        openvpn_server_args:
+          name: OpenVPN Server generate
+        openvpn_server_vpnid: 4
       tags:
         - openvpn
         - openvpn_delete

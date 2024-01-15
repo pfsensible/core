@@ -1,6 +1,6 @@
 # Copyright: (c) 2018 Red Hat Inc.
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
-# Copyright: (c) 2022, Orion Poplawski <orion@nwra.com>
+# Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -408,9 +408,9 @@ class TestPFSenseModule(ModuleTestCase):
         else:
             self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
 
-    def check_param_bool(self, params, target_elt, param, default=False, value_true=None, xml_field=None):
+    def check_param_bool(self, params, target_elt, param, default=False, value_true=None, value_false=None, xml_field=None):
         """ if param is defined, check the elt exist and text equals value_true, otherwise that it does not exist in XML or
-            is empty if value_true is not None """
+            is empty if value_true is not None or equals value_false if set """
         if xml_field is None:
             xml_field = param
 
@@ -423,7 +423,10 @@ class TestPFSenseModule(ModuleTestCase):
             if value_true is None:
                 self.assert_not_find_xml_elt(target_elt, xml_field)
             else:
-                self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
+                if value_false is not None:
+                    self.assert_xml_elt_equal(target_elt, xml_field, value_false)
+                else:
+                    self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
 
     def check_value_equal(self, target_elt, xml_field, value, empty=True):
         """ if value is defined, check if target_elt has the right value, otherwise that it does not exist in XML """

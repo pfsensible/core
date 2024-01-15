@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 from tempfile import mkstemp
 
 
+# Return an element in node, but return an empty element instead of None if not found
 def xml_find(node, elt):
     res = node.find(elt)
     if res is None:
@@ -55,7 +56,12 @@ class PFSenseModule(object):
         parse_ip_network,
         parse_port,
     )
-    from ansible_collections.pfsensible.core.plugins.module_utils.__impl.checks import check_name, check_ip_address, validate_string
+    from ansible_collections.pfsensible.core.plugins.module_utils.__impl.checks import (
+        check_name,
+        check_ip_address,
+        validate_string,
+        validate_openvpn_tunnel_network,
+    )
 
     def __init__(self, module, config='/cf/conf/config.xml'):
         self.module = module
@@ -153,7 +159,7 @@ class PFSenseModule(object):
             if multiple_ok:
                 return result
             else:
-                self.module.fail_json(msg='Found multiple groups for name {0}.'.format(self.obj['name']))
+                self.module.fail_json(msg='Found multiple elements for name {0}.'.format(self.obj['name']))
         return None
 
     @staticmethod
@@ -254,7 +260,10 @@ class PFSenseModule(object):
                 elif isinstance(value, list):
                     for item in value:
                         new_elt = self.new_element(key)
-                        new_elt.text = item
+                        if isinstance(item, dict):
+                            self.copy_dict_to_element(item, new_elt, sub=sub + 1)
+                        else:
+                            new_elt.text = item
                         top_elt.append(new_elt)
                 else:
                     # Create a new element
@@ -339,17 +348,29 @@ class PFSenseModule(object):
                 res[elt.tag] = value
         return res
 
+    def get_refid(self, node, name):
+        """ get refid of name in specific nodes """
+        elt = self.find_elt(node, name)
+        if elt is not None:
+            return xml_find(elt, 'refid').text
+        else:
+            return None
+
     def get_caref(self, name):
         """ get CA refid for name """
         # global is a special case
         if name == 'global':
             return 'global'
-        # Otherwise search for added CAs
-        cas = self.get_elements('ca')
-        for elt in cas:
-            if xml_find(elt, 'descr').text == name:
-                return xml_find(elt, 'refid').text
-        return None
+        # Otherwise search the ca elements
+        return self.get_refid('ca', name)
+
+    def get_certref(self, name):
+        """ get Cert refid for name """
+        return self.get_refid('cert', name)
+
+    def get_crlref(self, name):
+        """ get CRL refid for name """
+        return self.get_refid('crl', name)
 
     @staticmethod
     def get_username():
@@ -565,6 +586,32 @@ class PFSenseModule(object):
             return gw_grp_elt
 
         return None
+
+    def find_active_gateways(self):
+        """ returns list of active gateways """
+        (retcode, raw_output, error) = self.phpshell("playback gatewaystatus")
+
+        write = False
+        output = []
+        lines = raw_output.split("\n")
+        for line in lines:
+            if write and line != "" and "shell:" not in line:
+                output.append(line)
+            if "started" in line:
+                write = True
+
+        head = output[0].split()
+        data = []
+
+        for line in output[1:]:
+            c = 0
+            dline = {}
+            for item in line.split():
+                dline[head[c]] = item
+                c += 1
+            if dline is not {}:
+                data.append(dline)
+        return data
 
     def find_ca_elt(self, ca, search_field='descr'):
         """ return certificate authority elt if found """

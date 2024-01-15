@@ -10,10 +10,8 @@ import sys
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
-from xml.etree.ElementTree import fromstring, ElementTree
-from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_ca
-from .pfsense_module import TestPFSenseModule, load_fixture
+from .pfsense_module import TestPFSenseModule
 
 CERTIFICATE = (
     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlFQ0RDQ0F2Q2dBd0lCQWdJSUZqRk9oczFuTXpRd0RRWUpLb1pJaHZjTkFRRUxCUUF3WERFVE1CRUdBMVVFDQpBeE1LYjNCbGJuWndiaTFqWVRF"
@@ -86,8 +84,10 @@ class TestPFSenseCAModule(TestPFSenseModule):
         """ check XML definition of target elt """
 
         self.check_param_equal(obj, target_elt, 'name', xml_field='descr')
-        self.check_param_equal_or_present(obj, target_elt, 'trust')
-        self.check_param_equal_or_present(obj, target_elt, 'randomserial')
+        if 'trust' in obj:
+            self.check_param_bool(obj, target_elt, 'trust', value_true='enabled', value_false='disabled')
+        if 'randomserial' in obj:
+            self.check_param_bool(obj, target_elt, 'randomserial', value_true='enabled', value_false='disabled')
         self.check_param_equal_or_present(obj, target_elt, 'serial')
         self.check_param_equal(obj, target_elt, 'certificate', xml_field='crt')
 
@@ -122,6 +122,11 @@ class TestPFSenseCAModule(TestPFSenseModule):
     def test_ca_update_serial(self):
         """ test updating serial of a ca """
         obj = dict(name='testdel', certificate=CERTIFICATE, serial=10)
+        self.do_module_test(obj, command='update ca testdel set ')
+
+    def test_ca_update_trust(self):
+        """ test updating trust of a ca """
+        obj = dict(name='testdel', certificate=CERTIFICATE, trust=False)
         self.do_module_test(obj, command='update ca testdel set ')
 
     ##############

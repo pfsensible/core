@@ -4,7 +4,6 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import os
 from collections import OrderedDict
 import yaml
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
@@ -43,7 +42,6 @@ class TestPFSenseLookup(ModuleTestCase):
 
         self.build_definitions()
 
-        # self.fixture_path = os.path.join(os.path.dirname(__file__), 'fixtures', 'pfsense.yaml')
         self.mock_get_hostname = patch('ansible_collections.pfsensible.core.plugins.lookup.pfsense.LookupModule.get_hostname')
         get_hostname = self.mock_get_hostname.start()
         get_hostname.return_value = ('pf_test1')

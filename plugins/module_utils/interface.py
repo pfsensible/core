@@ -64,6 +64,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
 
         self.root_elt = self.pfsense.interfaces
         self.setup_interface_cmds = ""
+        self.setup_interface_pre_cmds = ""
 
     ##############################
     # params processing
@@ -146,9 +147,6 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         else:
             self.target_elt = self._get_interface_elt_by_display_name(self.obj['descr'])
 
-        if self.target_elt is not None:
-            self.result['ifname'] = self.target_elt.tag
-
         return obj
 
     def _validate_params(self):
@@ -213,6 +211,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         """ create the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.setup_interface_cmds += "interface_configure('{0}', true);\n".format(self.target_elt.tag)
+        self.result['ifname'] = self.target_elt.tag
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
@@ -228,6 +227,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             else:
                 self.setup_interface_cmds += "interface_bring_down('{0}', true);\n".format(self.target_elt.tag)
 
+        self.result['ifname'] = self.target_elt.tag
         return (before, changed)
 
     def _create_target(self):
@@ -321,10 +321,19 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         """ processing before removing elt """
         self.obj['if'] = self.target_elt.find('if').text
 
-        self._remove_all_separators(self.target_elt.tag)
-        self._remove_all_rules(self.target_elt.tag)
+        ifname = self.target_elt.tag
+        if self.pfsense.ifgroups is not None:
+            for ifgroup_elt in self.pfsense.ifgroups.findall("ifgroupentry"):
+                members = ifgroup_elt.find('members').text.split()
+                if ifname in members:
+                    self.module.fail_json(msg='The interface is part of the group {0}. Please remove it from the group first.'.format(
+                                          ifgroup_elt.find('ifname').text))
 
-        self.setup_interface_cmds += "interface_bring_down('{0}');\n".format(self.target_elt.tag)
+        self._remove_all_separators(ifname)
+        self._remove_all_rules(ifname)
+
+        self.setup_interface_pre_cmds += "interface_bring_down('{0}');\n".format(ifname)
+        self.result['ifname'] = ifname
 
     def _remove_all_rules(self, interface):
         """ delete all interface rules """
@@ -462,6 +471,16 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             '}\n'
             'echo json_encode($mediaopts_list);')
 
+    def get_pre_update_cmds(self):
+        """ build and return php commands to setup interfaces before changing config """
+        cmd = 'require_once("filter.inc");\n'
+        cmd += 'require_once("interfaces.inc");\n'
+
+        if self.setup_interface_pre_cmds != "":
+            cmd += self.setup_interface_pre_cmds
+
+        return cmd
+
     def get_update_cmds(self):
         """ build and return php commands to setup interfaces """
         cmd = 'require_once("filter.inc");\n'
@@ -481,6 +500,10 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         cmd += "enable_rrd_graphing();\n"
         cmd += "if (is_subsystem_dirty('staticroutes') && (system_routing_configure() == 0)) clear_subsystem_dirty('staticroutes');"
         return cmd
+
+    def _pre_update(self):
+        """ tasks to run before making config changes """
+        return self.pfsense.phpshell(self.get_pre_update_cmds())
 
     def _update(self):
         """ make the target pfsense reload interfaces """

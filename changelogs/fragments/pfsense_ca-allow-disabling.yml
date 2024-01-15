@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_ca - allow for disabling `randomserial` and `trust` parameters.

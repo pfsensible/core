@@ -35,28 +35,35 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
             pass
         return False
 
-    def parse_address(self, addr, field):
+    def parse_address(self, name, addr, field, invert=False):
         """ return address parsed in dict """
         parts = addr.split(':')
         res = {}
         port = None
-        if parts[0] == 'any':
-            if field == 'network':
-                res[field] = 'any'
-            else:
-                res['any'] = None
-        elif parts[0] == '(self)':
-            res[field] = '(self)'
-        elif parts[0] in ['lan', 'vpn', 'vt1', 'lan_100']:
-            res[field] = self.unalias_interface(parts[0])
+        if parts[0] == 'NET':
+            res[field] = parts[1]
+            if len(parts) > 2:
+                port = parts[2].replace('-', ':')
         else:
-            res[field] = parts[0]
+            if parts[0] == 'any':
+                if name == 'source':
+                    res[field] = 'any'
+                else:
+                    res['any'] = None
+            elif parts[0] == '(self)':
+                res[field] = '(self)'
+            elif parts[0] in ['lan', 'vpn', 'vt1', 'lan_100']:
+                res[field] = self.unalias_interface(parts[0])
+            else:
+                res[field] = parts[0]
 
-        if field in res and self.is_ipv4_address(res[field]) and res[field].find('/') == -1:
-            res[field] += '/32'
+            if field in res and self.is_ipv4_address(res[field]) and res[field].find('/') == -1:
+                res[field] += '/32'
 
-        if len(parts) > 1:
-            port = parts[1].replace('-', ':')
+            if len(parts) > 1:
+                port = parts[1].replace('-', ':')
+        if invert:
+            res['not'] = None
 
         return (res, port)
 
@@ -68,9 +75,9 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
             return '2.3.4.0/24'
         return value
 
-    def check_addr(self, params, target_elt, addr, field, port):
+    def check_addr(self, params, target_elt, addr, field, port, invert=False):
         """ test the addresses definition """
-        (addr_dict, port_value) = self.parse_address(params[addr], field)
+        (addr_dict, port_value) = self.parse_address(addr, params[addr], field, invert=invert)
         addr_elt = self.assert_find_xml_elt(target_elt, addr)
         for key, value in addr_dict.items():
             self.check_value_equal(addr_elt, key, self.reparse_network(value))
@@ -107,12 +114,11 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
     def check_target_elt(self, obj, target_elt, target_idx=-1):
         """ test the xml definition """
         self.check_addr(obj, target_elt, 'source', 'network', 'sourceport')
-        self.check_addr(obj, target_elt, 'destination', 'address', 'dstport')
+        self.check_addr(obj, target_elt, 'destination', 'network', 'dstport', invert=obj.get('invert'))
         self.check_target_addr(obj, target_elt)
 
         self.check_param_equal_or_not_find(obj, target_elt, 'disabled')
         self.check_param_equal_or_not_find(obj, target_elt, 'nonat')
-        self.check_param_equal_or_not_find(obj, target_elt, 'invert')
         self.check_param_equal_or_not_find(obj, target_elt, 'staticnatport')
         self.check_param_equal_or_not_find(obj, target_elt, 'nosync')
         self.check_param_equal_or_not_find(obj, target_elt, 'nonat')
@@ -189,6 +195,24 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         """ test """
         obj = dict(descr='https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443')
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443'"
+        self.do_module_test(obj, command=command, target_idx=3)
+
+    def test_nat_outbound_create_networks_invert(self):
+        """ test """
+        obj = dict(descr='https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443', invert=True)
+        command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443', invert=True"
+        self.do_module_test(obj, command=command, target_idx=3)
+
+    def test_nat_outbound_create_interface_destination_network(self):
+        """ test """
+        obj = dict(descr='https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='NET:lan:443')
+        command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='NET:lan:443'"
+        self.do_module_test(obj, command=command, target_idx=3)
+
+    def test_nat_outbound_create_interface_source_network(self):
+        """ test """
+        obj = dict(descr='https-source-rewriting', interface='lan', source='NET:lan', destination='2.3.4.5/24:443')
+        command = "create nat_outbound 'https-source-rewriting', interface='lan', source='NET:lan', destination='2.3.4.5/24:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_top(self):
