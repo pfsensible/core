@@ -36,17 +36,19 @@ parser.add_argument('--author-name', default=author_name, help='The full name of
 parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
 parser.add_argument('--author-handle', default='', help='The github handle of the module author')
 parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
 parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
 parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
 parser.add_argument('--item-full', default='item_full',
                     help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation')
 parser.add_argument('--force', action=argparse.BooleanOptionalAction, help='Force overwriting the output file if it exists')
-parser.add_argument('--keep', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
+parser.add_argument('--keep-tmpdir', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
+parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help='Keep parameters from the web interface not found in the XML')
 
 args = parser.parse_args()
 
 # Temporary directory for files
-tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-', delete=(not args.keep))
+tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-', delete=(not args.keep_tmpdir))
 
 if args.url is not None:
     parsed_uri = urlparse(args.url)
@@ -160,15 +162,6 @@ for elt in full_elt:
     # else:
         # Likely a bool?
 
-if 'type' in params_full:
-    module_type = params_full['type']['example']
-    if args.type_suffix is True:
-        module_name += f'_{module_type}'
-    if isinstance(args.type_suffix, str):
-        module_name += f'_{args.type_suffix}'
-else:
-    module_type = None
-
 print('')
 
 # Parse the php file
@@ -234,6 +227,8 @@ for input in html.forms[0].inputs:
             param['description'] = input.tail.strip()
     elif isinstance(input, lxml.html.SelectElement):
         print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
+        if input.attrib.get('class') == 'form-control' and input.attrib.get('data-toggle') == 'collapse':
+            type_param = input.name
         if input.value_options is not None:
             param['choices'] = input.value_options
             if input.multiple:
@@ -275,6 +270,26 @@ del params[module_key]
 # Debug
 print(f'Web paramters: {params.keys()}')
 
+# Determine if the form produces different types of items
+if type_param in params_full:
+    # The type of item is recorded in the item configuration
+    module_type = params_full[type_param]['example']
+    if args.type_suffix is True:
+        module_name += f'_{module_type}'
+    if isinstance(args.type_suffix, str):
+        module_name += f'_{args.type_suffix}'
+elif type_param in params:
+    # The type of item is purely a fuction of the web form
+    if args.type_suffix not in params[type_param]['choices']:
+        sys.exit(f"Detected item type parameter '{type_param}' with choices {params[type_param]['choices']}.  You must set --type-suffix to one of these.")
+    else:
+        module_type = args.type_suffix
+        module_name += f'_{args.type_suffix}'
+        params_full[type_param] = params[type_param]
+        args.keep_params = True
+else:
+    module_type = None
+
 # Consistency
 params_web_only = list(set(params.keys()) - set(params_full.keys()))
 print('Web parameters not in xml: ' + str(params_web_only))
@@ -305,7 +320,7 @@ for param in params_web_only:
             break
     else:
         # Otherwise, drop - probably just used to construct the final elements
-        if param in params:
+        if param in params and not args.keep_params:
             print(f'Removing {param}')
             del params[param]
 
@@ -355,7 +370,7 @@ f.write(template.render(context))
 f.close()
 
 # Save the scraped web page if asked to keep files
-if args.keep:
+if args.keep_tmpdir:
     f = open(f'{tmpdir.name}/{module_name}.html', 'w')
     f.write(r.text)
     f.close()
