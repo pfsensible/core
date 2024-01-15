@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+# Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 import argparse
 import datetime
 import git
@@ -12,6 +15,7 @@ import re
 import requests
 from scp import SCPClient
 import sys
+import tempfile
 from urllib.parse import urlparse
 
 gitconfig = git.GitConfigParser()
@@ -23,15 +27,20 @@ parser.add_argument('--url', help='The URL to scrape')
 parser.add_argument('--urlfile', help='A local file copy of the URL to scrape')
 parser.add_argument('--user', default='admin', help='The user to connect as')
 parser.add_argument('--password', default='changeme', help='The password of user')
-parser.add_argument('--author_name', default=author_name, help='The full name of the module author')
-parser.add_argument('--author_email', default=author_email, help='The email address of the module author')
-parser.add_argument('--author_handle', default='', help='The github handle of the module author')
-parser.add_argument('--module_name', help='The name of the module to generate - defaults to being based on the url')
-parser.add_argument('--item_min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
-parser.add_argument('--item_full', default='item_full',
+parser.add_argument('--author-name', default=author_name, help='The full name of the module author')
+parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
+parser.add_argument('--author-handle', default='', help='The github handle of the module author')
+parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
+parser.add_argument('--item-full', default='item_full',
                     help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation')
+parser.add_argument('--force', action=argparse.BooleanOptionalAction, help='Force overwriting the output file if it exists')
+parser.add_argument('--keep', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
 
 args = parser.parse_args()
+
+# Temporary directory for files
+tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-', delete=(not args.keep))
 
 if args.url is not None:
     parsed_uri = urlparse(args.url)
@@ -44,7 +53,7 @@ if args.url is not None:
 
     # Construct a likely module name from the URL
     if args.module_name is None:
-        module_name = re.sub(r'^/(?:firewall_|system_)?(.*)(?:_edit)?\.php.*$', r'pfsense_\1', parsed_uri.path)
+        module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit)?\.php.*$', r'pfsense_\1', parsed_uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
@@ -71,9 +80,12 @@ if args.url is not None:
     # Retrieve the configuration web page and parse it
     r = client.get(args.url, verify=False)
     html = lxml.html.fromstring(r.text)
-    f = open(f'{module_name}.html', 'w')
-    f.write(r.text)
-    f.close()
+
+    # Save it if asked to keep files
+    if args.keep:
+        f = open(f'{tmpdir.name}/{module_name}.html', 'w')
+        f.write(r.text)
+        f.close()
 
 elif args.urlfile is not None:
     # Use a cached copy of the web page - get rid of this?  Need to specify host and module name
@@ -89,11 +101,11 @@ ssh = SSHClient()
 ssh.load_system_host_keys()
 ssh.connect(host, username='root', password=args.password)
 scp = SCPClient(ssh.get_transport())
-scp.get('/cf/conf/config.xml')
+scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
 scp.close()
 
 # Parse the config.xml file
-root = ET.parse('config.xml').getroot()
+root = ET.parse(f'{tmpdir.name}/config.xml').getroot()
 
 # Search for any element with our target text, make sure we found only one
 xpath = f'.//*[.="{args.item_min}"]'
@@ -132,10 +144,19 @@ params_full = dict()
 for elt in full_elt:
     if elt.tag == '':
         continue
-    params_full[elt.tag] = elt.text
+    params_full[elt.tag] = dict()
+    addr_elt = elt.find('address')
+    if addr_elt is not None:
+        params_full[elt.tag]['example'] = addr_elt.text
+        params_full[elt.tag]['address'] = True
+    elif elt.text is not None:
+        params_full[elt.tag]['type'] = 'str'
+        params_full[elt.tag]['example'] = elt.text.strip()
+    # else:
+        # Likely a bool?
 
 if 'type' in params_full:
-    module_type = params_full['type']
+    module_type = params_full['type']['example']
 else:
     module_type = None
 
@@ -164,8 +185,17 @@ for input in html.forms[0].inputs:
             param['type'] = 'bool'
             param['value'] = input.attrib['value'].strip()
             param['example'] = 'true'
+        elif input.type == 'number':
+            param['type'] = 'int'
+        elif input.type == 'password':
+            param['type'] = 'str'
+            param['password'] = True  # TODO - set nolog
         elif input.type == 'text':
             param['type'] = 'str'
+        # TOOD - handle placeholder as 'default' value - description? create_default? example?
+        for attr in ['min', 'placeholder', 'step']:
+            if attr in input.attrib:
+                param[attr] = input.attrib[attr]
         # Text sometimes is after the input element inside the enclosing <label>
         if input.tail:
             param['description'] = input.tail.strip()
@@ -247,16 +277,18 @@ for param in params_web_only:
 print('')
 params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
 print('XML parameters not in web: ' + str(params_xml_only))
-for param in params_xml_only:
-    params[param] = dict(type='str', example=params_full[param])
 
-# Create some sample descriptions and example values
+for param in params_xml_only:
+    params[param] = params_full[param]
+
+# Create some sample descriptions
 for name, param in params.items():
+    # TODO - wrap long descriptions
     if 'description' not in param or param['description'] == '':
         param['description'] = f'The {name} of the {module_node}'
     if 'example' not in param or param['example'] == '':
-        if name in params_full and params_full[name] != '' and params_full[name] is not None:
-            param['example'] = params_full[name]
+        if name in params_full and 'example' in params_full[name]:
+            param['example'] = params_full[name]['example']
 
 # Template variables
 context = dict(
@@ -275,9 +307,8 @@ context = dict(
 environment = jinja2.Environment(loader=jinja2.FileSystemLoader("misc/"), trim_blocks=True, keep_trailing_newline=True)
 template = environment.get_template("pfsense_module.py.j2")
 
-# Todo - prompt for overwrite
 filename = f'plugins/modules/{module_name}.py'
-if os.path.isfile(filename):
+if os.path.isfile(filename) and not args.force:
     sys.exit(f'{filename} already exists!')
 print(f'Writing {filename} with {context}')
 f = open(f'{filename}', 'w')
