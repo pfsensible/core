@@ -90,11 +90,11 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 }
 
 {{ module_node | upper() }}_REQUIRED_IF = [
-{% if module_type is none %}
-    ['state', 'present', ['{{ params | dict2items | selectattr('value.required', 'defined') | select('key') | join("', '") }}]],
-{% else %}
+{% if module_type %}
     ['state', 'present', ['type']],
     ['type', '{{ params['type']['example'] }}', ['{{ params | dict2items | rejectattr('key', 'equalto', 'type') | selectattr('value.required', 'defined') | map(attribute='key') | join("', '") }}']],
+{% else %}
+    ['state', 'present', ['{{ params | dict2items | selectattr('value.required', 'defined') | select('key') | join("', '") }}']],
 {% endif %}
 ]
 
