@@ -26,7 +26,7 @@ class PFSenseModuleBase(object):
     # init
     #
     def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None,
-                 map_param_if=None, param_force=None, have_refid=False, create_default=None):
+                 map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
@@ -70,6 +70,7 @@ class PFSenseModuleBase(object):
         self.obj = dict()       # dict holding target pfsense parameters
         self.map_param_if = map_param_if  # rules for mapping parameters
         self.param_force = param_force    # parameters that are forced to be present
+        self.bool_values = bool_values    # boolean values for arguments
         self.create_default = create_default  # default values for a created target
         self.have_refid = have_refid      # if the element has a refid item
         self.target_elt = None  # xml object holding target pfsense parameters
@@ -126,7 +127,13 @@ class PFSenseModuleBase(object):
                 force = False
                 if param in self.param_force:
                     force = True
-                self._get_ansible_param(obj, param, force=force)
+                if self.argument_spec[param].get('type') == 'bool':
+                    if param in self.bool_values:
+                        self._get_ansible_param_bool(obj, param, value=self.bool_values[param][1], value_false=self.bool_values[param][0], force=force)
+                    else:
+                        self._get_ansible_param_bool(obj, param, force=force)
+                else:
+                    self._get_ansible_param(obj, param, force=force)
 
         for map_param, map_value, map_tuple in self.map_param_if:
             if self.params.get(map_param) == map_value and map_tuple[0] in obj:
