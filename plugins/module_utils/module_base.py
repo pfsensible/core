@@ -197,7 +197,9 @@ class PFSenseModuleBase(object):
         if self.node is not None:
             elt = self.pfsense.new_element(self.node)
             if self.have_refid:
-                elt.append(self.pfsense.new_element('refid', text=self.pfsense.uniqid()))
+                # Store in obj so that we can refer to it later if needed
+                self.obj['refid'] = self.pfsense.uniqid()
+                elt.append(self.pfsense.new_element('refid', text=self.obj['refid']))
             if self.create_default is not None:
                 self.pfsense.copy_dict_to_element(self.create_default, elt)
             return elt
@@ -353,7 +355,10 @@ class PFSenseModuleBase(object):
                 values += self.format_cli_field(self.obj, param)
         else:
             for param in [n for n in self.argument_spec.keys() if n != 'state' and n != self.key]:
-                values += self.format_updated_cli_field(self.obj, before, param, add_comma=(values))
+                if self.argument_spec[param].get('type') == 'bool':
+                    values += self.format_updated_cli_field(self.diff['after'], before, param, fvalue=self.fvalue_bool, add_comma=(values))
+                else:
+                    values += self.format_updated_cli_field(self.diff['after'], before, param, add_comma=(values))
         return values
 
     @staticmethod
