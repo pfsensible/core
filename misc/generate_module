@@ -8,6 +8,7 @@
 #   - validation for addresses
 #   - bool type determination and paramter list
 
+from ansible.plugins.filter.core import dict_to_list_of_dict_key_value_elements
 import argparse
 import datetime
 import git
@@ -230,6 +231,8 @@ for input in html.forms[0].inputs:
         if descr_elt.text:
             print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
             param['description'] += f'{descr_elt.text.strip()} of the {module_node}'
+        if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
+            param['required'] = True
         help_elt = div1.find('span[@class="help-block"]')
         if help_elt is not None:
             print(f'help_elt text {help_elt.text.strip()}')
@@ -308,8 +311,9 @@ context = dict(
 )
 
 # Render our module!
-environment = jinja2.Environment(loader=jinja2.FileSystemLoader("misc/"), trim_blocks=True, keep_trailing_newline=True)
-template = environment.get_template("pfsense_module.py.j2")
+jenv = jinja2.Environment(loader=jinja2.FileSystemLoader("misc/"), trim_blocks=True, keep_trailing_newline=True)
+jenv.filters['dict2items'] = dict_to_list_of_dict_key_value_elements
+template = jenv.get_template("pfsense_module.py.j2")
 
 filename = f'plugins/modules/{module_name}.py'
 if os.path.isfile(filename) and not args.force:
