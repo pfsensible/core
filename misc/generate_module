@@ -3,6 +3,11 @@
 # Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+# TODO:
+#   - collect .php file and scan source for update and validation code
+#   - validation for addresses
+#   - bool type determination and paramter list
+
 import argparse
 import datetime
 import git
@@ -31,6 +36,7 @@ parser.add_argument('--author-name', default=author_name, help='The full name of
 parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
 parser.add_argument('--author-handle', default='', help='The github handle of the module author')
 parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
 parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
 parser.add_argument('--item-full', default='item_full',
                     help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation')
@@ -80,12 +86,6 @@ if args.url is not None:
     # Retrieve the configuration web page and parse it
     r = client.get(args.url, verify=False)
     html = lxml.html.fromstring(r.text)
-
-    # Save it if asked to keep files
-    if args.keep:
-        f = open(f'{tmpdir.name}/{module_name}.html', 'w')
-        f.write(r.text)
-        f.close()
 
 elif args.urlfile is not None:
     # Use a cached copy of the web page - get rid of this?  Need to specify host and module name
@@ -157,6 +157,10 @@ for elt in full_elt:
 
 if 'type' in params_full:
     module_type = params_full['type']['example']
+    if args.type_suffix is True:
+        module_name += f'_{module_type}'
+    if isinstance(args.type_suffix, str):
+        module_name += f'_{args.type_suffix}'
 else:
     module_type = None
 
@@ -314,3 +318,9 @@ print(f'Writing {filename} with {context}')
 f = open(f'{filename}', 'w')
 f.write(template.render(context))
 f.close()
+
+# Save the scraped web page if asked to keep files
+if args.keep:
+    f = open(f'{tmpdir.name}/{module_name}.html', 'w')
+    f.write(r.text)
+    f.close()
