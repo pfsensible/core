@@ -127,6 +127,12 @@ CA_CREATE_DEFAULT = dict(
     trust='disabled',
 )
 
+# Booleans that map to different values
+CA_BOOL_VALUES = dict(
+    randomserial=('disabled', 'enabled'),
+    trust=('disabled', 'enabled'),
+)
+
 
 class PFSenseCAModule(PFSenseModuleBase):
     """ module managing pfsense certificate authorities """
@@ -137,7 +143,8 @@ class PFSenseCAModule(PFSenseModuleBase):
         return PFSENSE_CA_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseCAModule, self).__init__(module, pfsense, root='pfsense', node='ca', have_refid=True, create_default=CA_CREATE_DEFAULT)
+        super(PFSenseCAModule, self).__init__(module, pfsense, root='pfsense', node='ca', have_refid=True, create_default=CA_CREATE_DEFAULT,
+                                              bool_values=CA_BOOL_VALUES)
         self.name = "pfsense_ca"
         self.refresh_crls = False
         self.crl = None
@@ -198,8 +205,9 @@ class PFSenseCAModule(PFSenseModuleBase):
             if params['key'] is not None:
                 obj['prv'] = params['key']
 
-        self._get_ansible_param_bool(obj, 'trust', value='enabled', value_false='disabled')
-        self._get_ansible_param_bool(obj, 'randomserial', value='enabled', value_false='disabled')
+        for arg in CA_BOOL_VALUES:
+            self._get_ansible_param_bool(obj, arg, value=CA_BOOL_VALUES[arg][1], value_false=CA_BOOL_VALUES[arg][0])
+
         self._get_ansible_param(obj, 'serial')
 
         return obj
