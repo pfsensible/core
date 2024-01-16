@@ -228,7 +228,7 @@ for input in html.forms[0].inputs:
     elif isinstance(input, lxml.html.SelectElement):
         print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
         if input.attrib.get('class') == 'form-control' and input.attrib.get('data-toggle') == 'collapse':
-            type_param = input.name
+            args.type_param = input.name
         if input.value_options is not None:
             param['choices'] = input.value_options
             if input.multiple:
@@ -236,6 +236,8 @@ for input in html.forms[0].inputs:
             else:
                 param['type'] = 'str'
             param['multiple'] = input.multiple
+    elif input.tag == 'textarea':
+        param['type'] = 'str'
 
 #  <div class="form-group">
 #    <label class="col-sm-2 control-label">
@@ -271,21 +273,21 @@ del params[module_key]
 print(f'Web paramters: {params.keys()}')
 
 # Determine if the form produces different types of items
-if type_param in params_full:
+if args.type_param in params_full:
     # The type of item is recorded in the item configuration
-    module_type = params_full[type_param]['example']
+    module_type = params_full[args.type_param]['example']
     if args.type_suffix is True:
         module_name += f'_{module_type}'
     if isinstance(args.type_suffix, str):
         module_name += f'_{args.type_suffix}'
-elif type_param in params:
+elif args.type_param in params:
     # The type of item is purely a fuction of the web form
-    if args.type_suffix not in params[type_param]['choices']:
-        sys.exit(f"Detected item type parameter '{type_param}' with choices {params[type_param]['choices']}.  You must set --type-suffix to one of these.")
+    if args.type_suffix not in params[args.type_param]['choices']:
+        sys.exit(f"Detected item type parameter '{args.type_param}' with choices {params[args.type_param]['choices']}.  You must set --type-suffix to one of these.")
     else:
         module_type = args.type_suffix
         module_name += f'_{args.type_suffix}'
-        params_full[type_param] = params[type_param]
+        params_full[args.type_param] = params[args.type_param]
         args.keep_params = True
 else:
     module_type = None
