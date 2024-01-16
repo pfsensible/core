@@ -67,4 +67,3 @@ build_ignore:
   - examples
   - misc
   - setup.cfg
-  - tests
