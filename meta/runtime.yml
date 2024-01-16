@@ -1,1 +1,11 @@
+plugin_routing:
+    modules:
+        pfsense_haproxy_backend:
+            deprecation:
+                removal_version: 0.8.0
+                warning_text: Use pfsensible.haproxy.pfsense_haproxy_backend instead.
+        pfsense_haproxy_backend_server:
+            deprecation:
+                removal_version: 0.8.0
+                warning_text: Use pfsensible.haproxy.pfsense_haproxy_backend_server instead.
 requires_ansible: ">=2.12"

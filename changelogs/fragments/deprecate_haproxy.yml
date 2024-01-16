@@ -1,0 +1,2 @@
+deprecated_features:
+  - The pfsensible_haproxy* modules have moved to the `pfsensible.haproxy` collection and will be removed from `pfsensible.core` in version 0.8.0.

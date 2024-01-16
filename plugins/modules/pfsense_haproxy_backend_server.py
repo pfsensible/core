@@ -20,6 +20,10 @@ short_description: Manage pfSense haproxy backend servers
 description:
   - Manage pfSense haproxy servers
 notes:
+deprecated:
+  removed_in: 0.8.0
+  why: Moved to `pfsensible.haproxy`
+  alternative: Use M(pfsensible.haproxy.pfsense_haproxy_backend) instead.
 options:
   backend:
     description: The backend name.
