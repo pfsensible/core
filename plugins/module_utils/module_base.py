@@ -61,7 +61,7 @@ class PFSenseModuleBase(object):
 
         # List of elements named node
         if node is not None:
-            self.elements = self.pfsense.get_elements(node)
+            self.elements = self.root_elt.findall(node)
         else:
             self.elements = None
         self.node = node
@@ -187,6 +187,8 @@ class PFSenseModuleBase(object):
             self.root_elt.append(self.target_elt)
         else:
             self.root_elt.insert(self._find_last_element_index(), self.target_elt)
+            # Reset elements list
+            self.elements = self.root_elt.findall(self.node)
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
