@@ -328,7 +328,8 @@ for param in params_web_only:
 
 print('')
 params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
-print('XML parameters not in web: ' + str(params_xml_only))
+print(f'XML parameters not in web: {params_xml_only}\n')
+print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
 
 for param in params_xml_only:
     params[param] = params_full[param]
@@ -349,6 +350,7 @@ context = dict(
     module_node=module_node,
     module_key=module_key,
     params=params,
+    params_xml_only=params_xml_only,
     author_name=args.author_name,
     author_email=args.author_email,
     author_handle=args.author_handle,
