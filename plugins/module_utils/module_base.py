@@ -26,11 +26,14 @@ class PFSenseModuleBase(object):
     # init
     #
     def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None,
-                 arg_route=None, map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
+                 arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
+        self.module = module         # ansible module
+        self.argument_spec = module.argument_spec  # Allow for being overriden for use with aggregate
+
+        # pfSense helper module
         if pfsense is None:
             pfsense = PFSenseModule(module)
-        self.module = module    # ansible module
-        self.argument_spec = module.argument_spec  # Allow for being overrriden for use with aggregate
+        self.pfsense = pfsense
 
         if name is not None:    # ansible module name
             self.name = name
@@ -38,9 +41,7 @@ class PFSenseModuleBase(object):
             self.name = 'pfsense_' + node
         else:
             self.name = None
-        self.params = None      # ansible input parameters
 
-        self.pfsense = pfsense  # helper module
         self.apply = True       # apply configuration at the end
 
         # xml parent of target_elt, node named by root
@@ -72,10 +73,19 @@ class PFSenseModuleBase(object):
             self.arg_route = arg_route        # routing for argument handling
         else:
             self.arg_route = dict()
+
+        # rules for mapping parameters
+        if map_param is not None:
+            self.map_param = map_param
+        else:
+            self.map_param = list()
+
+        # conditional rules for mapping parameters
         if map_param_if is not None:
-            self.map_param_if = map_param_if  # rules for mapping parameters
+            self.map_param_if = map_param_if
         else:
             self.map_param_if = list()
+
         if param_force is not None:
             self.param_force = param_force  # parameters that are forced to be present
         else:
@@ -144,7 +154,7 @@ class PFSenseModuleBase(object):
 
                 # If we have defined a parser for this arg, use it
                 if param in self.arg_route and 'parse' in self.arg_route[param]:
-                    self.arg_route[param]['parse'](param, self.params, obj)
+                    self.arg_route[param]['parse'](self, param, self.params, obj)
                 elif self.argument_spec[param].get('type') == 'bool':
                     if param in self.bool_values:
                         self._get_ansible_param_bool(obj, param, value=self.bool_values[param][1], value_false=self.bool_values[param][0], force=force)
@@ -154,6 +164,12 @@ class PFSenseModuleBase(object):
                     self._get_ansible_param(obj, param, force=force)
 
             # Handle renaming of parameters
+            for p, o in self.map_param:
+                if self.params.get(p) is not None:
+                    obj[o] = obj[p]
+                    del obj[p]
+
+            # Handle conditional renaming of parameters
             for map_param, map_value, map_tuple in self.map_param_if:
                 if self.params.get(map_param) == map_value and map_tuple[0] in obj:
                     if map_tuple[1] not in obj:
@@ -176,7 +192,10 @@ class PFSenseModuleBase(object):
             # Ansible sets unspecied parameters to None, skip them
             for param in [p for p in self.params if self.params[p] is not None]:
                 if param in self.arg_route and 'validate' in self.arg_route[param]:
-                    self.arg_route[param]['validate'](params[param])
+                    try:
+                        self.arg_route[param]['validate'](self, params[param])
+                    except ValueError as e:
+                        self.module.fail_json(msg=str(e))
 
     def _deprecated_params(self):
         """ return deprecated params """
@@ -354,6 +373,7 @@ class PFSenseModuleBase(object):
         else:
             return ('', '', '')
 
+    # We take params here for use with pfsense_aggregate and the test framework
     def run(self, params):
         """ process input params to add/update/delete """
         self.params = params
