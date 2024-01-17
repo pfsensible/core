@@ -5,7 +5,9 @@
 
 # TODO:
 #   - validation for addresses
-#   - bool type determination and paramter list
+#   - bool type determination and parameter list
+#   - generate version_added
+#   - detect packages
 
 from ansible.plugins.filter.core import dict_to_list_of_dict_key_value_elements
 import argparse
@@ -64,7 +66,12 @@ if args.url is not None:
 
     # Construct a likely module name from the URL
     if args.module_name is None:
-        module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit)?\.php.*$', r'pfsense_\1', parsed_uri.path)
+        # See if this pkg_edit URL first
+        pkg_module_name = re.sub(r'^/pkg_edit\.php\?xml=(.*?)\.xml.*$', r'pfsense_\1', parsed_uri.path)
+        if pkg_module_name != parsed_uri_path:
+            module_name = pkg_module_name
+        else:
+            module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit)?\.php.*$', r'pfsense_\1', parsed_uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
