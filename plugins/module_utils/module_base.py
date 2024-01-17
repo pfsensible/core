@@ -25,8 +25,8 @@ class PFSenseModuleBase(object):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None,
-                 arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
+    def __init__(self, module, pfsense=None, package=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr',
+                 update_php=None, arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
         self.module = module         # ansible module
         self.argument_spec = module.argument_spec  # Allow for being overriden for use with aggregate
 
@@ -50,7 +50,10 @@ class PFSenseModuleBase(object):
                 self.root_elt = self.pfsense.root
                 self.root_is_exclusive = False
             else:
-                self.root_elt = self.pfsense.get_element(root, create_node=create_root)
+                if package is None:
+                    self.root_elt = self.pfsense.get_element(root, create_node=create_root)
+                else:
+                    self.root_elt = self.pfsense.get_element(root, root_elt=self.pfsense.root.find('installedpackages'))
                 if root in ['system']:
                     self.root_is_exclusive = False
                 else:

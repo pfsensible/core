@@ -21,6 +21,7 @@ from paramiko import SSHClient
 import re
 import requests
 from scp import SCPClient
+import shutil
 import sys
 import tempfile
 from urllib.parse import urlparse
@@ -28,6 +29,8 @@ from urllib.parse import urlparse
 gitconfig = git.GitConfigParser()
 author_name = gitconfig.get_value('user', 'name')
 author_email = gitconfig.get_value('user', 'email')
+package = 'core'
+is_package = False
 
 parser = argparse.ArgumentParser(description='Generate a pfsensible module.')
 parser.add_argument('--url', help='The URL to scrape')
@@ -50,7 +53,7 @@ parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help
 args = parser.parse_args()
 
 # Temporary directory for files
-tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-', delete=(not args.keep_tmpdir))
+tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-')
 
 if args.url is not None:
     parsed_uri = urlparse(args.url)
@@ -67,11 +70,12 @@ if args.url is not None:
     # Construct a likely module name from the URL
     if args.module_name is None:
         # See if this pkg_edit URL first
-        pkg_module_name = re.sub(r'^/pkg_edit\.php\?xml=(.*?)\.xml.*$', r'pfsense_\1', parsed_uri.path)
-        if pkg_module_name != parsed_uri_path:
-            module_name = pkg_module_name
+        if re.match(r'/pkg', parsed_uri.path):
+            module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', parsed_uri.query)
+            package = module_name
+            is_package = True
         else:
-            module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit)?\.php.*$', r'pfsense_\1', parsed_uri.path)
+            module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit)?\.php.*$', r'\1', parsed_uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
@@ -103,7 +107,7 @@ elif args.urlfile is not None:
     # Use a cached copy of the web page - get rid of this?  Need to specify host and module name
     html = lxml.html.parse(args.urlfile)
     host = '192.168.100.2'
-    module_name = 'pfsense_nat_1to1'
+    module_name = 'nat_1to1'
 
 else:
     sys.exit('You must specify one of --url or --urlfile')
@@ -116,6 +120,9 @@ scp = SCPClient(ssh.get_transport())
 scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
 if phpfile is not None:
     scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
+if is_package:
+    scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
+    scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
 scp.close()
 
 # Parse the config.xml file
@@ -199,6 +206,8 @@ if phpfile is not None:
 if len(html.forms) != 1:
     sys.exit(f'Found {len(html.forms)} forms instead of a single one!')
 
+# TODO - For packages we could parse /usr/local/pkg/{package}.xml instead
+
 # Collected parameters from the web form
 params = dict()
 
@@ -243,6 +252,8 @@ for input in html.forms[0].inputs:
             else:
                 param['type'] = 'str'
             param['multiple'] = input.multiple
+        if input.value is not None:
+            param['default'] = input.value
     elif input.tag == 'textarea':
         param['type'] = 'str'
 
@@ -262,7 +273,7 @@ for input in html.forms[0].inputs:
         descr_elt = div2.find('*span')
         if descr_elt.text:
             print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
-            param['description'] += f'{descr_elt.text.strip()} of the {module_node}'
+            param['description'] += f'{descr_elt.text.strip()} of the {module_name}'
         if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
             param['required'] = True
         help_elt = div1.find('span[@class="help-block"]')
@@ -336,7 +347,8 @@ for param in params_web_only:
 print('')
 params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
 print(f'XML parameters not in web: {params_xml_only}\n')
-print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
+if len(params_xml_only) > 0:
+    print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
 
 for param in params_xml_only:
     params[param] = params_full[param]
@@ -358,6 +370,8 @@ context = dict(
     module_key=module_key,
     params=params,
     params_xml_only=params_xml_only,
+    is_package=is_package,
+    package=package,
     author_name=args.author_name,
     author_email=args.author_email,
     author_handle=args.author_handle,
@@ -372,7 +386,7 @@ jenv = jinja2.Environment(loader=jinja2.FileSystemLoader("misc/"), trim_blocks=T
 jenv.filters['dict2items'] = dict_to_list_of_dict_key_value_elements
 template = jenv.get_template("pfsense_module.py.j2")
 
-filename = f'plugins/modules/{module_name}.py'
+filename = f'plugins/modules/pfsense_{module_name}.py'
 if os.path.isfile(filename) and not args.force:
     sys.exit(f'{filename} already exists!')
 print(f'Writing {filename} with {context}')
@@ -385,3 +399,5 @@ if args.keep_tmpdir:
     f = open(f'{tmpdir.name}/{module_name}.html', 'w')
     f.write(r.text)
     f.close()
+    shutil.copytree(tmpdir.name, f'/tmp/{module_name}', dirs_exist_ok=True)
+    print(f'Keeping /tmp/{module_name}')
