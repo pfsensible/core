@@ -53,7 +53,7 @@ options:
     type: list
     elements: str
   authorizedkeys:
-    description: Contents of ~/.ssh/authorized_keys.  Can be base64 encoded.
+    description: Authorized SSH Keys of the user. Can be base64 encoded.
     type: str
 '''
 
@@ -96,6 +96,27 @@ USER_ARGUMENT_SPEC = dict(
 
 USER_CREATE_DEFAULT = dict(
     scope='user',
+)
+
+USER_MAP_PARAM = [
+    ('password', 'bcrypt-hash'),
+]
+
+
+def p2o_ssh_pub_key(self, name, params, obj):
+    # Allow ssh keys to be clear or base64 encoded
+    if 'ssh-' in params[name]:
+        obj[name] = base64.b64encode(params[name].encode()).decode()
+
+
+def validate_password(self, password):
+    if not re.match(r'\$2[aby]\$', str(password)):
+        raise ValueError('Password (%s) does not appear to be a bcrypt hash' % (password))
+
+
+USER_ARG_ROUTE = dict(
+    authorizedkeys=dict(parse=p2o_ssh_pub_key),
+    password=dict(validate=validate_password),
 )
 
 USER_PHP_COMMAND_PREFIX = """
@@ -143,42 +164,10 @@ class PFSenseUserModule(PFSenseModuleBase):
         return USER_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseUserModule, self).__init__(module, pfsense, root='system', node='user', key='name', create_default=USER_CREATE_DEFAULT)
+        super(PFSenseUserModule, self).__init__(module, pfsense, root='system', node='user', key='name',
+                                                arg_route=USER_ARG_ROUTE, map_param=USER_MAP_PARAM, create_default=USER_CREATE_DEFAULT)
         self.groups = self.root_elt.findall('group')
         self.mod_groups = []
-
-    ##############################
-    # params processing
-    #
-    def _validate_params(self):
-        """ do some extra checks on input parameters """
-        params = self.params
-        if 'password' in params and params['password'] is not None:
-            password = params['password']
-            if re.match(r'\$2[aby]\$', str(password)):
-                params['bcrypt-hash'] = password
-            else:
-                self.module.fail_json(msg='Password (%s) does not appear to be a bcrypt hash' % password)
-            del params['password']
-
-    def _params_to_obj(self):
-        """ return a dict from module params """
-        params = self.params
-
-        obj = dict()
-        self.obj = obj
-
-        obj['name'] = params['name']
-        if params['state'] == 'present':
-            for option in ['authorizedkeys', 'descr', 'scope', 'uid', 'bcrypt-hash', 'groups', 'priv']:
-                if option in params and params[option] is not None:
-                    obj[option] = params[option]
-
-            # Allow authorizedkeys to be clear or base64 encoded
-            if 'authorizedkeys' in obj and 'ssh-' in obj['authorizedkeys']:
-                obj['authorizedkeys'] = base64.b64encode(obj['authorizedkeys'].encode()).decode()
-
-        return obj
 
     ##############################
     # XML processing
@@ -315,6 +304,7 @@ def main():
         supports_check_mode=True)
 
     pfmodule = PFSenseUserModule(module)
+    # Pass params for testing framework
     pfmodule.run(module.params)
     pfmodule.commit_changes()
 
