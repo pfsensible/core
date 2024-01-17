@@ -26,7 +26,7 @@ class PFSenseModuleBase(object):
     # init
     #
     def __init__(self, module, pfsense=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr', update_php=None,
-                 map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
+                 arg_route=None, map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
         if pfsense is None:
             pfsense = PFSenseModule(module)
         self.module = module    # ansible module
@@ -68,9 +68,22 @@ class PFSenseModuleBase(object):
 
         self.key = key          # item that identifies a target element
         self.obj = dict()       # dict holding target pfsense parameters
-        self.map_param_if = map_param_if  # rules for mapping parameters
-        self.param_force = param_force    # parameters that are forced to be present
-        self.bool_values = bool_values    # boolean values for arguments
+        if arg_route is not None:
+            self.arg_route = arg_route        # routing for argument handling
+        else:
+            self.arg_route = dict()
+        if map_param_if is not None:
+            self.map_param_if = map_param_if  # rules for mapping parameters
+        else:
+            self.map_param_if = list()
+        if param_force is not None:
+            self.param_force = param_force  # parameters that are forced to be present
+        else:
+            self.param_force = list()
+        if bool_values is not None:
+            self.bool_values = bool_values    # boolean values for arguments
+        else:
+            self.bool_values = dict()
         self.create_default = create_default  # default values for a created target
         self.have_refid = have_refid      # if the element has a refid item
         self.target_elt = None  # xml object holding target pfsense parameters
@@ -119,15 +132,20 @@ class PFSenseModuleBase(object):
             obj[fname] = value_false
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """ return a dict from module params that sets self.obj """
         obj = dict()
-        obj[self.key] = self.params[self.key]
-        if self.params.get('state') == 'present':
-            for param in [n for n in self.argument_spec.keys() if n != 'state']:
+        # Not all modules have 'state', treat them like they did
+        if self.params.get('state', 'present') == 'present':
+            # Ansible sets unspecied parameters to None, skip them and 'state'
+            for param in [p for p in self.params if p != 'state' and self.params[p] is not None]:
                 force = False
                 if param in self.param_force:
                     force = True
-                if self.argument_spec[param].get('type') == 'bool':
+
+                # If we have defined a parser for this arg, use it
+                if param in self.arg_route and 'parse' in self.arg_route[param]:
+                    self.arg_route[param]['parse'](param, self.params, obj)
+                elif self.argument_spec[param].get('type') == 'bool':
                     if param in self.bool_values:
                         self._get_ansible_param_bool(obj, param, value=self.bool_values[param][1], value_false=self.bool_values[param][0], force=force)
                     else:
@@ -135,18 +153,30 @@ class PFSenseModuleBase(object):
                 else:
                     self._get_ansible_param(obj, param, force=force)
 
-        for map_param, map_value, map_tuple in self.map_param_if:
-            if self.params.get(map_param) == map_value and map_tuple[0] in obj:
-                if map_tuple[1] not in obj:
-                    obj[map_tuple[1]] = obj[map_tuple[0]]
-                del obj[map_tuple[0]]
+            # Handle renaming of parameters
+            for map_param, map_value, map_tuple in self.map_param_if:
+                if self.params.get(map_param) == map_value and map_tuple[0] in obj:
+                    if map_tuple[1] not in obj:
+                        obj[map_tuple[1]] = obj[map_tuple[0]]
+                    del obj[map_tuple[0]]
+        else:
+            # Just use the key to remove items
+            obj[self.key] = self.params[self.key]
 
         return obj
 
-    @staticmethod
-    def _validate_params():
+    ##############################
+    # params processing
+    #
+    def _validate_params(self):
         """ do some extra checks on input parameters """
-        pass
+        params = self.params
+        # Not all modules have 'state', treat them like they did
+        if self.params.get('state', 'present') == 'present':
+            # Ansible sets unspecied parameters to None, skip them
+            for param in [p for p in self.params if self.params[p] is not None]:
+                if param in self.arg_route and 'validate' in self.arg_route[param]:
+                    self.arg_route[param]['validate'](params[param])
 
     def _deprecated_params(self):
         """ return deprecated params """
