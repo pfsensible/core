@@ -41,6 +41,7 @@ parser.add_argument('--author-name', default=author_name, help='The full name of
 parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
 parser.add_argument('--author-handle', default='', help='The github handle of the module author')
 parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--name-param', help='The name of the primary module parameter - defaults to the key, but often "name" is used instead of "descr"')
 parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
 parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
 parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
@@ -75,7 +76,7 @@ if args.url is not None:
             package = module_name
             is_package = True
         else:
-            module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit)?\.php.*$', r'\1', parsed_uri.path)
+            module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', parsed_uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
@@ -140,6 +141,10 @@ else:
 
 # This element should be the key for the items
 module_key = key_elt.tag
+if args.name_param:
+   name_param = args.name_param
+else:
+   name_param = module_key
 
 # The full node configuration element will be the parent
 node_elt = key_elt.find('..')
@@ -165,16 +170,26 @@ params_full = dict()
 for elt in full_elt:
     if elt.tag == '':
         continue
-    params_full[elt.tag] = dict()
+    param = dict()
     addr_elt = elt.find('address')
     if addr_elt is not None:
-        params_full[elt.tag]['example'] = addr_elt.text
-        params_full[elt.tag]['address'] = True
+        param['example'] = addr_elt.text
+        param['address'] = True
     elif elt.text is not None:
-        params_full[elt.tag]['type'] = 'str'
-        params_full[elt.tag]['example'] = elt.text.strip()
+        if elt.tag in params_full:
+            # Copy example and possibly other values from previous copy
+            param = params_full[elt.tag]
+            # If we have already need one of these, then it is a list
+            param['type'] = 'list'
+            # TODO - can we determine the type?
+            param['elements'] = 'str'
+            param['example2'] = elt.text.strip()
+        else:
+            param['type'] = 'str'
+            param['example'] = elt.text.strip()
     # else:
         # Likely a bool?
+    params_full[elt.tag] = param
 
 print('')
 
@@ -285,7 +300,7 @@ for input in html.forms[0].inputs:
 
 # Key is handled separately from other parameters so remove it
 # TODO - keep the description, etc?
-del params[module_key]
+params.pop(module_key, None)
 
 # Debug
 print(f'Web paramters: {params.keys()}')
@@ -370,6 +385,7 @@ context = dict(
     module_key=module_key,
     params=params,
     params_xml_only=params_xml_only,
+    name_param=name_param,
     is_package=is_package,
     package=package,
     author_name=args.author_name,
