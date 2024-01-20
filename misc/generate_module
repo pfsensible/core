@@ -223,6 +223,12 @@ if len(html.forms) != 1:
 
 # TODO - For packages we could parse /usr/local/pkg/{package}.xml instead
 
+# Make sure a string has a trailing period
+def enforce_period(s):
+    if len(s) > 0 and s[-1] != '.':
+        s += '.'
+    return s
+
 # Collected parameters from the web form
 params = dict()
 
@@ -255,7 +261,7 @@ for input in html.forms[0].inputs:
                 param[attr] = input.attrib[attr]
         # Text sometimes is after the input element inside the enclosing <label>
         if input.tail:
-            param['description'] = input.tail.strip()
+            param['description'] = enforce_period(input.tail.strip())
     elif isinstance(input, lxml.html.SelectElement):
         print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
         if input.attrib.get('class') == 'form-control' and input.attrib.get('data-toggle') == 'collapse':
@@ -288,13 +294,14 @@ for input in html.forms[0].inputs:
         descr_elt = div2.find('*span')
         if descr_elt.text:
             print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
-            param['description'] += f'{descr_elt.text.strip()} of the {module_name}'
+            param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
         if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
             param['required'] = True
         help_elt = div1.find('span[@class="help-block"]')
         if help_elt is not None:
             print(f'help_elt text {help_elt.text.strip()}')
-            param['description'] += f'. {help_elt.text.strip()}'
+            descr = enforce_period(help_elt.text.strip())
+            param['description'] += f' {descr}'
 
     params[input.name] = param
 
@@ -372,7 +379,7 @@ for param in params_xml_only:
 for name, param in params.items():
     # TODO - wrap long descriptions
     if 'description' not in param or param['description'] == '':
-        param['description'] = f'The {name} of the {module_node}'
+        param['description'] = f'The {name} of the {module_node}.'
     if 'example' not in param or param['example'] == '':
         if name in params_full and 'example' in params_full[name]:
             param['example'] = params_full[name]['example']
