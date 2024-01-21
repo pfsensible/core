@@ -76,6 +76,36 @@ IPSEC_REQUIRED_IF = [
     ["peerid_type", "keyid tag", ["peerid_data"]],
 ]
 
+# Booleans that map to different values
+IPSEC_BOOL_VALUES = dict(
+    gw_duplicates=(None, ''),
+)
+
+IPSEC_MAP_PARAM = [
+    ('preshared_key', 'pre-shared-key'),
+    ('remote_gateway', 'remote-gateway'),
+]
+
+IPSEC_CREATE_DEFAULT = dict(
+    rand_time=None,
+    reauth_time=None,
+    rekey_time=None,
+)
+
+
+def p2o_ipsec_interface(self, name, params, obj):
+    # Valid interfaces are physical, virtual IPs, and gateway groups
+    # TODO - handle gateway groups
+    if params[name].lower().startswith('vip:'):
+        obj[name] = self.pfsense.get_virtual_ip_interface(params[name][4:])
+    else:
+        obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False)
+
+
+IPSEC_ARG_ROUTE = dict(
+    interface=dict(parse=p2o_ipsec_interface,),
+)
+
 
 class PFSenseIpsecModule(PFSenseModuleBase):
     """ module managing pfsense ipsec tunnels phase 1 options """
@@ -89,9 +119,11 @@ class PFSenseIpsecModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseIpsecModule, self).__init__(module, pfsense)
+        super(PFSenseIpsecModule, self).__init__(module, pfsense, arg_route=IPSEC_ARG_ROUTE, bool_values=IPSEC_BOOL_VALUES, map_param=IPSEC_MAP_PARAM,
+                                                 create_default=IPSEC_CREATE_DEFAULT)
+        # Override for use with aggregate
+        self.argument_spec = IPSEC_ARGUMENT_SPEC
         self.name = "pfsense_ipsec"
-        self.obj = dict()
         self.apply = True
 
         self.root_elt = self.pfsense.ipsec
@@ -162,36 +194,12 @@ class PFSenseIpsecModule(PFSenseModuleBase):
     def _params_to_obj(self):
         """ return an ipsec dict from module params """
 
+        ipsec = super(PFSenseIpsecModule, self)._params_to_obj()
         params = self.params
         self.apply = params['apply']
-
-        ipsec = dict()
-        ipsec['descr'] = params['descr']
+        ipsec.pop('apply', None)
 
         if params['state'] == 'present':
-            # Valid interfaces are physical, virtual IPs, and gateway groups
-            # TODO - handle gateway groups
-            if params['interface'].lower().startswith('vip:'):
-                ipsec['interface'] = self.pfsense.get_virtual_ip_interface(params['interface'][4:])
-            else:
-                ipsec['interface'] = self.pfsense.parse_interface(params['interface'], with_virtual=False)
-            ipsec['iketype'] = params['iketype']
-
-            if params.get('mode') is not None:
-                ipsec['mode'] = params['mode']
-            ipsec['nat_traversal'] = params['nat_traversal']
-
-            ipsec['protocol'] = params['protocol']
-            ipsec['remote-gateway'] = params['remote_gateway']
-            if params.get('disabled'):
-                ipsec['disabled'] = None
-
-            ipsec['myid_type'] = params['myid_type']
-            ipsec['myid_data'] = params['myid_data']
-            ipsec['peerid_type'] = params['peerid_type']
-            ipsec['peerid_data'] = params['peerid_data']
-
-            ipsec['authentication_method'] = params['authentication_method']
             if params['authentication_method'] == 'rsasig':
                 ca_elt = self.pfsense.find_ca_elt(params['certificate_authority'])
                 if ca_elt is None:
@@ -206,9 +214,6 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             else:
                 ipsec['caref'] = ''
                 ipsec['certref'] = ''
-                ipsec['pre-shared-key'] = params['preshared_key']
-
-            ipsec['lifetime'] = str(params['lifetime'])
 
             if params.get('disable_rekey'):
                 ipsec['rekey_enable'] = ''
@@ -216,29 +221,10 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             if params.get('enable_dpd'):
                 ipsec['dpd_delay'] = str(params['dpd_delay'])
                 ipsec['dpd_maxfail'] = str(params['dpd_maxfail'])
+                del ipsec['enable_dpd']
 
             if params.get('disable_reauth'):
                 ipsec['reauth_enable'] = ''
-            if params.get('splitconn'):
-                ipsec['splitconn'] = ''
-            if params.get('mobike'):
-                ipsec['mobike'] = params['mobike']
-
-            if self.pfsense.is_at_least_2_5_0():
-                self._get_ansible_param_bool(ipsec, 'gw_duplicates', value='')
-                self._get_ansible_param(ipsec, 'nattport')
-                self._get_ansible_param(ipsec, 'rekey_time', force=True)
-                self._get_ansible_param(ipsec, 'reauth_time', force=True)
-                self._get_ansible_param(ipsec, 'rand_time', force=True)
-            else:
-                self._get_ansible_param(ipsec, 'margintime', force=True)
-
-            if self.pfsense.is_at_least_2_5_2():
-                self._get_ansible_param(ipsec, 'startaction')
-                self._get_ansible_param(ipsec, 'closeaction')
-            else:
-                if params.get('responderonly'):
-                    ipsec['responderonly'] = params['responderonly']
 
         return ipsec
 
@@ -267,14 +253,10 @@ class PFSenseIpsecModule(PFSenseModuleBase):
         if params['state'] == 'absent':
             return
 
-        if self.pfsense.is_at_least_2_5_0():
-            if params.get('lifetime') is not None:
-                if (params.get('rekey_time') is not None and params.get('rekey_time') >= params.get('lifetime') or
-                        params.get('reauth_time') is not None and params.get('reauth_time') >= params.get('lifetime')):
-                    self.module.fail_json(msg='Life Time must be larger than Rekey Time and Reauth Time.')
-        else:
-            if params.get('disable_rekey') is None:
-                params['disable_rekey'] = False
+        if params.get('lifetime') is not None:
+            if (params.get('rekey_time') is not None and params.get('rekey_time') >= params.get('lifetime') or
+                    params.get('reauth_time') is not None and params.get('reauth_time') >= params.get('lifetime')):
+                self.module.fail_json(msg='Life Time must be larger than Rekey Time and Reauth Time.')
 
         for ipsec_elt in self.root_elt:
             if ipsec_elt.tag != 'phase1':
@@ -322,118 +304,99 @@ class PFSenseIpsecModule(PFSenseModuleBase):
     ##############################
     # Logging
     #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return "'" + self.obj['descr'] + "'"
-
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
         values = ''
         if before is None:
             values += self.format_cli_field(self.params, 'disabled', fvalue=self.fvalue_bool)
-            values += self.format_cli_field(self.obj, 'iketype')
-            if self.obj['iketype'] != 'ikev2':
-                values += self.format_cli_field(self.obj, 'mode')
+            values += self.format_cli_field(self.diff['after'], 'iketype')
+            if self.diff['after']['iketype'] != 'ikev2':
+                values += self.format_cli_field(self.diff['after'], 'mode')
 
-            values += self.format_cli_field(self.obj, 'protocol')
+            values += self.format_cli_field(self.diff['after'], 'protocol')
             values += self.format_cli_field(self.params, 'interface')
-            values += self.format_cli_field(self.obj, 'remote-gateway', fname='remote_gateway')
-            values += self.format_cli_field(self.obj, 'nattport')
-            values += self.format_cli_field(self.obj, 'authentication_method')
-            if self.obj['authentication_method'] == 'rsasig':
+            values += self.format_cli_field(self.diff['after'], 'remote-gateway', fname='remote_gateway')
+            values += self.format_cli_field(self.diff['after'], 'nattport')
+            values += self.format_cli_field(self.diff['after'], 'authentication_method')
+            if self.diff['after']['authentication_method'] == 'rsasig':
                 values += self.format_cli_field(self.params, 'certificate')
                 values += self.format_cli_field(self.params, 'certificate_authority')
             else:
-                values += self.format_cli_field(self.obj, 'pre-shared-key', fname='preshared_key')
+                values += self.format_cli_field(self.diff['after'], 'pre-shared-key', fname='preshared_key')
 
             id_types = ['address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'dyn_dns']
-            values += self.format_cli_field(self.obj, 'myid_type')
-            if self.obj['myid_type'] in id_types:
-                values += self.format_cli_field(self.obj, 'myid_data')
+            values += self.format_cli_field(self.diff['after'], 'myid_type')
+            if self.diff['after']['myid_type'] in id_types:
+                values += self.format_cli_field(self.diff['after'], 'myid_data')
 
-            values += self.format_cli_field(self.obj, 'peerid_type')
-            if self.obj['peerid_type'] in id_types:
-                values += self.format_cli_field(self.obj, 'peerid_data')
+            values += self.format_cli_field(self.diff['after'], 'peerid_type')
+            if self.diff['after']['peerid_type'] in id_types:
+                values += self.format_cli_field(self.diff['after'], 'peerid_data')
 
-            values += self.format_cli_field(self.obj, 'lifetime')
-            values += self.format_cli_field(self.obj, 'rekey_time')
-            values += self.format_cli_field(self.obj, 'reauth_time')
-            values += self.format_cli_field(self.obj, 'rand_time')
+            values += self.format_cli_field(self.diff['after'], 'lifetime')
+            values += self.format_cli_field(self.diff['after'], 'rekey_time')
+            values += self.format_cli_field(self.diff['after'], 'reauth_time')
+            values += self.format_cli_field(self.diff['after'], 'rand_time')
 
-            if not self.pfsense.is_at_least_2_5_0():
-                values += self.format_cli_field(self.params, 'disable_rekey', fvalue=self.fvalue_bool)
-                if not self.params['disable_rekey']:
-                    values += self.format_cli_field(self.obj, 'margintime')
+            if self.diff['after']['iketype'] == 'ikev2':
+                values += self.format_cli_field(self.diff['after'], 'reauth_enable', fname='disable_reauth', fvalue=self.fvalue_bool)
+                values += self.format_cli_field(self.diff['after'], 'mobike')
+                values += self.format_cli_field(self.diff['after'], 'splitconn', fvalue=self.fvalue_bool)
 
-            if self.obj['iketype'] == 'ikev2':
-                values += self.format_cli_field(self.obj, 'reauth_enable', fname='disable_reauth', fvalue=self.fvalue_bool)
-                values += self.format_cli_field(self.obj, 'mobike')
-                values += self.format_cli_field(self.obj, 'splitconn', fvalue=self.fvalue_bool)
+            values += self.format_cli_field(self.diff['after'], 'gw_duplicates', fvalue=self.fvalue_bool)
 
-            values += self.format_cli_field(self.obj, 'gw_duplicates', fvalue=self.fvalue_bool)
-
-            if self.pfsense.is_at_least_2_5_2():
-                values += self.format_cli_field(self.params, 'startaction')
-                values += self.format_cli_field(self.params, 'closeaction')
-            else:
-                values += self.format_cli_field(self.params, 'responderonly', fvalue=self.fvalue_bool)
-            values += self.format_cli_field(self.obj, 'nat_traversal')
+            values += self.format_cli_field(self.params, 'startaction')
+            values += self.format_cli_field(self.params, 'closeaction')
+            values += self.format_cli_field(self.diff['after'], 'nat_traversal')
 
             values += self.format_cli_field(self.params, 'enable_dpd', fvalue=self.fvalue_bool)
             if self.params['enable_dpd']:
-                values += self.format_cli_field(self.obj, 'dpd_delay')
-                values += self.format_cli_field(self.obj, 'dpd_maxfail')
+                values += self.format_cli_field(self.diff['after'], 'dpd_delay')
+                values += self.format_cli_field(self.diff['after'], 'dpd_maxfail')
         else:
-            values += self.format_updated_cli_field(self.obj, before, 'disabled', add_comma=(values), fvalue=self.fvalue_bool)
-            values += self.format_updated_cli_field(self.obj, before, 'iketype', add_comma=(values))
-            if self.obj['iketype'] != 'ikev2':
-                values += self.format_updated_cli_field(self.obj, before, 'mode', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'protocol', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'interface', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'remote-gateway', add_comma=(values), fname='remote_gateway')
-            values += self.format_updated_cli_field(self.obj, before, 'nattport', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'authentication_method', add_comma=(values))
-            if self.obj['authentication_method'] == 'rsasig':
+            values += self.format_updated_cli_field(self.diff['after'], before, 'disabled', add_comma=(values), fvalue=self.fvalue_bool)
+            values += self.format_updated_cli_field(self.diff['after'], before, 'iketype', add_comma=(values))
+            if self.diff['after']['iketype'] != 'ikev2':
+                values += self.format_updated_cli_field(self.diff['after'], before, 'mode', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'protocol', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'interface', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'remote-gateway', add_comma=(values), fname='remote_gateway')
+            values += self.format_updated_cli_field(self.diff['after'], before, 'nattport', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'authentication_method', add_comma=(values))
+            if self.diff['after']['authentication_method'] == 'rsasig':
                 values += self.format_updated_cli_field(self.params, before, 'certificate', add_comma=(values))
                 values += self.format_updated_cli_field(self.params, before, 'certificate_authority', add_comma=(values))
             else:
-                values += self.format_updated_cli_field(self.obj, before, 'pre-shared-key', add_comma=(values), fname='preshared_key')
-            values += self.format_updated_cli_field(self.obj, before, 'myid_type', add_comma=(values))
+                values += self.format_updated_cli_field(self.diff['after'], before, 'pre-shared-key', add_comma=(values), fname='preshared_key')
+            values += self.format_updated_cli_field(self.diff['after'], before, 'myid_type', add_comma=(values))
             id_types = ['address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'dyn_dns']
-            if self.obj['myid_type'] in id_types:
-                values += self.format_updated_cli_field(self.obj, before, 'myid_data', add_comma=(values))
+            if self.diff['after']['myid_type'] in id_types:
+                values += self.format_updated_cli_field(self.diff['after'], before, 'myid_data', add_comma=(values))
 
-            values += self.format_updated_cli_field(self.obj, before, 'peerid_type', add_comma=(values))
-            if self.obj['peerid_type'] in id_types:
-                values += self.format_updated_cli_field(self.obj, before, 'peerid_data', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'peerid_type', add_comma=(values))
+            if self.diff['after']['peerid_type'] in id_types:
+                values += self.format_updated_cli_field(self.diff['after'], before, 'peerid_data', add_comma=(values))
 
-            values += self.format_updated_cli_field(self.obj, before, 'lifetime', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'rekey_time', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'reauth_time', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'rand_time', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'lifetime', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'rekey_time', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'reauth_time', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'rand_time', add_comma=(values))
 
-            if not self.pfsense.is_at_least_2_5_0():
-                values += self.format_updated_cli_field(self.obj, before, 'disable_rekey', add_comma=(values), fvalue=self.fvalue_bool)
-                if not self.params['disable_rekey']:
-                    values += self.format_updated_cli_field(self.obj, before, 'margintime', add_comma=(values))
+            if self.diff['after']['iketype'] == 'ikev2':
+                values += self.format_updated_cli_field(self.diff['after'], before, 'reauth_enable', add_comma=(values), fname='disable_reauth',
+                                                        fvalue=self.fvalue_bool)
+                values += self.format_updated_cli_field(self.diff['after'], before, 'mobike', add_comma=(values))
+                values += self.format_updated_cli_field(self.diff['after'], before, 'splitconn', add_comma=(values), fvalue=self.fvalue_bool)
 
-            if self.obj['iketype'] == 'ikev2':
-                values += self.format_updated_cli_field(self.obj, before, 'reauth_enable', add_comma=(values), fname='disable_reauth', fvalue=self.fvalue_bool)
-                values += self.format_updated_cli_field(self.obj, before, 'mobike', add_comma=(values))
-                values += self.format_updated_cli_field(self.obj, before, 'splitconn', add_comma=(values), fvalue=self.fvalue_bool)
+            values += self.format_updated_cli_field(self.diff['after'], before, 'gw_duplicates', add_comma=(values), fvalue=self.fvalue_bool)
 
-            values += self.format_updated_cli_field(self.obj, before, 'gw_duplicates', add_comma=(values), fvalue=self.fvalue_bool)
-
-            if self.pfsense.is_at_least_2_5_2():
-                values += self.format_updated_cli_field(self.obj, before, 'startaction', add_comma=(values))
-                values += self.format_updated_cli_field(self.obj, before, 'closeaction', add_comma=(values))
-            else:
-                values += self.format_updated_cli_field(self.obj, before, 'responderonly', add_comma=(values), fvalue=self.fvalue_bool)
-            values += self.format_updated_cli_field(self.obj, before, 'nat_traversal', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'enable_dpd', add_comma=(values), fvalue=self.fvalue_bool)
+            values += self.format_updated_cli_field(self.diff['after'], before, 'startaction', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'closeaction', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'nat_traversal', add_comma=(values))
+            values += self.format_updated_cli_field(self.diff['after'], before, 'enable_dpd', add_comma=(values), fvalue=self.fvalue_bool)
             if self.params['enable_dpd']:
-                values += self.format_updated_cli_field(self.obj, before, 'dpd_delay', add_comma=(values))
-                values += self.format_updated_cli_field(self.obj, before, 'dpd_maxfail', add_comma=(values))
+                values += self.format_updated_cli_field(self.diff['after'], before, 'dpd_delay', add_comma=(values))
+                values += self.format_updated_cli_field(self.diff['after'], before, 'dpd_maxfail', add_comma=(values))
         return values
 
     def _get_ref_names(self, before):
