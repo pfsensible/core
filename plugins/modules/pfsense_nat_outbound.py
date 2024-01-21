@@ -123,12 +123,18 @@ commands:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule, NAT_OUTBOUND_ARGUMENT_SPEC, NAT_OUTBOUND_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import (
+    PFSenseNatOutboundModule,
+    NAT_OUTBOUND_ARGUMENT_SPEC,
+    NAT_OUTBOUND_MUTUALLY_EXCLUSIVE,
+    NAT_OUTBOUND_REQUIRED_IF,
+)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=NAT_OUTBOUND_ARGUMENT_SPEC,
+        mutually_exclusive=NAT_OUTBOUND_MUTUALLY_EXCLUSIVE,
         required_if=NAT_OUTBOUND_REQUIRED_IF,
         supports_check_mode=True)
 
