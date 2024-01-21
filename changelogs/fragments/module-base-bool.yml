@@ -1,0 +1,2 @@
+minor_changes:
+  - Have _get_ansible_param_bool set the value to value_false if the parameter is present and false.

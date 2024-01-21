@@ -1,0 +1,2 @@
+minor_changes:
+  - Refactor pfsense_authserver_ldap and pfsense_authserver_radius.  Should not have any visible impact.
