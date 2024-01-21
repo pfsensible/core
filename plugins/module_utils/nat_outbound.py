@@ -9,6 +9,7 @@ __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from string import hexdigits
 from hashlib import md5
+import re
 import sys
 
 NAT_OUTBOUND_ARGUMENT_SPEC = dict(
@@ -40,6 +41,14 @@ NAT_OUTBOUND_MUTUALLY_EXCLUSIVE = [
 NAT_OUTBOUND_REQUIRED_IF = [
     ["state", "present", ["interface", "source", "destination"]]
 ]
+
+# Booleans that map to different values
+NAT_OUTBOUND_BOOL_VALUES = dict(
+    disabled=(None, ''),
+    staticnatport=(None, ''),
+    nonat=(None, ''),
+    nosync=(None, ''),
+)
 
 
 def p2o_after(self, name, params, obj):
@@ -82,22 +91,13 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseNatOutboundModule, self).__init__(module, pfsense, arg_route=NAT_OUTBOUND_ARG_ROUTE)
+        super(PFSenseNatOutboundModule, self).__init__(module, pfsense, root='nat/outbound', create_root=True, arg_route=NAT_OUTBOUND_ARG_ROUTE,
+                                                       bool_values=NAT_OUTBOUND_BOOL_VALUES)
         self.name = "pfsense_nat_outbound"
 
         self.after = None
         self.before = None
         self.position_changed = False
-
-        nat_elt = self.pfsense.get_element('nat')
-        if nat_elt is None:
-            nat_elt = self.pfsense.new_element('nat')
-            self.pfsense.root.append(nat_elt)
-
-        self.root_elt = nat_elt.find('outbound')
-        if self.root_elt is None:
-            self.root_elt = self.pfsense.new_element('outbound')
-            nat_elt.append(self.root_elt)
 
     ##############################
     # params processing
@@ -194,8 +194,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _parse_translated_address(self, obj):
         """ validate param address field and returns it as a dict """
         obj['target'] = ''
-        obj['targetip'] = ''
-        obj['targetip_subnet'] = ''
+        obj['target_subnet'] = ''
 
         if self.params.get('address') is None or self.params['address'] == '':
             return
@@ -211,21 +210,22 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         if address is not None and address != '':
             if self.pfsense.is_virtual_ip(address):
                 obj['target'] = address
+                obj['target_subnet'] = None
             elif self.pfsense.find_alias(address, 'host') is not None or self.pfsense.find_alias(address, 'network') is not None:
                 obj['target'] = address
                 if obj['poolopts'] != '' and not obj['poolopts'].startswith('round-robin'):
                     self.module.fail_json(msg='Only Round Robin pool options may be chosen when selecting an alias.')
+                obj['target_subnet'] = '32'
             elif self.pfsense.is_ipv4_address(address):
-                obj['target'] = 'other-subnet'
-                obj['targetip'] = address
-                obj['targetip_subnet'] = '32'
+                obj['target'] = address
+                obj['target_subnet'] = '32'
             else:
                 (addr, part) = self.pfsense.parse_ip_network(address, False, False)
                 if addr is None:
                     self.module.fail_json(msg='Cannot parse address %s, not IP or alias' % (address))
-                obj['target'] = 'other-subnet'
-                obj['targetip'] = addr
-                obj['targetip_subnet'] = str(part)
+                obj['target'] = addr
+                obj['target_subnet'] = str(part)
+            del obj['address']
 
         self._parse_ports(obj, ports, 'natport', param)
 
@@ -250,12 +250,15 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _copy_and_add_target(self):
         """ create the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
+        self.diff['after'] = self.obj
         self._insert(self.target_elt)
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
         before = self.pfsense.element_to_dict(self.target_elt)
+        self.diff['before'] = before
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
+        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
         if self._remove_deleted_params():
             changed = True
 
@@ -471,11 +474,12 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         res['destination'] = self._obj_address_to_log_field(rule, 'destination', 'network', 'dstport')
         res['interface'] = self.pfsense.get_interface_display_name(rule['interface'])
 
-        if rule['target'] == 'other-subnet':
-            res['address'] = rule['targetip'] + '/' + rule['targetip_subnet']
-        else:
-            res['address'] = rule['target']
-        if 'natport' in rule and rule['natport'] != '':
+        if rule.get('target', '') != '':
+            if re.match(r'[a-zA-Z]', rule['target']):
+                res['address'] = rule['target']
+            else:
+                res['address'] = rule['target'] + '/' + rule['target_subnet']
+        if rule.get('natport', '') != '':
             res['address'] += ':'
             res['address'] += rule['natport'].replace(':', '-')
         return res

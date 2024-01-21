@@ -91,18 +91,15 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         """ test the addresses definition """
         if 'address' not in params or params['address'] == '':
             self.assert_xml_elt_is_none_or_empty(target_elt, 'target')
-            self.assert_xml_elt_is_none_or_empty(target_elt, 'targetip')
-            self.assert_xml_elt_is_none_or_empty(target_elt, 'targetip_subnet')
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'target_subnet')
             self.assert_not_find_xml_elt(target_elt, 'natport')
         elif params['address'] == '4.5.6.7:888-999':
-            self.assert_xml_elt_equal(target_elt, 'target', 'other-subnet')
-            self.assert_xml_elt_equal(target_elt, 'targetip', '4.5.6.7')
-            self.assert_xml_elt_equal(target_elt, 'targetip_subnet', '32')
+            self.assert_xml_elt_equal(target_elt, 'target', '4.5.6.7')
+            self.assert_xml_elt_equal(target_elt, 'target_subnet', '32')
             self.assert_xml_elt_equal(target_elt, 'natport', '888:999')
         elif params['address'] == '4.5.6.7/24:888-999':
-            self.assert_xml_elt_equal(target_elt, 'target', 'other-subnet')
-            self.assert_xml_elt_equal(target_elt, 'targetip', '4.5.6.0')
-            self.assert_xml_elt_equal(target_elt, 'targetip_subnet', '24')
+            self.assert_xml_elt_equal(target_elt, 'target', '4.5.6.0')
+            self.assert_xml_elt_equal(target_elt, 'target_subnet', '24')
             self.assert_xml_elt_equal(target_elt, 'natport', '888:999')
 
     @staticmethod

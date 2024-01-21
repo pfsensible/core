@@ -193,8 +193,7 @@
 				<sourceport></sourceport>
 				<descr>one rule</descr>
 				<target></target>
-				<targetip></targetip>
-				<targetip_subnet></targetip_subnet>
+				<target_subnet></target_subnet>
 				<interface>wan</interface>
 				<poolopts></poolopts>
 				<source_hash_key></source_hash_key>
@@ -217,8 +216,7 @@
 				<sourceport></sourceport>
 				<descr>another rule</descr>
 				<target></target>
-				<targetip></targetip>
-				<targetip_subnet></targetip_subnet>
+				<target_subnet></target_subnet>
 				<interface>wan</interface>
 				<poolopts></poolopts>
 				<source_hash_key></source_hash_key>
@@ -241,8 +239,7 @@
 				<sourceport></sourceport>
 				<descr>third rule</descr>
 				<target></target>
-				<targetip></targetip>
-				<targetip_subnet></targetip_subnet>
+				<target_subnet></target_subnet>
 				<interface>wan</interface>
 				<poolopts></poolopts>
 				<source_hash_key></source_hash_key>
