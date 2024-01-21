@@ -197,6 +197,18 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
+    def test_nat_outbound_ipprotocol(self):
+        """ test """
+        obj = dict(descr='https-source-rewriting', interface='lan', ipprotocol='inet', source='any', destination='1.2.3.4:443')
+        command = "create nat_outbound 'https-source-rewriting', interface='lan', ipprotocol='inet', source='any', destination='1.2.3.4:443'"
+        self.do_module_test(obj, command=command, target_idx=3)
+
+    def test_nat_outbound_protocol(self):
+        """ test """
+        obj = dict(descr='https-source-rewriting', interface='lan', protocol='tcp', source='any', destination='1.2.3.4:443')
+        command = "create nat_outbound 'https-source-rewriting', interface='lan', protocol='tcp', source='any', destination='1.2.3.4:443'"
+        self.do_module_test(obj, command=command, target_idx=3)
+
     def test_nat_outbound_create_networks_invert(self):
         """ test """
         obj = dict(descr='https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443', invert=True)
