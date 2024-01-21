@@ -19,8 +19,6 @@ ALIAS_ARGUMENT_SPEC = dict(
     updatefreq=dict(default=None, required=False, type='int'),
 )
 
-ALIAS_PARAM_FORCE = ['descr', 'detail']
-
 ALIAS_MUTUALLY_EXCLUSIVE = [
     ('address', 'url'),
 ]
@@ -41,6 +39,11 @@ ALIAS_MAP_PARAM_IF = [
     ["type", "urltable", ("address", "url")],
     ["type", "urltable_ports", ("address", "url")],
 ]
+
+ALIAS_CREATE_DEFAULT = dict(
+    descr='',
+    detail='',
+)
 
 ALIAS_PHP_COMMAND_SET = """
 require_once("filter.inc");
@@ -65,7 +68,7 @@ class PFSenseAliasModule(PFSenseModuleBase):
     #
     def __init__(self, module, pfsense=None):
         super(PFSenseAliasModule, self).__init__(module, pfsense, root='aliases', node='alias', key='name', update_php=ALIAS_PHP_COMMAND_SET,
-                                                 map_param_if=ALIAS_MAP_PARAM_IF, param_force=ALIAS_PARAM_FORCE)
+                                                 map_param_if=ALIAS_MAP_PARAM_IF, create_default=ALIAS_CREATE_DEFAULT)
         # Override for use with aggregate
         self.argument_spec = ALIAS_ARGUMENT_SPEC
 
