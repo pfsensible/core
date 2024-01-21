@@ -105,7 +105,7 @@ USER_MAP_PARAM = [
 
 def p2o_ssh_pub_key(self, name, params, obj):
     # Allow ssh keys to be clear or base64 encoded
-    if 'ssh-' in params[name]:
+    if params[name] is not None and 'ssh-' in params[name]:
         obj[name] = base64.b64encode(params[name].encode()).decode()
 
 
