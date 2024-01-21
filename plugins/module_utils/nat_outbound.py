@@ -33,9 +33,41 @@ NAT_OUTBOUND_ARGUMENT_SPEC = dict(
     before=dict(required=False, type='str'),
 )
 
+NAT_OUTBOUND_MUTUALLY_EXCLUSIVE = [
+    ('after', 'before'),
+]
+
 NAT_OUTBOUND_REQUIRED_IF = [
     ["state", "present", ["interface", "source", "destination"]]
 ]
+
+
+def p2o_after(self, name, params, obj):
+    self.after = params[name]
+
+
+def p2o_before(self, name, params, obj):
+    self.before = params[name]
+
+
+def p2o_ipprotocol(self, name, params, obj):
+    # IPv4+6 is marked by the absense of an ipprotocol element
+    if params[name] != 'inet46':
+        self.obj[name] = params[name]
+
+
+def p2o_protocol(self, name, params, obj):
+    # 'any' is marked by the absense of a protocol element
+    if params[name] != 'any':
+        self.obj[name] = params[name]
+
+
+NAT_OUTBOUND_ARG_ROUTE = dict(
+    after=dict(parse=p2o_after),
+    before=dict(parse=p2o_before),
+    ipprotocol=dict(parse=p2o_ipprotocol),
+    protocol=dict(parse=p2o_protocol),
+)
 
 
 class PFSenseNatOutboundModule(PFSenseModuleBase):
@@ -50,9 +82,8 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseNatOutboundModule, self).__init__(module, pfsense)
+        super(PFSenseNatOutboundModule, self).__init__(module, pfsense, arg_route=NAT_OUTBOUND_ARG_ROUTE)
         self.name = "pfsense_nat_outbound"
-        self.obj = dict()
 
         self.after = None
         self.before = None
@@ -74,32 +105,9 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _params_to_obj(self):
         """ return a dict from module params """
 
-        obj = dict()
-        obj['descr'] = self.params['descr']
+        obj = super(PFSenseNatOutboundModule, self)._params_to_obj()
         params = self.params
         if params['state'] == 'present':
-            obj['sourceport'] = ''
-            obj['interface'] = self.pfsense.parse_interface(params['interface'])
-            self._get_ansible_param(obj, 'ipprotocol')
-            if obj['ipprotocol'] == 'inet46':
-                del obj['ipprotocol']
-            self._get_ansible_param(obj, 'protocol')
-            if obj['protocol'] == 'any':
-                del obj['protocol']
-            self._get_ansible_param(obj, 'poolopts')
-            self._get_ansible_param(obj, 'source_hash_key')
-            self._get_ansible_param(obj, 'natport')
-            self._get_ansible_param_bool(obj, 'disabled', value='')
-            self._get_ansible_param_bool(obj, 'nonat', value='')
-            self._get_ansible_param_bool(obj, 'staticnatport', value='')
-            self._get_ansible_param_bool(obj, 'nosync', value='')
-
-            if 'after' in params and params['after'] is not None:
-                self.after = params['after']
-
-            if 'before' in params and params['before'] is not None:
-                self.before = params['before']
-
             self._parse_address(obj, 'source', 'sourceport', True, 'network')
             self._parse_address(obj, 'destination', 'dstport', False, 'network')
             if params['invert']:
@@ -224,9 +232,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _validate_params(self):
         """ do some extra checks on input parameters """
 
-        if self.params.get('after') and self.params.get('before'):
-            self.module.fail_json(msg='Cannot specify both after and before')
-        elif self.params.get('after'):
+        if self.params.get('after'):
             if self.params['after'] == self.params['descr']:
                 self.module.fail_json(msg='Cannot specify the current rule in after')
         elif self.params.get('before'):
@@ -381,10 +387,6 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
     ##############################
     # Logging
     #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return "'{0}'".format(self.obj['descr'])
-
     @staticmethod
     def fvalue_protocol(value):
         """ boolean value formatting function """
