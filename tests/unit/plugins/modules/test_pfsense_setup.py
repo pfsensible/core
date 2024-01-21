@@ -214,8 +214,8 @@ class TestPFSenseSetupModule(TestPFSenseModule):
 
     def test_setup_language(self):
         """ test setup language """
-        setup = dict(language='fr')
-        command = "update setup general set language='fr'"
+        setup = dict(language='fr_FR')
+        command = "update setup general set language='fr_FR'"
         self.do_module_test(setup, command=command, state=None)
 
     def test_setup_timeservers(self):

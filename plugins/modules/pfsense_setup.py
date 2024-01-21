@@ -69,7 +69,8 @@ options:
     description: Language for the webConfigurator.
     required: false
     type: str
-    choices: ['bs', 'de_DE', 'en_US', 'es', 'es_AR', 'fr', 'ko', 'nb', 'nl', 'pl', 'pt_PT', 'pt_BR', 'ru', 'zh_CN', 'zh_Hans_CN', 'zh_HK', 'zh_TW']
+    choices: ['bs', 'de_DE', 'en_US', 'es_AR', 'es_ES', 'fr_FR', 'it_IT', 'ko_FR', 'nb_NO', 'nl_NL', 'pl_PL', 'pt_BR', 'pt_PT', 'ru_RU', 'zh_CN', 'zh_Hans_CN',
+      'zh_Hans_HK', 'zh_Hant_TW']
   webguicss:
     description: Choose an alternative css file (if installed) to change the appearance of the webConfigurator.
     required: false
@@ -197,7 +198,8 @@ SETUP_ARGUMENT_SPEC = dict(
     language=dict(
         required=False,
         type='str',
-        choices=['bs', 'de_DE', 'en_US', 'es', 'es_AR', 'fr', 'ko', 'nb', 'nl', 'pl', 'pt_PT', 'pt_BR', 'ru', 'zh_CN', 'zh_Hans_CN', 'zh_HK', 'zh_TW']
+        choices=['bs', 'de_DE', 'en_US', 'es_AR', 'es_ES', 'fr_FR', 'it_IT', 'ko_FR', 'nb_NO', 'nl_NL', 'pl_PL', 'pt_BR', 'pt_PT', 'ru_RU', 'zh_CN',
+                 'zh_Hans_CN', 'zh_Hans_HK', 'zh_Hant_TW'],
     ),
     session_timeout=dict(required=False, type='int'),
     authmode=dict(required=False, type='str'),
