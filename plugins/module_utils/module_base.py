@@ -15,6 +15,36 @@ BASE_ARG_ROUTE = dict(
 )
 
 
+# Merge two nested dictionaries, combining instead of overwriting elements
+def merge_dicts(a: dict, b: dict, path=None):
+    if path is None:
+        path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge_dicts(a[key], b[key], path + [str(key)])
+            else:
+                a[key] = b[key]
+        else:
+            a[key] = b[key]
+    return a
+
+
+# Move a key in dict to a new one, allowing the use '/' to specify nested dict location
+def move_dict_key(obj, src, dst):
+    item = None
+    for n in reversed(dst.split('/')):
+        if item is None:
+            item = dict()
+            item[n] = obj[src]
+        else:
+            parent = dict()
+            parent[n] = item
+            item = parent
+    merge_dicts(obj, item)
+    del obj[src]
+
+
 class PFSenseModuleBase(object):
     """ class providing base services for pfSense modules """
 
@@ -31,7 +61,8 @@ class PFSenseModuleBase(object):
     # init
     #
     def __init__(self, module, pfsense=None, package=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr',
-                 update_php=None, arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_values=None, have_refid=False, create_default=None):
+                 update_php=None, arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_style=None, bool_values=None, have_refid=False,
+                 create_default=None):
         self.module = module         # ansible module
         self.argument_spec = module.argument_spec  # Allow for being overriden for use with aggregate
 
@@ -56,10 +87,16 @@ class PFSenseModuleBase(object):
                 self.root_elt = self.pfsense.root
                 self.root_is_exclusive = False
             else:
-                if package is None:
-                    self.root_elt = self.pfsense.get_element(root, create_node=create_root)
-                else:
+                if package is not None:
                     self.root_elt = self.pfsense.get_element(root, root_elt=self.pfsense.root.find('installedpackages'))
+                    if self.root_elt is None:
+                        self.module.fail_json(msg='Unable to find configuration for the package {package}.  Are you sure that it is installed?'.format(package=package))
+                else:
+                    root_elt = self.pfsense.root
+                    for this in root.split('/'):
+                        root_elt = self.pfsense.get_element(this, root_elt=root_elt, create_node=create_root)
+                    self.root_elt = root_elt
+
                 if root in ['system']:
                     self.root_is_exclusive = False
                 else:
@@ -100,8 +137,9 @@ class PFSenseModuleBase(object):
             self.param_force = param_force  # parameters that are forced to be present
         else:
             self.param_force = list()
+        self.bool_style = bool_style         # default boolean value style for arguments
         if bool_values is not None:
-            self.bool_values = bool_values    # boolean values for arguments
+            self.bool_values = bool_values    # boolean values for specific arguments
         else:
             self.bool_values = dict()
         self.create_default = create_default  # default values for a created target
@@ -148,12 +186,15 @@ class PFSenseModuleBase(object):
                 obj[fname] = value_false
             elif force:
                 obj[fname] = None
+            elif value_false is None and fname in obj:
+                del obj[fname]
         elif force:
             obj[fname] = value_false
 
-    def _params_to_obj(self):
+    def _params_to_obj(self, obj=None):
         """ return a dict from module params that sets self.obj """
-        obj = dict()
+        if obj is None:
+            obj = dict()
         # Not all modules have 'state', treat them like they did
         if self.params.get('state', 'present') == 'present':
             # Skip 'state', but otherwise process all parameters.  Ansible sets unspecified parameters to None.
@@ -168,6 +209,8 @@ class PFSenseModuleBase(object):
                 elif self.argument_spec[param].get('type') == 'bool':
                     if param in self.bool_values:
                         self._get_ansible_param_bool(obj, param, value=self.bool_values[param][1], value_false=self.bool_values[param][0], force=force)
+                    elif self.bool_style == 'absent/present':
+                        self._get_ansible_param_bool(obj, param, value='', force=force)
                     else:
                         self._get_ansible_param_bool(obj, param, force=force)
                 else:
@@ -176,15 +219,16 @@ class PFSenseModuleBase(object):
             # Handle renaming of parameters
             for p, o in self.map_param:
                 if self.params.get(p) is not None:
-                    obj[o] = obj[p]
-                    del obj[p]
+                    move_dict_key(obj, p, o)
 
             # Handle conditional renaming of parameters
             for map_param, map_value, map_tuple in self.map_param_if:
                 if self.params.get(map_param) == map_value and map_tuple[0] in obj:
+                    # Do not overwrite destination if it exists
                     if map_tuple[1] not in obj:
-                        obj[map_tuple[1]] = obj[map_tuple[0]]
-                    del obj[map_tuple[0]]
+                        move_dict_key(obj, map_tuple[0], map_tuple[1])
+                    else:
+                        del obj[map_tuple[0]]
         else:
             # Just use the key to remove items
             obj[self.key] = self.params[self.key]
@@ -254,9 +298,9 @@ class PFSenseModuleBase(object):
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff['before'] = before
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
         if self._remove_deleted_params():
             changed = True
+        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
 
         return (before, changed)
 
@@ -296,10 +340,16 @@ class PFSenseModuleBase(object):
         else:
             raise NotImplementedError()
 
-    @staticmethod
-    def _get_params_to_remove():
+    def _get_params_to_remove(self):
         """ returns the list of params to remove if they are not set """
-        return []
+        to_remove = []
+        # We need to remove any unset booleans that are "None" when unset
+        for param in [n for n in self.argument_spec.keys() if self.argument_spec[n].get('type') == 'bool']:
+            if param in self.bool_values and self.bool_values[param][0] is None:
+                to_remove.append(param)
+            elif self.bool_style == 'absent/present':
+                to_remove.append(param)
+        return to_remove
 
     def _remove_deleted_params(self):
         """ Remove from target_elt a few deleted params """
@@ -396,7 +446,7 @@ class PFSenseModuleBase(object):
         if self.target_elt is None:
             self.target_elt = self._find_target()
 
-        if params['state'] == 'absent':
+        if params.get('state', None) == 'absent':
             self._remove()
         else:
             self._add()
