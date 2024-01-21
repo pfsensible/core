@@ -8,6 +8,11 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
+from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import p2o_interface
+
+BASE_ARG_ROUTE = dict(
+    interface=dict(parse=p2o_interface,),
+)
 
 
 class PFSenseModuleBase(object):
@@ -45,6 +50,7 @@ class PFSenseModuleBase(object):
         self.apply = True       # apply configuration at the end
 
         # xml parent of target_elt, node named by root
+        # TODO - handle paths with creation - e.g.  <nat> <outbound>
         if root is not None:
             if root == 'pfsense':
                 self.root_elt = self.pfsense.root
@@ -72,10 +78,11 @@ class PFSenseModuleBase(object):
 
         self.key = key          # item that identifies a target element
         self.obj = dict()       # dict holding target pfsense parameters
+
+        # routing for argument handling
+        self.arg_route = BASE_ARG_ROUTE
         if arg_route is not None:
-            self.arg_route = arg_route        # routing for argument handling
-        else:
-            self.arg_route = dict()
+            self.arg_route.update(arg_route)
 
         # rules for mapping parameters
         if map_param is not None:
@@ -149,8 +156,8 @@ class PFSenseModuleBase(object):
         obj = dict()
         # Not all modules have 'state', treat them like they did
         if self.params.get('state', 'present') == 'present':
-            # Ansible sets unspecied parameters to None, skip them and 'state'
-            for param in [p for p in self.params if p != 'state' and self.params[p] is not None]:
+            # Skip 'state', but otherwise process all parameters.  Ansible sets unspecified parameters to None.
+            for param in [p for p in self.params if p != 'state']:
                 force = False
                 if param in self.param_force:
                     force = True
