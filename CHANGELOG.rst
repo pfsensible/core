@@ -5,6 +5,24 @@ pfSensible.Core Release Notes
 .. contents:: Topics
 
 
+v0.6.1
+======
+
+Minor Changes
+-------------
+
+- Bump required ansible version to 2.12.
+- Have _get_ansible_param_bool set the value to value_false if the parameter is present and false.
+- Refactor pfsense_authserver_ldap and pfsense_authserver_radius.  Should not have any visible impact.
+- Ship tests so other pfsensible collections can use them.
+- pfsense_ca - allow for disabling `randomserial` and `trust` parameters.
+- pfsense_dhcp_static - Add arp_table_static_entry argument (https://github.com/https://github.com/pfsensible/core/issues/109).
+
+Deprecated Features
+-------------------
+
+- The pfsensible_haproxy* modules have moved to the `pfsensible.haproxy` collection and will be removed from `pfsensible.core` in version 0.8.0.
+
 v0.6.0
 ======
 
