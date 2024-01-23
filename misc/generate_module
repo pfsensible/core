@@ -31,6 +31,11 @@ gitconfig = git.GitConfigParser()
 author_name = gitconfig.get_value('user', 'name')
 author_email = gitconfig.get_value('user', 'email')
 package = 'core'
+module_base = 'PFSenseModuleBase'
+module_key = None
+module_node = None
+name_param = None
+params_xml_only = []
 is_package = False
 args_imports = []
 
@@ -43,6 +48,7 @@ parser.add_argument('--author-name', default=author_name, help='The full name of
 parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
 parser.add_argument('--author-handle', default='', help='The github handle of the module author')
 parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--is-config', action='store_true', help='This is a configuration module', )
 parser.add_argument('--name-param', help='The name of the primary module parameter - defaults to the key, but often "name" is used instead of "descr"')
 parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
 parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
@@ -54,6 +60,10 @@ parser.add_argument('--keep-tmpdir', action=argparse.BooleanOptionalAction, help
 parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help='Keep parameters from the web interface not found in the XML')
 
 args = parser.parse_args()
+
+# TODO - require a --module-root arg or search for it
+if args.is_config:
+    module_root = 'system'
 
 # Temporary directory for files
 tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-')
@@ -131,67 +141,68 @@ scp.close()
 # Parse the config.xml file
 root = ET.parse(f'{tmpdir.name}/config.xml').getroot()
 
-# Search for any element with our target text, make sure we found only one
-xpath = f'.//*[.="{args.item_min}"]'
-key_elts = root.findall(xpath)
-if len(key_elts) > 1:
-    sys.exit(f'Found {len(key_elts)} items with path "{xpath}"')
-elif len(key_elts) == 0:
-    sys.exit(f'Cannot find minimally configured item with path "{xpath}"')
-else:
-    key_elt = key_elts[0]
-
-# This element should be the key for the items
-module_key = key_elt.tag
-if args.name_param:
-   name_param = args.name_param
-else:
-   name_param = module_key
-
-# The full node configuration element will be the parent
-node_elt = key_elt.find('..')
-module_node = node_elt.tag
-
-# The "root" for this type of element is above that
-root_elt = node_elt.find('..')
-module_root = root_elt.tag
-
-# Debug
-print('item_min:\t' + ET.tostring(node_elt).decode())
-
-# Let's use our node and key as a check
-full_elt = root.find(f'.//{module_node}[{module_key}="{args.item_full}"]')
-if full_elt is None:
-    sys.exit(f'Cannot find fully configured item with path ".//{module_node}[{module_key}="{args.item_full}"]"')
-
-# Debug
-print('item_full:\t' + ET.tostring(full_elt).decode())
-
-# Collect the items for comparison with web elements and example values
 params_full = dict()
-for elt in full_elt:
-    if elt.tag == '':
-        continue
-    param = dict()
-    addr_elt = elt.find('address')
-    if addr_elt is not None:
-        param['example'] = addr_elt.text
-        param['address'] = True
-    elif elt.text is not None:
-        if elt.tag in params_full:
-            # Copy example and possibly other values from previous copy
-            param = params_full[elt.tag]
-            # If we have already need one of these, then it is a list
-            param['type'] = 'list'
-            # TODO - can we determine the type?
-            param['elements'] = 'str'
-            param['example2'] = elt.text.strip()
-        else:
-            param['type'] = 'str'
-            param['example'] = elt.text.strip()
-    # else:
-        # Likely a bool?
-    params_full[elt.tag] = param
+if not args.is_config:
+    # Search for any element with our target text, make sure we found only one
+    xpath = f'.//*[.="{args.item_min}"]'
+    key_elts = root.findall(xpath)
+    if len(key_elts) > 1:
+        sys.exit(f'Found {len(key_elts)} items with path "{xpath}"')
+    elif len(key_elts) == 0:
+        sys.exit(f'Cannot find minimally configured item with path "{xpath}"')
+    else:
+        key_elt = key_elts[0]
+
+    # This element should be the key for the items
+    module_key = key_elt.tag
+    if args.name_param:
+       name_param = args.name_param
+    else:
+       name_param = module_key
+
+    # The full node configuration element will be the parent
+    node_elt = key_elt.find('..')
+    module_node = node_elt.tag
+
+    # The "root" for this type of element is above that
+    root_elt = node_elt.find('..')
+    module_root = root_elt.tag
+
+    # Debug
+    print('item_min:\t' + ET.tostring(node_elt).decode())
+
+    # Let's use our node and key as a check
+    full_elt = root.find(f'.//{module_node}[{module_key}="{args.item_full}"]')
+    if full_elt is None:
+        sys.exit(f'Cannot find fully configured item with path ".//{module_node}[{module_key}="{args.item_full}"]"')
+
+    # Debug
+    print('item_full:\t' + ET.tostring(full_elt).decode())
+
+    # Collect the items for comparison with web elements and example values
+    for elt in full_elt:
+        if elt.tag == '':
+            continue
+        param = dict()
+        addr_elt = elt.find('address')
+        if addr_elt is not None:
+            param['example'] = addr_elt.text
+            param['address'] = True
+        elif elt.text is not None:
+            if elt.tag in params_full:
+                # Copy example and possibly other values from previous copy
+                param = params_full[elt.tag]
+                # If we have already need one of these, then it is a list
+                param['type'] = 'list'
+                # TODO - can we determine the type?
+                param['elements'] = 'str'
+                param['example2'] = elt.text.strip()
+            else:
+                param['type'] = 'str'
+                param['example'] = elt.text.strip()
+        # else:
+            # Likely a bool?
+        params_full[elt.tag] = param
 
 print('')
 
@@ -318,9 +329,10 @@ for input in html.forms[0].inputs:
 
     params[input.name] = param
 
-# Key is handled separately from other parameters so remove it
-# TODO - keep the description, etc?
-params.pop(module_key, None)
+if not args.is_config:
+    # Key is handled separately from other parameters so remove it
+    # TODO - keep the description, etc?
+    params.pop(module_key, None)
 
 # Debug
 print(f'Web paramters: {params.keys()}')
@@ -345,62 +357,67 @@ elif args.type_param in params:
 else:
     module_type = None
 
-# Consistency
-params_web_only = list(set(params.keys()) - set(params_full.keys()))
-print('Web parameters not in xml: ' + str(params_web_only))
+if not args.is_config:
+    # Consistency
+    params_web_only = list(set(params.keys()) - set(params_full.keys()))
+    print('Web parameters not in xml: ' + str(params_web_only))
 
-# Cleanup extra web parameters
-for param in params_web_only:
-    # See if the items are numbered, likely maps to an unnumbered XML tag
-    newp = re.sub(r'0$', '', param)
-    if newp != param:
-        if newp in params_full:
-            print(f'Renaming {param} to {newp}')
-            params[newp] = params.pop(param)
-            continue
+    # Cleanup extra web parameters
+    for param in params_web_only:
+        # See if the items are numbered, likely maps to an unnumbered XML tag
+        newp = re.sub(r'0$', '', param)
+        if newp != param:
+            if newp in params_full:
+                print(f'Renaming {param} to {newp}')
+                params[newp] = params.pop(param)
+                continue
 
-    # See if the items are prefixed by a type, likely maps to un-prefixed XML tag
-    newp = re.sub(f'^{module_type}_', '', param)
-    if newp != param:
-        if newp in params_full and newp not in params:
-            print(f'Renaming {param} to {newp}')
-            params[newp] = params.pop(param)
-            continue
+        # See if the items are prefixed by a type, likely maps to un-prefixed XML tag
+        newp = re.sub(f'^{module_type}_', '', param)
+        if newp != param:
+            if newp in params_full and newp not in params:
+                print(f'Renaming {param} to {newp}')
+                params[newp] = params.pop(param)
+                continue
 
-    # Common renamings
-    for f, t in [('dst', 'destination'), ('src', 'source')]:
-        if param == f and t in params_full:
-            print(f'Renaming {f} to {t}')
-            params[t] = params.pop(f)
-            break
-    else:
-        # Otherwise, drop - probably just used to construct the final elements
-        if param in params and not args.keep_params:
-            print(f'Removing {param}')
-            del params[param]
+        # Common renamings
+        for f, t in [('dst', 'destination'), ('src', 'source')]:
+            if param == f and t in params_full:
+                print(f'Renaming {f} to {t}')
+                params[t] = params.pop(f)
+                break
+        else:
+            # Otherwise, drop - probably just used to construct the final elements
+            if param in params and not args.keep_params:
+                print(f'Removing {param}')
+                del params[param]
 
-print('')
-params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
-print(f'XML parameters not in web: {params_xml_only}\n')
-if len(params_xml_only) > 0:
-    print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
+    print('')
+    params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
+    print(f'XML parameters not in web: {params_xml_only}\n')
+    if len(params_xml_only) > 0:
+        print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
 
-for param in params_xml_only:
-    params[param] = params_full[param]
+    for param in params_xml_only:
+        params[param] = params_full[param]
 
-# Create some sample descriptions
-for name, param in params.items():
-    # TODO - wrap long descriptions
-    if 'description' not in param or param['description'] == '':
-        param['description'] = f'The {name} of the {module_node}.'
-    if 'example' not in param or param['example'] == '':
-        if name in params_full and 'example' in params_full[name]:
-            param['example'] = params_full[name]['example']
-    if 'default' in param:
-        param['description'] += f' Defaults to {param["default"]}.'
+    # Create some sample descriptions
+    for name, param in params.items():
+        # TODO - wrap long descriptions
+        if 'description' not in param or param['description'] == '':
+            param['description'] = f'The {name} of the {module_node}.'
+        if 'example' not in param or param['example'] == '':
+            if name in params_full and 'example' in params_full[name]:
+                param['example'] = params_full[name]['example']
+        if 'default' in param:
+            param['description'] += f' Defaults to {param["default"]}.'
+
+if args.is_config:
+    module_base = 'PFSenseModuleConfigBase'
 
 # Template variables
 context = dict(
+    module_base=module_base,
     module_name=module_name,
     module_root=module_root,
     module_node=module_node,
@@ -409,6 +426,7 @@ context = dict(
     params_xml_only=params_xml_only,
     name_param=name_param,
     args_imports=args_imports,
+    is_config=args.is_config,
     is_package=is_package,
     package=package,
     author_name=args.author_name,
