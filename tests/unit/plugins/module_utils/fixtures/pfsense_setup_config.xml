@@ -5,7 +5,7 @@
 		<optimization>normal</optimization>
 		<hostname>pfSense</hostname>
 		<domain>acme.com</domain>
-		<dnsallowoverride>on</dnsallowoverride>
+		<dnsallowoverride></dnsallowoverride>
 		<group>
 			<name>all</name>
 			<description>All Users</description>

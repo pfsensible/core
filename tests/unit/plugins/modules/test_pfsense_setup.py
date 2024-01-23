@@ -37,8 +37,10 @@ class TestPFSenseSetupModule(TestPFSenseModule):
 
         super(TestPFSenseSetupModule, self).setUp()
 
-        self.mock_validate_webguicss = patch('ansible_collections.pfsensible.core.plugins.modules.pfsense_setup.PFSenseSetupModule._validate_webguicss')
-        self.validate_webguicss = self.mock_validate_webguicss.start()
+        # Remove validate command for webguicss which references files on the pfSense instance
+        self.mock_validate_webguicss = patch.dict('ansible_collections.pfsensible.core.plugins.modules.pfsense_setup.SETUP_ARG_ROUTE',
+                                                  dict(webguicss=dict(parse=pfsense_setup.p2o_webguicss)))
+        self.mock_validate_webguicss.start()
 
         self.mock_run_command = patch('ansible.module_utils.basic.AnsibleModule.run_command')
         self.run_command = self.mock_run_command.start()
@@ -48,7 +50,7 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         """ mocking down """
         super(TestPFSenseSetupModule, self).tearDown()
 
-        self.validate_webguicss.stop()
+        self.mock_validate_webguicss.stop()
         self.run_command.stop()
 
     ##############
