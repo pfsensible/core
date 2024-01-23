@@ -19,6 +19,7 @@ description:
   - Manage pfSense {{ module_name }}s.{{ ' This requires the pfSense ' ~ package ~ ' package to be installed.' if is_package else '' }}
 
 options:
+{% if not is_config %}
   {{ name_param }}:
     description: The {{ name_param }} of the {{ module_name }}.
     required: true
@@ -28,6 +29,7 @@ options:
     default: present
     choices: ['present', 'absent']
     type: str
+{% endif %}
 {% for name, param in params.items() %}
   {{ name }}:
     description: {{ "'" if ':' in param['description'] else '' }}{{ param['description'] | default('') }}{{ "'" if ':' in param['description'] else '' }}
@@ -44,9 +46,11 @@ author: {{ author_name }} (@{{ author_handle }})
 '''
 
 EXAMPLES = r'''
-- name: Add myitem {{ module_name }}
+- name: {{ 'Configure' if is_config else 'Add myitem' }} {{ module_name }}
   pfsensible.{{ package }}.pfsense_{{ module_name }}:
+{% if not is_config %}
     {{ name_param }}: myitem
+{% endif %}
 {% for name, param in params.items() %}
 {% if param['example'] is defined %}
 {% if param['type'] == 'list' %}
@@ -61,23 +65,33 @@ EXAMPLES = r'''
 
 {% endif %}
 {% endfor %}
+{% if not is_config %}
     state: present
 
 - name: Remove myitem {{ module_name }}
   pfsensible.{{ package }}.pfsense_{{ module_name }}:
     {{ name_param }}: myitem
     state: absent
+{% endif %}
 '''
 RETURN = r'''
 commands:
     description: the set of commands that would be pushed to the remote device (if pfSense had a CLI).
     returned: always
     type: list
+{% if is_config %}
+    sample: ["update {{ module_name }} set ..."]
+{% else %}
     sample: ["create {{ module_name }} 'myitem'", "update {{ module_name }} 'myitem' set ...", "delete {{ module_name }} 'myitem'"]
+{% endif %}
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+{% if is_config %}
+from ansible_collections.pfsensible.core.plugins.module_utils.module_config_base import PFSenseModuleConfigBase
+{% else %}
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
+{% endif %}
 {% if args_imports %}
 from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {{ args_imports | sort | join(', ') }}
 {% endif %}
@@ -85,6 +99,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 # TODO -Change to name of module, extend for needed parameters
 # TODO -Keep either this or the next compact version of {{ module_name | upper() }}_ARGUMENT_SPEC
 {{ module_name | upper() }}_ARGUMENT_SPEC = {
+{% if not is_config %}
     # Only {{ name_param }} should be required here - othewise you cannot remove an item with just '{{ name_param }}'
     # Required arguments for creation should be noted in {{ module_name | upper() }}_REQUIRED_IF = ['state', 'present', ...] below
     '{{ name_param }}': {'required': True, 'type': 'str'},
@@ -93,6 +108,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
         'default': 'present',
         'choices': ['present', 'absent']
     },
+{% endif %}
 {% for param in params %}
     '{{ param }}': {
 {% if 'choices' in params[param] %}
@@ -105,10 +121,12 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 
 # Compact style
 {{ module_name | upper() }}_ARGUMENT_SPEC = dict(
+{% if not is_config %}
     # Only {{ name_param }} should be required here - othewise you cannot remove an item with just '{{ name_param }}'
     # Required arguments for creation should be noted in {{ module_name | upper() }}_REQUIRED_IF = ['state', 'present', ...] below
     {{ name_param }}=dict(required=True, type='str'),
     state=dict(type='str', default='present', choices=['present', 'absent']),
+{% endif %}
 {% for param in params %}
     {{ param }}=dict(type='{{ params[param]['type'] | default('') }}'{% if 'choices' in params[param] %}, choices={{ params[param]['choices'] }},{% endif %}),
 {% endfor %}
@@ -116,11 +134,13 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 
 # TODO - check for validity - what parameters are actually required when creating a new {{ module_name }}?
 {{ module_name | upper() }}_REQUIRED_IF = [
+{% if not is_config %}
 {% if module_type %}
     ['state', 'present', ['type']],
     ['type', '{{ params['type']['example'] }}', ['{{ params | dict2items | rejectattr('key', 'equalto', 'type') | selectattr('value.required', 'defined') | rejectattr('value.default', 'defined') | map(attribute='key') | join("', '") }}']],
 {% else %}
     ['state', 'present', ['{{ params | dict2items | selectattr('value.required', 'defined') | rejectattr('value.default', 'defined') | map(attribute='key') | join("', '") }}']],
+{% endif %}
 {% endif %}
 ]
 
@@ -154,6 +174,7 @@ PHP_VALIDATION = r'''
 {% endif %}
 )
 
+{% if not is_config %}
 # TODO - check for validity - what are default values when creating a new {{ module_name }}
 {{ module_name | upper() }}_CREATE_DEFAULT = dict(
 {% for item in params | dict2items | selectattr('value.default', 'defined') %}
@@ -164,6 +185,7 @@ PHP_VALIDATION = r'''
 {% endfor %}
 )
 
+{% endif %}
 {% if is_package %}
 {{ module_name | upper() }}_PHP_COMMAND_SET = r'''
 require_once("{{ package }}.inc");
@@ -178,7 +200,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('{{ php_subsystem }}'); }
 
 {% endif %}
 
-class PFSense{{ module_name | capitalize() }}Module(PFSenseModuleBase):
+class PFSense{{ module_name | capitalize() }}Module({{ module_base }}):
     """ module managing pfsense {{ module_name }}s """
 
     ##############################
@@ -192,7 +214,7 @@ class PFSense{{ module_name | capitalize() }}Module(PFSenseModuleBase):
 
     def __init__(self, module, pfsense=None):
         super(PFSense{{ module_name | capitalize() }}Module, self).__init__(module, pfsense, {{ 'package=\'' ~ package ~ '\', ' if is_package else ''}}root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}'{{ ', update_php=' ~ module_name | upper() ~ '_PHP_COMMAND_SET' if 'filter.inc' in php_requires else '' }},
-                                                arg_route={{ module_name | upper() }}_ARG_ROUTE{% if params_xml_only %}, map_param={{ module_name | upper() }}_MAP_PARAM{% endif %}, create_default={{ module_name | upper() }}_CREATE_DEFAULT)
+                                                arg_route={{ module_name | upper() }}_ARG_ROUTE{% if params_xml_only %}, map_param={{ module_name | upper() }}_MAP_PARAM{% endif %}{% if not is_config %}, create_default={{ module_name | upper() }}_CREATE_DEFAULT{% endif %})
 
 
 def main():
