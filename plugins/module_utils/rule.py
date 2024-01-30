@@ -40,6 +40,7 @@ RULE_ARGUMENT_SPEC = dict(
     icmptype=dict(default='any', required=False, type='str'),
     sched=dict(required=False, type='str'),
     quick=dict(default=False, type='bool'),
+    invert=dict(default=False, required=False, type='bool'),
 )
 
 RULE_REQUIRED_IF = [
@@ -115,6 +116,9 @@ class PFSenseRuleModule(PFSenseModuleBase):
             obj['destination'] = self.pfsense.parse_address(params['destination'])
             if params.get('destination_port'):
                 self.pfsense.parse_port(params['destination_port'], obj['destination'])
+
+            if self.params['invert']:
+                obj['destination']['not'] = ''
 
             if params['protocol'] not in ['tcp', 'udp', 'tcp/udp'] and ('port' in obj['source'] or 'port' in obj['destination']):
                 self.module.fail_json(msg="{0}: you can't use ports on protocols other than tcp, udp or tcp/udp".format(self._get_obj_name()))

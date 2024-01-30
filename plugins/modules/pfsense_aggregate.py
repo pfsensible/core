@@ -361,6 +361,10 @@ options:
           - An inclusive range can also be specified, using the format C(first-last)..
         default: null
         type: str
+      invert:
+        description: Invert the sense of the destination match.
+        default: false
+        type: bool
       destination:
         description: The destination address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format.
         default: null
