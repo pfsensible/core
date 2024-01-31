@@ -485,33 +485,33 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                     host["aliases"] = "\n\t\t\t"
 
             # reformat for acls
-            acls = []
-            for entry in params.get('acls'):
-              acl = dict()
-              for subparam in DNS_RESOLVER_ACL_ARGUMENT_SPEC:
-                if entry.get(subparam) is not None:
-                  acl[subparam] = {}
-                  if DNS_RESOLVER_ACL_ARGUMENT_SPEC[subparam]['type'] == 'list':
-                    # this will break the config
-                    acl_networks = []
-                    for subentry in entry.get(subparam):
-                      acl_network = dict()
-                      for subsubparam in DNS_RESOLVER_ACL_NETWORK_ARGUMENT_SPEC:
-                        if isinstance(subentry[subsubparam], str):
-                          acl_network[subsubparam] = subentry[subsubparam]
-                        else:
-                          acl_network[subsubparam] = str(subentry[subsubparam])
-                      acl_networks.append(acl_network)
-                    # dict_to_element will generate multiple <aliases> elements, but pfsense wants <aliases> with multiple <item>-Elements
-                    acl['row'] = acl_networks
-                  else:
-                    if isinstance(entry[subparam], str):
-                      acl[subparam] = entry[subparam]
-                    else:
-                      acl[subparam] = str(entry[subparam])
-              acls.append(acl)
             if params.get('acls') is not None:
-              obj[param] = acls
+              acls = []
+              for entry in params.get('acls'):
+                acl = dict()
+                for subparam in DNS_RESOLVER_ACL_ARGUMENT_SPEC:
+                  if entry.get(subparam) is not None:
+                    acl[subparam] = {}
+                    if DNS_RESOLVER_ACL_ARGUMENT_SPEC[subparam]['type'] == 'list':
+                      # this will break the config
+                      acl_networks = []
+                      for subentry in entry.get(subparam):
+                        acl_network = dict()
+                        for subsubparam in DNS_RESOLVER_ACL_NETWORK_ARGUMENT_SPEC:
+                          if isinstance(subentry[subsubparam], str):
+                            acl_network[subsubparam] = subentry[subsubparam]
+                          else:
+                            acl_network[subsubparam] = str(subentry[subsubparam])
+                        acl_networks.append(acl_network)
+                      # dict_to_element will generate multiple <aliases> elements, but pfsense wants <aliases> with multiple <item>-Elements
+                      acl['row'] = acl_networks
+                    else:
+                      if isinstance(entry[subparam], str):
+                        acl[subparam] = entry[subparam]
+                      else:
+                        acl[subparam] = str(entry[subparam])
+                acls.append(acl)
+              obj['acls'] = acls
 
         return obj
 
