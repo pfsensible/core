@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright: (c) 2021, Chris Liu <chris.liu.hk@icloud.com>
+# Copyright: (c) 2021, Jan Wenzel <jan.wenzel@gonicus.de>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -323,6 +324,21 @@ DNS_RESOLVER_HOST_SPEC = dict(
     aliases=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_ALIAS_SPEC),
 )
 
+DNS_RESOLVER_ACL_NETWORK_ARGUMENT_SPEC = dict(
+    acl_network=dict(required=True, type='str'),
+    mask=dict(required=True, type='str'),
+    description=dict(required=False, type='str'),
+)
+
+DNS_RESOLVER_ACL_ARGUMENT_SPEC = dict(
+    aclid=dict(required=True, type='str'),
+    aclname=dict(required=True, type='str'),
+    aclaction=dict(required=False, type='str'),
+    description=dict(required=False, type='str'),
+    networks=dict(required=False, type='list', elements='dict',
+      options=DNS_RESOLVER_ACL_NETWORK_ARGUMENT_SPEC),
+)
+
 DNS_RESOLVER_ARGUMENT_SPEC = dict(
     state=dict(default='present', choices=['present', 'absent']),
 
@@ -349,6 +365,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     custom_options=dict(default="", type='str'),
     hosts=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_SPEC),
     domainoverrides=dict(type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
+    acls=dict(type='list', elements='dict', options=DNS_RESOLVER_ACL_ARGUMENT_SPEC),
     # Advanced Settings
     hideidentity=dict(default=True, type='bool'),
     hideversion=dict(default=True, type='bool'),
@@ -466,6 +483,35 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 else:
                     # Default is an empty element
                     host["aliases"] = ""
+
+            # reformat for acls
+            if params.get('acls') is not None:
+              acls = []
+              for entry in params.get('acls'):
+                acl = dict()
+                for subparam in DNS_RESOLVER_ACL_ARGUMENT_SPEC:
+                  if entry.get(subparam) is not None:
+                    acl[subparam] = {}
+                    if DNS_RESOLVER_ACL_ARGUMENT_SPEC[subparam]['type'] == 'list':
+                      # this will break the config
+                      acl_networks = []
+                      for subentry in entry.get(subparam):
+                        acl_network = dict()
+                        for subsubparam in DNS_RESOLVER_ACL_NETWORK_ARGUMENT_SPEC:
+                          if isinstance(subentry[subsubparam], str):
+                            acl_network[subsubparam] = subentry[subsubparam]
+                          else:
+                            acl_network[subsubparam] = str(subentry[subsubparam])
+                        acl_networks.append(acl_network)
+                      # dict_to_element will generate multiple <aliases> elements, but pfsense wants <aliases> with multiple <item>-Elements
+                      acl['row'] = acl_networks
+                    else:
+                      if isinstance(entry[subparam], str):
+                        acl[subparam] = entry[subparam]
+                      else:
+                        acl[subparam] = str(entry[subparam])
+                acls.append(acl)
+              obj['acls'] = acls
 
         return obj
 
