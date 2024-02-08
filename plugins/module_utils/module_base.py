@@ -90,7 +90,8 @@ class PFSenseModuleBase(object):
                 if package is not None:
                     self.root_elt = self.pfsense.get_element(root, root_elt=self.pfsense.root.find('installedpackages'))
                     if self.root_elt is None:
-                        self.module.fail_json(msg='Unable to find configuration for the package {package}.  Are you sure that it is installed?'.format(package=package))
+                        self.module.fail_json(
+                            msg='Unable to find configuration for the package {package}.  Are you sure that it is installed?'.format(package=package))
                 else:
                     root_elt = self.pfsense.root
                     for this in root.split('/'):
