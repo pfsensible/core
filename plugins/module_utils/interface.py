@@ -35,6 +35,7 @@ INTERFACE_ARGUMENT_SPEC = dict(
     ipv6_gateway=dict(required=False, type='str'),
     blockpriv=dict(required=False, type='bool'),
     blockbogons=dict(required=False, type='bool'),
+    slaacusev4iface=dict(required=False, type='bool'),
 )
 
 INTERFACE_REQUIRED_IF = [
@@ -131,6 +132,10 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
                 self._get_ansible_param(obj, 'ipv6_address', fname='ipaddrv6')
                 self._get_ansible_param(obj, 'ipv6_prefixlen', fname='subnetv6')
                 self._get_ansible_param(obj, 'ipv6_gateway', fname='gatewayv6')
+
+            if params['ipv6_type'] == 'slaac':
+                obj['ipaddrv6'] = 'slaac'
+                self._get_ansible_param_bool(obj, 'slaacusev4iface', value='')
 
             # get target interface
             self.target_elt = self._find_matching_interface()
@@ -527,7 +532,8 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             values += self.format_cli_field(self.obj, 'subnet', fname='ipv4_prefixlen')
             values += self.format_cli_field(self.obj, 'gateway', fname='ipv4_gateway')
             values += self.format_cli_field(self.params, 'ipv6_type', default='none')
-            values += self.format_cli_field(self.obj, 'ipaddrv6', fname='ipv6_address')
+            if self.obj.get('ipaddrv6') != 'slaac':
+                values += self.format_cli_field(self.obj, 'ipaddrv6', fname='ipv6_address')
             values += self.format_cli_field(self.obj, 'subnetv6', fname='ipv6_prefixlen')
             values += self.format_cli_field(self.obj, 'gatewayv6', fname='ipv6_gateway')
             values += self.format_cli_field(self.params, 'mac')
@@ -545,8 +551,15 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, 'ipaddr', add_comma=(values), fname='ipv4_address')
             values += self.format_updated_cli_field(self.obj, before, 'subnet', add_comma=(values), fname='ipv4_prefixlen')
             values += self.format_updated_cli_field(self.obj, before, 'gateway', add_comma=(values), fname='ipv4_gateway')
-            values += self.format_updated_cli_field(self.obj, before, 'ipv6_type', add_comma=(values), log_none='True')
-            values += self.format_updated_cli_field(self.obj, before, 'ipaddrv6', add_comma=(values), fname='ipv6_address')
+            if self.obj.get('ipaddrv6') == 'slaac' and before.get('ipaddrv6') != 'slaac':
+                res = "ipv6_type=slaac"
+                if values:
+                    values += ", " + res
+                else:
+                    values += res
+            else:
+                values += self.format_updated_cli_field(self.obj, before, 'ipv6_type', add_comma=(values), log_none='True')
+                values += self.format_updated_cli_field(self.obj, before, 'ipaddrv6', add_comma=(values), fname='ipv6_address')
             values += self.format_updated_cli_field(self.obj, before, 'subnetv6', add_comma=(values), fname='ipv6_prefixlen')
             values += self.format_updated_cli_field(self.obj, before, 'gatewayv6', add_comma=(values), fname='ipv6_gateway')
             values += self.format_updated_cli_field(self.obj, before, 'spoofmac', add_comma=(values), fname='mac')

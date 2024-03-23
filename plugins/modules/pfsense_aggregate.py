@@ -144,6 +144,11 @@ options:
         description: Blocks traffic from reserved IP addresses (but not RFC 1918) or not yet assigned by IANA.
         required: false
         type: bool
+      slaacusev4iface:
+        description: IPv6 will use the IPv4 connectivity link (PPPoE). Only used when ipv6_type is slaac.
+        required: false
+        type: bool
+        version_added: 0.6.2
   aggregated_nat_outbounds:
     description: Dict of nat_outbound rules to apply on the target
     required: False
