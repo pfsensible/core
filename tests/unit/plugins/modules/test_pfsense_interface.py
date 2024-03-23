@@ -96,8 +96,12 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
                 self.assert_xml_elt_equal(target_elt, 'gateway', obj['ipv4_gateway'])
 
         # ipv6 type related
-        if obj.get('ipv6_type') is None or obj.get('ipv6_type') in ['none', 'slaac']:
+        if obj.get('ipv6_type') is None or obj.get('ipv6_type') in ['none']:
             self.assert_not_find_xml_elt(target_elt, 'ipaddrv6')
+            self.assert_not_find_xml_elt(target_elt, 'subnetv6')
+            self.assert_not_find_xml_elt(target_elt, 'gatewayv6')
+        elif obj.get('ipv6_type') == 'slaac':
+            self.assert_xml_elt_equal(target_elt, 'ipaddrv6', 'slaac')
             self.assert_not_find_xml_elt(target_elt, 'subnetv6')
             self.assert_not_find_xml_elt(target_elt, 'gatewayv6')
         elif obj.get('ipv6_type') == 'static':
