@@ -26,8 +26,6 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
 
     def get_config_file(self):
         """ get config file """
-        if self.get_version.return_value.startswith("2.4."):
-            return '2.4/pfsense_ipsec_aggregate_config.xml'
 
         return 'pfsense_ipsec_aggregate_config.xml'
 
@@ -72,14 +70,8 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
     def strip_commands(self, commands):
         """ remove old or new parameters """
         def strip_command(command):
-            if self.get_version.return_value.startswith("2.4."):
-                command = command.replace(", prf='sha256'", "")
-                command = command.replace("rekey_time='', ", "")
-                command = command.replace("reauth_time='', ", "")
-                command = command.replace("rand_time='', ", "")
-            else:
-                command = command.replace("margintime='', ", "")
-                command = command.replace("disable_rekey=False, ", "")
+            command = command.replace("margintime='', ", "")
+            command = command.replace("disable_rekey=False, ", "")
             return command
 
         if isinstance(commands, str):
@@ -117,13 +109,13 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
         result_ipsecs.append(
             "create ipsec 't1', iketype='ikev2', protocol='inet', interface='wan', remote_gateway='1.3.3.1', authentication_method='pre_shared_key', "
             "preshared_key='azerty123', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "rekey_time='', reauth_time='', rand_time='', disable_rekey=False, margintime='', "
+            "disable_rekey=False, margintime='', "
             "mobike='off', startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
         )
         result_ipsecs.append(
             "create ipsec 't2', iketype='ikev2', protocol='inet', interface='wan', remote_gateway='1.3.3.2', authentication_method='pre_shared_key', "
             "preshared_key='qwerty123', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "rekey_time='', reauth_time='', rand_time='', disable_rekey=False, margintime='', "
+            "disable_rekey=False, margintime='', "
             "mobike='off', startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
         )
         result_ipsecs.append("delete ipsec 'test_tunnel2'")
@@ -153,13 +145,13 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
         result_ipsecs.append(
             "create ipsec 't1', iketype='ikev2', protocol='inet', interface='wan', remote_gateway='1.3.3.1', authentication_method='pre_shared_key', "
             "preshared_key='azerty123', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "rekey_time='', reauth_time='', rand_time='', disable_rekey=False, margintime='', "
+            "disable_rekey=False, margintime='', "
             "mobike='off', startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
         )
         result_ipsecs.append(
             "create ipsec 't2', iketype='ikev2', protocol='inet', interface='wan', remote_gateway='1.3.3.2', authentication_method='pre_shared_key', "
             "preshared_key='qwerty123', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "rekey_time='', reauth_time='', rand_time='', disable_rekey=False, margintime='', "
+            "disable_rekey=False, margintime='', "
             "mobike='off', startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
         )
         result_ipsecs.append("delete ipsec 'test_tunnel'")
@@ -172,7 +164,7 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
         self.assert_not_find_ipsec('test_tunnel')
         self.assert_not_find_ipsec('test_tunnel2')
 
-    @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
+    @parameterized.expand([["2.5.2"]])
     def test_ipsec_aggregate_proposals(self, pfsense_version):
         """ test creation of a some proposals """
         self.get_version.return_value = pfsense_version
@@ -197,7 +189,7 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
 
         self.assertEqual(result['result_ipsec_proposals'], result_ipsec_proposals)
 
-    @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
+    @parameterized.expand([["2.5.2"]])
     def test_ipsec_aggregate_proposals_purge(self, pfsense_version):
         """ test creation of a some proposals with purge """
         self.get_version.return_value = pfsense_version

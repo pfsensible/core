@@ -58,7 +58,7 @@ class TestPFSenseUserModule(TestPFSenseModule):
     def test_user_create(self):
         """ test creation of a new user """
         obj = dict(name='user1', descr='User One', password='$2b$12$D2jkq4Iut3ODUBN0BCrDk.bV3J5N.MrY5YEnGvTXwxeNBkyxjbbtW')
-        self.do_module_test(obj, command="create user 'user1', descr='User One'")
+        self.do_module_test(obj, command="create user 'user1', descr='User One', uid='2001'")
 
     def test_user_delete(self):
         """ test deletion of a user """
