@@ -100,6 +100,11 @@ options:
   ldap:
     description: The ldap server
     type: str
+  netboot:
+    description: Enabled netboot
+    type: bool
+    required: false
+    default: false
   nextserver:
     description: The next server
     type: str
@@ -187,6 +192,7 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     ddnsdomainkey=dict(type='str', no_log=True),
     tftp=dict(type='str'),
     ldap=dict(type='str'),
+    netboot=dict(default=False, type='bool'),
     nextserver=dict(type='str'),
     filename32=dict(type='str'),
     filename64=dict(type='str'),
@@ -270,7 +276,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
                            'gateway', 'domain', 'domainsearchlist',
                            'ddnsdomain', 'ddnsdomainprimary', 'ddnsdomainsecondary',
                            'ddnsdomainkeyname', 'ddnsdomainkeyalgorithm', 'ddnsdomainkey',
-                           'tftp', 'ldap', 'nextserver', 'filename32', 'filename64',
+                           'tftp', 'ldap', 'netboot', 'nextserver', 'filename32', 'filename64',
                            'filename32arm', 'filename64arm', 'uefihttpboot', 'numberoptions']:
                 self._get_ansible_param(obj, option, force=True)
             # Non-forced options
