@@ -213,7 +213,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         if len(params['authmode']) > 0:
             system = self.pfsense.get_element('system')
             for authsrv in params['authmode']:
-                if len(system.findall("authserver[name='{0}']".format(authsrv))) == 0:
+                if authsrv != 'Local Database' and len(system.findall("authserver[name='{0}']".format(authsrv))) == 0:
                     self.module.fail_json(msg='Cannot find authentication server {0}.'.format(authsrv))
 
         # validate key
