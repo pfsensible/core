@@ -30,7 +30,9 @@ options:
     choices: ["p2p_tls", "p2p_shared_key", "server_tls", "server_tls_user", "server_user"]
     type: str
   authmode:
-    description: Authentication servers. This list will be put into alphabetical order.  Required if mode == server_tls_user.
+    description:
+      - Authentication servers. This list will be put into alphabetical order.  Required if mode == server_tls_user.
+      - Use 'Local Database' for authentication against the local pfSense user database.
     default: []
     type: list
     elements: str
