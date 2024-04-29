@@ -1307,7 +1307,7 @@
 	                        </item>
 	                </encryption>
 	                <lifetime>28800</lifetime>
-	    	    <rekey_time></rekey_time>
+	    	    <rekey_time>25000</rekey_time>
 	    	    <reauth_time></reauth_time>
 	    	    <rand_time></rand_time>
 	                <pre-shared-key>1234</pre-shared-key>

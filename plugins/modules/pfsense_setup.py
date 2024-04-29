@@ -95,7 +95,7 @@ options:
     required: false
     type: str
   shellauth:
-    description: Use Authentication Server for Shell Authentication (pfsense-CE >=2.5.0, pfsense-PLUS >=21.2). Default is false.
+    description: Use Authentication Server for Shell Authentication. Default is false.
     type: bool
   dashboardcolumns:
     description: Dashboard columns
@@ -172,11 +172,10 @@ commands:
 """
 
 import re
-from copy import deepcopy
 from os import listdir
 from os.path import isfile, join
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
+from ansible_collections.pfsensible.core.plugins.module_utils.module_config_base import PFSenseModuleConfigBase
 
 
 SETUP_ARGUMENT_SPEC = dict(
@@ -222,7 +221,67 @@ SETUP_ARGUMENT_SPEC = dict(
 )
 
 
-class PFSenseSetupModule(PFSenseModuleBase):
+def p2o_dnslocalhost(self, name, params, obj):
+    if params[name] is not None:
+        if str(params.get(name)).lower() in ['', 'false']:
+            obj[name] = ''
+        elif str(params.get(name)).lower() in ['remote', 'true']:
+            obj[name] = 'remote'
+        elif params.get(name).lower() == 'local':
+            obj[name] = 'local'
+
+
+def p2o_webguicss(self, name, params, obj):
+    if params[name] is not None:
+        # Add .css suffix if not present
+        if params[name][-4:] != '.css':
+            obj[name] = params[name] + '.css'
+        else:
+            obj[name] = params[name]
+
+
+def validate_webguicss(self, webguicss):
+    """ check css style """
+    path = '/usr/local/www/css/'
+    themes = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith('.css') and f.find('login') == -1 and f.find('logo') == -1]
+    themes = map(lambda x: x.replace('.css', ''), themes)
+    if webguicss.rstrip('.css') not in themes:
+        raise ValueError("The submitted theme '%s' could not be found. Pick a different theme." % webguicss)
+
+
+SETUP_ARG_ROUTE = dict(
+    dnslocalhost=dict(parse=p2o_dnslocalhost),
+    webguicss=dict(parse=p2o_webguicss, validate=validate_webguicss),
+)
+
+# Booleans that map to different values
+SETUP_BOOL_VALUES = dict(
+    webguifixedmenu=(None, 'fixed'),
+)
+
+SETUP_MAP_PARAM = [
+    ('authmode', 'webgui/authmode'),
+    ('dashboardavailablewidgetspanel', 'webgui/dashboardavailablewidgetspanel'),
+    ('dashboardcolumns', 'webgui/dashboardcolumns'),
+    ('disablealiaspopupdetail', 'webgui/disablealiaspopupdetail'),
+    ('interfacessort', 'webgui/interfacessort'),
+    ('logincss', 'webgui/logincss'),
+    ('loginshowhost', 'webgui/loginshowhost'),
+    ('requirestatefilter', 'webgui/requirestatefilter'),
+    ('roworderdragging', 'webgui/roworderdragging'),
+    ('session_timeout', 'webgui/session_timeout'),
+    ('shellauth', 'webgui/shellauth'),
+    ('statusmonitoringsettingspanel', 'webgui/statusmonitoringsettingspanel'),
+    ('systemlogsfilterpanel', 'webgui/systemlogsfilterpanel'),
+    ('systemlogsmanagelogpanel', 'webgui/systemlogsmanagelogpanel'),
+    ('webguicss', 'webgui/webguicss'),
+    ('webguifixedmenu', 'webgui/webguifixedmenu'),
+    ('webguihostnamemenu', 'webgui/webguihostnamemenu'),
+    ('webguileftcolumnhyper', 'webgui/webguileftcolumnhyper'),
+]
+
+
+class PFSenseSetupModule(PFSenseModuleConfigBase):
     """ module managing pfsense routes """
 
     @staticmethod
@@ -234,12 +293,8 @@ class PFSenseSetupModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseSetupModule, self).__init__(module, pfsense)
-        self.name = "pfsense_setup"
-        self.root_elt = self.pfsense.get_element('system')
-        self.obj = dict()
-        self.before = None
-        self.before_elt = None
+        super(PFSenseSetupModule, self).__init__(module, pfsense, name='pfsense_setup', root='system', arg_route=SETUP_ARG_ROUTE, bool_style='absent/present',
+                                                 bool_values=SETUP_BOOL_VALUES, map_param=SETUP_MAP_PARAM)
         self.route_cmds = list()
         self.params_to_delete = list()
 
@@ -254,10 +309,13 @@ class PFSenseSetupModule(PFSenseModuleBase):
         idx = 0
         if params.get('dns_addresses') is not None:
             dns_addresses = params['dns_addresses'].split()
+            del obj['dns_addresses']
         if params.get('dns_hostnames') is not None:
             dns_hostnames = params['dns_hostnames'].split()
+            del obj['dns_hostnames']
         if params.get('dns_gateways') is not None:
             dns_gateways = params['dns_gateways'].split()
+            del obj['dns_gateways']
 
         if dns_addresses is not None:
             # set the servers
@@ -265,14 +323,12 @@ class PFSenseSetupModule(PFSenseModuleBase):
 
             # set the names & gateways
             for address in dns_addresses:
-                host = ''
                 gateway = 'none'
                 if idx < len(dns_hostnames) and dns_hostnames[idx] != 'none':
-                    host = dns_hostnames[idx]
+                    obj['dns{0}host'.format(idx + 1)] = dns_hostnames[idx]
                 if idx < len(dns_gateways) and dns_gateways[idx] != 'none':
                     gateway = dns_gateways[idx]
 
-                obj['dns{0}host'.format(idx + 1)] = host
                 gw_key = 'dns{0}gw'.format(idx + 1)
                 if gw_key not in obj or gateway != obj[gw_key]:
                     obj[gw_key] = gateway
@@ -304,87 +360,8 @@ class PFSenseSetupModule(PFSenseModuleBase):
 
     def _params_to_obj(self):
         """ return a dict from module params """
-        params = self.params
-
-        obj = self.pfsense.element_to_dict(self.root_elt)
-        self.before = deepcopy(obj)
-        self.before_elt = deepcopy(self.root_elt)
-        self.obj = obj
-        webgui = obj['webgui']
-
-        def _set_param(target, param, strip=False):
-            if params.get(param) is not None:
-                if param == 'dnslocalhost':
-                    if str(params.get(param)).lower() in ['', 'false']:
-                        if self.pfsense.is_at_least_2_5_0():
-                            target[param] = ''
-                        else:
-                            del target[param]
-                    elif str(params.get(param)).lower() in ['remote', 'true']:
-                        if self.pfsense.is_at_least_2_5_0():
-                            target[param] = 'remote'
-                        else:
-                            target[param] = ''
-                    elif params.get(param).lower() == 'local':
-                        target[param] = 'local'
-
-                else:
-                    if strip:
-                        target[param] = ' '.join(params[param].split())
-                    elif isinstance(params[param], str):
-                        target[param] = params[param]
-                    else:
-                        target[param] = str(params[param])
-
-        def _set_param_bool(target, param):
-            if params.get(param) is not None:
-                if param == 'webguifixedmenu':
-                    if params[param] and (param not in target or target[param] != 'fixed'):
-                        target[param] = 'fixed'
-                    elif not params[param] and param in target:
-                        del target[param]
-                else:
-                    if params[param] and param not in target:
-                        target[param] = ''
-                    elif not params[param] and param in target:
-                        del target[param]
-
-        _set_param(obj, 'hostname')
-        _set_param(obj, 'domain')
-        _set_param(obj, 'timezone')
-        _set_param(obj, 'timeservers', True)
-
-        _set_param(obj, 'language')
-
-        _set_param_bool(webgui, 'interfacessort')
-        _set_param_bool(webgui, 'webguileftcolumnhyper')
-        _set_param_bool(webgui, 'disablealiaspopupdetail')
-        _set_param_bool(webgui, 'dashboardavailablewidgetspanel')
-        _set_param_bool(webgui, 'systemlogsfilterpanel')
-        _set_param_bool(webgui, 'systemlogsmanagelogpanel')
-        _set_param_bool(webgui, 'statusmonitoringsettingspanel')
-        _set_param(webgui, 'session_timeout')
-        _set_param(webgui, 'authmode')
-        if self.pfsense.is_at_least_2_5_0():
-            _set_param_bool(webgui, 'shellauth')
-
-        if params.get('webguicss') is not None:
-            webgui['webguicss'] = params['webguicss'] + '.css'
-
-        _set_param_bool(webgui, 'roworderdragging')
-
-        _set_param(webgui, 'logincss')
-        _set_param_bool(webgui, 'loginshowhost')
-        _set_param_bool(webgui, 'webguifixedmenu')
-        _set_param(webgui, 'webguihostnamemenu')
-        _set_param(webgui, 'dashboardcolumns')
-        _set_param_bool(webgui, 'requirestatefilter')
-
-        _set_param_bool(obj, 'dnsallowoverride')
-        _set_param(obj, 'dnslocalhost')
-
-        self._dns_params_to_obj(params, obj)
-
+        obj = super(PFSenseSetupModule, self)._params_to_obj()
+        self._dns_params_to_obj(self.params, obj)
         return obj
 
     def _validate_hostname(self, hostname, name, strict=False):
@@ -401,6 +378,7 @@ class PFSenseSetupModule(PFSenseModuleBase):
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
+        super(PFSenseSetupModule, self)._validate_params()
         params = self.params
 
         if params.get('dashboardcolumns') is not None and (params['dashboardcolumns'] < 1 or params['dashboardcolumns'] > 6):
@@ -415,12 +393,6 @@ class PFSenseSetupModule(PFSenseModuleBase):
         if params.get('hostname') is not None:
             self._validate_hostname(params['hostname'], 'hostname', True)
 
-        if params.get('dnslocalhost') is not None:
-            if not self.pfsense.is_at_least_2_5_0():
-                value = params.get('dnslocalhost')
-                if not (isinstance(value, bool) or str(value).lower() == '' or str(value).lower() == 'remote'):
-                    self.module.fail_json(msg="unsupported value '{0}' for parameter '{1}'".format(params.get('dnslocalhost'), 'dnslocalhost'))
-
         if params.get('logincss') is not None:
             error = False
             try:
@@ -433,9 +405,6 @@ class PFSenseSetupModule(PFSenseModuleBase):
         if params.get('timezone') is not None:
             self._validate_timezone(params['timezone'])
 
-        if params.get('webguicss') is not None:
-            self._validate_webguicss(params['webguicss'])
-
         if params.get('timeservers') is not None:
             for timeserver in params['timeservers'].split(' '):
                 self._validate_hostname(timeserver, 'timeserver')
@@ -447,14 +416,13 @@ class PFSenseSetupModule(PFSenseModuleBase):
                 if authserver_elt is None:
                     self.module.fail_json(msg="Given authserver '{0}' could not be found.".format(value))
 
-                if self.pfsense.is_at_least_2_5_0():
-                    if params.get('shellauth') is not None and params.get('shellauth') is True:
-                        if authserver_elt.find('type').text == 'ldap':
-                            # check if ldap_pam_groupdn is set
-                            if authserver_elt.find('ldap_pam_groupdn') is None or \
-                               authserver_elt.find('ldap_pam_groupdn').text is None or \
-                               authserver_elt.find('ldap_pam_groupdn').text == '':
-                                self.module.fail_json(msg="ldap_pam_groupdn not set for authserver '{0}'.".format(value))
+                if params.get('shellauth') is not None and params.get('shellauth') is True:
+                    if authserver_elt.find('type').text == 'ldap':
+                        # check if ldap_pam_groupdn is set
+                        if authserver_elt.find('ldap_pam_groupdn') is None or \
+                           authserver_elt.find('ldap_pam_groupdn').text is None or \
+                           authserver_elt.find('ldap_pam_groupdn').text == '':
+                            self.module.fail_json(msg="ldap_pam_groupdn not set for authserver '{0}'.".format(value))
 
         # DNS
         ip_types = []
@@ -502,53 +470,18 @@ class PFSenseSetupModule(PFSenseModuleBase):
         if not isfile(path + timezone) or timezone[:1] < 'A' or timezone[:1] > 'Z':
             self.module.fail_json(msg='The submitted timezone is invalid')
 
-    def _validate_webguicss(self, webguicss):
-        """ check css style """
-        path = '/usr/local/www/css/'
-        themes = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith('.css') and f.find('login') == -1 and f.find('logo') == -1]
-        themes = map(lambda x: x.replace('.css', ''), themes)
-        if webguicss not in themes:
-            self.module.fail_json(msg='The submitted Theme could not be found. Pick a different theme.')
-
     ##############################
     # XML processing
     #
-    def _remove_deleted_params(self):
-        """ Remove from target_elt a few deleted params """
-        changed = False
-        params = ['dnsallowoverride']
-        if not self.pfsense.is_at_least_2_5_0():
-            params += ['dnslocalhost']
-        params += self.params_to_delete
-        for param in params:
-            if self.pfsense.remove_deleted_param_from_elt(self.target_elt, param, self.obj):
-                changed = True
-
-        webgui_elt = self.target_elt.find('webgui')
-        webgui = self.obj['webgui']
-
-        params = ['interfacessort', 'webguileftcolumnhyper', 'disablealiaspopupdetail', 'dashboardavailablewidgetspanel', 'systemlogsfilterpanel']
-        params += ['systemlogsmanagelogpanel', 'statusmonitoringsettingspanel', 'roworderdragging', 'loginshowhost', 'webguifixedmenu']
-        params += ['requirestatefilter']
-        for param in params:
-            if self.pfsense.remove_deleted_param_from_elt(webgui_elt, param, webgui):
-                changed = True
-
-        return changed
+    def _get_params_to_remove(self):
+        """ returns the list of params to remove if they are not set """
+        to_remove = super(PFSenseSetupModule, self)._get_params_to_remove()
+        to_remove.extend(self.params_to_delete)
+        return to_remove
 
     ##############################
     # run
     #
-    def run(self, params):
-        """ process input params to add/update/delete """
-        self.params = params
-        self.target_elt = self.root_elt
-        self._validate_params()
-
-        self.obj = self._params_to_obj()
-
-        self._add()
-
     def _update(self):
         """ make the target pfsense reload """
         for cmd in self.route_cmds:
@@ -570,8 +503,8 @@ $retval |= system_timezone_configure();
 $retval |= system_ntp_configure();'''
 
         if self.params.get('dnsallowoverride') is not None:
-            if (self.params['dnsallowoverride'] and 'dnsallowoverride' not in self.before or
-                    not self.params['dnsallowoverride'] and 'dnsallowoverride' in self.before):
+            if (self.params['dnsallowoverride'] and 'dnsallowoverride' not in self.diff['before'] or
+                    not self.params['dnsallowoverride'] and 'dnsallowoverride' in self.diff['before']):
                 cmd += '$retval |= send_event("service reload dns");\n'
 
         if self.params.get('shellauth') is not None:
@@ -591,29 +524,26 @@ $retval |= system_ntp_configure();'''
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        bwebgui = self.before['webgui']
+        bwebgui = self.diff['before']['webgui']
         webgui = self.obj['webgui']
 
-        obj_before = self._prepare_dns_log(self.before)
+        obj_before = self._prepare_dns_log(self.diff['before'])
         obj_after = self._prepare_dns_log(self.obj)
 
         values = ''
-        values += self.format_updated_cli_field(self.obj, self.before, 'hostname', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.before, 'domain', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'hostname', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'domain', add_comma=(values), log_none=False)
 
         values += self.format_updated_cli_field(obj_after, obj_before, 'dns_addresses', add_comma=(values), log_none=True)
         values += self.format_updated_cli_field(obj_after, obj_before, 'dns_hostnames', add_comma=(values), log_none=True)
         values += self.format_updated_cli_field(obj_after, obj_before, 'dns_gateways', add_comma=(values), log_none=True)
 
-        values += self.format_updated_cli_field(self.obj, self.before, 'timezone', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.before, 'timeservers', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.before, 'language', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'timezone', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'timeservers', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'language', add_comma=(values), log_none=False)
 
-        values += self.format_updated_cli_field(self.obj, self.before, 'dnsallowoverride', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        if self.pfsense.is_at_least_2_5_0:
-            values += self.format_updated_cli_field(self.obj, self.before, 'dnslocalhost', add_comma=(values), log_none=False)
-        else:
-            values += self.format_updated_cli_field(self.obj, self.before, 'dnslocalhost', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'dnsallowoverride', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'dnslocalhost', add_comma=(values), log_none=False)
 
         values += self.format_updated_cli_field(obj_after, obj_before, 'webguicss', add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, 'webguifixedmenu', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
