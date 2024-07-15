@@ -160,6 +160,10 @@ class PFSenseUserModule(PFSenseModuleBase):
             else:
                 self.module.fail_json(msg='Password (%s) does not appear to be a bcrypt hash' % password)
             del params['password']
+        if 'name' in params and params['name'] is not None:
+            name = params['name']
+            if not re.match(r'^[a-zA-Z0-9._-]{1,16}$', str(name)):
+                self.module.fail_json(msg='Name (%s) invalid, must be 16 characters or less and may only contain letters, numbers, and a period, hyphen, or underscore' % name)
 
     def _params_to_obj(self):
         """ return a dict from module params """
