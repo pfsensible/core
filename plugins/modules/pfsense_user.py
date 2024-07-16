@@ -235,7 +235,7 @@ class PFSenseUserCertModule(object):
               result['stdout'] += stdout
               result['stderr'] += stderr
         result['result_cert'] = { 'diff': self.pfsense_cert.result['diff'], 'commands': self.pfsense_cert.result['commands'] }
-        result['result_user'] = { 'diff': self.pfsense_cert.result['diff'], 'commands': self.pfsense_cert.result['commands'] }
+        result['result_user'] = { 'diff': self.pfsense_user.result['diff'], 'commands': self.pfsense_user.result['commands'] }
         self.module.exit_json(**result)
 
 def main():
