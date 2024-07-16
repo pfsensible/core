@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
@@ -60,6 +61,97 @@ options:
   authorizedkeys:
     description: Contents of ~/.ssh/authorized_keys.  Can be base64 encoded.
     type: str
+  cert:
+    description: options for the users certificate.
+    type: dict
+    suboptions:
+      name:
+        description: The name of the certificate
+        required: true
+        type: str
+      ca:
+        description: The Certificate Authority
+        type: str
+      keytype:
+        description: The type of key to generate
+        default: 'RSA'
+        choices: [ 'RSA', 'ECDSA' ]
+        type: str
+      digestalg:
+        description: The digest method used when the certificate is signed
+        default: 'sha256'
+        choices: ['sha1', 'sha224', 'sha256', 'sha384', 'sha512']
+        type: str
+      ecname:
+        description: The Elliptic Curve Name to use when generating a new ECDSA key
+        default: 'prime256v1'
+        choices: ['secp112r1', 'secp112r2', 'secp128r1', 'secp128r2', 'secp160k1', 'secp160r1', 'secp160r2', 'secp192k1', 'secp224k1', 'secp224r1',
+            'secp256k1', 'secp384r1', 'secp521r1', 'prime192v1', 'prime192v2', 'prime192v3', 'prime239v1', 'prime239v2', 'prime239v3', 'prime256v1',
+            'sect113r1', 'sect113r2', 'sect131r1', 'sect131r2', 'sect163k1', 'sect163r1', 'sect163r2', 'sect193r1', 'sect193r2', 'sect233k1', 'sect233r1',
+            'sect239k1', 'sect283k1', 'sect283r1', 'sect409k1', 'sect409r1', 'sect571k1', 'sect571r1', 'c2pnb163v1', 'c2pnb163v2', 'c2pnb163v3', 'c2pnb176v1',
+            'c2tnb191v1', 'c2tnb191v2', 'c2tnb191v3', 'c2pnb208w1', 'c2tnb239v1', 'c2tnb239v2', 'c2tnb239v3', 'c2pnb272w1', 'c2pnb304w1', 'c2tnb359v1',
+            'c2pnb368w1', 'c2tnb431r1', 'wap-wsg-idm-ecid-wtls1', 'wap-wsg-idm-ecid-wtls3', 'wap-wsg-idm-ecid-wtls4', 'wap-wsg-idm-ecid-wtls5',
+            'wap-wsg-idm-ecid-wtls6', 'wap-wsg-idm-ecid-wtls7', 'wap-wsg-idm-ecid-wtls8', 'wap-wsg-idm-ecid-wtls9', 'wap-wsg-idm-ecid-wtls10',
+            'wap-wsg-idm-ecid-wtls11', 'wap-wsg-idm-ecid-wtls12', 'Oakley-EC2N-3', 'Oakley-EC2N-4', 'brainpoolP160r1', 'brainpoolP160t1', 'brainpoolP192r1',
+            'brainpoolP192t1', 'brainpoolP224r1', 'brainpoolP224t1', 'brainpoolP256r1', 'brainpoolP256t1', 'brainpoolP320r1', 'brainpoolP320t1',
+            'brainpoolP384r1', 'brainpoolP384t1', 'brainpoolP512r1', 'brainpoolP512t1', 'SM2']
+        type: str
+      keylen:
+        description: The length to use when generating a new RSA key, in bits
+        default: '2048'
+        type: str
+      lifetime:
+        description: The length of time the signed certificate will be valid, in days
+        default: '3650'
+        type: str
+      dn_country:
+        description: The Country Code
+        type: str
+      dn_state:
+        description: The State or Province
+        type: str
+      dn_city:
+        description: The City
+        type: str
+      dn_organization:
+        description: The Organization
+        type: str
+      dn_organizationalunit:
+        description: The Organizational Unit
+        type: str
+      altnames:
+        description:
+          >
+            The Alternative Names.  A list of aditional identifiers for the certificate.
+            A comma separed values with format: DNS:hostname,IP:X.X.X.X,email:user@mail,URI:url
+        type: str
+      certificate:
+        description:
+          >
+            The certificate to import.  This can be in PEM form or Base64
+            encoded PEM as a single string (which is how pfSense stores it).
+        type: str
+      key:
+        description:
+          >
+            The key to import.  This can be in PEM form or Base64
+            encoded PEM as a single string (which is how pfSense stores it).
+        type: str
+      state:
+        description: State in which to leave the certificate
+        default: 'present'
+        choices: [ 'present', 'absent' ]
+        type: str
+      method:
+        description: Method of the certificate created
+        default: 'internal'
+        choices: [ 'internal', 'import' ]
+        type: str
+      certtype:
+        description: Type of the certificate ('user' is a certificate for the user)
+        default: 'user'
+        choices: [ 'user', 'server' ]
+        type: str
 """
 
 EXAMPLES = """
@@ -70,6 +162,23 @@ EXAMPLES = """
     scope: user
     groups: [ 'Operators' ]
     priv: [ 'page-all', 'user-shell-access' ]
+
+- name: Add operator user with certificate
+  pfsense_user:
+    name: operator
+    descr: Operator
+    scope: user
+    groups: [ 'Operators' ]
+    priv: [ 'page-all', 'user-shell-access' ]
+    cert:
+      method: "internal"
+      name: "operator.cert"
+      ca: "internal-ca"
+      keytype: "RSA"
+      keylen: 2048
+      lifetime: 3650
+      certtype: "user"
+      state: present
 
 - name: Remove user
   pfsense_user:
@@ -85,9 +194,52 @@ import base64
 import re
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
+from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModule
+from ansible_collections.pfsensible.core.plugins.module_utils.cert import PFSenseCertModule, CERT_ARGUMENT_SPEC
+from ansible_collections.pfsensible.core.plugins.module_utils.user import PFSenseUserModule, USER_ARGUMENT_SPEC
 
-USER_ARGUMENT_SPEC = dict(
+class PFSenseUserCertModule(object):
+    """ module managing pfsense users """
+
+    def __init__(self, module):
+        self.module = module
+        self.pfsense = PFSenseModule(module)
+        self.pfsense_cert = PFSenseCertModule(module, self.pfsense)
+        self.pfsense_user = PFSenseUserModule(module, self.pfsense)
+    
+    def run(self):
+        """process input params to create user"""
+        cert_params = self.module.params['cert']
+        if cert_params:
+          self.pfsense_cert.run(cert_params)
+          certref = self.pfsense.get_certref(cert_params['name'])
+          print("Certref: %s", certref)
+          # Overwrite cert parameters with id of created certificate.
+          self.module.params['cert'] = certref
+        self.pfsense_user.run(self.module.params)
+
+    def commit_changes(self):
+        """ apply changes and exit module """
+        result = {}
+        result['stdout'] = ''
+        result['stderr'] = ''
+        result['changed'] = ( self.pfsense_cert.result['changed'] or self.pfsense_user.result['changed'])
+        if result['changed'] and not self.module.check_mode:
+            self.pfsense.write_config(descr='user change')
+            if self.pfsense_cert.result['changed']:
+              (dummy, stdout, stderr) = self.pfsense_cert._update()
+              result['stdout'] += stdout
+              result['stderr'] += stderr
+            if self.pfsense_user.result['changed']:
+              (dummy, stdout, stderr) = self.pfsense_user._update()
+              result['stdout'] += stdout
+              result['stderr'] += stderr
+        result['result_cert'] = { 'diff': self.pfsense_cert.result['diff'], 'commands': self.pfsense_cert.result['commands'] }
+        result['result_user'] = { 'diff': self.pfsense_cert.result['diff'], 'commands': self.pfsense_cert.result['commands'] }
+        self.module.exit_json(**result)
+
+def main():
+    argument_spec = dict(
     name=dict(required=True, type='str'),
     state=dict(type='str', default='present', choices=['present', 'absent']),
     descr=dict(type='str'),
@@ -97,269 +249,14 @@ USER_ARGUMENT_SPEC = dict(
     groups=dict(type='list', elements='str'),
     priv=dict(type='list', elements='str'),
     authorizedkeys=dict(type='str'),
-)
-
-USER_PHP_COMMAND_PREFIX = """
-require_once('auth.inc');
-init_config_arr(array('system', 'user'));
-"""
-
-USER_PHP_COMMAND_SET = USER_PHP_COMMAND_PREFIX + """
-$a_user = &$config['system']['user'];
-$userent = $a_user[{idx}];
-local_user_set($userent);
-global $groupindex;
-foreach ({mod_groups} as $groupname) {{
-    $group = &$config['system']['group'][$groupindex[$groupname]];
-    local_group_set($group);
-}}
-if (is_dir("/etc/inc/privhooks")) {{
-    run_plugins("/etc/inc/privhooks");
-}}
-"""
-
-# This runs after we remove the group from the config so we can't use $config
-USER_PHP_COMMAND_DEL = USER_PHP_COMMAND_PREFIX + """
-$userent['name'] = '{name}';
-$userent['uid'] = {uid};
-global $groupindex;
-foreach ({mod_groups} as $groupname) {{
-    $group = &$config['system']['group'][$groupindex[$groupname]];
-    local_group_set($group);
-}}
-local_user_del($userent);
-"""
-
-
-class PFSenseUserModule(PFSenseModuleBase):
-    """ module managing pfsense users """
-
-    @staticmethod
-    def get_argument_spec():
-        """ return argument spec """
-        return USER_ARGUMENT_SPEC
-
-    def __init__(self, module, pfsense=None):
-        super(PFSenseUserModule, self).__init__(module, pfsense)
-        self.name = "pfsense_user"
-        self.root_elt = self.pfsense.get_element('system')
-        self.users = self.root_elt.findall('user')
-        self.groups = self.root_elt.findall('group')
-        self.mod_groups = []
-
-    ##############################
-    # params processing
-    #
-    def _validate_params(self):
-        """ do some extra checks on input parameters """
-        params = self.params
-        if 'password' in params and params['password'] is not None:
-            password = params['password']
-            if re.match(r'\$2[aby]\$', str(password)):
-                params['bcrypt-hash'] = password
-            else:
-                self.module.fail_json(msg='Password (%s) does not appear to be a bcrypt hash' % password)
-            del params['password']
-        if 'name' in params and params['name'] is not None:
-            name = params['name']
-            if not re.match(r'^[a-zA-Z0-9._-]{1,16}$', str(name)):
-                self.module.fail_json(msg='Name (%s) invalid, must be 16 characters or less and may only contain letters, numbers, and a period, hyphen, or underscore' % name)
-
-    def _params_to_obj(self):
-        """ return a dict from module params """
-        params = self.params
-
-        obj = dict()
-        self.obj = obj
-
-        obj['name'] = params['name']
-        if params['state'] == 'present':
-            for option in ['authorizedkeys', 'descr', 'scope', 'uid', 'bcrypt-hash', 'groups', 'priv']:
-                if option in params and params[option] is not None:
-                    obj[option] = params[option]
-
-            # Allow authorizedkeys to be clear or base64 encoded
-            if 'authorizedkeys' in obj and 'ssh-' in obj['authorizedkeys']:
-                obj['authorizedkeys'] = base64.b64encode(obj['authorizedkeys'].encode()).decode()
-
-        return obj
-
-    ##############################
-    # XML processing
-    #
-    def _find_target(self):
-        result = self.root_elt.findall("user[name='{0}']".format(self.obj['name']))
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple users for name {0}.'.format(self.obj['name']))
-        else:
-            return None
-
-    def _find_group(self, name):
-        result = self.root_elt.findall("group[name='{0}']".format(name))
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple groups for name {0}.'.format(name))
-        else:
-            return None
-
-    def _find_groups_for_uid(self, uid):
-        groups = []
-        for group_elt in self.root_elt.findall("group[member='{0}']".format(uid)):
-            groups.append(group_elt.find('name').text)
-        return groups
-
-    def _find_this_user_index(self):
-        return self.users.index(self.target_elt)
-
-    def _find_last_user_index(self):
-        return list(self.root_elt).index(self.users[len(self.users) - 1])
-
-    def _nextuid(self):
-        nextuid_elt = self.root_elt.find('nextuid')
-        nextuid = nextuid_elt.text
-        nextuid_elt.text = str(int(nextuid) + 1)
-        return nextuid
-
-    def _format_diff_priv(self, priv):
-        if isinstance(priv, str):
-            return [priv]
-        else:
-            return priv
-
-    def _create_target(self):
-        """ create the XML target_elt """
-        return self.pfsense.new_element('user')
-
-    def _copy_and_add_target(self):
-        """ populate the XML target_elt """
-        obj = self.obj
-        if 'bcrypt-hash' not in obj:
-            self.module.fail_json(msg='Password is required when adding a user')
-        if 'uid' not in obj:
-            obj['uid'] = self._nextuid()
-
-        self.diff['after'] = obj
-        self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self._update_groups()
-        self.root_elt.insert(self._find_last_user_index(), self.target_elt)
-        # Reset users list
-        self.users = self.root_elt.findall('user')
-
-    def _copy_and_update_target(self):
-        """ update the XML target_elt """
-        before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
-        if 'priv' in before:
-            before['priv'] = self._format_diff_priv(before['priv'])
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-        if 'priv' in self.diff['after']:
-            self.diff['after']['priv'] = self._format_diff_priv(self.diff['after']['priv'])
-        if self._update_groups():
-            changed = True
-
-        return (before, changed)
-
-    def _update_groups(self):
-        user = self.obj
-        changed = False
-
-        # Handle group member element - need uid set or retrieved above
-        if 'groups' in user:
-            uid = self.target_elt.find('uid').text
-            # Get current group membership
-            self.diff['before']['groups'] = self._find_groups_for_uid(uid)
-
-            # Add user to groups if needed
-            for group in self.obj['groups']:
-                group_elt = self._find_group(group)
-                if group_elt is None:
-                    self.module.fail_json(msg='Group (%s) does not exist' % group)
-                if len(group_elt.findall("[member='{0}']".format(uid))) == 0:
-                    changed = True
-                    self.mod_groups.append(group)
-                    group_elt.append(self.pfsense.new_element('member', uid))
-
-            # Remove user from groups if needed
-            for group in self.diff['before']['groups']:
-                if group not in self.obj['groups']:
-                    group_elt = self._find_group(group)
-                    if group_elt is None:
-                        self.module.fail_json(msg='Group (%s) does not exist' % group)
-                    for member_elt in group_elt.findall('member'):
-                        if member_elt.text == uid:
-                            changed = True
-                            self.mod_groups.append(group)
-                            group_elt.remove(member_elt)
-                            break
-
-            # Groups are not stored in the user element
-            self.diff['after']['groups'] = user.pop('groups')
-
-        # Decode keys for diff
-        for k in self.diff:
-            if 'authorizedkeys' in self.diff[k]:
-                self.diff[k]['authorizedkeys'] = base64.b64decode(self.diff[k]['authorizedkeys'])
-
-        return changed
-
-    ##############################
-    # Logging
-    #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return "'" + self.obj['name'] + "'"
-
-    def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
-        if before is None:
-            values += self.format_cli_field(self.params, 'descr')
-        else:
-            values += self.format_updated_cli_field(self.obj, before, 'descr', add_comma=(values))
-        return values
-
-    ##############################
-    # run
-    #
-    def _update(self):
-        if self.params['state'] == 'present':
-            return self.pfsense.phpshell(USER_PHP_COMMAND_SET.format(idx=self._find_this_user_index(), mod_groups=self.mod_groups))
-        else:
-            return self.pfsense.phpshell(USER_PHP_COMMAND_DEL.format(name=self.obj['name'], uid=self.obj['uid'], mod_groups=self.mod_groups))
-
-    def _pre_remove_target_elt(self):
-        self.diff['after'] = {}
-        if self.target_elt is not None:
-            self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
-            # Store uid for _update()
-            self.obj['uid'] = self.target_elt.find('uid').text
-
-            # Get current group membership
-            self.diff['before']['groups'] = self._find_groups_for_uid(self.obj['uid'])
-
-            # Remove user from groups if needed
-            for group in self.diff['before']['groups']:
-                group_elt = self._find_group(group)
-                if group_elt is None:
-                    self.module.fail_json(msg='Group (%s) does not exist' % group)
-                for member_elt in group_elt.findall('member'):
-                    if member_elt.text == self.obj['uid']:
-                        self.mod_groups.append(group)
-                        group_elt.remove(member_elt)
-                        break
-
-
-def main():
+    cert=dict(type='dict', options=CERT_ARGUMENT_SPEC)
+    )
     module = AnsibleModule(
-        argument_spec=USER_ARGUMENT_SPEC,
+        argument_spec=argument_spec,
         supports_check_mode=True)
-
-    pfmodule = PFSenseUserModule(module)
-    pfmodule.run(module.params)
+    
+    pfmodule = PFSenseUserCertModule(module)
+    pfmodule.run()
     pfmodule.commit_changes()
 
 
