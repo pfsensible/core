@@ -39,7 +39,10 @@ DHCPD_SERVER_ARGUMENT_SPEC = dict(
     filename32=dict(type='str'),
     filename64=dict(type='str'),
     rootpath=dict(type='str'),
-    numberoptions=dict(type='list', elements='dict'),
+    numberoptions=dict(type='str'),
+    winsserver=dict(type='list', elements='str'),
+    dnsserver=dict(type='list', elements='str'),
+    ntpserver=dict(type='list', elements='str'),
     ignorebootp=dict(type='bool'),
     denyunknown=dict(type='str'),
     nonak=dict(type='bool'),
@@ -139,9 +142,11 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
             # Non-forced options
             for option in [ 'winsserver', 'dnsserver', 'ntpserver']:
                 self._get_ansible_param(obj, option)
+
             for option in [ 'enable', 'ignorebootp', 'nonak', 'ignoreclientuids',
                             'staticarp', 'disablepingcheck']:
                 self._get_ansible_param_bool(obj, option, value='')
+
             for option in [ 'dhcpinlocaltime', 'statsgraph' ]:
                 self._get_ansible_param_bool(obj, option, value='yes')
 

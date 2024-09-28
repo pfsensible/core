@@ -100,20 +100,20 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
     def test_dhcp_server_create_with_options(self):
         """ test creation with additional DHCP options """
         obj = dict(
-            interface='opt1',
+            interface='opt2',
             enable=True,
-            range_from='10.0.0.50',
-            range_to='10.0.0.150',
+            range_from='172.16.0.50',
+            range_to='172.16.0.150',
             defaultleasetime=43200,
             maxleasetime=86400,
             domain='opt1.example.com',
             ddnsdomain='ddns.example.com',
-            ddnsdomainprimary='10.0.0.2',
-            tftp='10.0.0.3',
-            numberoptions=[
-                dict(number=66, type='string', value='10.0.0.4'),
-                dict(number=67, type='string', value='pxeboot.0')
+            ddnsdomainprimary='172.16.0.60',
+            tftp='172.16.0.63',
+            disablepingcheck=True,
+            winsserver=['172.16.0.80',
+                '172.16.0.90'
             ]
         )
-        command = "create dhcp_server 'opt1', enable=True, range_from='10.0.0.50', range_to='10.0.0.150', defaultleasetime='43200', maxleasetime='86400', domain='opt1.example.com', ddnsdomain='ddns.example.com', ddnsdomainprimary='10.0.0.2', tftp='10.0.0.3', numberoptions='[{\"number\": 66, \"type\": \"string\", \"value\": \"10.0.0.4\"}, {\"number\": 67, \"type\": \"string\", \"value\": \"pxeboot.0\"}]'"
+        command = "create dhcp_server 'opt2', enable=True, range_from='172.16.0.50', range_to='172.16.0.150', failover_peerip='', defaultleasetime='43200', maxleasetime='86400', netmask='', gateway='', domain='opt1.example.com', domainsearchlist='', ddnsdomain='ddns.example.com', ddnsdomainprimary='172.16.0.60', ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='172.16.0.63', ldap='', nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"
         self.do_module_test(obj, command=command)
