@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright: (c) 2023, Your Name <your.email@example.com>
+# Copyright: (c) 2024, David Rosado <davidrosza0@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -113,23 +113,8 @@ options:
     description: Root path
     type: str
   numberoptions:
-    description: Additional DHCP options
-    type: list
-    elements: dict
-    suboptions:
-      number:
-        description: Option number
-        type: int
-        required: true
-      type:
-        description: Option type
-        type: str
-        required: true
-        choices: [ 'text', 'string', 'boolean', 'unsigned integer 8', 'unsigned integer 16', 'unsigned integer 32', 'signed integer 8', 'signed integer 16', 'signed integer 32', 'ip-address' ]
-      value:
-        description: Option value
-        type: str
-        required: true
+    description: DHCP options currently non applicable
+    type: str
   ignorebootp:
     description: Disable BOOTP
     type: bool

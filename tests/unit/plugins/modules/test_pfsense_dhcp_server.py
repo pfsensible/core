@@ -1,3 +1,9 @@
+# Copyright: (c) 2024, David Rosado <davidrosza0@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
 import pytest
 import sys
 
@@ -106,7 +112,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             range_to='172.16.0.150',
             defaultleasetime=43200,
             maxleasetime=86400,
-            domain='opt1.example.com',
+            domain='opt2.example.com',
             ddnsdomain='ddns.example.com',
             ddnsdomainprimary='172.16.0.60',
             tftp='172.16.0.63',
