@@ -173,10 +173,10 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
                 self.module.fail_json(msg="The 'range_to' address is not a valid IPv4 address")
 
             if not ip_address(params['range_from']) in self.network or not ip_address(params['range_to']) in self.network:
-                self.module.fail_json(msg=f"The IP address must lie in the {params['interface']} subnet.")
+                self.module.fail_json(msg=f"The IP address must lie in the {params['interface']} subnet")
 
             if ip_address(params['range_from']) >= ip_address(params['range_to']):
-                self.module.fail_json(msg=f"The interface {params['interface']} must have a valid IP range pool.")
+                self.module.fail_json(msg=f"The interface {params['interface']} must have a valid IP range pool")
 
             if params.get('gateway'):
                 if not self.pfsense.is_ipv4_address(params['gateway']):
@@ -186,13 +186,13 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
                 for macaddr in params["mac_allow"]:
                     is_valid = self._is_valid_macaddr(macaddr)
                     if not is_valid:
-                        self.module.fail_json(msg=f"The MAC address {macaddr} is invalid.")
+                        self.module.fail_json(msg=f"The MAC address {macaddr} is invalid")
 
             if params.get('mac_deny'):
                 for macaddr in params["mac_deny"]:
                     is_valid = self._is_valid_macaddr(macaddr)
                     if not is_valid:
-                        self.module.fail_json(msg=f"The MAC address {macaddr} is invalid.")
+                        self.module.fail_json(msg=f"The MAC address {macaddr} is invalid")
 
             if params.get('denyunknown'):
                 if params['denyunknown'] not in ['enabled', 'class']:
@@ -227,9 +227,9 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
         """ generate pseudo-CLI command fields parameters to create an obj """
         values = ''
         if before is None:
-            values += self.format_cli_field(self.obj, 'enable')
-            values += self.format_cli_field(self.obj, 'range_from')
-            values += self.format_cli_field(self.obj, 'range_to')
+            values += self.format_cli_field(self.obj, 'enable', fvalue=self.fvalue_bool)
+            values += self.format_cli_field(self.obj["range"], 'from', fname="range_from")
+            values += self.format_cli_field(self.obj["range"], 'to', fname="range_to")
             values += self.format_cli_field(self.obj, 'failover_peerip')
             values += self.format_cli_field(self.obj, 'defaultleasetime')
             values += self.format_cli_field(self.obj, 'maxleasetime')
@@ -254,9 +254,9 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
             values += self.format_cli_field(self.obj, 'rootpath')
             values += self.format_cli_field(self.obj, 'numberoptions')
         else:
-            values += self.format_updated_cli_field(self.obj, before, 'enable')
-            values += self.format_updated_cli_field(self.obj, before, 'range_from')
-            values += self.format_updated_cli_field(self.obj, before, 'range_to')
+            values += self.format_updated_cli_field(self.obj, before, 'enable', fvalue=self.fvalue_bool)
+            values += self.format_updated_cli_field(self.obj["range"], before["range"], 'from', fname="range_from")
+            values += self.format_updated_cli_field(self.obj["range"], before["range"], 'to', fname="range_to")
             values += self.format_updated_cli_field(self.obj, before, 'failover_peerip')
             values += self.format_updated_cli_field(self.obj, before, 'defaultleasetime')
             values += self.format_updated_cli_field(self.obj, before, 'maxleasetime')

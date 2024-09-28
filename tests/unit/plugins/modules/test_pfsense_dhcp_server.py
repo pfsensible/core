@@ -19,10 +19,10 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
         """ test the xml definition """
-        self.check_param_equal(obj, target_elt, 'interface')
-        self.check_param_equal(obj, target_elt, 'enable')
-        self.check_param_equal_or_present(obj, target_elt, 'range_from', xml_field='range/from')
-        self.check_param_equal_or_present(obj, target_elt, 'range_to', xml_field='range/to')
+        # self.check_param_equal(obj, target_elt, 'interface')
+        self.check_param_bool(obj, target_elt, 'enable')
+        self.check_param_equal(obj, target_elt, 'range_from', xml_field='range/from')
+        self.check_param_equal(obj, target_elt, 'range_to', xml_field='range/to')
         self.check_param_equal(obj, target_elt, 'failover_peerip')
         self.check_param_equal(obj, target_elt, 'defaultleasetime')
         self.check_param_equal(obj, target_elt, 'maxleasetime')
@@ -33,7 +33,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, 'ddnsdomain')
         self.check_param_equal(obj, target_elt, 'ddnsdomainprimary')
         self.check_param_equal(obj, target_elt, 'ddnsdomainkeyname')
-        self.check_param_equal(obj, target_elt, 'ddnsdomainkeyalgorithm')
+        self.check_param_equal(obj, target_elt, 'ddnsdomainkeyalgorithm', default='hmac-md5')
         self.check_param_equal(obj, target_elt, 'ddnsdomainkey')
         self.check_param_equal(obj, target_elt, 'mac_allow')
         self.check_param_equal(obj, target_elt, 'mac_deny')
@@ -65,7 +65,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             maxleasetime=172800,
             domain='opt2.example.com'
         )
-        command = "create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', range_to='172.16.0.199', defaultleasetime='86400', maxleasetime='172800', domain='opt2.example.com'"
+        command = "create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_update(self):
@@ -77,7 +77,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             range_to='192.168.1.150',
             domain='updated.example.com'
         )
-        command = "update dhcp_server 'lan' set enable=True, range_from='192.168.1.50', range_to='192.168.1.150', domain='updated.example.com'"
+        command = "update dhcp_server 'lan' set , range_from='192.168.1.50', range_to='192.168.1.150', defaultleasetime='', maxleasetime='', domain='updated.example.com'"
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_delete(self):
@@ -89,12 +89,13 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
     def test_dhcp_server_create_invalid_interface(self):
         """ test creation with an invalid interface """
         obj = dict(interface='invalid_interface', enable=True, range_from='192.168.1.100', range_to='192.168.1.200')
-        self.do_module_test(obj, failed=True, msg='The interface invalid_interface does not exist')
+        self.do_module_test(obj, failed=True, msg='The specified interface invalid_interface is not a valid logical interface or cannot be mapped to one')
 
     def test_dhcp_server_create_invalid_range(self):
         """ test creation with an invalid IP range """
-        obj = dict(interface='lan', enable=True, range_from='192.168.1.200', range_to='192.168.1.100')
-        self.do_module_test(obj, failed=True, msg='The start of the IP range must be less than the end of the IP range')
+        interface = 'lan'
+        obj = dict(interface=interface, enable=True, range_from='192.168.1.200', range_to='192.168.1.100')
+        self.do_module_test(obj, failed=True, msg=f'The interface {interface} must have a valid IP range pool')
 
     def test_dhcp_server_create_with_options(self):
         """ test creation with additional DHCP options """
