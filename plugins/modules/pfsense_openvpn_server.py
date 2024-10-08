@@ -257,6 +257,27 @@ EXAMPLES = """
 - name: "Add OpenVPN server"
   pfsense_openvpn_server:
     name: 'OpenVPN Server'
+    mode: server_user
+
+- name: "Add OpenVPN server with basic configuration"
+  pfsense_openvpn_server:
+    name: 'OpenVPN Server Ansible'
+    ca: name-your-ca-authority
+    cert: name-your-server-certificate
+    tunnel_network: 10.21.40.0/24
+    local_network: 172.16.3.0/24
+    mode: server_tls_user
+
+- name: "Add OpenVPN server with verbose mode and Cloudflare DNS"
+  pfsense_openvpn_server:
+    name: 'OpenVPN Server Ansible Cloudflare'
+    ca: name-your-ca-authority
+    cert: name-your-server-certificate
+    tunnel_network: 10.10.10.0/24
+    local_network: 10.72.40.0/24
+    dns_server1: 1.1.1.1
+    verbosity_level: 4
+    mode: server_user
 """
 
 RETURN = r'''
