@@ -146,6 +146,7 @@ options:
   domainoverrides:
     description: Domains for which the resolver's standard DNS lookup should be overridden.
     required: false
+    default: []
     type: list
     elements: dict
     suboptions:
@@ -348,7 +349,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     regovpnclients=dict(default=False, type='bool'),
     custom_options=dict(default="", type='str'),
     hosts=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_SPEC),
-    domainoverrides=dict(type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
+    domainoverrides=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
     # Advanced Settings
     hideidentity=dict(default=True, type='bool'),
     hideversion=dict(default=True, type='bool'),
@@ -477,8 +478,13 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self.module.fail_json(msg=f'sslcert, {params["sslcert"]} is not a valid description of cert')
 
         for host in params["hosts"]:
-            if not self.pfsense.is_ipv4_address(host["ip"]):
-                self.module.fail_json(msg=f'ip, {host["ip"]} is not a ipv4 address')
+            for ipaddr in host["ip"].split(","):
+                if not self.pfsense.is_ipv4_address(ipaddr):
+                    self.module.fail_json(msg=f'ip, {ipaddr} is not a ipv4 address')
+
+        for domain in params["domainoverrides"]:
+            if not self.pfsense.is_ipv4_address(domain["ip"]):
+                self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4 address')
 
         for if_descr in params["active_interface"] + params["outgoing_interface"]:
             if not self.pfsense.is_interface_display_name(if_descr) and if_descr.lower() != "all":
