@@ -65,6 +65,13 @@ options:
     required: false
     type: str
     version_added: 0.5.0
+  key:
+    description:
+      >
+        The private key for the Certificate Authority.  This can be in PEM form or Base64
+        encoded PEM as a single string (which is how pfSense stores it).
+    type: str
+    version_added: 0.6.2
   serial:
     description: Number to be used as a sequential serial number for the next certificate to be signed by this CA.
     type: int
@@ -109,6 +116,7 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
     crl=dict(default=None, type='str'),
     crlname=dict(default=None, type='str'),
     crlrefid=dict(default=None, type='str'),
+    key=dict(type='str', no_log=True),
     serial=dict(type='int'),
 )
 
@@ -155,6 +163,14 @@ class PFSenseCAModule(PFSenseModuleBase):
             elif not re.match('LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0t', crl):
                 self.module.fail_json(msg='Could not recognize CRL format: %s' % (crl))
 
+        if params['key'] is not None:
+            ca_key = params['key']
+            lines = ca_key.splitlines()
+            if lines[0] == '-----BEGIN PRIVATE KEY-----' and lines[-1] == '-----END PRIVATE KEY-----':
+                params['key'] = base64.b64encode(ca_key.encode()).decode()
+            elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', ca_key):
+                self.module.fail_json(msg='Could not recognize CA key format: %s' % (ca_key))
+
         if params['serial'] is not None:
             if int(params['serial']) < 1:
                 self.module.fail_json(msg='serial must be greater than 0')
@@ -176,6 +192,8 @@ class PFSenseCAModule(PFSenseModuleBase):
                 self.crl['text'] = params['crl']
                 self._get_ansible_param(self.crl, 'crlname', fname='descr', force=True, force_value=obj['descr'] + ' CRL')
                 self._get_ansible_param(self.crl, 'crlrefid', fname='refid')
+            if params['key'] is not None:
+                obj['key'] = params['key']
 
         self._get_ansible_param_bool(obj, 'trust', value='enabled', value_false='disabled')
         self._get_ansible_param_bool(obj, 'randomserial', value='enabled', value_false='disabled')
