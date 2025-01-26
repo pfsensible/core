@@ -200,7 +200,7 @@ options:
   create_gw:
     description: Which gateway types to create.
     default: both
-    choices: ['both']
+    choices: ['both','v4only','v6only']
     type: str
   verbosity_level:
     description: Verbosity level.
