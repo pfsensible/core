@@ -145,6 +145,7 @@ class PFSenseUserModule(PFSenseModuleBase):
         self.root_elt = self.pfsense.get_element('system')
         self.users = self.root_elt.findall('user')
         self.groups = self.root_elt.findall('group')
+        self.user_groups = None
         self.mod_groups = []
 
     ##############################
@@ -170,9 +171,13 @@ class PFSenseUserModule(PFSenseModuleBase):
 
         obj['name'] = params['name']
         if params['state'] == 'present':
-            for option in ['authorizedkeys', 'descr', 'scope', 'uid', 'bcrypt-hash', 'groups', 'priv']:
+            for option in ['authorizedkeys', 'descr', 'scope', 'uid', 'bcrypt-hash', 'priv']:
                 if option in params and params[option] is not None:
                     obj[option] = params[option]
+
+            # Groups are not stored in the user object
+            if 'groups' in params and params['groups'] is not None:
+                self.user_groups = params['groups']
 
             # Allow authorizedkeys to be clear or base64 encoded
             if 'authorizedkeys' in obj and 'ssh-' in obj['authorizedkeys']:
@@ -263,14 +268,15 @@ class PFSenseUserModule(PFSenseModuleBase):
         user = self.obj
         changed = False
 
-        # Handle group member element - need uid set or retrieved above
-        if 'groups' in user:
+        # Only modify group membership is groups was specified
+        if self.user_groups is not None:
+            # Handle group member element - need uid set or retrieved above
             uid = self.target_elt.find('uid').text
             # Get current group membership
             self.diff['before']['groups'] = self._find_groups_for_uid(uid)
 
             # Add user to groups if needed
-            for group in self.obj['groups']:
+            for group in self.user_groups:
                 group_elt = self._find_group(group)
                 if group_elt is None:
                     self.module.fail_json(msg='Group (%s) does not exist' % group)
@@ -281,7 +287,7 @@ class PFSenseUserModule(PFSenseModuleBase):
 
             # Remove user from groups if needed
             for group in self.diff['before']['groups']:
-                if group not in self.obj['groups']:
+                if group not in self.user_groups:
                     group_elt = self._find_group(group)
                     if group_elt is None:
                         self.module.fail_json(msg='Group (%s) does not exist' % group)
@@ -293,7 +299,7 @@ class PFSenseUserModule(PFSenseModuleBase):
                             break
 
             # Groups are not stored in the user element
-            self.diff['after']['groups'] = user.pop('groups')
+            self.diff['after']['groups'] = self.user_groups
 
         # Decode keys for diff
         for k in self.diff:
