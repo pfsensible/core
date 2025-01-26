@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_openvpn_client - added ``v4only`` and `v6only`` values for ``create_gw`` (https://github.com/pfsensible/core/issues/133)

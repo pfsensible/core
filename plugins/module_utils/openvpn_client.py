@@ -58,7 +58,7 @@ OPENVPN_CLIENT_ARGUMENT_SPEC = dict(
     dns_client3=dict(default='', required=False, type='str'),
     dns_client4=dict(default='', required=False, type='str'),
     push_register_dns=dict(default=False, required=False, type='bool'),
-    create_gw=dict(default='both', required=False, choices=['both']),
+    create_gw=dict(default='both', required=False, choices=['both', 'v4only', 'v6only']),
     verbosity_level=dict(default=3, required=False, type='int'),
 )
 
