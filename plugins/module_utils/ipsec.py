@@ -22,9 +22,9 @@ IPSEC_ARGUMENT_SPEC = dict(
 
     authentication_method=dict(choices=['pre_shared_key', 'rsasig']),
     mode=dict(required=False, choices=['main', 'aggressive']),
-    myid_type=dict(default='myaddress', choices=['myaddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'dyn_dns']),
+    myid_type=dict(default='myaddress', choices=['myaddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'dyn_dns', 'auto']),
     myid_data=dict(required=False, type='str'),
-    peerid_type=dict(default='peeraddress', choices=['any', 'peeraddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag']),
+    peerid_type=dict(default='peeraddress', choices=['any', 'peeraddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'auto']),
     peerid_data=dict(required=False, type='str'),
     certificate=dict(required=False, type='str'),
     certificate_authority=dict(required=False, type='str'),
