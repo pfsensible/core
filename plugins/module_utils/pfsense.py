@@ -639,7 +639,7 @@ class PFSenseModule(object):
 
     def phpshell(self, command):
         """ Run a command in the php developer shell """
-        command = "global $debug;\n$debug = 1;\n" + command + "\nexec\nexit"
+        command = "global $debug;\n$debug = 1;\nglobal $config;\n" + command + "\nexec\nexit"
         # Dummy argument suppresses displaying help message
         return self.module.run_command('/usr/local/sbin/pfSsh.php dummy', data=command)
 
