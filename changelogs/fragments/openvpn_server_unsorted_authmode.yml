@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_openvpn_server - no longer sort authmode items

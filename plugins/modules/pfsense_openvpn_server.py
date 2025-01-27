@@ -31,7 +31,7 @@ options:
     type: str
   authmode:
     description:
-      - Authentication servers. This list will be put into alphabetical order.  Required if mode == server_tls_user.
+      - Authentication servers. Required if mode == server_tls_user.
       - Use 'Local Database' for authentication against the local pfSense user database.
     default: []
     type: list

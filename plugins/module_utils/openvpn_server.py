@@ -151,7 +151,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             obj['create_gw'] = self.params['create_gw']
 
             if 'user' in self.params['mode']:
-                obj['authmode'] = ",".join(sorted(self.params['authmode']))
+                obj['authmode'] = ",".join(self.params['authmode'])
 
             if 'tls' in self.params['mode']:
                 # Find the caref id for the named CA
