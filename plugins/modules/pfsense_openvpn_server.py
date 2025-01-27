@@ -66,10 +66,11 @@ options:
     choices: ['tun', 'tap']
     type: str
   tls:
-    description: TLS Key.  If set to 'generate' it will create a key if one does not already exist.
+    description: TLS Key.  If set to 'generate' it will create a key if one does not already exist.  Not valid with p2p_shared_key mode.
     type: str
   tls_type:
-    description: Use TLS for authentication ('auth') or encyprtion and authentication ('crypt').
+    description: Use TLS for authentication ('auth') or encyprtion and authentication ('crypt').  Only used when tls is set.
+    default: 'auth'
     required: false
     choices: ["auth", "crypt"]
     type: str
