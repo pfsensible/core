@@ -103,6 +103,12 @@ USER_MAP_PARAM = [
 ]
 
 
+def parse_groups(self, name, params, obj):
+    # Groups are not stored in the user object
+    if params[name] is not None:
+        self.user_groups = params[name]
+
+
 def p2o_ssh_pub_key(self, name, params, obj):
     # Allow ssh keys to be clear or base64 encoded
     if params[name] is not None and 'ssh-' in params[name]:
@@ -116,6 +122,7 @@ def validate_password(self, password):
 
 USER_ARG_ROUTE = dict(
     authorizedkeys=dict(parse=p2o_ssh_pub_key),
+    groups=dict(parse=parse_groups),
     password=dict(validate=validate_password),
 )
 
