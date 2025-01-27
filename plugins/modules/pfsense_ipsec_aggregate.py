@@ -65,7 +65,7 @@ options:
       myid_type:
         description: Local identifier type.
         default: 'myaddress'
-        choices: [ 'myaddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'dyn_dns' ]
+        choices: [ 'myaddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'dyn_dns', 'auto' ]
         type: str
       myid_data:
         description: Local identifier value.
@@ -74,7 +74,7 @@ options:
       peerid_type:
         description: Remote identifier type.
         default: 'peeraddress'
-        choices: [ 'any', 'peeraddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag' ]
+        choices: [ 'any', 'peeraddress', 'address', 'fqdn', 'user_fqdn', 'asn1dn', 'keyid tag', 'auto' ]
         type: str
       peerid_data:
         description: Remote identifier value.
