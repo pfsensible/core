@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_openvpn_override - support changed semantics of ``push_reset`` in pfSense Plus 24.11
