@@ -1,0 +1,3 @@
+bugfixes:
+  - pfsense_openvpn_client/server - apply ``tls`` setting to config (https://github.com/pfsensible/core/issues/132)
+  - pfsense_openvpn_client - add ``tls_type`` parameter

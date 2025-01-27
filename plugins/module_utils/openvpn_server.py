@@ -24,7 +24,7 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     protocol=dict(default='UDP4', required=False, choices=['UDP4', 'TCP4']),
     dev_mode=dict(default='tun', required=False, choices=['tun', 'tap']),
     tls=dict(required=False, type='str'),
-    tls_type=dict(required=False, choices=['auth', 'crypt']),
+    tls_type=dict(default='auth', required=False, choices=['auth', 'crypt']),
     ca=dict(required=False, type='str'),
     crl=dict(required=False, type='str'),
     cert=dict(required=False, type='str'),
@@ -180,7 +180,8 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                 obj['ecdh_curve'] = self.params['ecdh_curve']
                 self._get_ansible_param(obj, 'tls')
 
-            if 'server_tls' in self.params['mode']:
+            if self.params['tls'] is not None:
+                obj['tls'] = self.params['tls']
                 obj['tls_type'] = self.params['tls_type']
 
             if 'server' in self.params['mode']:
@@ -204,6 +205,10 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
 
         if params['state'] == 'absent':
             return True
+
+        # tls is not valid for p2p_shared_key
+        if params['mode'] == 'p2p_shared_key' and params['tls'] is not None:
+            self.module.fail_json(msg='tls parameter is not valied with p2p_shared_key mode.')
 
         # check tunnel_networks - can be network alias or non-strict IP CIDR network
         self.pfsense.validate_openvpn_tunnel_network(params.get('tunnel_network'), 'ipv4')
