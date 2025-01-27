@@ -180,15 +180,14 @@ class PFSenseUserModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _find_group(self, name):
+    def _find_group_elt(self, name):
         return self.pfsense.find_elt('group', name, search_field='name', root_elt=self.root_elt)
 
-    def _find_groups_for_uid(self, uid):
-        groups = self.pfsense.find_elt_xpath("group[member='{0}']".format(uid), root_elt=self.root_elt, multiple_ok=True)
-        if groups is not None:
-            return groups
-        else:
-            return []
+    def _find_group_names_for_uid(self, uid):
+        groups = []
+        for group_elt in self.pfsense.find_elt("group", uid, search_field="member", root_elt=self.root_elt, multiple_ok=True):
+            groups.append(group_elt.find('name').text)
+        return groups
 
     def _nextuid(self):
         nextuid_elt = self.root_elt.find('nextuid')
@@ -241,11 +240,11 @@ class PFSenseUserModule(PFSenseModuleBase):
             # Handle group member element - need uid set or retrieved above
             uid = self.target_elt.find('uid').text
             # Get current group membership
-            self.diff['before']['groups'] = self._find_groups_for_uid(uid)
+            self.diff['before']['groups'] = self._find_group_names_for_uid(uid)
 
             # Add user to groups if needed
             for group in self.user_groups:
-                group_elt = self._find_group(group)
+                group_elt = self._find_group_elt(group)
                 if group_elt is None:
                     self.module.fail_json(msg='Group (%s) does not exist' % group)
                 if len(group_elt.findall("[member='{0}']".format(uid))) == 0:
@@ -256,7 +255,7 @@ class PFSenseUserModule(PFSenseModuleBase):
             # Remove user from groups if needed
             for group in self.diff['before']['groups']:
                 if group not in self.user_groups:
-                    group_elt = self._find_group(group)
+                    group_elt = self._find_group_elt(group)
                     if group_elt is None:
                         self.module.fail_json(msg='Group (%s) does not exist' % group)
                     for member_elt in group_elt.findall('member'):
@@ -293,11 +292,11 @@ class PFSenseUserModule(PFSenseModuleBase):
             self.obj['uid'] = self.target_elt.find('uid').text
 
             # Get current group membership
-            self.diff['before']['groups'] = self._find_groups_for_uid(self.obj['uid'])
+            self.diff['before']['groups'] = self._find_group_names_for_uid(self.obj['uid'])
 
             # Remove user from groups if needed
             for group in self.diff['before']['groups']:
-                group_elt = self._find_group(group)
+                group_elt = self._find_group_elt(group)
                 if group_elt is None:
                     self.module.fail_json(msg='Group (%s) does not exist' % group)
                 for member_elt in group_elt.findall('member'):
