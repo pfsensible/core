@@ -1,0 +1,2 @@
+bugfixes:
+  - made pfsense_dns_resolver hosts idempotent (https://github.com/pfsensible/core/issues/151)
