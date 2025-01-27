@@ -153,12 +153,13 @@ class PFSenseModule(object):
         if root_elt is None:
             root_elt = self.root
         result = root_elt.findall(search_xpath)
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            if multiple_ok:
-                return result
-            else:
+        # Always return an iterable if multiple_ok
+        if multiple_ok:
+            return result
+        else:
+            if len(result) == 1:
+                return result[0]
+            elif len(result) > 1:
                 self.module.fail_json(msg='Found multiple elements for name {0}.'.format(self.obj['name']))
         return None
 
