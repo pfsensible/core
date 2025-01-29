@@ -22,59 +22,61 @@ version_added: "0.6.2"
 author: Jan Wenzel (@coffeelover)
 short_description: Manage pfSense virtual ip settings
 description:
-  - Manage pfSense virtual ip settings
+  - Manage pfSense virtual ip settings.
 notes:
 options:
   mode:
-    description: Type
+    description: Type of the virtual ip.
     required: True
     type: str
     choices: [ "proxyarp", "carp", "ipalias", "other" ]
   descr:
-    description: Description
+    description: Description of the virtual ip.
     required: False
     type: str
   interface:
-    description: Interface
+    description: Interface of the virtual ip.
     required: True
     type: str
   vhid:
-    description: VHID Group
+    description: VHID Group of the virtual ip. Required if `mode` is `carp`, unused for others. Valid value is from 1 to 255.
     required: False
     type: int
   advbase:
-    description: Advertising Frequency Base
+    description:
+      - Advertising frequency base. Used with `mode` of `carp`. The frequency that this machine will advertise. 0 means usually master.
+      - Otherwise the lowest combination of both base and skew values in the cluster determines the master.
+      - Valid value is from 1 to 254.
     required: False
     type: int
   advskew:
-    description: Advertising Frequency Skew
+    description: Advertising frequency skew.
+      - Advertising frequency skew. Used with `mode` of `carp`. The frequency that this machine will advertise. 0 means usually master.
+      - Otherwise the lowest combination of both base and skew values in the cluster determines the master.
+      - Valid value is from 0 to 254.
     required: False
     type: int
   password:
-    description: Virtual IP Password
-    required: False
-    type: str
-  uniqid:
-    description: Unique ID of Virtual IP in configuration
+    description: Virtual IP password. Required if `mode` is `carp`, unused for others.
     required: False
     type: str
   type:
-    description: Address Type
+    description: Address type - `single` or `network. Used for `proxyarp` or `other`.
     required: False
     type: str
-    choices: [ "single" ]
+    choices: [ "single", "network" ]
     default: single
   subnet_bits:
-    description: Network's subnet mask
+    description: Network's subnet mask if address type is `network`.
     required: False
     type: int
     default: 32
   subnet:
-    description: Network subnet
+    description: Network address or subnet.
     required: False
     type: str
   state:
-    description: State in which to leave the Virtual IP
+    description: State in which to leave the Virtual IP.
     choices: [ "present", "absent" ]
     default: present
     type: str
@@ -87,10 +89,9 @@ EXAMPLES = """
     descr: "HOME VIP"
     interface: "opt2"
     vhid: 24
-    advbase: 1,
-    advskew: 0,
+    advbase: 1
+    advskew: 0
     password": "xaequae0sheiB7sh"
-    uniqid": "vip_home"
     subnet_bits": 24
     subnet": "10.1.1.1"
     state": "present"
@@ -110,7 +111,6 @@ VIRTUALIP_ARGUMENT_SPEC = dict(
     advskew=dict(type='int'),
     advbase=dict(type='int'),
     password=dict(type='str', no_log=True),
-    uniqid=dict(type='str'),
     descr=dict(type='str'),
     type=dict(type='str', choices=['single'], default='single'),
     subnet_bits=dict(type='int', default=32),
@@ -119,8 +119,7 @@ VIRTUALIP_ARGUMENT_SPEC = dict(
 )
 
 VIRTUALIP_REQUIRED_IF = [
-    ["mode", "carp", ["uniqid", "password", "vhid", "advbase"]],
-    ["mode", "ipalias", ["uniqid"]],
+    ["mode", "carp", ["password", "vhid", "advbase", "advskew"]],
 ]
 
 
@@ -193,6 +192,7 @@ class PFSenseVirtualIPModule(PFSenseModuleBase):
     #
     def _create_target(self):
         """ create the XML target_elt """
+        self.obj['uniqid'] = self.pfsense.uniqid()
         return self.pfsense.new_element('vip')
 
     def _find_target(self):
