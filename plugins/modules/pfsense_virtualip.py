@@ -4,6 +4,7 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # Copyright: (c) 2021, Jan Wenzel <jan.wenzel@gonicus.de>
 # Copyright: (c) 2023, Martin Müller <martin.mueller@dataport.de>
+# Copyright: (c) 2025, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
@@ -98,8 +99,6 @@ EXAMPLES = """
 RETURN = """
 """
 
-import re
-from copy import deepcopy
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
