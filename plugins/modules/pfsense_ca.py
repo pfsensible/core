@@ -193,7 +193,7 @@ class PFSenseCAModule(PFSenseModuleBase):
                 self._get_ansible_param(self.crl, 'crlname', fname='descr', force=True, force_value=obj['descr'] + ' CRL')
                 self._get_ansible_param(self.crl, 'crlrefid', fname='refid')
             if params['key'] is not None:
-                obj['key'] = params['key']
+                obj['prv'] = params['key']
 
         self._get_ansible_param_bool(obj, 'trust', value='enabled', value_false='disabled')
         self._get_ansible_param_bool(obj, 'randomserial', value='enabled', value_false='disabled')
