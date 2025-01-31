@@ -1,2 +1,0 @@
-bugfixes:
-  - set `global $config;` in phpshell() to find update commands in pfSense Plus 24.11

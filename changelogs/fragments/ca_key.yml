@@ -1,2 +1,0 @@
-minor_changes:
-  - pfsense_ca - added ``key`` parameter to import CA private key (https://github.com/pfsensible/core/issues/57)

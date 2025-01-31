@@ -4,6 +4,32 @@ pfSensible.Core Release Notes
 
 .. contents:: Topics
 
+v0.6.2
+======
+
+Minor Changes
+-------------
+
+- added ``auto`` choice for ``myid_type`` and ``peerid_type`` (https://github.com/pfsensible/core/issues/145)
+- pfsense_ca - added ``key`` parameter to import CA private key (https://github.com/pfsensible/core/issues/57)
+- pfsense_dns_resolver - validate ``domainoverrides.ip`` field
+- pfsense_openvpn_client - added ``v4only`` and `v6only`` values for ``create_gw`` (https://github.com/pfsensible/core/issues/133)
+- pfsense_openvpn_override - support changed semantics of ``push_reset`` in pfSense Plus 24.11
+- pfsense_openvpn_server - no longer sort authmode items
+- pfsense_setup - Update language list for pfSense 2.7.1 / pfSense Plus 23.09.
+- pfsensible_interface - implemented ``ipv6_type: slaac`` and added the ``slaacusev4iface`` parameter (https://github.com/pfsensible/core/issues/121).
+- pfsensible_openvpn_server - Allow ``Local Database`` for ``authmode`` parameter (https://github.com/pfsensible/core/issues/125).
+
+Bugfixes
+--------
+
+- made pfsense_dns_resolver hosts idempotent (https://github.com/pfsensible/core/issues/151)
+- pfsense - handle "."s prefixing php() output triggered by the presense of /var/run/booting and issue a warning (https://github.com/pfsensible/core/issues/118)
+- pfsense_dns_resolver - allow for comma separated list of IP addresses in ``hosts.ip`` (https://github.com/pfsensible/core/discussions/150)
+- pfsense_openvpn_client - add ``tls_type`` parameter
+- pfsense_openvpn_client/server - apply ``tls`` setting to config (https://github.com/pfsensible/core/issues/132)
+- pfsense_user - fixed setting multiple groups for a user (https://github.com/pfsensible/core/issues/130)
+- set `global $config;` in phpshell() to find update commands in pfSense Plus 24.11
 
 v0.6.1
 ======
@@ -29,8 +55,8 @@ v0.6.0
 Major Changes
 -------------
 
-- pfsense_default_gateway - Add module for setting the default gateways (https://github.com/pfsensible/core/pull/99)
-- pfsense_dns_resolver - Add module for DNS resolver (unbound) settings (https://github.com/pfsensible/core/pull/76)
+- pfsense_default_gateway - Add module for setting the default gateways
+- pfsense_dns_resolver - Add module for DNS resolver (unbound) settings
 
 Minor Changes
 -------------

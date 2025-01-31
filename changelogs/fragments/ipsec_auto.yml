@@ -1,2 +1,0 @@
-minor_changes:
-  - added ``auto`` choice for ``myid_type`` and ``peerid_type`` (https://github.com/pfsensible/core/issues/145)

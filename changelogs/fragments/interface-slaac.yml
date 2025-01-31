@@ -1,2 +1,0 @@
-minor_changes:
-  - 'pfsensible_interface - implemented ``ipv6_type: slaac`` and added the ``slaacusev4iface`` parameter (https://github.com/pfsensible/core/issues/121).'

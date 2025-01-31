@@ -1,4 +1,0 @@
-bugfixes:
-  - pfsense_dns_resolver - allow for comma separated list of IP addresses in ``hosts.ip`` (https://github.com/pfsensible/core/discussions/150)
-minor_changes:
-  - pfsense_dns_resolver - validate ``domainoverrides.ip`` field

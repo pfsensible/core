@@ -1,2 +1,0 @@
-minor_changes:
-  - 'pfsensible_openvpn_server - Allow ``Local Database`` for ``authmode`` parameter (https://github.com/pfsensible/core/issues/125).'

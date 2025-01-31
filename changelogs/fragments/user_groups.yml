@@ -1,2 +1,0 @@
-bugfixes:
-  - pfsense_user - fixed setting multiple groups for a user (https://github.com/pfsensible/core/issues/130)
