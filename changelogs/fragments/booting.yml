@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense - handle "."s prefixing php() output triggered by the presense of /var/run/booting and issue a warning (https://github.com/pfsensible/core/issues/118)

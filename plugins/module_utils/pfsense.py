@@ -649,6 +649,10 @@ class PFSenseModule(object):
         cmd += command
         cmd += '\n?>\n'
         (dummy, stdout, stderr) = self.module.run_command('/usr/local/bin/php', data=cmd)
+        # If /var/run/booting is in place, various requires will emit a "."
+        (stdout, nsubs) = re.subn(r'^\.+', '', stdout)
+        if nsubs > 0:
+            self.module.warn('/var/run/booting appears to be present, confirm successful boot and remove if appropriate.')
         # TODO: check stderr for errors
         return json.loads(stdout)
 
