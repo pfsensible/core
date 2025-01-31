@@ -58,6 +58,7 @@ parser.add_argument('--item-full', default='item_full',
 parser.add_argument('--force', action=argparse.BooleanOptionalAction, help='Force overwriting the output file if it exists')
 parser.add_argument('--keep-tmpdir', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
 parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help='Keep parameters from the web interface not found in the XML')
+parser.add_argument('--verbose', '-v', action='count', default=0)
 
 args = parser.parse_args()
 
@@ -88,7 +89,7 @@ if args.url is not None:
             package = module_name
             is_package = True
         else:
-            module_name = re.sub(r'^/(?:firewall_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', parsed_uri.path)
+            module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', parsed_uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
@@ -169,7 +170,8 @@ if not args.is_config:
     module_root = root_elt.tag
 
     # Debug
-    print('item_min:\t' + ET.tostring(node_elt).decode())
+    if args.verbose >= 2:
+        print('item_min:\t' + ET.tostring(node_elt).decode())
 
     # Let's use our node and key as a check
     full_elt = root.find(f'.//{module_node}[{module_key}="{args.item_full}"]')
@@ -177,7 +179,8 @@ if not args.is_config:
         sys.exit(f'Cannot find fully configured item with path ".//{module_node}[{module_key}="{args.item_full}"]"')
 
     # Debug
-    print('item_full:\t' + ET.tostring(full_elt).decode())
+    if args.verbose >= 2:
+        print('item_full:\t' + ET.tostring(full_elt).decode())
 
     # Collect the items for comparison with web elements and example values
     for elt in full_elt:
@@ -203,8 +206,6 @@ if not args.is_config:
         # else:
             # Likely a bool?
         params_full[elt.tag] = param
-
-print('')
 
 # Parse the php file
 if phpfile is not None:
@@ -252,10 +253,12 @@ for input in html.forms[0].inputs:
         continue
 
     param = dict(description='')
-    print(f'attrib={input.attrib}')
+    if args.verbose >= 2:
+        print(f'attrib={input.attrib}')
     if isinstance(input, lxml.html.InputElement):
-        print(f'input name={input.name} id={input.get("id")} type={input.type} value={input.value} '
-              f'text={input.text} title={input.get("title")} tail={input.tail}')
+        if args.verbose >= 2:
+            print(f'input name={input.name} id={input.get("id")} type={input.type} value={input.value} '
+                  f'text={input.text} title={input.get("title")} tail={input.tail}')
 
         if input.type == 'checkbox':
             param['type'] = 'bool'
@@ -276,7 +279,8 @@ for input in html.forms[0].inputs:
         if input.tail:
             param['description'] = enforce_period(input.tail.strip())
     elif isinstance(input, lxml.html.SelectElement):
-        print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
+        if args.verbose >= 2:
+            print(f'select name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple}')
         if input.attrib.get('class') == 'form-control' and input.attrib.get('data-toggle') == 'collapse':
             args.type_param = input.name
 
@@ -317,13 +321,15 @@ for input in html.forms[0].inputs:
     if div2.tag == 'div' and div2.attrib['class'] == 'form-group':
         descr_elt = div2.find('*span')
         if descr_elt.text:
-            print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
+            if args.verbose >= 2:
+                print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
             param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
         if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
             param['required'] = True
         help_elt = div1.find('span[@class="help-block"]')
         if help_elt is not None:
-            print(f'help_elt text {help_elt.text.strip()}')
+            if args.verbose >= 2:
+                print(f'help_elt text {help_elt.text.strip()}')
             descr = enforce_period(help_elt.text.strip())
             param['description'] += f' {descr}'
 
@@ -335,7 +341,8 @@ if not args.is_config:
     params.pop(module_key, None)
 
 # Debug
-print(f'Web paramters: {params.keys()}')
+if args.verbose >= 2:
+    print(f'Web paramters: {params.keys()}')
 
 # Determine if the form produces different types of items
 if args.type_param in params_full:
@@ -360,7 +367,8 @@ else:
 if not args.is_config:
     # Consistency
     params_web_only = list(set(params.keys()) - set(params_full.keys()))
-    print('Web parameters not in xml: ' + str(params_web_only))
+    if args.verbose >= 2:
+        print('Web parameters not in xml: ' + str(params_web_only))
 
     # Cleanup extra web parameters
     for param in params_web_only:
@@ -368,7 +376,8 @@ if not args.is_config:
         newp = re.sub(r'0$', '', param)
         if newp != param:
             if newp in params_full:
-                print(f'Renaming {param} to {newp}')
+                if args.verbose >= 2:
+                    print(f'Renaming {param} to {newp}')
                 params[newp] = params.pop(param)
                 continue
 
@@ -376,25 +385,28 @@ if not args.is_config:
         newp = re.sub(f'^{module_type}_', '', param)
         if newp != param:
             if newp in params_full and newp not in params:
-                print(f'Renaming {param} to {newp}')
+                if args.verbose >= 2:
+                    print(f'Renaming {param} to {newp}')
                 params[newp] = params.pop(param)
                 continue
 
         # Common renamings
         for f, t in [('dst', 'destination'), ('src', 'source')]:
             if param == f and t in params_full:
-                print(f'Renaming {f} to {t}')
+                if args.verbose >= 2:
+                    print(f'Renaming {f} to {t}')
                 params[t] = params.pop(f)
                 break
         else:
             # Otherwise, drop - probably just used to construct the final elements
             if param in params and not args.keep_params:
-                print(f'Removing {param}')
+                if args.verbose >= 2:
+                    print(f'Removing {param}')
                 del params[param]
 
-    print('')
     params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
-    print(f'XML parameters not in web: {params_xml_only}\n')
+    if args.verbose >= 2:
+        print(f'XML parameters not in web: {params_xml_only}\n')
     if len(params_xml_only) > 0:
         print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
 
@@ -446,8 +458,11 @@ template = jenv.get_template("pfsense_module.py.j2")
 
 filename = f'plugins/modules/pfsense_{module_name}.py'
 if os.path.isfile(filename) and not args.force:
-    sys.exit(f'{filename} already exists!')
-print(f'Writing {filename} with {context}')
+    sys.exit(f'{filename} already exists! Use --force to overwrite.')
+if args.verbose > 0:
+    print(f'Writing module {filename} with {context}')
+else:
+    print(f'Writing module {filename}.')
 f = open(f'{filename}', 'w')
 f.write(template.render(context))
 f.close()
