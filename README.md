@@ -103,6 +103,11 @@ These modules allow you to manage installed packages:
 
 ## [Change Log](https://github.com/pfsensible/core/blob/master/CHANGELOG.rst)
 
+## Writing new modules
+
+See [GENERATING_MODULES](https://github.com/pfsensible/core/blob/master/GENERATING_MODULES.md) for instructions on how to use the
+pfensible-generate-module script to automate the task writing basic pfsensible modules.
+
 ## Operation
 
 Modules in the collection work by editing `/cf/conf/config.xml` using xml.etree.ElementTree, then
