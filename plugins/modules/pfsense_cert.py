@@ -223,9 +223,16 @@ class PFSenseCertModule(PFSenseModuleBase):
             return
 
         if params['method'] == 'internal':
-            # CA is required for internal certificate
+            # An internal CA is required for internal certificate
             if params['ca'] is None:
                 self.module.fail_json(msg='CA is required.')
+            else:
+                ca = self._find_ca(params['ca'])
+                if ca is not None:
+                    if ca.find('prv') is None:
+                        self.module.fail_json(msg='CA (%s) is not an internal CA' % params['ca'])
+                else:
+                    self.module.fail_json(msg='CA (%s) not found' % params['ca'])
 
         # validate Certificate
         if params['certificate'] is not None:
