@@ -30,6 +30,7 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     cert=dict(required=False, type='str'),
     cert_depth=dict(default=1, required=False, type='int'),
     strictusercn=dict(default=False, required=False, type='bool'),
+    remote_cert_tls=dict(default=False, required=False, type='bool'),
     shared_key=dict(required=False, type='str', no_log=True),
     dh_length=dict(default=2048, required=False, type='int'),
     ecdh_curve=dict(default='none', required=False, choices=['none', 'prime256v1', 'secp384r1', 'secp521r1']),
@@ -56,6 +57,10 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     client2client=dict(default=False, required=False, type='bool'),
     dynamic_ip=dict(default=False, required=False, type='bool'),
     topology=dict(default='subnet', required=False, choices=['net30', 'subnet']),
+    inactive_seconds=dict(default=0, required=False, type='int'),
+    keepalive_interval=dict(default=10, required=False, type='int'),
+    keepalive_timeout=dict(default=60, required=False, type='int'),
+    exit_notify=dict(default='', required=False, choices=['', '1', '2']),
     dns_domain=dict(default='', required=False, type='str'),
     dns_server1=dict(default='', required=False, type='str'),
     dns_server2=dict(default='', required=False, type='str'),
@@ -120,6 +125,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             obj['custom_options'] = self.params['custom_options']
             self._get_ansible_param_bool(obj, 'disable')
             self._get_ansible_param_bool(obj, 'strictusercn')
+            self._get_ansible_param_bool(obj, 'remote_cert_tls')
             obj['mode'] = self.params['mode']
             obj['dev_mode'] = self.params['dev_mode']
             obj['interface'] = self.params['interface']
@@ -148,6 +154,10 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             obj['allow_compression'] = self.params['allow_compression']
             obj['compression'] = self.params['compression']
             obj['topology'] = self.params['topology']
+            self._get_ansible_param(obj, 'inactive_seconds')
+            self._get_ansible_param(obj, 'keepalive_interval')
+            self._get_ansible_param(obj, 'keepalive_timeout')
+            obj['exit_notify'] = self.params['exit_notify']
             obj['create_gw'] = self.params['create_gw']
 
             if 'user' in self.params['mode']:
@@ -290,7 +300,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     def _get_params_to_remove(self):
         """ returns the list of params to remove if they are not set """
         params_to_remove = []
-        for param in ['disable', 'strictusercn', 'push_register_dns']:
+        for param in ['disable', 'strictusercn', 'push_register_dns', 'remote_cert_tls']:
             if not self.params[param]:
                 params_to_remove.append(param)
 

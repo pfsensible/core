@@ -92,6 +92,10 @@ options:
     description: Enforce a match between the common name of the client certificate and the username given at login.
     default: false
     type: bool
+  remote_cert_tls:
+    description: Enforce that only hosts with a client certificate can connect (EKU: "TLS Web Client Authentication").
+    default: false
+    type: bool
   shared_key:
     description: Pre-shared key for shared key modes.  If set to 'generate' it will create a key if one does not already exist.
     type: str
@@ -209,6 +213,35 @@ options:
     description: The method used to supply a virtual adapter IP address to clients when using TUN mode on IPv4.
     default: subnet
     choices: ['net30', 'subnet']
+    type: str
+  inactive_seconds:
+    description: Causes OpenVPN to close a client connection after n seconds of inactivity on the TUN/TAP device.
+    default: 0
+    type: int
+  keepalive_interval:
+    description:
+      - keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:
+      - ping = interval
+      - ping-restart = timeout*2
+      - push ping = interval
+      - push ping-restart = timeout
+    default: 10
+    type: int
+  keepalive_timeout:
+    description:
+      - keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:
+      - ping = interval
+      - ping-restart = timeout*2
+      - push ping = interval
+      - push ping-restart = timeout
+    default: 60
+    type: int
+  exit_notify:
+    description: 
+      - Send an explicit exit notification to connected clients/peers when restarting or shutting down.
+      - So they may immediately disconnect rather than waiting for a timeout.
+    default: ''
+    choices: ['', '1', '2']
     type: str
   dns_domain:
     description: DNS default domain.
