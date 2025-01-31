@@ -96,8 +96,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {{ args_imports | sort | join(', ') }}
 {% endif %}
 
-# TODO -Change to name of module, extend for needed parameters
-# TODO -Keep either this or the next compact version of {{ module_name | upper() }}_ARGUMENT_SPEC
+# TODO - Keep either this or the next compact version of {{ module_name | upper() }}_ARGUMENT_SPEC
 {{ module_name | upper() }}_ARGUMENT_SPEC = {
 {% if not is_config %}
     # Only {{ name_param }} should be required here - othewise you cannot remove an item with just '{{ name_param }}'
@@ -132,7 +131,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 {% endfor %}
 )
 
-# TODO - check for validity - what parameters are actually required when creating a new {{ module_name }}?
+# TODO - Check for validity - what parameters are actually required when creating a new {{ module_name }}?
 {{ module_name | upper() }}_REQUIRED_IF = [
 {% if not is_config %}
 {% if module_type %}
@@ -145,7 +144,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 ]
 
 {% if params_xml_only %}
-# TODO - check this for validity and matching module argument
+# TODO - Check this for validity and matching module argument
 {{ module_name | upper() }}_MAP_PARAM = [
 {% for param in params_xml_only %}
     ('ARG', '{{ param }}'),
@@ -153,14 +152,14 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 ]
 
 {% endif %}
-# TODO - review this for clues for input validation.  Search for functions in the below require_once files in /etc and /usr/local/pfSense/include
+# TODO - Review this for clues for input validation.  Search for functions in the below require_once files in /etc and /usr/local/pfSense/include
 PHP_VALIDATION = r'''
 {{ php_requires }}
 
 {{ php_save }}
 '''
 
-# TODO - add validation and parsing methods for parameters that require it
+# TODO - Add validation and parsing methods for parameters that require it
 {{ module_name | upper() }}_ARG_ROUTE = dict(
 {% set param_items = ((params | dict2items | selectattr('value.parse', 'defined') | list) + (params | dict2items | selectattr('value.validate', 'defined')) | list) | unique %}
 {% if param_items %}
@@ -168,14 +167,14 @@ PHP_VALIDATION = r'''
     {{ param_item.key }}=dict({% if param_item.value.parse is defined %}parse={{ param_item.value.parse }},{% endif %}{% if param_item.value.validate is defined %}validate={{ param_item.value.validate }},{% endif %}),
 {% endfor %}
 {% else %}
-# TODO - these are just examples
+# TODO - These are just examples
     authorizedkeys=dict(parse=p2o_ssh_pub_key),
     password=dict(validate=validate_password),
 {% endif %}
 )
 
 {% if not is_config %}
-# TODO - check for validity - what are default values when creating a new {{ module_name }}
+# TODO - Check for validity - what are default values when creating a new {{ module_name }}
 {{ module_name | upper() }}_CREATE_DEFAULT = dict(
 {% for item in params | dict2items | selectattr('value.default', 'defined') %}
     {{ item.key }}='{{ item.value.default | default('VALUE') }}',

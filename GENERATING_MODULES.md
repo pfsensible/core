@@ -36,3 +36,7 @@ If this is a module that will just configure something, add the `--is-config` op
 * It may make sense to create a module for different types of items if the parameters are wildly different (as is the case
 with the different types of authentication servers for example). If so, add the `--type-suffix` option to add the "type"
 of the item as a suffix to the module name.
+
+## Final steps
+
+Review the items in the generated module flagged with `TODO` for possible changes needed.
