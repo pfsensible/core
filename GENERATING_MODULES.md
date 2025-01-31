@@ -24,7 +24,8 @@ if you needed to use different names for the items than `item_min` and `item_ful
 
 ## Modules that configure something
 
-If this is a module that will just configure something, add the `--is-config` option:
+If this is a module that will just configure something, it is best to start with the default configuration.  Then add the
+--is-config` option:
 
     misc/pfsensible-generate-module --url URL --is-config
 

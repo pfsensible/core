@@ -33,12 +33,15 @@ options:
 {% for name, param in params.items() %}
   {{ name }}:
     description: {{ "'" if ':' in param['description'] else '' }}{{ param['description'] | default('') }}{{ "'" if ':' in param['description'] else '' }}
+{% if 'default' in param %}
+    default: {{ param['default'] }}
+{% endif %}
 {% if 'choices' in param %}
     choices: {{ param['choices'] }}
 {% endif %}
     type: {{ param['type'] | default('') }}
 {% if param['type'] == 'list' %}
-    elements: 'str'
+    elements: {{ param['elements'] | default('str') }}
 {% endif %}
 {% endfor %}
 
