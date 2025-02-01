@@ -48,15 +48,56 @@ pfSense < 2.4.5:
 ansible_python_interpreter: /usr/local/bin/python2.7
 ```
 
-Modules must run as root in order to make changes to the system.  By default pfSense does not have sudo capability so `become` will not work.  You can install it with:
-```
+To set up pfSense to be managed by Ansible, ensure the `pfSense-pkg-sudo` package is installed. This package is necessary because Ansible requires root privileges to make changes, and the default pfSense setup lacks sudo capabilities, meaning `become` will not function without it. You can install the package using the following Ansible code or manually install it by navigating to System > Package Manager > Available Packages.
+
+```yaml
   - name: "Install packages"
     package:
       name:
         - pfSense-pkg-sudo
       state: present
 ```
-and then configure sudo so that your user has permission to use sudo.
+
+Next create a user account under System > User Manager > Users. This account will be used by Ansible to interact with the pfSense firewall. Assign the user to the admins group and configure it with an SSH key for secure access. 
+
+Once the account is created, navigate to System > Sudo and ensure the newly created account is configured to RunAs `root`, granting it the necessary privileges for Ansible management.
+
+You only now need to configure your `inventory.ini`
+
+```ini
+[pfsense]
+192.168.0.1 ansible_user=ansible ansible_ssh_private_key_file="id_rsa" ansible_become_pass="ansible" 
+```
+
+Example First Play
+
+```yaml
+---
+- name: Test and retrieve pfSense system status
+  hosts: pfsense
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Retrieve system uptime
+      command: uptime
+      register: uptime_result
+
+    - name: Display system uptime
+      debug:
+        msg: "System uptime: {{ uptime_result.stdout }}"
+
+    - name: Check pfSense version
+      shell: "cat /etc/version"
+      register: version_result
+
+    - name: Display pfSense version
+      debug:
+        msg: "pfSense version: {{ version_result.stdout }}"
+```
+
+The setup for using Ansible with pfSense is now complete. You can begin creating Ansible playbooks to manage your pfSense firewalls using the modules outlined below.
+
 ## Modules
 The following modules are currently available:
 
