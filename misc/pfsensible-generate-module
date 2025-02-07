@@ -105,16 +105,30 @@ if args.url is not None:
     client = requests.Session()
 
     # Retrieve the CSRF token first
-    r = client.get(login_url, verify=False)
+    try:
+        r = client.get(login_url, verify=False)
+    except requests.exceptions.ConnectionError as e:
+        print(f'Failed to connect to {login_url}: {e}', file=sys.stderr)
+        sys.exit(1)
+
     csrf = re.search(".*name='__csrf_magic' value=\"([^\"]+)\".*", r.text, flags=re.MULTILINE).group(1)
 
     # Login to the web interface
     login_data = dict(login='Login', usernamefld=args.user, passwordfld=args.password, __csrf_magic=csrf)
     r = client.post(login_url, data=login_data, verify=False)
-    csrf = re.search(".*name='__csrf_magic' value=\"([^\"]+)\".*", r.text, flags=re.MULTILINE).group(1)
+    if (args.verbose >= 4):
+        print(f'Login URL returned {r} {r.text}')
+    html = lxml.html.fromstring(r.text)
+    # <div class="col-sm-4 nowarning msgbox text-center text-danger"><h4>Username or Password incorrect</h4></div>
+    alert = html.xpath('//div[contains(@class,"text-danger")]/*[1]/text()')
+    if len(alert) > 0:
+        print(f'Login failed with "{alert[0]}"', file=sys.stderr)
+        sys.exit(1)
 
     # Retrieve the configuration web page and parse it
     r = client.get(args.url, verify=False)
+    if (args.verbose >= 4):
+        print(f'{args.url} returned {r} {r.text}')
     html = lxml.html.fromstring(r.text)
 
 elif args.urlfile is not None:

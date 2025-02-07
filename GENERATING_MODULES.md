@@ -3,6 +3,7 @@
 The process of writing basic pfsensible modules is hopefully greatly simplified by using
 the pfsensible-generate-module script. The basic workflow is as follows:
 
+* You need a test pfSense instance with ssh access enabled.
 * Navigate in the pfSense web interface to the area you want to write a module for. This should be a page where you can edit
 settings or one where you are adding an item.
 * Copy the URL of the page - you will pass it to the `--url` option of the script.
