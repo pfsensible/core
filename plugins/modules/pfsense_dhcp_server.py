@@ -23,8 +23,8 @@ notes:
 options:
   state:
     description: State in which to leave the DHCP server
-    choices: [ "present", "absent" ]
-    default: present
+    choices: [ 'present', 'absent' ]
+    default: 'present'
     type: str
   interface:
     description: Interface on which to configure the DHCP server
@@ -118,36 +118,41 @@ options:
   ignorebootp:
     description: Disable BOOTP
     type: bool
-    default: none
   denyunknown:
     description: Enable DHCP to ignore unknown clients
     type: str
-    default: none
-    choices: none, enabled, class
+    default: 'none'
+    choices: ['none', 'enabled', 'class']
   nonak:
     description: Ignore denied clients
     type: bool
-    default: none
   ignoreclientuids:
     description: Ignore client identifiers
     type: bool
-    default: none
   staticarp:
     description: Enable Static ARP entries
     type: bool
-    default: none
   dhcpinlocaltime:
     description: Change DHCP display lease time from UTC to local time
     type: bool
-    default: none
   statsgraph:
     description: Enable monitoring graphs for lease DHCP statistics
     type: bool
-    default: none
   disablepingcheck:
     description: Enable DHCP ping check
     type: bool
-    default: none
+  winsserver:
+    description: The WINS server
+    type: list
+    elements: str
+  dnsserver:
+    description: The dns server
+    type: list
+    elements: str
+  ntpserver:
+    description: The ntpserver
+    type: list
+    elements: str
 """
 
 EXAMPLES = """
@@ -186,9 +191,9 @@ from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_server import
 
 def main():
     module = AnsibleModule(
-        argument_spec=DHCPD_SERVER_ARGUMENT_SPEC,
+        argument_spec=DHCPSERVER_ARGUMENT_SPEC,
         supports_check_mode=True)
-    pfmodule = PFSenseDHCPDServerModule(module)
+    pfmodule = PFSenseDHCPServerModule(module)
     pfmodule.run(module.params)
     pfmodule.commit_changes()
 

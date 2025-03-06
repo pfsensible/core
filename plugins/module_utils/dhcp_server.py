@@ -6,15 +6,16 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
+from email.policy import default
 from ipaddress import ip_address, ip_network
 import re
 
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
-DHCPD_SERVER_ARGUMENT_SPEC = dict(
+DHCPSERVER_ARGUMENT_SPEC = dict(
     state=dict(type='str', default='present', choices=['present', 'absent']),
     interface=dict(required=True, type='str'),
-    enable=dict(type='bool'),
+    enable=dict(type='bool', default=True),
     range_from=dict(type='str'),
     range_to=dict(type='str'),
     failover_peerip=dict(type='str'),
@@ -27,11 +28,11 @@ DHCPD_SERVER_ARGUMENT_SPEC = dict(
     ddnsdomain=dict(type='str'),
     ddnsdomainprimary=dict(type='str'),
     ddnsdomainkeyname=dict(type='str'),
-    ddnsdomainkeyalgorithm=dict(type='str', default='hmac-md5'),
-    ddnsdomainkey=dict(type='str'),
+    ddnsdomainkeyalgorithm=dict(type='str', default='hmac-md5', choices=['hmac-md5', 'hmac-sha1', 'hmac-sha224', 'hmac-sha256', 'hmac-sha384', 'hmac-sha512']),
+    ddnsdomainkey=dict(type='str', no_log=True),
     mac_allow=dict(type='list', elements='str'),
     mac_deny=dict(type='list', elements='str'),
-    ddnsclientupdates=dict(type='str', default='allow'),
+    ddnsclientupdates=dict(type='str', default='allow', choices=['allow', 'deny', 'ignore']),
     tftp=dict(type='str'),
     ldap=dict(type='str'),
     nextserver=dict(type='str'),
@@ -44,7 +45,7 @@ DHCPD_SERVER_ARGUMENT_SPEC = dict(
     dnsserver=dict(type='list', elements='str'),
     ntpserver=dict(type='list', elements='str'),
     ignorebootp=dict(type='bool'),
-    denyunknown=dict(type='str'),
+    denyunknown=dict(type='str', default='none', choices=['none', 'enabled', 'class']),
     nonak=dict(type='bool'),
     ignoreclientuids=dict(type='bool'),
     staticarp=dict(type='bool'),
@@ -53,19 +54,19 @@ DHCPD_SERVER_ARGUMENT_SPEC = dict(
     disablepingcheck=dict(type='bool'),
 )
 
-class PFSenseDHCPDServerModule(PFSenseModuleBase):
+class PFSenseDHCPServerModule(PFSenseModuleBase):
     """ module managing pfsense DHCP server settings """
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
-        return DHCPD_SERVER_ARGUMENT_SPEC
+        """return argument spec"""
+        return DHCPSERVER_ARGUMENT_SPEC
 
     ##############################
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseDHCPDServerModule, self).__init__(module, pfsense)
+        super(PFSenseDHCPServerModule, self).__init__(module, pfsense)
         self.name = "pfsense_dhcp_server"
         self.obj = dict()
 
@@ -77,7 +78,7 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
     # params processing
     #
     def _get_logical_interface(self, interface):
-        """ Find the logical interface name """
+        """Find the logical interface name"""
         for iface in self.pfsense.interfaces:
             # Check if it matches the logical name (e.g., 'lan', 'wan', 'opt1')
             if iface.tag.lower() == interface.lower():
@@ -92,7 +93,7 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
             descr_elt = iface.find('descr')
             if descr_elt is not None and descr_elt.text.strip().lower() == interface.lower():
                 return iface.tag
-        
+
         return None
 
     def _is_valid_netif(self, netif):
@@ -112,7 +113,7 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
         return bool(re.fullmatch(r'(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}', macaddr, re.I))
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -125,13 +126,13 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
             self._get_ansible_param(obj['range'], 'range_to', fname='to', force=True)
             
             # Forced options
-            for option in [ 'failover_peerip', 'defaultleasetime', 'maxleasetime',
-                            'netmask', 'gateway', 'domain', 'domainsearchlist',
-                            'ddnsdomain', 'ddnsdomainprimary', 'ddnsdomainkeyname',
-                            'ddnsdomainkeyalgorithm', 'ddnsdomainkey', 'mac_allow',
-                            'mac_deny', 'ddnsclientupdates', 'tftp', 'ldap',
-                            'nextserver', 'filename', 'filename32', 'filename64',
-                            'rootpath', 'numberoptions']:
+            for option in ['failover_peerip', 'defaultleasetime', 'maxleasetime',
+                           'netmask', 'gateway', 'domain', 'domainsearchlist',
+                           'ddnsdomain', 'ddnsdomainprimary', 'ddnsdomainkeyname',
+                           'ddnsdomainkeyalgorithm', 'ddnsdomainkey', 'mac_allow',
+                           'mac_deny', 'ddnsclientupdates', 'tftp', 'ldap',
+                           'nextserver', 'filename', 'filename32', 'filename64',
+                           'rootpath', 'numberoptions']:
                 self._get_ansible_param(obj, option, force=True)
 
             for option in ['mac_allow', 'mac_deny']:
@@ -140,14 +141,14 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
                 self._get_ansible_param(obj, ','.join(params[option]))
 
             # Non-forced options
-            for option in [ 'winsserver', 'dnsserver', 'ntpserver']:
+            for option in ['winsserver', 'dnsserver', 'ntpserver']:
                 self._get_ansible_param(obj, option)
 
-            for option in [ 'enable', 'ignorebootp', 'nonak', 'ignoreclientuids',
-                            'staticarp', 'disablepingcheck']:
+            for option in ['enable', 'ignorebootp', 'nonak', 'ignoreclientuids',
+                           'staticarp', 'disablepingcheck']:
                 self._get_ansible_param_bool(obj, option, value='')
 
-            for option in [ 'dhcpinlocaltime', 'statsgraph' ]:
+            for option in ['dhcpinlocaltime', 'statsgraph']:
                 self._get_ansible_param_bool(obj, option, value='yes')
 
             self._get_ansible_param(obj, 'denyunknown')
@@ -158,7 +159,7 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         self.target = self._get_logical_interface(params['interface'])
@@ -209,27 +210,27 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
     #
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         params = ['enable', 'ignorebootp', 'nonak', 'ignoreclientuids', 'staticarp', 'disablepingcheck', 'dhcpinlocaltime', 'statsgraph']
         return params
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element(self.target)
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         return self.pfsense.get_element(self.target, root_elt=self.root_elt)
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return f"'{self.target}'"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ''
         if before is None:
             values += self.format_cli_field(self.obj, 'enable', fvalue=self.fvalue_bool)
@@ -291,7 +292,7 @@ class PFSenseDHCPDServerModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell("""
             require_once("util.inc");
             require_once("services.inc");
