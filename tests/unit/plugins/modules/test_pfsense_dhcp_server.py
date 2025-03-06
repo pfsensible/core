@@ -122,7 +122,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             range_to='172.16.0.150',
             defaultleasetime=43200,
             maxleasetime=86400,
-            domain='opt2.example.com',
+            domain='opt1.example.com',
             ddnsdomain='ddns.example.com',
             ddnsdomainprimary='172.16.0.60',
             tftp='172.16.0.63',
