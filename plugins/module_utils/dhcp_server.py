@@ -83,12 +83,12 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             # Check if it matches the logical name (e.g., 'lan', 'wan', 'opt1')
             if iface.tag.lower() == interface.lower():
                 return iface.tag
-            
+
             # Check if it matches the physical interface name (e.g., 'em0', 'igb0')
             if_elt = iface.find('if')
             if if_elt is not None and if_elt.text.strip().lower() == interface.lower():
                 return iface.tag
-            
+
             # Check if it matches the interface description
             descr_elt = iface.find('descr')
             if descr_elt is not None and descr_elt.text.strip().lower() == interface.lower():
@@ -108,7 +108,7 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
                                 self.network = ip_network(u'{0}/{1}'.format(ipaddr, subnet), strict=False)
                                 return True
         return False
-    
+
     def _is_valid_macaddr(self, macaddr):
         return bool(re.fullmatch(r'(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}', macaddr, re.I))
 
@@ -121,10 +121,10 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
 
         if params['state'] == 'present':
 
-            self._get_ansible_param(obj, 'range', force_value = {}, force=True)
+            self._get_ansible_param(obj, 'range', force_value={}, force=True)
             self._get_ansible_param(obj['range'], 'range_from', fname='from', force=True)
             self._get_ansible_param(obj['range'], 'range_to', fname='to', force=True)
-            
+
             # Forced options
             for option in ['failover_peerip', 'defaultleasetime', 'maxleasetime',
                            'netmask', 'gateway', 'domain', 'domainsearchlist',
@@ -203,7 +203,6 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             if params.get('denyunknown'):
                 if params['denyunknown'] not in ['enabled', 'class']:
                     self.module.fail_json(msg=f"The option {params['denyunknown']} is invalid, use none, 'enabled' or 'class'")
-                
 
     ##############################
     # XML processing

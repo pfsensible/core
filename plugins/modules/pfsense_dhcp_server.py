@@ -187,7 +187,7 @@ commands:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_server import PFSenseDHCPDServerModule, DHCPD_SERVER_ARGUMENT_SPEC
+from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_server import PFSenseDHCPServerModule, DHCPSERVER_ARGUMENT_SPEC
 
 def main():
     module = AnsibleModule(
