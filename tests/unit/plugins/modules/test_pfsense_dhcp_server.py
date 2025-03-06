@@ -14,6 +14,7 @@ from ansible_collections.pfsensible.core.plugins.modules import pfsense_dhcp_ser
 from ansible_collections.pfsensible.core.plugins.modules.pfsense_dhcp_server import PFSenseDHCPDServerModule
 from .pfsense_module import TestPFSenseModule
 
+
 class TestPFSenseDHCPServerModule(TestPFSenseModule):
 
     module = pfsense_dhcp_server
@@ -71,7 +72,14 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             maxleasetime=172800,
             domain='opt2.example.com'
         )
-        command = "create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"
+        command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
+                   "range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', ",
+                   "maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', ",
+                   "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
+                   "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
+                   "ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', ",
+                   "filename64='', rootpath='', numberoptions=''"]
+        command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_update(self):
@@ -83,7 +91,9 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             range_to='192.168.1.150',
             domain='updated.example.com'
         )
-        command = "update dhcp_server 'lan' set , range_from='192.168.1.50', range_to='192.168.1.150', defaultleasetime='', maxleasetime='', domain='updated.example.com'"
+        command_as_list = ["update dhcp_server 'lan' set , range_from='192.168.1.50', range_to='192.168.1.150', ",
+                   "defaultleasetime='', maxleasetime='', domain='updated.example.com'"]
+        command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_delete(self):
@@ -117,9 +127,14 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             ddnsdomainprimary='172.16.0.60',
             tftp='172.16.0.63',
             disablepingcheck=True,
-            winsserver=['172.16.0.80',
-                '172.16.0.90'
-            ]
+            winsserver=['172.16.0.80', '172.16.0.90']
         )
-        command = "create dhcp_server 'opt2', enable=True, range_from='172.16.0.50', range_to='172.16.0.150', failover_peerip='', defaultleasetime='43200', maxleasetime='86400', netmask='', gateway='', domain='opt1.example.com', domainsearchlist='', ddnsdomain='ddns.example.com', ddnsdomainprimary='172.16.0.60', ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='172.16.0.63', ldap='', nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"
+        command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.50', ",
+                           "range_to='172.16.0.150', failover_peerip='', defaultleasetime='43200', ",
+                           "maxleasetime='86400', netmask='', gateway='', domain='opt1.example.com', ",
+                           "domainsearchlist='', ddnsdomain='ddns.example.com', ddnsdomainprimary='172.16.0.60', ",
+                           "ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', ",
+                           "mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='172.16.0.63', ldap='', ",
+                           "nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"]
+        command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
