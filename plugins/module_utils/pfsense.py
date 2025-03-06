@@ -70,6 +70,7 @@ class PFSenseModule(object):
         self.root = self.tree.getroot()
         self.config_version = float(self.get_element('version').text)
         self.aliases = self.get_element('aliases', create_node=True)
+        self.dhcpd = self.get_element('dhcpd', create_node=True)
         self.interfaces = self.get_element('interfaces')
         self.ifgroups = self.get_element('ifgroups')
         self.rules = self.get_element('filter')
