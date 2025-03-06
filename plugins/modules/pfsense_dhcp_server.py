@@ -189,6 +189,7 @@ commands:
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_server import PFSenseDHCPServerModule, DHCPSERVER_ARGUMENT_SPEC
 
+
 def main():
     module = AnsibleModule(
         argument_spec=DHCPSERVER_ARGUMENT_SPEC,
@@ -196,6 +197,7 @@ def main():
     pfmodule = PFSenseDHCPServerModule(module)
     pfmodule.run(module.params)
     pfmodule.commit_changes()
+
 
 if __name__ == '__main__':
     main()

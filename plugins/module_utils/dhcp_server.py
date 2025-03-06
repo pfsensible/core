@@ -54,6 +54,7 @@ DHCPSERVER_ARGUMENT_SPEC = dict(
     disablepingcheck=dict(type='bool'),
 )
 
+
 class PFSenseDHCPServerModule(PFSenseModuleBase):
     """ module managing pfsense DHCP server settings """
 
