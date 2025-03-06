@@ -466,7 +466,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                     }
                 else:
                     # Default is an empty element
-                    host["aliases"] = "\n\t\t\t"
+                    host["aliases"] = ""
 
         return obj
 

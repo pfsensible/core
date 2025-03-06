@@ -33,19 +33,11 @@ collections_paths=collections
 
 ## Configuration
 
-Python discovery in ansible 2.9 and 2.10 will only detect Python up to version 3.7, ansible 2.11 will detect 3.8.  If Python discovery fails, you can set ansible_python_interpreter in your playbook or hosts vars:
+Current versions of ansible should automatically detect the version of Python the pfSense system.  If Python discovery fails, you can set
+ansible_python_interpreter in your playbook or hosts vars, e.g. for pfSense 2.7.2:
 
-pfSense >= 2.5.2:
 ```
-ansible_python_interpreter: /usr/local/bin/python3.8
-```
-pfSense >= 2.4.5, < 2.5.2:
-```
-ansible_python_interpreter: /usr/local/bin/python3.7
-```
-pfSense < 2.4.5:
-```
-ansible_python_interpreter: /usr/local/bin/python2.7
+ansible_python_interpreter: /usr/local/bin/python3.11
 ```
 
 Modules must run as root in order to make changes to the system.  By default pfSense does not have sudo capability so `become` will not work.  You can install it with:
@@ -102,6 +94,11 @@ These modules allow you to manage installed packages:
 * [pfsense_haproxy_backend_server](https://github.com/pfsensible/core/wiki/pfsense_haproxy_backend_server) for HAProxy backends servers
 
 ## [Change Log](https://github.com/pfsensible/core/blob/master/CHANGELOG.rst)
+
+## Writing new modules
+
+See [GENERATING_MODULES](https://github.com/pfsensible/core/blob/master/GENERATING_MODULES.md) for instructions on how to use the
+pfensible-generate-module script to automate the task writing basic pfsensible modules.
 
 ## Operation
 

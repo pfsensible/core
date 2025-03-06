@@ -38,7 +38,7 @@ class TestPFSenseAliasNullModule(TestPFSenseModule):
         result = self.execute_module(changed=True, failed=failed, msg=msg)
 
         if not failed:
-            diff = dict(before='', after=alias)
+            diff = dict(before={}, after=alias)
             self.assertEqual(result['diff'], diff)
             self.assert_xml_elt_dict('aliases', dict(name=alias['name'], type=alias['type']), diff['after'])
             self.assertEqual(result['commands'], [command])

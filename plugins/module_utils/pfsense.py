@@ -154,12 +154,13 @@ class PFSenseModule(object):
         if root_elt is None:
             root_elt = self.root
         result = root_elt.findall(search_xpath)
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            if multiple_ok:
-                return result
-            else:
+        # Always return an iterable if multiple_ok
+        if multiple_ok:
+            return result
+        else:
+            if len(result) == 1:
+                return result[0]
+            elif len(result) > 1:
                 self.module.fail_json(msg='Found multiple elements for name {0}.'.format(self.obj['name']))
         return None
 
@@ -638,11 +639,14 @@ class PFSenseModule(object):
 
         return prefix + '{0:x}{1:05x}'.format(int(time.time()), int(time.time() * 1000000) % 0x100000)
 
-    def phpshell(self, command):
+    def phpshell(self, command, debug=True):
         """ Run a command in the php developer shell """
-        command = "global $debug;\n$debug = 1;\n" + command + "\nexec\nexit"
+        phpshell = "global $config;\n"
+        if debug:
+            phpshell = "global $debug;\n$debug = 1;\n"
+        phpshell += command + "\nexec\nexit"
         # Dummy argument suppresses displaying help message
-        return self.module.run_command('/usr/local/sbin/pfSsh.php dummy', data=command)
+        return self.module.run_command('/usr/local/sbin/pfSsh.php dummy', data=phpshell)
 
     def php(self, command):
         """ Run a command in php and return the output """
@@ -650,6 +654,10 @@ class PFSenseModule(object):
         cmd += command
         cmd += '\n?>\n'
         (dummy, stdout, stderr) = self.module.run_command('/usr/local/bin/php', data=cmd)
+        # If /var/run/booting is in place, various requires will emit a "."
+        (stdout, nsubs) = re.subn(r'^\.+', '', stdout)
+        if nsubs > 0:
+            self.module.warn('/var/run/booting appears to be present, confirm successful boot and remove if appropriate.')
         # TODO: check stderr for errors
         return json.loads(stdout)
 

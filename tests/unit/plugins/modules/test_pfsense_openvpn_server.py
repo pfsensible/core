@@ -109,6 +109,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
             obj['shared_key'] = TLSKEY
         if 'tls' in obj and obj['tls'] == 'generate':
             obj['tls'] = TLSKEY
+            obj['tls_type'] = 'auth'
 
         self.check_param_equal(obj, target_elt, 'name', xml_field='description')
         self.check_param_equal(obj, target_elt, 'custom_options')

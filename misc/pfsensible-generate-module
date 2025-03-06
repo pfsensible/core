@@ -1,0 +1,500 @@
+#!/usr/bin/python3
+
+# Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+# TODO:
+#   - validation for addresses
+#   - bool type determination and parameter list
+#   - generate version_added
+#   - detect packages
+
+from ansible.plugins.filter.core import dict_to_list_of_dict_key_value_elements
+from ansible.plugins.filter.mathstuff import unique
+import argparse
+import datetime
+import git
+import jinja2
+import lxml.etree as ET
+import lxml.html
+import os
+from paramiko import SSHClient
+import re
+import requests
+from scp import SCPClient
+import shutil
+import sys
+import tempfile
+from urllib.parse import urlparse
+
+gitconfig = git.GitConfigParser()
+author_name = gitconfig.get_value('user', 'name')
+author_email = gitconfig.get_value('user', 'email')
+package = 'core'
+module_base = 'PFSenseModuleBase'
+module_key = None
+module_node = None
+name_param = None
+params_xml_only = []
+is_package = False
+args_imports = []
+
+parser = argparse.ArgumentParser(description='Generate a pfsensible module.')
+parser.add_argument('--url', help='The URL to scrape')
+parser.add_argument('--urlfile', help='A local file copy of the URL to scrape')
+parser.add_argument('--user', default='admin', help='The user to connect as')
+parser.add_argument('--password', default='pfsense', help='The password of user')
+parser.add_argument('--author-name', default=author_name, help='The full name of the module author')
+parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
+parser.add_argument('--author-handle', default='', help='The github handle of the module author')
+parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--is-config', action='store_true', help='This is a configuration module', )
+parser.add_argument('--name-param', help='The name of the primary module parameter - defaults to the key, but often "name" is used instead of "descr"')
+parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
+parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
+parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
+parser.add_argument('--item-full', default='item_full',
+                    help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation')
+parser.add_argument('--force', action=argparse.BooleanOptionalAction, help='Force overwriting the output file if it exists')
+parser.add_argument('--keep-tmpdir', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
+parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help='Keep parameters from the web interface not found in the XML')
+parser.add_argument('--verbose', '-v', action='count', default=0)
+
+args = parser.parse_args()
+
+# TODO - require a --module-root arg or search for it
+if args.is_config:
+    module_root = 'system'
+
+# Temporary directory for files
+tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-')
+
+if args.url is not None:
+    parsed_uri = urlparse(args.url)
+
+    # Login using just the base URL
+    login_url = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+
+    # Collect host for later use to scp config.xml
+    host = f'{parsed_uri.netloc}'
+
+    # Collect phpfile to scp later
+    phpfile = re.sub(r'^/(.*\.php).*$', r'\1', parsed_uri.path)
+
+    # Construct a likely module name from the URL
+    if args.module_name is None:
+        # See if this pkg_edit URL first
+        if re.match(r'/pkg', parsed_uri.path):
+            module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', parsed_uri.query)
+            package = module_name
+            is_package = True
+        else:
+            module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', parsed_uri.path)
+        module_name_singular = re.sub(r'ses$', 's', module_name)
+        if module_name_singular != module_name:
+            module_name = module_name_singular
+        else:
+            module_name = re.sub(r's$', '', module_name)
+    else:
+        module_name = args.module_name
+
+    # We likely don't have a valid certificate
+    requests.packages.urllib3.disable_warnings()
+
+    # Start our session (need cookies for login)
+    client = requests.Session()
+
+    # Retrieve the CSRF token first
+    try:
+        r = client.get(login_url, verify=False)
+    except requests.exceptions.ConnectionError as e:
+        print(f'Failed to connect to {login_url}: {e}', file=sys.stderr)
+        sys.exit(1)
+
+    csrf = re.search(".*name='__csrf_magic' value=\"([^\"]+)\".*", r.text, flags=re.MULTILINE).group(1)
+
+    # Login to the web interface
+    login_data = dict(login='Login', usernamefld=args.user, passwordfld=args.password, __csrf_magic=csrf)
+    r = client.post(login_url, data=login_data, verify=False)
+    if (args.verbose >= 4):
+        print(f'Login URL returned {r} {r.text}')
+    html = lxml.html.fromstring(r.text)
+    # <div class="col-sm-4 nowarning msgbox text-center text-danger"><h4>Username or Password incorrect</h4></div>
+    alert = html.xpath('//div[contains(@class,"text-danger")]/*[1]/text()')
+    if len(alert) > 0:
+        print(f'Login failed with "{alert[0]}"', file=sys.stderr)
+        sys.exit(1)
+
+    # Retrieve the configuration web page and parse it
+    r = client.get(args.url, verify=False)
+    if (args.verbose >= 4):
+        print(f'{args.url} returned {r} {r.text}')
+    html = lxml.html.fromstring(r.text)
+
+elif args.urlfile is not None:
+    # Use a cached copy of the web page - get rid of this?  Need to specify host and module name
+    html = lxml.html.parse(args.urlfile)
+    host = '192.168.100.2'
+    module_name = 'nat_1to1'
+
+else:
+    sys.exit('You must specify one of --url or --urlfile')
+
+# Collect the /cf/conf/config.xml file
+ssh = SSHClient()
+ssh.load_system_host_keys()
+ssh.connect(host, username='root', password=args.password)
+scp = SCPClient(ssh.get_transport())
+scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
+if phpfile is not None:
+    scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
+if is_package:
+    scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
+    scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
+scp.close()
+
+# Parse the config.xml file
+root = ET.parse(f'{tmpdir.name}/config.xml').getroot()
+
+params_full = dict()
+if not args.is_config:
+    # Search for any element with our target text, make sure we found only one
+    xpath = f'.//*[.="{args.item_min}"]'
+    key_elts = root.findall(xpath)
+    if len(key_elts) > 1:
+        sys.exit(f'Found {len(key_elts)} items with path "{xpath}"')
+    elif len(key_elts) == 0:
+        sys.exit(f'Cannot find minimally configured item with path "{xpath}"')
+    else:
+        key_elt = key_elts[0]
+
+    # This element should be the key for the items
+    module_key = key_elt.tag
+    if args.name_param:
+       name_param = args.name_param
+    else:
+       name_param = module_key
+
+    # The full node configuration element will be the parent
+    node_elt = key_elt.find('..')
+    module_node = node_elt.tag
+
+    # The "root" for this type of element is above that
+    root_elt = node_elt.find('..')
+    module_root = root_elt.tag
+
+    # Debug
+    if args.verbose >= 2:
+        print('item_min:\t' + ET.tostring(node_elt).decode())
+
+    # Let's use our node and key as a check
+    full_elt = root.find(f'.//{module_node}[{module_key}="{args.item_full}"]')
+    if full_elt is None:
+        sys.exit(f'Cannot find fully configured item with path ".//{module_node}[{module_key}="{args.item_full}"]"')
+
+    # Debug
+    if args.verbose >= 2:
+        print('item_full:\t' + ET.tostring(full_elt).decode())
+
+    # Collect the items for comparison with web elements and example values
+    for elt in full_elt:
+        if elt.tag == '':
+            continue
+        param = dict()
+        addr_elt = elt.find('address')
+        if addr_elt is not None:
+            param['example'] = addr_elt.text
+            param['address'] = True
+        elif elt.text is not None:
+            if elt.tag in params_full:
+                # Copy example and possibly other values from previous copy
+                param = params_full[elt.tag]
+                # If we have already need one of these, then it is a list
+                param['type'] = 'list'
+                # TODO - can we determine the type?
+                param['elements'] = 'str'
+                param['example2'] = elt.text.strip()
+            else:
+                param['type'] = 'str'
+                param['example'] = elt.text.strip()
+        # else:
+            # Likely a bool?
+        params_full[elt.tag] = param
+
+# Parse the php file
+if phpfile is not None:
+    php_requires = ''
+    php_save = ''
+    php_subsystem = ''
+    found_save = False
+    with open(f'{tmpdir.name}/{phpfile}', 'r') as f:
+        for line in f:
+             if re.match(r'require_once', line):
+                 php_requires += line
+                 continue
+             if re.search(r'if \(\$_POST\[\'save\']', line):
+                 found_save = True
+                 continue
+             if found_save:
+                 if re.match(r'}', line):
+                     found_save = False
+                 else:
+                     php_save += re.sub(r'\t', '    ', re.sub(r'^\t', '', line))
+                     subsystem_search = re.search(r'subsystem_dirty\(\'(.*)\'\)', line)
+                     if subsystem_search:
+                         php_subsystem = subsystem_search.group(1)
+
+
+# The web page should have a single form
+if len(html.forms) != 1:
+    sys.exit(f'Found {len(html.forms)} forms instead of a single one!')
+
+# TODO - For packages we could parse /usr/local/pkg/{package}.xml instead
+
+# Make sure a string has a trailing period
+def enforce_period(s):
+    if len(s) > 0 and s[-1] != '.':
+        s += '.'
+    return s
+
+# Collected parameters from the web form
+params = dict()
+
+# Collect the input elements
+for input in html.forms[0].inputs:
+    # Skip internal items
+    if input.name == '__csrf_magic':
+        continue
+
+    param = dict(description='')
+    if args.verbose >= 2:
+        print(f'attrib={input.attrib}')
+    if isinstance(input, lxml.html.InputElement):
+        if args.verbose >= 2:
+            print(f'input name={input.name} id={input.get("id")} type={input.type} value={input.value} '
+                  f'text={input.text} title={input.get("title")} tail={input.tail}')
+
+        if input.type == 'checkbox':
+            param['type'] = 'bool'
+            param['value'] = input.attrib['value'].strip()
+            param['example'] = 'true'
+        elif input.type == 'number':
+            param['type'] = 'int'
+            param['default'] = input.value
+        elif input.type == 'password':
+            param['type'] = 'str'
+            param['password'] = True  # TODO - set nolog
+        elif input.type == 'text':
+            param['type'] = 'str'
+            param['default'] = input.value
+        # TOOD - handle placeholder as 'default' value - description? create_default? example?
+        for attr in ['min', 'placeholder', 'step']:
+            if attr in input.attrib:
+                param[attr] = input.attrib[attr]
+        # Text sometimes is after the input element inside the enclosing <label>
+        if input.tail:
+            param['description'] = enforce_period(input.tail.strip())
+    elif isinstance(input, lxml.html.SelectElement):
+        if args.verbose >= 2:
+            print(f'Found select element: name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple} attrib={input.attrib}')
+
+        # Strip any trailing []
+        input.name = re.sub(r'\[]$', '', input.name)
+
+        if input.attrib.get('class') == 'form-control' and input.attrib.get('data-toggle') == 'collapse':
+            args.type_param = input.name
+
+        if input.value is not None:
+            param['default'] = input.value
+
+        if input.value_options is not None:
+            if input.name == 'interface':
+                param['type'] = 'str'
+                # By default, interfaces will be parsed allowing virtual interfaces.  If not allowed we need a different parser.
+                if len(set(input.value_options).intersection(['enc0', 'openvpn'])) == 0:
+                    param['parse'] = 'p2o_interface_without_virtual'
+                    if 'p2o_interface_without_virtual' not in args_imports:
+                        args_imports.append('p2o_interface_without_virtual')
+            else:
+                if input.multiple:
+                    param['type'] = 'list'
+                    param['default'] = []
+                    for selected in input.value:
+                        print(f'selected = {selected}')
+                        param['default'].append(selected)
+                else:
+                    param['type'] = 'str'
+                    param['choices'] = input.value_options
+                param['multiple'] = input.multiple
+
+    elif input.tag == 'textarea':
+        param['type'] = 'str'
+
+#  <div class="form-group">
+#    <label class="col-sm-2 control-label">
+#       <span class="element-required">Hostname or IP address</span>
+#    </label>
+#    <div class="col-sm-10">
+#      <input class="form-control" name="ldap_host" id="ldap_host" type="text">
+#      <span class="help-block">NOTE: When using SSL/TLS or STARTTLS, this hostname MUST match a Subject Alternative Name (SAN) or the Common Name (CN) of the LDAP server SSL/TLS Certificate.</span>
+#    </div>
+#  </div> 
+
+    div1 = input.find('..')
+    div2 = div1.find('..')
+    if div2.tag == 'div' and div2.attrib['class'] == 'form-group':
+        descr_elt = div2.find('*span')
+        if descr_elt.text:
+            if args.verbose >= 2:
+                print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
+            param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
+        if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
+            param['required'] = True
+        help_elt = div1.find('span[@class="help-block"]')
+        if help_elt is not None:
+            if args.verbose >= 2:
+                print(f'help_elt text {help_elt.text.strip()}')
+            descr = enforce_period(help_elt.text.strip())
+            param['description'] += f' {descr}'
+
+    params[input.name] = param
+
+if not args.is_config:
+    # Key is handled separately from other parameters so remove it
+    # TODO - keep the description, etc?
+    params.pop(module_key, None)
+
+# Debug
+if args.verbose >= 2:
+    print(f'Web paramters: {params.keys()}')
+
+# Determine if the form produces different types of items
+if args.type_param in params_full:
+    # The type of item is recorded in the item configuration
+    module_type = params_full[args.type_param]['example']
+    if args.type_suffix is True:
+        module_name += f'_{module_type}'
+    if isinstance(args.type_suffix, str):
+        module_name += f'_{args.type_suffix}'
+elif args.type_param in params:
+    # The type of item is purely a fuction of the web form
+    if args.type_suffix not in params[args.type_param]['choices']:
+        sys.exit(f"Detected item type parameter '{args.type_param}' with choices {params[args.type_param]['choices']}.  You must set --type-suffix to one of these.")
+    else:
+        module_type = args.type_suffix
+        module_name += f'_{args.type_suffix}'
+        params_full[args.type_param] = params[args.type_param]
+        args.keep_params = True
+else:
+    module_type = None
+
+if not args.is_config:
+    # Consistency
+    params_web_only = list(set(params.keys()) - set(params_full.keys()))
+    if args.verbose >= 2:
+        print('Web parameters not in xml: ' + str(params_web_only))
+
+    # Cleanup extra web parameters
+    for param in params_web_only:
+        # See if the items are numbered, likely maps to an unnumbered XML tag
+        newp = re.sub(r'0$', '', param)
+        if newp != param:
+            if newp in params_full:
+                if args.verbose >= 2:
+                    print(f'Renaming {param} to {newp}')
+                params[newp] = params.pop(param)
+                continue
+
+        # See if the items are prefixed by a type, likely maps to un-prefixed XML tag
+        newp = re.sub(f'^{module_type}_', '', param)
+        if newp != param:
+            if newp in params_full and newp not in params:
+                if args.verbose >= 2:
+                    print(f'Renaming {param} to {newp}')
+                params[newp] = params.pop(param)
+                continue
+
+        # Common renamings
+        for f, t in [('dst', 'destination'), ('src', 'source')]:
+            if param == f and t in params_full:
+                if args.verbose >= 2:
+                    print(f'Renaming {f} to {t}')
+                params[t] = params.pop(f)
+                break
+        else:
+            # Otherwise, drop - probably just used to construct the final elements
+            if param in params and not args.keep_params:
+                if args.verbose >= 2:
+                    print(f'Removing {param}')
+                del params[param]
+
+    params_xml_only = list(set(params_full.keys()) - set(params.keys()) - {module_key, 'refid'})
+    if args.verbose >= 2:
+        print(f'XML parameters not in web: {params_xml_only}\n')
+    if len(params_xml_only) > 0:
+        print(f'You may need to use {module_node.upper()}_MAP_PARAMS')
+
+    for param in params_xml_only:
+        params[param] = params_full[param]
+
+    # Create some sample descriptions
+    for name, param in params.items():
+        # TODO - wrap long descriptions
+        if 'description' not in param or param['description'] == '':
+            param['description'] = f'The {name} of the {module_node}.'
+        if 'example' not in param or param['example'] == '':
+            if name in params_full and 'example' in params_full[name]:
+                param['example'] = params_full[name]['example']
+        if 'default' in param:
+            param['description'] += f' Defaults to {param["default"]}.'
+
+if args.is_config:
+    module_base = 'PFSenseModuleConfigBase'
+
+# Template variables
+context = dict(
+    module_base=module_base,
+    module_name=module_name,
+    module_root=module_root,
+    module_node=module_node,
+    module_key=module_key,
+    params=params,
+    params_xml_only=params_xml_only,
+    name_param=name_param,
+    args_imports=args_imports,
+    is_config=args.is_config,
+    is_package=is_package,
+    package=package,
+    author_name=args.author_name,
+    author_email=args.author_email,
+    author_handle=args.author_handle,
+    php_requires=php_requires,
+    php_save=php_save,
+    php_subsystem=php_subsystem,
+    year=datetime.date.today().year,
+)
+
+# Render our module!
+jenv = jinja2.Environment(loader=jinja2.FileSystemLoader("misc/"), trim_blocks=True, keep_trailing_newline=True)
+jenv.filters['dict2items'] = dict_to_list_of_dict_key_value_elements
+jenv.filters['unique'] = unique
+template = jenv.get_template("pfsense_module.py.j2")
+
+filename = f'plugins/modules/pfsense_{module_name}.py'
+if os.path.isfile(filename) and not args.force:
+    sys.exit(f'{filename} already exists! Use --force to overwrite.')
+if args.verbose > 0:
+    print(f'Writing module {filename} with {context}')
+else:
+    print(f'Writing module {filename}.')
+f = open(f'{filename}', 'w')
+f.write(template.render(context))
+f.close()
+
+# Save the scraped web page if asked to keep files
+if args.keep_tmpdir:
+    f = open(f'{tmpdir.name}/{module_name}.html', 'w')
+    f.write(r.text)
+    f.close()
+    shutil.copytree(tmpdir.name, f'/tmp/{module_name}', dirs_exist_ok=True)
+    print(f'Keeping /tmp/{module_name}')

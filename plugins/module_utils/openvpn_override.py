@@ -100,7 +100,10 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, 'disable')
             self._get_ansible_param_bool(obj, 'block', force=True, value='yes')
             self._get_ansible_param_bool(obj, 'gwredir', force=True, value='yes')
-            self._get_ansible_param_bool(obj, 'push_reset', force=True, value='yes')
+            if self.pfsense.config_version >= 23.4:
+                self._get_ansible_param_bool(obj, 'push_reset')
+            else:
+                self._get_ansible_param_bool(obj, 'push_reset', force=True, value='yes')
             obj['tunnel_network'] = self.params['tunnel_network']
             obj['tunnel_networkv6'] = self.params['tunnel_networkv6']
             obj['local_network'] = self.params['local_network']
@@ -187,6 +190,13 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         """ find the XML target_elt """
         (target_elt, self.idx) = self._find_openvpn_csc(self.obj['common_name'])
         return target_elt
+
+    def _get_params_to_remove(self):
+        """ returns the list of params to remove if they are not set """
+        params_to_remove = []
+        if self.pfsense.config_version >= 23.4:
+            params_to_remove.append('push_reset')
+        return params_to_remove
 
     def _remove_target_elt(self):
         """ delete target_elt from xml """

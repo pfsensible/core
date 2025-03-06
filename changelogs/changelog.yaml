@@ -70,3 +70,46 @@ releases:
     - pfsense_ca-allow-disabling.yml
     - ship-tests.yml
     release_date: '2024-01-20'
+  0.6.2:
+    changes:
+      bugfixes:
+      - made pfsense_dns_resolver hosts idempotent (https://github.com/pfsensible/core/issues/151)
+      - pfsense - handle "."s prefixing php() output triggered by the presense of
+        /var/run/booting and issue a warning (https://github.com/pfsensible/core/issues/118)
+      - pfsense_dns_resolver - allow for comma separated list of IP addresses in ``hosts.ip``
+        (https://github.com/pfsensible/core/discussions/150)
+      - pfsense_openvpn_client - add ``tls_type`` parameter
+      - pfsense_openvpn_client/server - apply ``tls`` setting to config (https://github.com/pfsensible/core/issues/132)
+      - pfsense_user - fixed setting multiple groups for a user (https://github.com/pfsensible/core/issues/130)
+      - set `global $config;` in phpshell() to find update commands in pfSense Plus
+        24.11
+      minor_changes:
+      - added ``auto`` choice for ``myid_type`` and ``peerid_type`` (https://github.com/pfsensible/core/issues/145)
+      - pfsense_ca - added ``key`` parameter to import CA private key (https://github.com/pfsensible/core/issues/57)
+      - pfsense_dns_resolver - validate ``domainoverrides.ip`` field
+      - pfsense_openvpn_client - added ``v4only`` and `v6only`` values for ``create_gw``
+        (https://github.com/pfsensible/core/issues/133)
+      - pfsense_openvpn_override - support changed semantics of ``push_reset`` in
+        pfSense Plus 24.11
+      - pfsense_openvpn_server - no longer sort authmode items
+      - pfsense_setup - Update language list for pfSense 2.7.1 / pfSense Plus 23.09.
+      - 'pfsensible_interface - implemented ``ipv6_type: slaac`` and added the ``slaacusev4iface``
+        parameter (https://github.com/pfsensible/core/issues/121).'
+      - pfsensible_openvpn_server - Allow ``Local Database`` for ``authmode`` parameter
+        (https://github.com/pfsensible/core/issues/125).
+    fragments:
+    - booting.yml
+    - ca_key.yml
+    - dnf_resolver_aliases.yml
+    - dns_resolver_ip.yml
+    - interface-slaac.yml
+    - ipsec_auto.yml
+    - langauages.yml
+    - openvpn_client_gw.yml
+    - openvpn_localdb.yml
+    - openvpn_override.yml
+    - openvpn_server_unsorted_authmode.yml
+    - openvpn_tls.yml
+    - phpshell_config.yml
+    - user_groups.yml
+    release_date: '2025-01-30'

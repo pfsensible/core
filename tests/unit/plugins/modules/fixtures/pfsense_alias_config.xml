@@ -1376,7 +1376,6 @@
 			<address>172.16.1.3</address>
 			</alias>
 		<alias>
-			<address>http://www.acme-corp.com</address>
 			<type>urltable</type>
 			<updatefreq>10</updatefreq>
 			<url>http://www.acme-corp.com</url>

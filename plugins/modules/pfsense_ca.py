@@ -65,6 +65,13 @@ options:
     required: false
     type: str
     version_added: 0.5.0
+  key:
+    description:
+      >
+        The private key for the Certificate Authority.  This can be in PEM form or Base64
+        encoded PEM as a single string (which is how pfSense stores it).
+    type: str
+    version_added: 0.6.2
   serial:
     description: Number to be used as a sequential serial number for the next certificate to be signed by this CA.
     type: int
@@ -109,7 +116,21 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
     crl=dict(default=None, type='str'),
     crlname=dict(default=None, type='str'),
     crlrefid=dict(default=None, type='str'),
+    key=dict(type='str', no_log=True),
     serial=dict(type='int'),
+)
+
+# These are default but not enforced values
+CA_CREATE_DEFAULT = dict(
+    randomserial='disabled',
+    serial='0',
+    trust='disabled',
+)
+
+# Booleans that map to different values
+CA_BOOL_VALUES = dict(
+    randomserial=('disabled', 'enabled'),
+    trust=('disabled', 'enabled'),
 )
 
 
@@ -122,10 +143,9 @@ class PFSenseCAModule(PFSenseModuleBase):
         return PFSENSE_CA_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseCAModule, self).__init__(module, pfsense)
+        super(PFSenseCAModule, self).__init__(module, pfsense, root='pfsense', node='ca', have_refid=True, create_default=CA_CREATE_DEFAULT,
+                                              bool_values=CA_BOOL_VALUES)
         self.name = "pfsense_ca"
-        self.root_elt = self.pfsense.root
-        self.cas = self.pfsense.get_elements('ca')
         self.refresh_crls = False
         self.crl = None
 
@@ -155,6 +175,14 @@ class PFSenseCAModule(PFSenseModuleBase):
             elif not re.match('LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0t', crl):
                 self.module.fail_json(msg='Could not recognize CRL format: %s' % (crl))
 
+        if params['key'] is not None:
+            ca_key = params['key']
+            lines = ca_key.splitlines()
+            if lines[0] == '-----BEGIN PRIVATE KEY-----' and lines[-1] == '-----END PRIVATE KEY-----':
+                params['key'] = base64.b64encode(ca_key.encode()).decode()
+            elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', ca_key):
+                self.module.fail_json(msg='Could not recognize CA key format: %s' % (ca_key))
+
         if params['serial'] is not None:
             if int(params['serial']) < 1:
                 self.module.fail_json(msg='serial must be greater than 0')
@@ -164,8 +192,6 @@ class PFSenseCAModule(PFSenseModuleBase):
         params = self.params
 
         obj = dict()
-        self.obj = obj
-
         obj['descr'] = params['name']
         if params['state'] == 'present':
             if 'certificate' in params and params['certificate'] is not None:
@@ -176,9 +202,12 @@ class PFSenseCAModule(PFSenseModuleBase):
                 self.crl['text'] = params['crl']
                 self._get_ansible_param(self.crl, 'crlname', fname='descr', force=True, force_value=obj['descr'] + ' CRL')
                 self._get_ansible_param(self.crl, 'crlrefid', fname='refid')
+            if params['key'] is not None:
+                obj['prv'] = params['key']
 
-        self._get_ansible_param_bool(obj, 'trust', value='enabled', value_false='disabled')
-        self._get_ansible_param_bool(obj, 'randomserial', value='enabled', value_false='disabled')
+        for arg in CA_BOOL_VALUES:
+            self._get_ansible_param_bool(obj, arg, value=CA_BOOL_VALUES[arg][1], value_false=CA_BOOL_VALUES[arg][0])
+
         self._get_ansible_param(obj, 'serial')
 
         return obj
@@ -186,24 +215,6 @@ class PFSenseCAModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _find_target(self):
-        result = self.root_elt.findall("ca[descr='{0}']".format(self.obj['descr']))
-        if len(result) == 1:
-            return result[0]
-        elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple certificate authorities for name {0}.'.format(self.obj['descr']))
-        else:
-            return None
-
-    def _find_this_ca_index(self):
-        return self.cas.index(self.target_elt)
-
-    def _find_last_ca_index(self):
-        if len(self.cas):
-            return list(self.root_elt).index(self.cas[len(self.cas) - 1])
-        else:
-            return len(list(self.root_elt))
-
     def _find_crl_for_ca(self, caref):
         result = self.root_elt.findall("crl[caref='{0}']".format(caref))
         if len(result) == 1:
@@ -231,23 +242,11 @@ class PFSenseCAModule(PFSenseModuleBase):
         else:
             return None
 
-    def _create_target(self):
-        """ create the XML target_elt """
-        elt = self.pfsense.new_element('ca')
-        # We need this later in _copy_and_add_target()
-        self.obj['refid'] = self.pfsense.uniqid()
-        elt.append(self.pfsense.new_element('refid', text=self.obj['refid']))
-        # These are default but not enforced values
-        elt.append(self.pfsense.new_element('randomserial', text='disabled'))
-        elt.append(self.pfsense.new_element('serial', text='0'))
-        elt.append(self.pfsense.new_element('trust', text='disabled'))
-        return elt
-
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-        self.root_elt.insert(self._find_last_ca_index(), self.target_elt)
+        self.root_elt.insert(self._find_last_element_index(), self.target_elt)
         if self.crl is not None:
             crl_elt = self.pfsense.new_element('crl')
             self.crl['caref'] = self.obj['refid']
@@ -283,7 +282,7 @@ class PFSenseCAModule(PFSenseModuleBase):
                     self.crl['refid'] = self.pfsense.uniqid()
                 self.pfsense.copy_dict_to_element(self.crl, crl_elt)
                 # Add after the existing ca entry
-                self.pfsense.root.insert(self._find_this_ca_index() + 1, crl_elt)
+                self.pfsense.root.insert(self._find_this_element_index() + 1, crl_elt)
                 self.refresh_crls = True
             else:
                 before['crl'] = crl_elt.find('text').text
@@ -301,18 +300,6 @@ class PFSenseCAModule(PFSenseModuleBase):
             self.diff['after']['crlrefid'] = self.crl['refid']
 
         return (before, changed)
-
-    ##############################
-    # Logging
-    #
-    def _get_obj_name(self):
-        """ return obj's name """
-        return self.obj['descr']
-
-    def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
-        return values
 
     ##############################
     # run
@@ -335,27 +322,23 @@ class PFSenseCAModule(PFSenseModuleBase):
             crl_stdout = ''
             crl_stderr = ''
             if self.refresh_crls:
-                if self.pfsense.is_at_least_2_5_0():
-                    ipsec_configure = 'ipsec_configure'
-                else:
-                    ipsec_configure = 'vpn_ipsec_configure'
                 (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
                     require_once("openvpn.inc");
                     openvpn_refresh_crls();
                     require_once("vpn.inc");
-                    {0}();""".format(ipsec_configure))
+                    ipsec_configure();""")
                 return (dummy, stdout + crl_stdout, stderr + crl_stderr)
 
             return (dummy, stdout + crl_stdout, stderr + crl_stderr)
         else:
-            return (None, '', '')
+            return ('', '', '')
 
     def _pre_remove_target_elt(self):
         self.diff['after'] = {}
         if self.target_elt is not None:
             self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
             crl_elt = self._find_crl_for_ca(self.target_elt.find('refid').text)
-            self.cas.remove(self.target_elt)
+            self.elements.remove(self.target_elt)
             if crl_elt is not None:
                 self.diff['before']['crl'] = crl_elt.find('text').text
                 self.root_elt.remove(crl_elt)
