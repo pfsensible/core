@@ -45,7 +45,7 @@ DHCPSERVER_ARGUMENT_SPEC = dict(
     dnsserver=dict(type='list', elements='str'),
     ntpserver=dict(type='list', elements='str'),
     ignorebootp=dict(type='bool'),
-    denyunknown=dict(type='str', default='none', choices=['none', 'enabled', 'class']),
+    denyunknown=dict(type='str', choices=['enabled', 'class']),
     nonak=dict(type='bool'),
     ignoreclientuids=dict(type='bool'),
     staticarp=dict(type='bool'),

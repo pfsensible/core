@@ -121,8 +121,7 @@ options:
   denyunknown:
     description: Enable DHCP to ignore unknown clients
     type: str
-    default: 'none'
-    choices: ['none', 'enabled', 'class']
+    choices: ['enabled', 'class']
   nonak:
     description: Ignore denied clients
     type: bool
