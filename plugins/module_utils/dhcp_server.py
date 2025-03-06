@@ -27,7 +27,7 @@ DHCPSERVER_ARGUMENT_SPEC = dict(
     domainsearchlist=dict(type='str'),
     ddnsdomain=dict(type='str'),
     ddnsdomainprimary=dict(type='str'),
-    ddnsdomainkeyname=dict(type='str'),
+    ddnsdomainkeyname=dict(type='str', no_log=False),
     ddnsdomainkeyalgorithm=dict(type='str', default='hmac-md5', choices=['hmac-md5', 'hmac-sha1', 'hmac-sha224', 'hmac-sha256', 'hmac-sha384', 'hmac-sha512']),
     ddnsdomainkey=dict(type='str', no_log=True),
     mac_allow=dict(type='list', elements='str'),
