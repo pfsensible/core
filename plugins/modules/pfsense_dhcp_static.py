@@ -182,7 +182,7 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     ddnsdomain=dict(type='str'),
     ddnsdomainprimary=dict(type='str'),
     ddnsdomainsecondary=dict(type='str'),
-    ddnsdomainkeyname=dict(type='str'),
+    ddnsdomainkeyname=dict(type='str', no_log=True),
     ddnsdomainkeyalgorithm=dict(type='str', choices=['hmac-md5', 'hmac-sha1', 'hmac-sha224', 'hmac-sha256', 'hmac-sha384', 'hmac-sha512']),
     ddnsdomainkey=dict(type='str', no_log=True),
     tftp=dict(type='str'),

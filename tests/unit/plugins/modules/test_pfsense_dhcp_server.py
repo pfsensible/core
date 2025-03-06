@@ -73,12 +73,12 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             domain='opt2.example.com'
         )
         command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
-                   "range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', ",
-                   "maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', ",
-                   "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
-                   "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
-                   "ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', ",
-                   "filename64='', rootpath='', numberoptions=''"]
+                           "range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', ",
+                           "maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', ",
+                           "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
+                           "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
+                           "ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', ",
+                           "filename64='', rootpath='', numberoptions=''"]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
@@ -92,7 +92,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             domain='updated.example.com'
         )
         command_as_list = ["update dhcp_server 'lan' set , range_from='192.168.1.50', range_to='192.168.1.150', ",
-                   "defaultleasetime='', maxleasetime='', domain='updated.example.com'"]
+                           "defaultleasetime='', maxleasetime='', domain='updated.example.com'"]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
