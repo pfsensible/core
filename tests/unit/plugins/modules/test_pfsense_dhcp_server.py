@@ -11,7 +11,7 @@ if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_dhcp_server
-from ansible_collections.pfsensible.core.plugins.modules.pfsense_dhcp_server import PFSenseDHCPDServerModule
+from ansible_collections.pfsensible.core.plugins.modules.pfsense_dhcp_server import PFSenseDHCPServerModule
 from .pfsense_module import TestPFSenseModule
 
 
@@ -22,7 +22,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
     def __init__(self, *args, **kwargs):
         super(TestPFSenseDHCPServerModule, self).__init__(*args, **kwargs)
         self.config_file = 'pfsense_dhcp_server_config.xml'
-        self.pfmodule = PFSenseDHCPDServerModule
+        self.pfmodule = PFSenseDHCPServerModule
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
         """ test the xml definition """
