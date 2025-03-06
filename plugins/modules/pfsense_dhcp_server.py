@@ -15,7 +15,7 @@ DOCUMENTATION = """
 ---
 module: pfsense_dhcp_server
 version_added: "0.1.0"
-author: "Your Name (@yourgithubusername)"
+author: "David Rosado (@davrosza)"
 short_description: Manage pfSense DHCP servers
 description:
   - Manage DHCP servers on pfSense
