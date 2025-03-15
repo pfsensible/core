@@ -33,7 +33,7 @@ collections_paths=collections
 
 ## Configuration
 
-Current versions of ansible should automatically detect the version of Python the pfSense system.  If Python discovery fails, you can set
+Current versions of ansible should automatically detect the version of Python on the pfSense system.  If Python discovery fails, you can set
 ansible_python_interpreter in your playbook or hosts vars, e.g. for pfSense 2.7.2:
 
 ```
