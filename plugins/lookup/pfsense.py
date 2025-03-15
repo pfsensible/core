@@ -33,15 +33,15 @@ options:
 EXAMPLES = """
 - name: Get all aliases to be defined
   debug:
-    aliases: "{{ lookup('pfsense', 'all_pf_defs.yml', 'aliases') }}"
+    aliases: "{{ lookup('pfsensible.core.pfsense', 'all_pf_defs.yml', 'aliases') }}"
 
 - name: Get all rules to be defined
   debug:
-    rules: "{{ lookup('pfsense', 'all_pf_defs.yml', 'rules') }}"
+    rules: "{{ lookup('pfsensible.core.pfsense', 'all_pf_defs.yml', 'rules') }}"
 
 - name: Get all rule_separators to be defined
   debug:
-    rule_separators: "{{ lookup('pfsense', 'all_pf_defs.yml', 'rule_separators') }}"
+    rule_separators: "{{ lookup('pfsensible.core.pfsense', 'all_pf_defs.yml', 'rule_separators') }}"
 
 """
 
@@ -98,11 +98,11 @@ A typical pfsense_aggregate task using the lookup plugin will look like this:
         purge_rules: true
         purge_rule_separators: true
         aggregated_aliases: |
-          {{ lookup('pfsense', 'defs.yml', 'aliases') }}
+          {{ lookup('pfsensible.core.pfsense', 'defs.yml', 'aliases') }}
         aggregated_rules: |
-          {{ lookup('pfsense', 'defs.yml', 'rules') }}
+          {{ lookup('pfsensible.core.pfsense', 'defs.yml', 'rules') }}
         aggregated_rule_separators: |
-          {{ lookup('pfsense', 'defs.yml', 'rule_separators') }}
+          {{ lookup('pfsensible.core.pfsense', 'defs.yml', 'rule_separators') }}
 
 
 Here is an example of yaml file:
@@ -3292,7 +3292,7 @@ class LookupModule(LookupBase):
     def _run(self, terms, variables, **kwargs):
         """ Main function """
         if len(terms) != 2:
-            raise AnsibleError("pfsense lookup requires a filename and another parameter in [aliases, rules, rule_separators, all_definitions]")
+            raise AnsibleError("pfsensible.core.pfsense lookup requires a filename and another parameter in [aliases, rules, rule_separators, all_definitions]")
 
         data = self.load_data(terms[0])
 
