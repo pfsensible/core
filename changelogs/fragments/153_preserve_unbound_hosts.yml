@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_dns_resolver - Add preserve option to allow keeping current host definitions (https://github.com/pfsensible/core/issues/153)
