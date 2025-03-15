@@ -383,7 +383,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     def _remove_all_separators(self, interface):
         """ delete all interface separators """
         todel = []
-        separators = self.pfsense.rules.find('separator')
+        separators = self.pfsense.rules.find('separator') or []
         for interface_elt in separators:
             if interface_elt.tag != interface:
                 continue
