@@ -270,6 +270,11 @@ options:
     default: 1
     choices: [ 0, 1, 2, 3, 4, 5 ]
     type: int
+  preserve:
+    description: Preserve the current DNS entries instead of overriding them.
+    required: false
+    default: false
+    type: bool
 """
 
 EXAMPLES = """
@@ -375,7 +380,8 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     infra_host_ttl=dict(default=900, type='int', choices=[60, 120, 300, 600, 900]),
     infra_cache_numhosts=dict(default=10000, type='int', choices=[1000, 5000, 10000, 20000, 50000, 100000, 200000]),
     unwanted_reply_threshold=dict(default="disabled", type='str', choices=["disabled", "5000000", "10000000", "20000000", "40000000", "50000000"]),
-    log_verbosity=dict(default=1, type='int', choices=[0, 1, 2, 3, 4, 5])
+    log_verbosity=dict(default=1, type='int', choices=[0, 1, 2, 3, 4, 5]),
+    preserve=dict(default=False, type='bool'),
     # TODO: Disable Auto-added Access Control
     # TODO: Disable Auto-added Host Entries
     # TODO: Experimental Bit 0x20 Support
@@ -431,6 +437,62 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         params = self.params
 
         obj = dict()
+        # Initialize with existing configuration_merg
+        if self.root_elt is not None:
+            # Preserve existing hosts
+            existing_hosts = []
+            # Preserve existing custom options
+            existing_custom_options = []
+            custom_options_elt = self.root_elt.find("custom_options")
+
+            if custom_options_elt is not None and custom_options_elt.text:
+                # Decode the base64-encoded custom options
+                decoded_custom_options = base64.b64decode(custom_options_elt.text).decode('utf-8')
+                # Split into lines for comparison
+                existing_custom_options = [line.strip() for line in decoded_custom_options.strip().split("\n")]
+
+            if params.get("custom_options"):
+                new_custom_options = [line.strip() for line in params["custom_options"].strip().split("\n")]
+                merged_custom_options = existing_custom_options.copy()
+                for option in new_custom_options:
+                    if "view:" or "server:" in option:
+                        merged_custom_options.append(option)
+                    elif option not in existing_custom_options:
+                        merged_custom_options.append(option)
+                    else:
+                      pass
+
+                custom_opts_base64 = base64.b64encode(bytes("\n".join(merged_custom_options), "utf-8")).decode()
+
+            else:
+              # If no new custom options are provided, retain the existing ones
+              custom_opts_base64 = custom_options_elt.text if custom_options_elt is not None else ""
+
+            if params.get("preserve"):
+              for host_elt in self.root_elt.findall("hosts"):
+                  host_entry = {}
+                  for child in host_elt:
+                      if child.tag == "aliases" and child.text is not None:
+                          # Handle aliases as a string if it's not an XML element
+                          host_entry["aliases"] = child.text
+                      else:
+                          host_entry[child.tag] = child.text
+                  existing_hosts.append(host_entry)
+              existing_hosts.extend(params.get("hosts"))
+            # exit()
+
+            # Preserve existing domain overrides
+            existing_overrides = []
+            for override_elt in self.root_elt.findall("domainoverrides"):
+                override_entry = {}
+                for child in override_elt:
+                    override_entry[child.tag] = child.text
+                existing_overrides.append(override_entry)
+
+            if existing_hosts:
+                obj["hosts"] = existing_hosts
+            if existing_overrides:
+                obj["domainoverrides"] = existing_overrides
 
         if params["state"] == "present":
 
@@ -467,10 +529,41 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self._get_ansible_param(obj, "infra_cache_numhosts")
             self._get_ansible_param(obj, "unwanted_reply_threshold")
             self._get_ansible_param(obj, "log_verbosity")
-            self._get_ansible_param(obj, "hosts")
             self._get_ansible_param(obj, "domainoverrides")
             for domainoverride in obj.get("domainoverrides", []):
                 self._get_ansible_param_bool(domainoverride, "forward_tls_upstream", value="", params=domainoverride)
+            obj["custom_options"] = base64.b64encode(bytes(params['custom_options'], 'utf-8')).decode()
+            if params.get("preserve"):
+              obj["hosts"] = existing_hosts
+              if existing_overrides:
+                obj["domainoverrides"] = existing_overrides
+              if existing_custom_options:
+                obj["custom_options"] = custom_opts_base64
+
+            # Append new hosts if provided
+            if params.get("hosts"):
+                if "hosts" not in obj:
+                    obj["hosts"] = []
+
+                # Process new hosts
+                for new_host in params["hosts"]:
+                    # Format aliases for the new host
+                    if new_host.get("aliases"):
+                        new_host["aliases"] = {"item": new_host["aliases"]}
+                    else:
+                        new_host["aliases"] = "\n\t\t\t"
+
+                    existing_host_index = self._find_host_index(obj, new_host)
+
+                    if existing_host_index is not None:
+                        obj["hosts"][existing_host_index] = new_host
+                    else:
+                        obj["hosts"].append(new_host)
+            # Append new domain overrides if provided
+            if params.get("domainoverrides"):
+                if "domainoverrides" not in obj:
+                    obj["domainoverrides"] = []
+                obj["domainoverrides"].extend(params["domainoverrides"])
 
             if ((self.pfsense.config_get_path('system/dnslocalhost') != 'remote') and ("lo0" not in obj['active_interface']) and
                     ("all" not in obj['active_interface'])):
@@ -485,10 +578,16 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                         "item": tmp_aliases
                     }
                 else:
-                    # Default is an empty element
                     host["aliases"] = ""
-
         return obj
+
+    def _find_host_index(self, obj, new_host):
+      for index, nested_dict in enumerate(obj["hosts"]):
+        existing_host = f"{nested_dict.get('host')}.{nested_dict.get('domain')}"
+        new_host_fqdn = f"{new_host.get('host')}.{new_host.get('domain')}"
+        if existing_host == new_host_fqdn:
+            return index
+      return None
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
@@ -584,7 +683,6 @@ clear_subsystem_dirty("unbound");
 
         # todo: hosts and domainoverrides is not logged
         return values
-
 
 def main():
     module = AnsibleModule(
