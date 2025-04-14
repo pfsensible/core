@@ -60,7 +60,7 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     inactive_seconds=dict(default=0, required=False, type='int'),
     keepalive_interval=dict(default=10, required=False, type='int'),
     keepalive_timeout=dict(default=60, required=False, type='int'),
-    exit_notify=dict(default='', required=False, choices=['', '1', '2']),
+    exit_notify=dict(default='none', required=False, choices=['none', '1', '2']),
     dns_domain=dict(default='', required=False, type='str'),
     dns_server1=dict(default='', required=False, type='str'),
     dns_server2=dict(default='', required=False, type='str'),

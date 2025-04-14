@@ -242,10 +242,15 @@ options:
     version_added: 0.7.0
   exit_notify:
     description:
-      - Send an explicit exit notification to connected clients/peers when restarting or shutting down.
-      - So they may immediately disconnect rather than waiting for a timeout.
-    default: ''
-    choices: ['', '1', '2']
+      - Send an explicit exit notification to connected clients/peers when restarting or shutting down, so they may immediately disconnect rather than waiting
+      - for a timeout. In SSL/TLS Server modes, clients may be directed to reconnect or use the next server. This option is ignored in Peer-to-Peer Shared Key
+      - mode and in SSL/TLS mode with a blank or /30 tunnel network as it will cause the server to exit and not restart. This feature is not currently
+      - compatible with DCO mode.
+      - "'none' => Disabled"
+      - "'1' => Reconnect to this server / Retry once
+      - "'2' => Reconnect to next server / Retry twice
+    default: 'none'
+    choices: ['none', '1', '2']
     type: str
     version_added: 0.7.0
   dns_domain:

@@ -405,7 +405,7 @@
                         <serverbridge_dhcp_start></serverbridge_dhcp_start>
                         <serverbridge_dhcp_end></serverbridge_dhcp_end>
                         <username_as_common_name><![CDATA[disabled]]></username_as_common_name>
-                        <exit_notify>1</exit_notify>
+                        <exit_notify>none</exit_notify>
                         <sndrcvbuf></sndrcvbuf>
                         <netbios_enable></netbios_enable>
                         <netbios_ntype>0</netbios_ntype>
