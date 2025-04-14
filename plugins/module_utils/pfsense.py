@@ -229,18 +229,22 @@ class PFSenseModule(object):
 
         return count
 
-    def get_rule_position(self, descr, interface, floating):
+    def get_rule_position(self, descr, interface, floating, first=True):
         """ get rule position in interface/floating """
         i = 0
+        found = None
         for rule_elt in self.rules:
             if not self.rule_match_interface(rule_elt, interface, floating):
                 continue
             descr_elt = rule_elt.find('descr')
             if descr_elt is not None and descr_elt.text == descr:
-                return i
+                if first:
+                    return i
+                else:
+                    found = i
             i += 1
 
-        return None
+        return found
 
     def copy_dict_to_element(self, src, top_elt, sub=0):
         """ Copy/update top_elt from src """
