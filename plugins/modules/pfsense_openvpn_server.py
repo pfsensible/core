@@ -241,7 +241,7 @@ options:
     type: int
     version_added: 0.7.0
   exit_notify:
-    description: 
+    description:
       - Send an explicit exit notification to connected clients/peers when restarting or shutting down.
       - So they may immediately disconnect rather than waiting for a timeout.
     default: ''
