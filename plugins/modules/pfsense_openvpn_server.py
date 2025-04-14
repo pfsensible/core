@@ -92,6 +92,11 @@ options:
     description: Enforce a match between the common name of the client certificate and the username given at login.
     default: false
     type: bool
+  remote_cert_tls:
+    description: 'Enforce that only hosts with a client certificate can connect (EKU: TLS Web Client Authentication).'
+    default: false
+    type: bool
+    version_added: 0.7.0
   shared_key:
     description: Pre-shared key for shared key modes.  If set to 'generate' it will create a key if one does not already exist.
     type: str
@@ -210,6 +215,44 @@ options:
     default: subnet
     choices: ['net30', 'subnet']
     type: str
+  inactive_seconds:
+    description: Causes OpenVPN to close a client connection after n seconds of inactivity on the TUN/TAP device.
+    default: 0
+    type: int
+    version_added: 0.7.0
+  keepalive_interval:
+    description:
+      - 'keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:'
+      - ping = interval
+      - ping-restart = timeout*2
+      - push ping = interval
+      - push ping-restart = timeout
+    default: 10
+    type: int
+    version_added: 0.7.0
+  keepalive_timeout:
+    description:
+      - 'keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:'
+      - ping = interval
+      - ping-restart = timeout*2
+      - push ping = interval
+      - push ping-restart = timeout
+    default: 60
+    type: int
+    version_added: 0.7.0
+  exit_notify:
+    description:
+      - Send an explicit exit notification to connected clients/peers when restarting or shutting down, so they may immediately disconnect rather than waiting
+      - for a timeout. In SSL/TLS Server modes, clients may be directed to reconnect or use the next server. This option is ignored in Peer-to-Peer Shared Key
+      - mode and in SSL/TLS mode with a blank or /30 tunnel network as it will cause the server to exit and not restart. This feature is not currently
+      - compatible with DCO mode.
+      - "'none' => Disabled"
+      - "'1' => Reconnect to this server / Retry once"
+      - "'2' => Reconnect to next server / Retry twice"
+    default: 'none'
+    choices: ['none', '1', '2']
+    type: str
+    version_added: 0.7.0
   dns_domain:
     description: DNS default domain.
     default: ''
