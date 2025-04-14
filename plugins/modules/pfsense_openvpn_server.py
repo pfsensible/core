@@ -222,7 +222,7 @@ options:
     version_added: 0.7.0
   keepalive_interval:
     description:
-      - keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:
+      - 'keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:'
       - ping = interval
       - ping-restart = timeout*2
       - push ping = interval
@@ -232,7 +232,7 @@ options:
     version_added: 0.7.0
   keepalive_timeout:
     description:
-      - keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:
+      - 'keepalive helper uses interval and timeout parameters to define ping and ping-restart values as follows:'
       - ping = interval
       - ping-restart = timeout*2
       - push ping = interval
