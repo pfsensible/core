@@ -422,7 +422,7 @@
                         <ping_action>ping_restart</ping_action>
                         <ping_action_seconds>60</ping_action_seconds>
                         <ping_action_push></ping_action_push>
-                        <inactive_seconds>300</inactive_seconds>
+                        <inactive_seconds>0</inactive_seconds>
                 </openvpn-server>
                 <openvpn-csc>
                         <server_list>1</server_list>
