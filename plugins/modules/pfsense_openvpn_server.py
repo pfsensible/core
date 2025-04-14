@@ -247,8 +247,8 @@ options:
       - mode and in SSL/TLS mode with a blank or /30 tunnel network as it will cause the server to exit and not restart. This feature is not currently
       - compatible with DCO mode.
       - "'none' => Disabled"
-      - "'1' => Reconnect to this server / Retry once
-      - "'2' => Reconnect to next server / Retry twice
+      - "'1' => Reconnect to this server / Retry once"
+      - "'2' => Reconnect to next server / Retry twice"
     default: 'none'
     choices: ['none', '1', '2']
     type: str
