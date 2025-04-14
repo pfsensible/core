@@ -34,58 +34,58 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     # Finally, we check the xml
     def do_alias_creation_test(self, alias, set_after=None, unset_after=None, failed=False, msg='', command=None):
         """ test creation of a new alias """
-        set_module_args(self.args_from_var(alias))
-        result = self.execute_module(changed=True, failed=failed, msg=msg)
+        with set_module_args(self.args_from_var(alias)):
+            result = self.execute_module(changed=True, failed=failed, msg=msg)
 
-        if not failed:
-            diff = dict(before={}, after=alias)
-            if set_after is not None:
-                diff['after'].update(set_after)
-            if unset_after is not None:
-                for n in unset_after:
-                    del diff['after'][n]
-            self.assertEqual(result['diff'], diff)
-            self.assert_xml_elt_dict('aliases', dict(name=alias['name'], type=alias['type']), diff['after'])
-            self.assertEqual(result['commands'], [command])
-        else:
-            self.assertFalse(self.load_xml_result())
+            if not failed:
+                diff = dict(before={}, after=alias)
+                if set_after is not None:
+                    diff['after'].update(set_after)
+                if unset_after is not None:
+                    for n in unset_after:
+                        del diff['after'][n]
+                self.assertEqual(result['diff'], diff)
+                self.assert_xml_elt_dict('aliases', dict(name=alias['name'], type=alias['type']), diff['after'])
+                self.assertEqual(result['commands'], [command])
+            else:
+                self.assertFalse(self.load_xml_result())
 
     def do_alias_deletion_test(self, alias, command=None):
         """ test deletion of an alias """
-        set_module_args(self.args_from_var(alias, 'absent'))
-        result = self.execute_module(changed=True)
+        with set_module_args(self.args_from_var(alias, 'absent')):
+            result = self.execute_module(changed=True)
 
-        diff = dict(before=alias, after={})
-        self.assertEqual(result['diff'], diff)
-        self.assert_has_xml_tag('aliases', dict(name=alias['name'], type=alias['type']), absent=True)
-        self.assertEqual(result['commands'], [command])
+            diff = dict(before=alias, after={})
+            self.assertEqual(result['diff'], diff)
+            self.assert_has_xml_tag('aliases', dict(name=alias['name'], type=alias['type']), absent=True)
+            self.assertEqual(result['commands'], [command])
 
     def do_alias_update_noop_test(self, alias):
         """ test not updating an alias """
-        set_module_args(self.args_from_var(alias))
-        result = self.execute_module(changed=False)
+        with set_module_args(self.args_from_var(alias)):
+            result = self.execute_module(changed=False)
 
-        diff = dict(before=alias, after=alias)
-        self.assertEqual(result['diff'], diff)
-        self.assertFalse(self.load_xml_result())
-        self.assertEqual(result['commands'], [])
+            diff = dict(before=alias, after=alias)
+            self.assertEqual(result['diff'], diff)
+            self.assertFalse(self.load_xml_result())
+            self.assertEqual(result['commands'], [])
 
     def do_alias_update_field(self, alias, set_after=None, command=None, **kwargs):
         """ test updating field of an host alias """
         target = copy(alias)
         target.update(kwargs)
-        set_module_args(self.args_from_var(target))
-        result = self.execute_module(changed=True)
+        with set_module_args(self.args_from_var(target)):
+            result = self.execute_module(changed=True)
 
-        diff = dict(before=alias, after=copy(target))
-        if set_after is not None:
-            diff['after'].update(set_after)
-        self.assertEqual(result['diff'], diff)
-        if alias['type'] in ['host', 'port', 'network']:
-            self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'address', diff['after']['address'])
-        else:
-            self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'url', diff['after']['url'])
-        self.assertEqual(result['commands'], [command])
+            diff = dict(before=alias, after=copy(target))
+            if set_after is not None:
+                diff['after'].update(set_after)
+            self.assertEqual(result['diff'], diff)
+            if alias['type'] in ['host', 'port', 'network']:
+                self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'address', diff['after']['address'])
+            else:
+                self.assert_xml_elt_value('aliases', dict(name=alias['name'], type=alias['type']), 'url', diff['after']['url'])
+            self.assertEqual(result['commands'], [command])
 
     ##############
     # hosts
@@ -292,33 +292,33 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_delete_inexistent_alias(self):
         """ test deletion of an inexistent alias """
         alias = dict(name='ad_poc12', address='192.168.1.3', descr='', type='host', detail='')
-        set_module_args(self.args_from_var(alias, 'absent'))
-        result = self.execute_module(changed=False)
+        with set_module_args(self.args_from_var(alias, 'absent')):
+            result = self.execute_module(changed=False)
 
-        diff = dict(before={}, after={})
-        self.assertEqual(result['diff'], diff)
-        self.assertEqual(result['commands'], [])
+            diff = dict(before={}, after={})
+            self.assertEqual(result['diff'], diff)
+            self.assertEqual(result['commands'], [])
 
     def test_check_mode(self):
         """ test updating an host alias without generating result """
         alias = dict(name='ad_poc1', address='192.168.1.3', descr='', type='host', detail='')
-        set_module_args(self.args_from_var(alias, address='192.168.1.4', _ansible_check_mode=True))
-        result = self.execute_module(changed=True)
+        with set_module_args(self.args_from_var(alias, address='192.168.1.4', _ansible_check_mode=True)):
+            result = self.execute_module(changed=True)
 
-        diff = dict(before=alias, after=copy(alias))
-        diff['after']['address'] = '192.168.1.4'
-        self.assertEqual(result['diff'], diff)
-        self.assertFalse(self.load_xml_result())
-        self.assertEqual(result['commands'], ["update alias 'ad_poc1' set address='192.168.1.4'"])
+            diff = dict(before=alias, after=copy(alias))
+            diff['after']['address'] = '192.168.1.4'
+            self.assertEqual(result['diff'], diff)
+            self.assertFalse(self.load_xml_result())
+            self.assertEqual(result['commands'], ["update alias 'ad_poc1' set address='192.168.1.4'"])
 
     def test_urltable_required_if(self):
         """ test creation of a new urltable alias without giving updatefreq (should fail) """
         alias = dict(name='acme_table', address='http://www.acme.com', descr='', type='urltable', detail='')
-        set_module_args(self.args_from_var(alias))
-        self.execute_module(failed=True, msg='type is urltable but all of the following are missing: updatefreq')
+        with set_module_args(self.args_from_var(alias)):
+            self.execute_module(failed=True, msg='type is urltable but all of the following are missing: updatefreq')
 
     def test_urltable_ports_required_if(self):
         """ test creation of a new urltable_ports alias without giving updatefreq (should fail) """
         alias = dict(name='acme_table', address='http://www.acme.com', descr='', type='urltable_ports', detail='')
-        set_module_args(self.args_from_var(alias))
-        self.execute_module(failed=True, msg='type is urltable_ports but all of the following are missing: updatefreq')
+        with set_module_args(self.args_from_var(alias)):
+            self.execute_module(failed=True, msg='type is urltable_ports but all of the following are missing: updatefreq')

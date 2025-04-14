@@ -164,31 +164,30 @@ class TestPFSenseModule(ModuleTestCase):
         obj = self.strip_params(obj)
 
         if delete:
-            set_module_args(self.args_from_var(obj, state='absent'))
-        else:
-            set_module_args(self.args_from_var(obj, state=state))
+            state = 'absent'
 
-        result = self.execute_module(changed=changed, failed=failed, msg=msg)
+        with set_module_args(self.args_from_var(obj, state=state)):
+            result = self.execute_module(changed=changed, failed=failed, msg=msg)
 
-        if not isinstance(command, list):
-            command = [command]
+            if not isinstance(command, list):
+                command = [command]
 
-        if failed:
-            self.assertFalse(self.load_xml_result())
-        elif not changed:
-            self.assertFalse(self.load_xml_result())
-            self.assertEqual(result['commands'], [])
-        elif delete:
-            self.assertTrue(self.load_xml_result())
-            target_elt = self.get_target_elt(obj, absent=True, module_result=result)
-            self.assertIsNone(target_elt)
-            self.assertEqual(result['commands'], command)
-        else:
-            self.assertTrue(self.load_xml_result())
-            target_elt = self.get_target_elt(obj, module_result=result)
-            self.assertIsNotNone(target_elt)
-            self.check_target_elt(obj, target_elt, **kwargs)
-            self.assertEqual(result['commands'], command)
+            if failed:
+                self.assertFalse(self.load_xml_result())
+            elif not changed:
+                self.assertFalse(self.load_xml_result())
+                self.assertEqual(result['commands'], [])
+            elif delete:
+                self.assertTrue(self.load_xml_result())
+                target_elt = self.get_target_elt(obj, absent=True, module_result=result)
+                self.assertIsNone(target_elt)
+                self.assertEqual(result['commands'], command)
+            else:
+                self.assertTrue(self.load_xml_result())
+                target_elt = self.get_target_elt(obj, module_result=result)
+                self.assertIsNotNone(target_elt)
+                self.check_target_elt(obj, target_elt, **kwargs)
+                self.assertEqual(result['commands'], command)
 
     def failed(self):
         with self.assertRaises(AnsibleFailJson) as exc:
