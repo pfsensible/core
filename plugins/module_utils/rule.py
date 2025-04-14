@@ -410,7 +410,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         elif self._after == 'top':
             return 0
         elif self._after is not None:
-            return self._get_rule_position(self._after) + 1
+            return self._get_rule_position(self._after, first=False) + 1
         elif self._before is not None:
             position = self._get_rule_position(self._before) - 1
             if position < 0:
@@ -472,12 +472,12 @@ class PFSenseRuleModule(PFSenseModuleBase):
         """ returns the list of params to remove if they are not set """
         return ['log', 'protocol', 'disabled', 'defaultqueue', 'ackqueue', 'dnpipe', 'pdnpipe', 'gateway', 'icmptype', 'sched', 'quick', 'tcpflags_any']
 
-    def _get_rule_position(self, descr=None, fail=True):
+    def _get_rule_position(self, descr=None, fail=True, first=True):
         """ get rule position in interface/floating """
         if descr is None:
             descr = self.obj['descr']
 
-        res = self.pfsense.get_rule_position(descr, self.obj['interface'], self._floating)
+        res = self.pfsense.get_rule_position(descr, self.obj['interface'], self._floating, first=first)
         if fail and res is None:
             self.module.fail_json(msg='Failed to find rule=%s interface=%s' % (descr, self._interface_name()))
         return res
