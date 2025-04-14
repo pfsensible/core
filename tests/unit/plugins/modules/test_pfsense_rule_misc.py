@@ -31,6 +31,6 @@ class TestPFSenseRuleMiscModule(TestPFSenseRuleModule):
     def test_check_mode(self):
         """ test check mode """
         obj = dict(name='one_rule', source='any', destination='any', interface='lan')
-        set_module_args(self.args_from_var(obj, _ansible_check_mode=True))
-        self.execute_module(changed=True)
-        self.assertFalse(self.load_xml_result())
+        with set_module_args(self.args_from_var(obj, _ansible_check_mode=True)):
+            self.execute_module(changed=True)
+            self.assertFalse(self.load_xml_result())

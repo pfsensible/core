@@ -151,21 +151,21 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name='port_http', state='absent'),
             ]
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_aliases = []
-        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
-        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
-        result_aliases.append("update alias 'port_ssh' set address='2222'")
-        result_aliases.append("delete alias 'port_http'")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_aliases = []
+            result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
+            result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
+            result_aliases.append("update alias 'port_ssh' set address='2222'")
+            result_aliases.append("delete alias 'port_http'")
 
-        self.assertEqual(result['result_aliases'], result_aliases)
-        self.assert_find_alias('one_host')
-        self.assert_find_alias('another_host')
-        self.assert_find_alias('one_server')
-        self.assert_find_alias('port_ssh')
-        self.assert_not_find_alias('port_http')
-        self.assert_find_alias('port_dns')
+            self.assertEqual(result['result_aliases'], result_aliases)
+            self.assert_find_alias('one_host')
+            self.assert_find_alias('another_host')
+            self.assert_find_alias('one_server')
+            self.assert_find_alias('port_ssh')
+            self.assert_not_find_alias('port_http')
+            self.assert_find_alias('port_dns')
 
     def test_aggregate_aliases_checkmode(self):
         """ test creation of a some aliases with check_mode """
@@ -180,16 +180,16 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             ],
             _ansible_check_mode=True,
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_aliases = []
-        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
-        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
-        result_aliases.append("update alias 'port_ssh' set address='2222'")
-        result_aliases.append("delete alias 'port_http'")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_aliases = []
+            result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
+            result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
+            result_aliases.append("update alias 'port_ssh' set address='2222'")
+            result_aliases.append("delete alias 'port_http'")
 
-        self.assertEqual(result['result_aliases'], result_aliases)
-        self.assertFalse(self.load_xml_result())
+            self.assertEqual(result['result_aliases'], result_aliases)
+            self.assertFalse(self.load_xml_result())
 
     def test_aggregate_aliases_purge(self):
         """ test creation of a some aliases with purge """
@@ -204,22 +204,22 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name='port_http', state='absent'),
             ]
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_aliases = []
-        result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
-        result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
-        result_aliases.append("update alias 'port_ssh' set address='2222'")
-        result_aliases.append("delete alias 'port_http'")
-        result_aliases.append("delete alias 'port_dns'")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_aliases = []
+            result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
+            result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
+            result_aliases.append("update alias 'port_ssh' set address='2222'")
+            result_aliases.append("delete alias 'port_http'")
+            result_aliases.append("delete alias 'port_dns'")
 
-        self.assertEqual(result['result_aliases'], result_aliases)
-        self.assert_find_alias('one_host')
-        self.assert_find_alias('another_host')
-        self.assert_find_alias('one_server')
-        self.assert_find_alias('port_ssh')
-        self.assert_not_find_alias('port_http')
-        self.assert_not_find_alias('port_dns')
+            self.assertEqual(result['result_aliases'], result_aliases)
+            self.assert_find_alias('one_host')
+            self.assert_find_alias('another_host')
+            self.assert_find_alias('one_server')
+            self.assert_find_alias('port_ssh')
+            self.assert_not_find_alias('port_http')
+            self.assert_not_find_alias('port_dns')
 
     def test_aggregate_rules(self):
         """ test creation of a some rules """
@@ -232,15 +232,15 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name='any2any_ssh', state='absent', interface='vpn'),
             ]
         )
-        set_module_args(args)
-        self.execute_module(changed=True)
-        self.assert_find_rule('one_rule', 'lan')
-        self.assert_find_rule('any2any_ssh', 'lan')
-        self.assert_find_rule('any2any_http', 'lan')
-        self.assert_find_rule('any2any_https', 'lan')
-        self.assert_not_find_rule('any2any_ssh', 'opt1')
-        self.assert_find_rule('any2any_http', 'opt1')
-        self.assert_find_rule('any2any_https', 'opt1')
+        with set_module_args(args):
+            self.execute_module(changed=True)
+            self.assert_find_rule('one_rule', 'lan')
+            self.assert_find_rule('any2any_ssh', 'lan')
+            self.assert_find_rule('any2any_http', 'lan')
+            self.assert_find_rule('any2any_https', 'lan')
+            self.assert_not_find_rule('any2any_ssh', 'opt1')
+            self.assert_find_rule('any2any_http', 'opt1')
+            self.assert_find_rule('any2any_https', 'opt1')
 
     def test_aggregate_rules_purge(self):
         """ test creation of a some rules with purge """
@@ -253,15 +253,15 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name='any2any_ssh', state='absent', interface='vpn'),
             ]
         )
-        set_module_args(args)
-        self.execute_module(changed=True)
-        self.assert_find_rule('one_rule', 'lan')
-        self.assert_find_rule('any2any_ssh', 'lan')
-        self.assert_not_find_rule('any2any_http', 'lan')
-        self.assert_not_find_rule('any2any_https', 'lan')
-        self.assert_not_find_rule('any2any_ssh', 'opt1')
-        self.assert_find_rule('any2any_http', 'opt1')
-        self.assert_not_find_rule('any2any_https', 'opt1')
+        with set_module_args(args):
+            self.execute_module(changed=True)
+            self.assert_find_rule('one_rule', 'lan')
+            self.assert_find_rule('any2any_ssh', 'lan')
+            self.assert_not_find_rule('any2any_http', 'lan')
+            self.assert_not_find_rule('any2any_https', 'lan')
+            self.assert_not_find_rule('any2any_ssh', 'opt1')
+            self.assert_find_rule('any2any_http', 'opt1')
+            self.assert_not_find_rule('any2any_https', 'opt1')
 
     def test_aggregate_separators(self):
         """ test creation of a some separators """
@@ -274,19 +274,19 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name='test_separator', interface='lan', before='bottom', color='warning'),
             ]
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_separators = []
-        result_separators.append("create rule_separator 'one_separator' on 'lan', color='info'")
-        result_separators.append("create rule_separator 'another_separator' on 'lan_100', color='info'")
-        result_separators.append("delete rule_separator 'another_test_separator' on 'lan'")
-        result_separators.append("update rule_separator 'test_separator' on 'lan' set color='warning', before='bottom'")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_separators = []
+            result_separators.append("create rule_separator 'one_separator' on 'lan', color='info'")
+            result_separators.append("create rule_separator 'another_separator' on 'lan_100', color='info'")
+            result_separators.append("delete rule_separator 'another_test_separator' on 'lan'")
+            result_separators.append("update rule_separator 'test_separator' on 'lan' set color='warning', before='bottom'")
 
-        self.assertEqual(result['result_rule_separators'], result_separators)
-        self.assert_find_rule_separator('one_separator', 'lan')
-        self.assert_find_rule_separator('another_separator', 'lan_100')
-        self.assert_not_find_rule_separator('another_test_separator', 'lan')
-        self.assert_find_rule_separator('test_separator', 'lan')
+            self.assertEqual(result['result_rule_separators'], result_separators)
+            self.assert_find_rule_separator('one_separator', 'lan')
+            self.assert_find_rule_separator('another_separator', 'lan_100')
+            self.assert_not_find_rule_separator('another_test_separator', 'lan')
+            self.assert_find_rule_separator('test_separator', 'lan')
 
     def test_aggregate_separators_purge(self):
         """ test creation of a some separators with purge """
@@ -299,24 +299,24 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name='test_separator', interface='lan', before='bottom', color='warning'),
             ]
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_separators = []
-        result_separators.append("create rule_separator 'one_separator' on 'lan', color='info'")
-        result_separators.append("create rule_separator 'another_separator' on 'lan_100', color='info'")
-        result_separators.append("delete rule_separator 'another_test_separator' on 'lan'")
-        result_separators.append("update rule_separator 'test_separator' on 'lan' set color='warning', before='bottom'")
-        result_separators.append("delete rule_separator 'test_separator' on 'wan'")
-        result_separators.append("delete rule_separator 'last_test_separator' on 'lan'")
-        result_separators.append("delete rule_separator 'test_sep_floating' on 'floating'")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_separators = []
+            result_separators.append("create rule_separator 'one_separator' on 'lan', color='info'")
+            result_separators.append("create rule_separator 'another_separator' on 'lan_100', color='info'")
+            result_separators.append("delete rule_separator 'another_test_separator' on 'lan'")
+            result_separators.append("update rule_separator 'test_separator' on 'lan' set color='warning', before='bottom'")
+            result_separators.append("delete rule_separator 'test_separator' on 'wan'")
+            result_separators.append("delete rule_separator 'last_test_separator' on 'lan'")
+            result_separators.append("delete rule_separator 'test_sep_floating' on 'floating'")
 
-        self.assertEqual(result['result_rule_separators'], result_separators)
-        self.assert_find_rule_separator('one_separator', 'lan')
-        self.assert_find_rule_separator('another_separator', 'lan_100')
-        self.assert_not_find_rule_separator('another_test_separator', 'lan')
-        self.assert_find_rule_separator('test_separator', 'lan')
-        self.assert_not_find_rule_separator('last_test_separator', 'lan')
-        self.assert_not_find_rule_separator('test_sep_floating', 'floatingrules')
+            self.assertEqual(result['result_rule_separators'], result_separators)
+            self.assert_find_rule_separator('one_separator', 'lan')
+            self.assert_find_rule_separator('another_separator', 'lan_100')
+            self.assert_not_find_rule_separator('another_test_separator', 'lan')
+            self.assert_find_rule_separator('test_separator', 'lan')
+            self.assert_not_find_rule_separator('last_test_separator', 'lan')
+            self.assert_not_find_rule_separator('test_sep_floating', 'floatingrules')
 
     def test_aggregate_vlans(self):
         """ test creation of some vlans """
@@ -329,19 +329,19 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(vlan_id=102, interface='vmx2', descr='users'),
             ]
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_aliases = []
-        result_aliases.append("update vlan 'vmx0.100' set descr='voice'")
-        result_aliases.append("delete vlan 'vmx1.1200'")
-        result_aliases.append("create vlan 'vmx1.101', descr='printers', priority=''")
-        result_aliases.append("create vlan 'vmx2.102', descr='users', priority=''")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_aliases = []
+            result_aliases.append("update vlan 'vmx0.100' set descr='voice'")
+            result_aliases.append("delete vlan 'vmx1.1200'")
+            result_aliases.append("create vlan 'vmx1.101', descr='printers', priority=''")
+            result_aliases.append("create vlan 'vmx2.102', descr='users', priority=''")
 
-        self.assertEqual(result['result_vlans'], result_aliases)
-        self.assert_find_vlan('vmx0', '100')
-        self.assert_not_find_vlan('vmx1', '1200')
-        self.assert_find_vlan('vmx1', '101')
-        self.assert_find_vlan('vmx2', '102')
+            self.assertEqual(result['result_vlans'], result_aliases)
+            self.assert_find_vlan('vmx0', '100')
+            self.assert_not_find_vlan('vmx1', '1200')
+            self.assert_find_vlan('vmx1', '101')
+            self.assert_find_vlan('vmx2', '102')
 
     def test_aggregate_vlans_with_purge(self):
         """ test creation of some vlans with purge"""
@@ -354,16 +354,16 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(vlan_id=102, interface='vmx2', descr='users'),
             ]
         )
-        set_module_args(args)
-        result = self.execute_module(changed=True)
-        result_aliases = []
-        result_aliases.append("delete vlan 'vmx1.1200'")
-        result_aliases.append("create vlan 'vmx1.101', descr='printers', priority=''")
-        result_aliases.append("create vlan 'vmx2.102', descr='users', priority=''")
-        result_aliases.append("delete vlan 'vmx0.100'")
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_aliases = []
+            result_aliases.append("delete vlan 'vmx1.1200'")
+            result_aliases.append("create vlan 'vmx1.101', descr='printers', priority=''")
+            result_aliases.append("create vlan 'vmx2.102', descr='users', priority=''")
+            result_aliases.append("delete vlan 'vmx0.100'")
 
-        self.assertEqual(result['result_vlans'], result_aliases)
-        self.assert_not_find_vlan('vmx1', '1200')
-        self.assert_find_vlan('vmx1', '101')
-        self.assert_find_vlan('vmx2', '102')
-        self.assert_not_find_vlan('vmx0', '100')
+            self.assertEqual(result['result_vlans'], result_aliases)
+            self.assert_not_find_vlan('vmx1', '1200')
+            self.assert_find_vlan('vmx1', '101')
+            self.assert_find_vlan('vmx2', '102')
+            self.assert_not_find_vlan('vmx0', '100')
