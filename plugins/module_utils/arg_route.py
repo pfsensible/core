@@ -17,6 +17,8 @@ def p2o_interface(self, name, params, obj):
 def p2o_interface_without_virtual(self, name, params, obj):
     obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False)
 
+def p2o_port(self, name, params, obj):
+    obj[name] = self.pfsense.parse_port(params[name], with_virtual=True)
 
 def p2o_strip(self, name, params, obj):
     if params[name] is not None:
