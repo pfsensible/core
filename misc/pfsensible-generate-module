@@ -282,18 +282,13 @@ def enforce_period(s):
 params = dict()
 
 # Collect the input elements
-if args.verbose >= 3:
-    print(f'forms={html.forms}')
-    print(f'inputs={html.forms[0].inputs}')
 for input in html.forms[0].inputs:
     # Skip internal items
     if input.name == '__csrf_magic':
         continue
 
     param = dict(description='')
-    if args.verbose >= 3:
-        print(f'input={input}')
-    elif args.verbose >= 2:
+    if args.verbose >= 2:
         print(f'attrib={input.attrib}')
     if isinstance(input, lxml.html.InputElement):
         if args.verbose >= 2:
@@ -310,15 +305,29 @@ for input in html.forms[0].inputs:
         elif input.type == 'password':
             param['type'] = 'str'
             param['password'] = True  # TODO - set nolog
+        elif input.type == 'radio':
+            # Radio buttons are a series of individual elements
+            if input.name in params:
+                param = params[input.name]
+                param['choices'].append(input.attrib['value'])
+                if input.checked:
+                    param['default'] = input.attrib['value']
+            else:
+                param['type'] = 'str'
+                param['choices'] = [ input.attrib['value'] ]
+                if input.checked:
+                    param['default'] = input.attrib['value']
         elif input.type == 'text':
             param['type'] = 'str'
             param['default'] = input.value
-        # TOOD - handle placeholder as 'default' value - description? create_default? example?
+
+        # TODO - handle placeholder as 'default' value - description? create_default? example?
         for attr in ['min', 'placeholder', 'step']:
             if attr in input.attrib:
                 param[attr] = input.attrib[attr]
+
         # Text sometimes is after the input element inside the enclosing <label>
-        if input.tail:
+        if input.tail and input.type != 'radio':
             param['description'] = enforce_period(input.tail.strip())
     elif isinstance(input, lxml.html.SelectElement):
         if args.verbose >= 2:
@@ -366,22 +375,28 @@ for input in html.forms[0].inputs:
 #    </div>
 #  </div> 
 
-    div1 = input.find('..')
-    div2 = div1.find('..')
-    if div2.tag == 'div' and div2.attrib['class'] == 'form-group':
-        descr_elt = div2.find('*span')
+    form_groups = input.xpath('./ancestor::div[@class="form-group"]')
+    if form_groups:
+        form_group = form_groups[0]
+        descr_elt = form_group.find('*span')
         if descr_elt.text:
             if args.verbose >= 2:
                 print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
-            param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
+            if input.get('type') == 'radio':
+                param['description'] = f'{descr_elt.text.strip()} of the {module_name}.'
+            else:
+                param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
         if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
             param['required'] = True
-        help_elt = div1.find('span[@class="help-block"]')
+        help_elt = form_group.find('./div/span[@class="help-block"]')
         if help_elt is not None:
             if args.verbose >= 2:
                 print(f'help_elt text {help_elt.text.strip()}')
             descr = enforce_period(help_elt.text.strip())
-            param['description'] += f' {descr}'
+            if input.get('type') == 'radio':
+                 param['description'] = f' {descr}'
+            else:
+                 param['description'] += f' {descr}'
 
     params[input.name] = param
 
