@@ -13,6 +13,7 @@ from ansible.plugins.filter.core import dict_to_list_of_dict_key_value_elements
 from ansible.plugins.filter.mathstuff import unique
 import argparse
 import datetime
+import getpass
 import git
 import jinja2
 import lxml.etree as ET
@@ -42,8 +43,12 @@ args_imports = []
 parser = argparse.ArgumentParser(description='Generate a pfsensible module.')
 parser.add_argument('--url', help='The URL to scrape')
 parser.add_argument('--urlfile', help='A local file copy of the URL to scrape')
-parser.add_argument('--user', default='admin', help='The user to connect as')
+parser.add_argument('--user', default='admin', help='The user to connect to the web interface as (defaults to "admin")')
 parser.add_argument('--password', default='pfsense', help='The password of user')
+parser.add_argument('--password-prompt', action='store_true', help='Prompt for the password of user')
+parser.add_argument('--ssh-user', default='root', help='The user to connect via ssh as (defaults to "root")')
+parser.add_argument('--ssh-password', default='pfsense', help='The password of the ssh user')
+parser.add_argument('--ssh-password-prompt', action='store_true', help='Prompt for the password of the ssh user')
 parser.add_argument('--author-name', default=author_name, help='The full name of the module author')
 parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
 parser.add_argument('--author-handle', default='', help='The github handle of the module author')
@@ -52,9 +57,9 @@ parser.add_argument('--is-config', action='store_true', help='This is a configur
 parser.add_argument('--name-param', help='The name of the primary module parameter - defaults to the key, but often "name" is used instead of "descr"')
 parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
 parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
-parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml')
+parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml (defaults to "item_min")')
 parser.add_argument('--item-full', default='item_full',
-                    help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation')
+                    help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation (defaults to "item_max")')
 parser.add_argument('--force', action=argparse.BooleanOptionalAction, help='Force overwriting the output file if it exists')
 parser.add_argument('--keep-tmpdir', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
 parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help='Keep parameters from the web interface not found in the XML')
@@ -113,6 +118,10 @@ if args.url is not None:
 
     csrf = re.search(".*name='__csrf_magic' value=\"([^\"]+)\".*", r.text, flags=re.MULTILINE).group(1)
 
+    # Prompt for web password if requested
+    if args.password_prompt:
+        args.password = getpass.getpass("Enter your web user password: ")
+
     # Login to the web interface
     login_data = dict(login='Login', usernamefld=args.user, passwordfld=args.password, __csrf_magic=csrf)
     r = client.post(login_url, data=login_data, verify=False)
@@ -140,10 +149,14 @@ elif args.urlfile is not None:
 else:
     sys.exit('You must specify one of --url or --urlfile')
 
+# Prompt for ssh password if requested
+if args.ssh_password_prompt:
+    args.ssh_password = getpass.getpass("Enter your ssh user password: ")
+
 # Collect the /cf/conf/config.xml file
 ssh = SSHClient()
 ssh.load_system_host_keys()
-ssh.connect(host, username='root', password=args.password)
+ssh.connect(host, username=args.ssh_user, allow_agent=True, password=args.ssh_password)
 scp = SCPClient(ssh.get_transport())
 scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
 if phpfile is not None:
@@ -152,6 +165,14 @@ if is_package:
     scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
     scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
 scp.close()
+
+# Save the scraped web page if asked to keep files
+if args.keep_tmpdir:
+    f = open(f'{tmpdir.name}/{module_name}.html', 'w')
+    f.write(r.text)
+    f.close()
+    shutil.copytree(tmpdir.name, f'/tmp/{module_name}', dirs_exist_ok=True)
+    print(f'Keeping /tmp/{module_name}')
 
 # Parse the config.xml file
 root = ET.parse(f'{tmpdir.name}/config.xml').getroot()
@@ -261,13 +282,18 @@ def enforce_period(s):
 params = dict()
 
 # Collect the input elements
+if args.verbose >= 3:
+    print(f'forms={html.forms}')
+    print(f'inputs={html.forms[0].inputs}')
 for input in html.forms[0].inputs:
     # Skip internal items
     if input.name == '__csrf_magic':
         continue
 
     param = dict(description='')
-    if args.verbose >= 2:
+    if args.verbose >= 3:
+        print(f'input={input}')
+    elif args.verbose >= 2:
         print(f'attrib={input.attrib}')
     if isinstance(input, lxml.html.InputElement):
         if args.verbose >= 2:
@@ -490,11 +516,3 @@ else:
 f = open(f'{filename}', 'w')
 f.write(template.render(context))
 f.close()
-
-# Save the scraped web page if asked to keep files
-if args.keep_tmpdir:
-    f = open(f'{tmpdir.name}/{module_name}.html', 'w')
-    f.write(r.text)
-    f.close()
-    shutil.copytree(tmpdir.name, f'/tmp/{module_name}', dirs_exist_ok=True)
-    print(f'Keeping /tmp/{module_name}')
