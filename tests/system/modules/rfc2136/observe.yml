@@ -1,0 +1,14 @@
+---
+- name: Read persisted RFC 2136 settings and accepted DNS updates
+  ansible.builtin.command:
+    argv: ["{{ ansible_python_interpreter }}", /tmp/pfsensible-system/dns_fixture.py, observe]
+  register: rfc2136_observed
+  changed_when: false
+
+- name: Decode RFC 2136 observations
+  ansible.builtin.set_fact:
+    rfc2136_state: "{{ rfc2136_observed.stdout | from_json }}"
+
+- name: Record the RFC 2136 observations in CI evidence
+  ansible.builtin.debug:
+    var: rfc2136_state

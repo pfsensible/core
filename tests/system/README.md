@@ -49,6 +49,10 @@ client-specific override. It also checks the addresses on both live tunnel
 interfaces. A check-mode deletion of each running instance must report a change
 while preserving the saved configuration, daemon PIDs, and active session.
 
+The RFC 2136 scenario receives TSIG-signed DNS UPDATE messages on appliance
+loopback. It checks saved settings, the interface address and TTL on the wire,
+check mode, idempotence, TTL changes with a cached address, disable, and deletion.
+
 Filter reloads run asynchronously on pfSense. After create/update, action changes,
 reboot, and deletion, the suite polls observed PF state instead of assuming a module
 return means the kernel has finished applying the change. It waits for the requested
@@ -139,7 +143,9 @@ a prepared image rather than attempting an unattended account-based installation
    names `ci_urltable`, `CI URL table test`, `CI NAT port forward test`, `CI_UPLINK`,
    and `CI_UPLINK_GW` available. Leave loopback port 18080 and the fixture's redirect
    target `192.168.100.80` unused. Reserve loopback UDP port 21194 and tunnel
-   subnet `10.84.0.0/24` for the OpenVPN scenario. Shut down cleanly.
+   subnet `10.84.0.0/24` for OpenVPN and loopback TCP port 15353 for the RFC 2136
+   DNS fixture. The RFC 2136 scenario uses pfSense's bundled `nsupdate`.
+   Shut down cleanly.
 5. Export a self-contained qcow2 disk with no backing/data files. For example,
    flatten an existing qcow2 image on the hypervisor host:
 

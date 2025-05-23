@@ -1,0 +1,2 @@
+minor_changes:
+  - Add pfsense_rfc2136 to manage RFC 2136 dynamic DNS clients.
