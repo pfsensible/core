@@ -1,0 +1,189 @@
+---
+- name: Prepare a controller-local archive for the DNS fixture dependency
+  ansible.builtin.tempfile:
+    suffix: .zip
+  delegate_to: localhost
+  register: rfc2136_dns_archive
+
+- name: Transfer dnspython to the appliance
+  block:
+    - name: Archive the controller's dnspython package
+      ansible.builtin.command:
+        argv:
+          - "{{ ansible_playbook_python }}"
+          - -c
+          - |
+            import dns, pathlib, sys, zipfile
+            package = pathlib.Path(dns.__file__).parent
+            with zipfile.ZipFile(sys.argv[1], "w", zipfile.ZIP_DEFLATED) as archive:
+                for source in package.rglob("*.py"):
+                    archive.write(source, source.relative_to(package.parent))
+          - "{{ rfc2136_dns_archive.path }}"
+      delegate_to: localhost
+
+    - name: Copy the dnspython archive to the appliance
+      ansible.builtin.copy:
+        src: "{{ rfc2136_dns_archive.path }}"
+        dest: /tmp/pfsensible-system/dnspython.zip
+        mode: '0644'
+  always:
+    - name: Remove the controller-local archive
+      ansible.builtin.file:
+        path: "{{ rfc2136_dns_archive.path }}"
+        state: absent
+      delegate_to: localhost
+
+- name: Extract dnspython beside the appliance-local fixture
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_python_interpreter }}"
+      - -m
+      - zipfile
+      - -e
+      - /tmp/pfsensible-system/dnspython.zip
+      - /tmp/pfsensible-system
+    creates: /tmp/pfsensible-system/dns/__init__.py
+
+- name: Install the appliance-local DNS fixture
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/modules/rfc2136/dns_fixture.py"
+    dest: /tmp/pfsensible-system/dns_fixture.py
+    mode: '0644'
+
+- name: Start the signed DNS UPDATE fixture
+  ansible.builtin.command:
+    argv:
+      - /usr/sbin/daemon
+      - -f
+      - -o
+      - /tmp/pfsensible-system/rfc2136-dns.log
+      - -p
+      - /tmp/pfsensible-system/rfc2136-dns.pid
+      - "{{ ansible_python_interpreter }}"
+      - /tmp/pfsensible-system/dns_fixture.py
+      - serve
+    creates: /tmp/pfsensible-system/rfc2136-dns.pid
+
+- name: Wait for the DNS fixture to listen
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 15353
+    timeout: 30
+
+- name: Preview creation of an RFC 2136 client
+  pfsensible.core.pfsense_rfc2136: &rfc2136_entry
+    <<: &rfc2136_settings
+      descr: CI RFC 2136 test
+      host: firewall.ci.example.
+      zone: ci.example.
+      keyname: ci-update.ci.example.
+      keyalgorithm: hmac-sha256
+      keydata: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      interface: LAN
+      server: '127.0.0.1 15353'
+      updatesource: none
+      recordtype: A
+      usetcp: true
+    enable: true
+    ttl: 60
+  check_mode: true
+  register: rfc2136_preview
+
+- ansible.builtin.include_tasks: observe.yml
+
+- name: Verify preview left both the appliance and DNS unchanged
+  ansible.builtin.assert:
+    that:
+      - rfc2136_preview is changed
+      - rfc2136_state.entries == []
+      - rfc2136_state.updates == []
+
+- name: Configure the RFC 2136 client
+  pfsensible.core.pfsense_rfc2136: *rfc2136_entry
+  register: rfc2136_create
+
+- name: Repeat the same RFC 2136 configuration
+  pfsensible.core.pfsense_rfc2136: *rfc2136_entry
+  register: rfc2136_repeat
+
+- ansible.builtin.include_tasks: observe.yml
+
+- name: Verify the saved entry and its single signed IPv4 update
+  ansible.builtin.assert:
+    that:
+      - rfc2136_create is changed
+      - rfc2136_repeat is not changed
+      - rfc2136_state.entries | length == 1
+      - rfc2136_state.entries[0].host == 'firewall.ci.example'
+      - rfc2136_state.entries[0].interface == 'lan'
+      - rfc2136_state.entries[0].ttl == '60'
+      - "'enable' in rfc2136_state.entries[0]"
+      - "'usetcp' in rfc2136_state.entries[0]"
+      - "rfc2136_state.updates == [[{'address': '192.168.100.2', 'ttl': 60}]]"
+
+- name: Run pfSense's cache-aware update for the same hostname
+  pfsensible.core.pfsense_phpshell:
+    cmd: |
+      require_once("services.inc");
+      services_dnsupdate_process("", "firewall.ci.example");
+  changed_when: false
+
+- name: Change the TTL while the interface IP is still cached
+  pfsensible.core.pfsense_rfc2136:
+    <<: *rfc2136_settings
+    enable: true
+    ttl: 120
+  register: rfc2136_update
+
+- ansible.builtin.include_tasks: observe.yml
+
+- name: Verify pfSense sent a new signed update with the changed TTL
+  ansible.builtin.assert:
+    that:
+      - rfc2136_update is changed
+      - rfc2136_state.entries[0].ttl == '120'
+      - "rfc2136_state.updates == [[{'address': '192.168.100.2', 'ttl': 60}], [{'address': '192.168.100.2', 'ttl': 120}]]"
+
+- name: Disable the client while editing its TTL
+  pfsensible.core.pfsense_rfc2136:
+    <<: *rfc2136_settings
+    enable: false
+    ttl: 180
+  register: rfc2136_disable
+
+- name: Preview deletion of the RFC 2136 client
+  pfsensible.core.pfsense_rfc2136: &rfc2136_absent
+    descr: CI RFC 2136 test
+    state: absent
+  check_mode: true
+  register: rfc2136_delete_preview
+
+- ansible.builtin.include_tasks: observe.yml
+
+- name: Verify disable and preview left the DNS record alone
+  ansible.builtin.assert:
+    that:
+      - rfc2136_disable is changed
+      - rfc2136_delete_preview is changed
+      - rfc2136_state.entries | length == 1
+      - "'enable' not in rfc2136_state.entries[0]"
+      - rfc2136_state.entries[0].ttl == '180'
+      - rfc2136_state.updates | length == 2
+
+- name: Delete the client by description
+  pfsensible.core.pfsense_rfc2136: *rfc2136_absent
+  register: rfc2136_delete
+
+- name: Repeat the client deletion
+  pfsensible.core.pfsense_rfc2136: *rfc2136_absent
+  register: rfc2136_delete_repeat
+
+- ansible.builtin.include_tasks: observe.yml
+
+- name: Verify deletion was idempotent and left the DNS record alone
+  ansible.builtin.assert:
+    that:
+      - rfc2136_delete is changed
+      - rfc2136_delete_repeat is not changed
+      - rfc2136_state.entries == []
+      - rfc2136_state.updates | length == 2

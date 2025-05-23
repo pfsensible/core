@@ -35,3 +35,6 @@
 
     - name: Test OpenVPN connections and client-specific overrides
       ansible.builtin.include_tasks: modules/openvpn/main.yml
+
+    - name: Test signed RFC 2136 updates against appliance-local DNS
+      ansible.builtin.include_tasks: modules/rfc2136/main.yml

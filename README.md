@@ -163,6 +163,7 @@ The following modules are currently available:
 * [pfsense_openvpn_server](https://github.com/pfsensible/core/wiki/pfsense_openvpn_server) for OpenVPN server configuration
 * [pfsense_phpshell](https://github.com/pfsensible/core/wiki/pfsense_phpshell) run commands with php-shell
 * [pfsense_rewrite_config](https://github.com/pfsensible/core/wiki/pfsense_rewrite_config) to rewrite config.xml
+* [pfsense_rfc2136](plugins/modules/pfsense_rfc2136.py) for RFC 2136 dynamic DNS clients
 * [pfsense_route](https://github.com/pfsensible/core/wiki/pfsense_route) for routes
 * [pfsense_rule](https://github.com/pfsensible/core/wiki/pfsense_rule) for firewall rules
 * [pfsense_rule_separator](https://github.com/pfsensible/core/wiki/pfsense_rule_separator) for firewall rule separators
