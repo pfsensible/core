@@ -351,8 +351,15 @@ for input in html.forms[0].inputs:
         if input.value_options is not None:
             if input.name == 'interface':
                 param['type'] = 'str'
+                # If a GW Group is present, allow them - this would be better to check for GW Group in the option text
+                # but this would require extracting that which will take a bit of work
+                if any('GW' in s for s in input.value_options):
+                    param['parse'] = 'p2o_interface_with_gwgroup'
+                    if 'p2o_interface_with_gwgroup' not in args_imports:
+                        args_imports.append('p2o_interface_with_gwgroup')
+
                 # By default, interfaces will be parsed allowing virtual interfaces.  If not allowed we need a different parser.
-                if len(set(input.value_options).intersection(['enc0', 'openvpn'])) == 0:
+                elif len(set(input.value_options).intersection(['enc0', 'openvpn'])) == 0:
                     param['parse'] = 'p2o_interface_without_virtual'
                     if 'p2o_interface_without_virtual' not in args_imports:
                         args_imports.append('p2o_interface_without_virtual')
