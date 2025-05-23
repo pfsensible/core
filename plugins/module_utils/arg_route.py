@@ -14,6 +14,10 @@ def p2o_interface(self, name, params, obj):
     obj[name] = self.pfsense.parse_interface(params[name], with_virtual=True)
 
 
+def p2o_interface_with_gwgroup(self, name, params, obj):
+    obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False, with_gwgroup=True)
+
+
 def p2o_interface_without_virtual(self, name, params, obj):
     obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False)
 
