@@ -46,6 +46,7 @@ parser.add_argument('--urlfile', help='A local file copy of the URL to scrape')
 parser.add_argument('--user', default='admin', help='The user to connect to the web interface as (defaults to "admin")')
 parser.add_argument('--password', default='pfsense', help='The password of user')
 parser.add_argument('--password-prompt', action='store_true', help='Prompt for the password of user')
+parser.add_argument('--ssh-no-agent', action='store_true', help='Do not use ssh agent for connection')
 parser.add_argument('--ssh-user', default='root', help='The user to connect via ssh as (defaults to "root")')
 parser.add_argument('--ssh-password', default='pfsense', help='The password of the ssh user')
 parser.add_argument('--ssh-password-prompt', action='store_true', help='Prompt for the password of the ssh user')
@@ -156,7 +157,7 @@ if args.ssh_password_prompt:
 # Collect the /cf/conf/config.xml file
 ssh = SSHClient()
 ssh.load_system_host_keys()
-ssh.connect(host, username=args.ssh_user, allow_agent=True, password=args.ssh_password)
+ssh.connect(host, username=args.ssh_user, allow_agent=not args.ssh_no_agent, password=args.ssh_password)
 scp = SCPClient(ssh.get_transport())
 scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
 if phpfile is not None:
