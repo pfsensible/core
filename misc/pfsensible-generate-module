@@ -75,26 +75,26 @@ if args.is_config:
 tmpdir = tempfile.TemporaryDirectory(prefix='pfgenmod-')
 
 if args.url is not None:
-    parsed_uri = urlparse(args.url)
+    uri = urlparse(args.url)
 
     # Login using just the base URL
-    login_url = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+    login_url = f'{uri.scheme}://{uri.netloc}/'
 
     # Collect host for later use to scp config.xml
-    host = f'{parsed_uri.netloc}'
+    host = f'{uri.netloc}'
 
     # Collect phpfile to scp later
-    phpfile = re.sub(r'^/(.*\.php).*$', r'\1', parsed_uri.path)
+    phpfile = re.sub(r'^/(.*\.php).*$', r'\1', uri.path)
 
     # Construct a likely module name from the URL
     if args.module_name is None:
         # See if this pkg_edit URL first
-        if re.match(r'/pkg', parsed_uri.path):
-            module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', parsed_uri.query)
+        if re.match(r'/pkg', uri.path):
+            module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', uri.query)
             package = module_name
             is_package = True
         else:
-            module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', parsed_uri.path)
+            module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
@@ -265,10 +265,11 @@ if phpfile is not None:
                      if subsystem_search:
                          php_subsystem = subsystem_search.group(1)
 
-
-# The web page should have a single form
-if len(html.forms) != 1:
-    sys.exit(f'Found {len(html.forms)} forms instead of a single one!')
+# See if this is not a proper form URL
+if len(html.forms) != 1 or len(html.forms[0].inputs) <= 1:
+    action_buttons_urls = html.find('.//nav[@class="action-buttons"]/a')
+    action_href = re.sub(r'\?.*', '', action_buttons_urls.attrib["href"])
+    sys.exit(f'ERROR: This does not appear to be a proper form URL, you probably want {uri.scheme}://{uri.netloc}/{action_href}')
 
 # TODO - For packages we could parse /usr/local/pkg/{package}.xml instead
 
@@ -377,7 +378,7 @@ for input in html.forms[0].inputs:
 #      <input class="form-control" name="ldap_host" id="ldap_host" type="text">
 #      <span class="help-block">NOTE: When using SSL/TLS or STARTTLS, this hostname MUST match a Subject Alternative Name (SAN) or the Common Name (CN) of the LDAP server SSL/TLS Certificate.</span>
 #    </div>
-#  </div> 
+#  </div>
 
     form_groups = input.xpath('./ancestor::div[@class="form-group"]')
     if form_groups:
