@@ -411,6 +411,10 @@ class PFSenseModule(object):
         # None of the above
         return False
 
+    def is_gateway_group(self, gwgroup):
+        """ return True if gwgroup is a gateway group """
+        return self.find_elt_xpath(f"./gateways/gateway_group[name='{gwgroup}']") is not None
+
     def is_port_or_alias(self, port):
         """ return True if port is a valid port number or an alias """
         if (self.find_alias(port, 'port') is not None

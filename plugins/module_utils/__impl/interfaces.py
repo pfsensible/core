@@ -123,12 +123,14 @@ def is_interface_group(self, name):
     return False
 
 
-def parse_interface(self, interface, fail=True, with_virtual=True):
+def parse_interface(self, interface, fail=True, with_virtual=True, with_gwgroup=False):
     """ validate param interface field """
     if with_virtual and (interface == 'enc0' or interface.lower() == 'ipsec') and self.is_ipsec_enabled():
         return 'enc0'
     if with_virtual and (interface == 'openvpn' or interface.lower() == 'openvpn') and self.is_openvpn_enabled():
         return 'openvpn'
+    if with_gwgroup and self.is_gateway_group(interface):
+        return interface
 
     if self.is_interface_display_name(interface):
         return self.get_interface_by_display_name(interface)
