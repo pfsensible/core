@@ -291,6 +291,8 @@ for input in html.forms[0].inputs:
     if args.verbose >= 2:
         print(f'attrib={input.attrib}')
     if isinstance(input, lxml.html.InputElement):
+        if input.tail is not None:
+            input.tail = input.tail.strip()
         if args.verbose >= 2:
             print(f'input name={input.name} id={input.get("id")} type={input.type} value={input.value} '
                   f'text={input.text} title={input.get("title")} tail={input.tail}')
@@ -301,7 +303,8 @@ for input in html.forms[0].inputs:
             param['example'] = 'true'
         elif input.type == 'number':
             param['type'] = 'int'
-            param['default'] = input.value
+            if input.value is not None:
+                param['default'] = input.value
         elif input.type == 'password':
             param['type'] = 'str'
             param['password'] = True  # TODO - set nolog
@@ -319,7 +322,8 @@ for input in html.forms[0].inputs:
                     param['default'] = input.attrib['value']
         elif input.type == 'text':
             param['type'] = 'str'
-            param['default'] = input.value
+            if input.value is not None:
+                param['default'] = input.value
 
         # TODO - handle placeholder as 'default' value - description? create_default? example?
         for attr in ['min', 'placeholder', 'step']:
@@ -328,7 +332,7 @@ for input in html.forms[0].inputs:
 
         # Text sometimes is after the input element inside the enclosing <label>
         if input.tail and input.type != 'radio':
-            param['description'] = enforce_period(input.tail.strip())
+            param['description'] = enforce_period(input.tail)
     elif isinstance(input, lxml.html.SelectElement):
         if args.verbose >= 2:
             print(f'Found select element: name={input.name} value={input.value} value_options={input.value_options} multiple={input.multiple} attrib={input.attrib}')
@@ -381,12 +385,14 @@ for input in html.forms[0].inputs:
         descr_elt = form_group.find('*span')
         if descr_elt.text:
             if args.verbose >= 2:
-                print(f'Found descr_elt {descr_elt.tag} {descr_elt.text}')
+                print(f'Found descr_elt {descr_elt.tag} {descr_elt.text} {descr_elt.attrib}')
             if input.get('type') == 'radio':
                 param['description'] = f'{descr_elt.text.strip()} of the {module_name}.'
             else:
                 param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
         if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
+            if args.verbose >= 2:
+                print(f'Found element-required')
             param['required'] = True
         help_elt = form_group.find('./div/span[@class="help-block"]')
         if help_elt is not None:
@@ -398,6 +404,8 @@ for input in html.forms[0].inputs:
             else:
                  param['description'] += f' {descr}'
 
+    if args.verbose >= 2:
+        print(f'Final param = {param}\n')
     params[input.name] = param
 
 if not args.is_config:

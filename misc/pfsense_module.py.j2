@@ -116,6 +116,9 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
 {% if 'choices' in params[param] %}
         'choices': {{ params[param]['choices'] }},
 {% endif %}
+{% if 'default' in params[param] %}
+        'default': '{{ params[param]['default'] }}',
+{% endif %}
         'type': '{{ params[param]['type'] | default('') }}',
     },
 {% endfor %}
@@ -130,7 +133,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import {
     state=dict(type='str', default='present', choices=['present', 'absent']),
 {% endif %}
 {% for param in params %}
-    {{ param }}=dict(type='{{ params[param]['type'] | default('') }}'{% if 'choices' in params[param] %}, choices={{ params[param]['choices'] }},{% endif %}),
+    {{ param }}=dict(type='{{ params[param]['type'] | default('') }}'{% if 'choices' in params[param] %}, choices={{ params[param]['choices'] }},{% endif %}{% if 'default' in params[param] %}, default='{{ params[param]['default'] }}'{% endif %}),
 {% endfor %}
 )
 
