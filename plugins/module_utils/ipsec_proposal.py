@@ -16,7 +16,7 @@ IPSEC_PROPOSAL_ARGUMENT_SPEC = dict(
     key_length=dict(required=False, choices=[64, 96, 128, 192, 256], type='int'),
     hash=dict(required=True, choices=['md5', 'sha1', 'sha256', 'sha384', 'sha512', 'aesxcbc'], type='str'),
     prf=dict(required=False, choices=['md5', 'sha1', 'sha256', 'sha384', 'sha512', 'aesxcbc'], type='str'),
-    dhgroup=dict(required=True, choices=[1, 2, 5, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29, 30], type='int'),
+    dhgroup=dict(required=True, choices=[1, 2, 5, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29, 30, 31, 32], type='int'),
     apply=dict(default=True, type='bool'),
 )
 
