@@ -47,7 +47,11 @@ IPSEC_P2_ARGUMENT_SPEC = dict(
     aesxcbc=dict(required=False, type='bool'),
 
     # misc
-    pfsgroup=dict(default='14', choices=['0', '1', '2', '5', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '28', '29', '30'], type='str'),
+    pfsgroup=dict(
+        default='14',
+        choices=['0', '1', '2', '5', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '28', '29', '30', '31', '32'],
+        type='str'
+    ),
     lifetime=dict(default=3600, type='int'),
     pinghost=dict(required=False, type='str')
 )

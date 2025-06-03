@@ -1,0 +1,3 @@
+minor_changes:
+ - pfsense_ipsec_p2/proposal - Add missing new DH Groups 31, 32 support in ipsec vpn
+   (https://github.com/pfsensible/core/issues/183)
