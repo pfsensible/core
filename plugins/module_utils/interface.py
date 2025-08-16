@@ -329,10 +329,11 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         ifname = self.target_elt.tag
         if self.pfsense.ifgroups is not None:
             for ifgroup_elt in self.pfsense.ifgroups.findall("ifgroupentry"):
-                members = ifgroup_elt.find('members').text.split()
-                if ifname in members:
-                    self.module.fail_json(msg='The interface is part of the group {0}. Please remove it from the group first.'.format(
-                                          ifgroup_elt.find('ifname').text))
+                if ifgroup_elt.find('members') is not None:
+                    members = ifgroup_elt.find('members').text.split()
+                    if ifname in members:
+                        self.module.fail_json(msg='The interface is part of the group {0}. Please remove it from the group first.'.format(
+                                              ifgroup_elt.find('ifname').text))
 
         self._remove_all_separators(ifname)
         self._remove_all_rules(ifname)
