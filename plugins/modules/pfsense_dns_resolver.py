@@ -146,7 +146,6 @@ options:
   domainoverrides:
     description: Domains for which the resolver's standard DNS lookup should be overridden.
     required: false
-    default: []
     type: list
     elements: dict
     suboptions:
@@ -349,7 +348,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     regovpnclients=dict(default=False, type='bool'),
     custom_options=dict(default="", type='str'),
     hosts=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_SPEC),
-    domainoverrides=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
+    domainoverrides=dict(type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
     # Advanced Settings
     hideidentity=dict(default=True, type='bool'),
     hideversion=dict(default=True, type='bool'),
@@ -482,7 +481,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 if not self.pfsense.is_ipv4_address(ipaddr):
                     self.module.fail_json(msg=f'ip, {ipaddr} is not a ipv4 address')
 
-        for domain in params["domainoverrides"]:
+        for domain in params.get("domainoverrides", []):
             if not self.pfsense.is_ipv4_address(domain["ip"]):
                 self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4 address')
 

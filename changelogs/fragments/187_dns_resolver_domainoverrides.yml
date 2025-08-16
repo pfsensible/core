@@ -1,0 +1,2 @@
+bugfixes:
+  - "pfsense_dns_resolver - do not always add an empty domainoverrides item. (https://github.com/pfsensible/core/issues/187)"
