@@ -128,16 +128,15 @@ USER_ARG_ROUTE = dict(
 
 USER_PHP_COMMAND_PREFIX = """
 require_once('auth.inc');
-init_config_arr(array('system', 'user'));
+$groupindex = index_groups();
+$group_config = config_get_path('system/group');
 """
 
 USER_PHP_COMMAND_SET = USER_PHP_COMMAND_PREFIX + """
-$a_user = &$config['system']['user'];
-$userent = $a_user[{idx}];
+$userent = config_get_path('system/user')[{idx}];
 local_user_set($userent);
-global $groupindex;
 foreach ({mod_groups} as $groupname) {{
-    $group = &$config['system']['group'][$groupindex[$groupname]];
+    $group = $group_config[$groupindex[$groupname]];
     local_group_set($group);
 }}
 if (is_dir("/etc/inc/privhooks")) {{
@@ -149,9 +148,8 @@ if (is_dir("/etc/inc/privhooks")) {{
 USER_PHP_COMMAND_DEL = USER_PHP_COMMAND_PREFIX + """
 $userent['name'] = '{name}';
 $userent['uid'] = {uid};
-global $groupindex;
 foreach ({mod_groups} as $groupname) {{
-    $group = &$config['system']['group'][$groupindex[$groupname]];
+    $group = $group_config[$groupindex[$groupname]];
     local_group_set($group);
 }}
 local_user_del($userent);

@@ -82,9 +82,7 @@ OPENVPN_SERVER_REQUIRED_IF = [
 
 OPENVPN_SERVER_PHP_COMMAND_PREFIX = """
 require_once('openvpn.inc');
-init_config_arr(array('openvpn', 'openvpn-server'));
-$a = &$config['openvpn']['openvpn-server'];
-$ovpn = $a[{idx}];
+$ovpn = config_get_path('openvpn/openvpn-server')[{idx}];
 """
 
 OPENVPN_SERVER_PHP_COMMAND_SET = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
@@ -93,7 +91,7 @@ openvpn_resync_csc_all();
 """
 
 OPENVPN_SERVER_PHP_COMMAND_DEL = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
-openvpn_delete('server',$a[{idx}]);
+openvpn_delete('server',$ovpn]);
 """
 
 

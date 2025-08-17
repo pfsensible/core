@@ -310,11 +310,8 @@ class PFSenseCAModule(PFSenseModuleBase):
             # $ca needs to be an existing reference (particularly 'refid' must be set) before calling ca_import
             # key and serial are optional arguments.  TODO - handle key and serial
             (dummy, stdout, stderr) = self.pfsense.phpshell("""
-                init_config_arr(array('ca'));
                 $ca =& lookup_ca('{refid}');
                 ca_import($ca, '{cert}');
-                print_r($ca);
-                print_r($config['ca']);
                 write_config('Update CA reference');
                 ca_setup_trust_store();""".format(refid=self.target_elt.find('refid').text,
                                                   cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode()))

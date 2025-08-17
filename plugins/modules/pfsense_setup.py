@@ -494,9 +494,9 @@ $retval = 0;
 $retval |= system_hostname_configure();
 $retval |= system_hosts_generate();
 $retval |= system_resolvconf_generate();
-if (isset($config['dnsmasq']['enable'])) {
+if (isset(config_get_path('dnsmasq/enable')) {
         $retval |= services_dnsmasq_configure();
-} elseif (isset($config['unbound']['enable'])) {
+} elseif (isset(config_get_path('unbound/enable')) {
         $retval |= services_unbound_configure();
 }
 $retval |= system_timezone_configure();
