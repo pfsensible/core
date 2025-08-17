@@ -1,4 +1,8 @@
 ---
 # IP address of the interfaces
+# TODO - get this from ansible facts
+#        "ansible_vtnet0": {
+#           "device": "vtnet0",
+#           "ipv4": [    {  "address": "192.168.122.128",
 interface_ips:
   wan: 192.168.122.228
