@@ -1,0 +1,2 @@
+bugfixes:
+  - "pfsense_cert - Write generated internal certificate into config. (https://github.com/pfsensible/core/issues/186)"
