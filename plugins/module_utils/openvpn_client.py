@@ -70,9 +70,7 @@ OPENVPN_CLIENT_REQUIRED_IF = [
 
 OPENVPN_CLIENT_PHP_COMMAND_PREFIX = """
 require_once('openvpn.inc');
-init_config_arr(array('openvpn', 'openvpn-client'));
-$a = &$config['openvpn']['openvpn-client'];
-$ovpn = $a[{idx}];
+$ovpn = config_get_path('openvpn/openvpn-client')[{idx}];
 """
 
 OPENVPN_CLIENT_PHP_COMMAND_SET = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
@@ -80,8 +78,8 @@ openvpn_resync('client',$ovpn);
 """
 
 OPENVPN_CLIENT_PHP_COMMAND_DEL = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
-openvpn_delete($a[{idx}]);
-unset($a[{idx}]);
+openvpn_delete($ovpn);
+unset($ovpn);
 openvpn_resync('client',$ovpn);
 """
 

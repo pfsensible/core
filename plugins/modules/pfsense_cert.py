@@ -191,7 +191,6 @@ CERT_ARGUMENT_SPEC = dict(
 
 CERT_PHP_COMMAND_PREFIX = """
 require_once('certs.inc');
-init_config_arr(array('system', 'cert'));
 """
 
 
@@ -340,7 +339,6 @@ class PFSenseCertModule(PFSenseModuleBase):
                 # import certificate
                 return self.pfsense.phpshell("""
                     require_once('certs.inc');
-                    init_config_arr(array('cert'));
                     $cert =& lookup_cert('{refid}');
                     cert_import($cert, '{cert}', '{key}');
                     $savemsg = sprintf(gettext("Imported certificate %s"), $cert['descr']);
@@ -351,8 +349,7 @@ class PFSenseCertModule(PFSenseModuleBase):
                 # generate internal certificate
                 return self.pfsense.phpshell("""
                     require_once('certs.inc');
-                    init_config_arr(array('cert'));
-                    $cert =& lookup_cert('{refid}');
+                    $cert =& lookup_cert('{refid}')['item'];
 
                     $pconfig = array( 'dn_commonname'         => '{dn_commonname}',
                                       'dn_country'            => '{dn_country}',

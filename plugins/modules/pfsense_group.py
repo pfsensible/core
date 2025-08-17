@@ -76,13 +76,11 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 GROUP_PHP_COMMAND_PREFIX = """
 require_once('auth.inc');
-init_config_arr(array('system', 'group'));
-$a_group = &$config['system']['group'];
 """
 
 GROUP_PHP_COMMAND_SET = GROUP_PHP_COMMAND_PREFIX + """
-$groupent = $a_group[{idx}];
-local_group_set($groupent);
+$group = config_get_path('system/group')[{idx}];
+local_group_set($group);
 """
 
 # This runs after we remove the group from the config so we can't use it

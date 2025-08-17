@@ -36,9 +36,7 @@ OPENVPN_OVERRIDE_REQUIRED_IF = [
 
 OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX = """
 require_once('openvpn.inc');
-init_config_arr(array('openvpn', 'openvpn-csc'));
-$a_csc = &$config['openvpn']['openvpn-csc'];
-$csc = $a_csc[{idx}];
+$csc = config_get_path('openvpn/openvpn-csc')[{idx}];
 """
 
 OPENVPN_OVERRIDE_PHP_COMMAND_SET = OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX + """
@@ -46,8 +44,8 @@ openvpn_resync_csc($csc);
 """
 
 OPENVPN_OVERRIDE_PHP_COMMAND_DEL = OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX + """
-openvpn_delete_csc($a_csc[{idx}]);
-unset($a_csc[{idx}]);
+openvpn_delete_csc($csc);
+unset($csc);
 """
 
 
