@@ -1,7 +1,6 @@
 ---
 - hosts: pfsense
   tasks:
-    # TODO - This needs to get impletmented
     - name: OpenVPN CA
       pfsensible.core.pfsense_ca:
         name: OpenVPN CA
@@ -11,9 +10,7 @@
       tags:
         - openvpn
         - openvpn_ca
-      when: false
 
-    # TODO - need an internal CA first - generate by hand in WebUI for now
     - name: Generate new internal certificate
       pfsensible.core.pfsense_cert:
         method: internal
@@ -22,7 +19,7 @@
         keytype: RSA
         keylen: 2048
         lifetime: 3650
-        dn_country: "US"
+        dn_country: US
         certtype: server
         state: present
       tags: openvpn_cert

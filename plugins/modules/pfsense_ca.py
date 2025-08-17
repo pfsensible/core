@@ -26,6 +26,11 @@ options:
     description: The name of the Certificate Authority
     required: true
     type: str
+  method:
+    description: The type of Certificate Authority to create
+    default: existing
+    choices: [ "internal", "existing", "intermediate" ]
+    type: str
   state:
     description: State in which to leave the Certificate Authority
     default: present
@@ -72,6 +77,62 @@ options:
         encoded PEM as a single string (which is how pfSense stores it).
     type: str
     version_added: 0.6.2
+  keytype:
+    description: The key type for the internal Certificate Authority.
+    default: RSA
+    choices: [ "RSA", "ECDSA" ]
+    type: str
+  ecname:
+    description: The Elliptic Curve Name to use when generating a new ECDSA key.
+    default: 'prime256v1'
+    choices: ['secp112r1', 'secp112r2', 'secp128r1', 'secp128r2', 'secp160k1', 'secp160r1', 'secp160r2', 'secp192k1', 'secp224k1', 'secp224r1',
+        'secp256k1', 'secp384r1', 'secp521r1', 'prime192v1', 'prime192v2', 'prime192v3', 'prime239v1', 'prime239v2', 'prime239v3', 'prime256v1',
+        'sect113r1', 'sect113r2', 'sect131r1', 'sect131r2', 'sect163k1', 'sect163r1', 'sect163r2', 'sect193r1', 'sect193r2', 'sect233k1', 'sect233r1',
+        'sect239k1', 'sect283k1', 'sect283r1', 'sect409k1', 'sect409r1', 'sect571k1', 'sect571r1', 'c2pnb163v1', 'c2pnb163v2', 'c2pnb163v3', 'c2pnb176v1',
+        'c2tnb191v1', 'c2tnb191v2', 'c2tnb191v3', 'c2pnb208w1', 'c2tnb239v1', 'c2tnb239v2', 'c2tnb239v3', 'c2pnb272w1', 'c2pnb304w1', 'c2tnb359v1',
+        'c2pnb368w1', 'c2tnb431r1', 'wap-wsg-idm-ecid-wtls1', 'wap-wsg-idm-ecid-wtls3', 'wap-wsg-idm-ecid-wtls4', 'wap-wsg-idm-ecid-wtls5',
+        'wap-wsg-idm-ecid-wtls6', 'wap-wsg-idm-ecid-wtls7', 'wap-wsg-idm-ecid-wtls8', 'wap-wsg-idm-ecid-wtls9', 'wap-wsg-idm-ecid-wtls10',
+        'wap-wsg-idm-ecid-wtls11', 'wap-wsg-idm-ecid-wtls12', 'Oakley-EC2N-3', 'Oakley-EC2N-4', 'brainpoolP160r1', 'brainpoolP160t1', 'brainpoolP192r1',
+        'brainpoolP192t1', 'brainpoolP224r1', 'brainpoolP224t1', 'brainpoolP256r1', 'brainpoolP256t1', 'brainpoolP320r1', 'brainpoolP320t1',
+        'brainpoolP384r1', 'brainpoolP384t1', 'brainpoolP512r1', 'brainpoolP512t1', 'SM2']
+    type: str
+  keylen:
+    description: The length to use when generating a new RSA key, in bits
+    default: '2048'
+    type: str
+  digest_alg:
+    description: The digest algorithm for the internal Certificate Authority.
+    default: sha256
+    choices: [ "sha1", "sha224", "sha256", "sha384", "sha512" ]
+    type: str
+  lifetime:
+    description: The lifetime in days for the internal Certificate Authority certificate.  Between 1 and 12000.
+    default: 3650
+    type: int
+  dn_commonname:
+    description: The Common Name of the internal Certificate Authority certificate.
+    default: internal-ca
+    type: str
+  dn_country:
+    description: The 2-letter country code of the internal Certificate Authority certificate.
+    default: ''
+    type: str
+  dn_state:
+    description: The State or Province of the internal Certificate Authority certificate.
+    default: ''
+    type: str
+  dn_city:
+    description: The City of the internal Certificate Authority certificate.
+    default: ''
+    type: str
+  dn_organization:
+    description: The Organization of the internal Certificate Authority certificate.
+    default: ''
+    type: str
+  dn_organizationalunit:
+    description: The Organizational Unit of the internal Certificate Authority certificate.
+    default: ''
+    type: str
   serial:
     description: Number to be used as a sequential serial number for the next certificate to be signed by this CA.
     type: int
@@ -109,6 +170,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 PFSENSE_CA_ARGUMENT_SPEC = dict(
     name=dict(required=True, type='str'),
+    method=dict(type='str', default='existing', choices=['internal', 'existing', 'intermediate']),
     state=dict(type='str', default='present', choices=['present', 'absent']),
     trust=dict(type='bool'),
     randomserial=dict(type='bool'),
@@ -117,6 +179,30 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
     crlname=dict(default=None, type='str'),
     crlrefid=dict(default=None, type='str'),
     key=dict(type='str', no_log=True),
+    keytype=dict(type='str', default='RSA', choices=['RSA', 'ECDSA']),
+    ecname=dict(
+        type='str',
+        default='prime256v1',
+        choices=[
+            'secp112r1', 'secp112r2', 'secp128r1', 'secp128r2', 'secp160k1', 'secp160r1', 'secp160r2',
+            'secp192k1', 'secp224k1', 'secp224r1', 'secp256k1', 'secp384r1', 'secp521r1', 'prime192v1', 'prime192v2', 'prime192v3', 'prime239v1',
+            'prime239v2', 'prime239v3', 'prime256v1', 'sect113r1', 'sect113r2', 'sect131r1', 'sect131r2', 'sect163k1', 'sect163r1', 'sect163r2',
+            'sect193r1', 'sect193r2', 'sect233k1', 'sect233r1', 'sect239k1', 'sect283k1', 'sect283r1', 'sect409k1', 'sect409r1', 'sect571k1', 'sect571r1',
+            'c2pnb163v1', 'c2pnb163v2', 'c2pnb163v3', 'c2pnb176v1', 'c2tnb191v1', 'c2tnb191v2', 'c2tnb191v3', 'c2pnb208w1', 'c2tnb239v1', 'c2tnb239v2',
+            'c2tnb239v3', 'c2pnb272w1', 'c2pnb304w1', 'c2tnb359v1', 'c2pnb368w1', 'c2tnb431r1', 'wap-wsg-idm-ecid-wtls1', 'wap-wsg-idm-ecid-wtls3',
+            'wap-wsg-idm-ecid-wtls4', 'wap-wsg-idm-ecid-wtls5', 'wap-wsg-idm-ecid-wtls6', 'wap-wsg-idm-ecid-wtls7', 'wap-wsg-idm-ecid-wtls8',
+            'wap-wsg-idm-ecid-wtls9', 'wap-wsg-idm-ecid-wtls10', 'wap-wsg-idm-ecid-wtls11', 'wap-wsg-idm-ecid-wtls12', 'Oakley-EC2N-3', 'Oakley-EC2N-4',
+            'brainpoolP160r1', 'brainpoolP160t1', 'brainpoolP192r1', 'brainpoolP192t1', 'brainpoolP224r1', 'brainpoolP224t1', 'brainpoolP256r1',
+            'brainpoolP256t1', 'brainpoolP320r1', 'brainpoolP320t1', 'brainpoolP384r1', 'brainpoolP384t1', 'brainpoolP512r1', 'brainpoolP512t1', 'SM2']),
+    keylen=dict(type='str', default='2048'),
+    digest_alg=dict(type='str', default='sha256', choices=['sha1', 'sha224', 'sha256', 'sha384', 'sha512']),
+    lifetime=dict(default=3650, type='int'),
+    dn_commonname=dict(default='internal-ca', type='str'),
+    dn_country=dict(default='', type='str'),
+    dn_state=dict(default='', type='str'),
+    dn_city=dict(default='', type='str'),
+    dn_organization=dict(default='', type='str'),
+    dn_organizationalunit=dict(default='', type='str'),
     serial=dict(type='int'),
 )
 
@@ -159,29 +245,33 @@ class PFSenseCAModule(PFSenseModuleBase):
         if params['state'] == 'absent':
             return
 
-        # TODO - Make sure certificate purpose includes CA
-        cert = params['certificate']
-        lines = cert.splitlines()
-        if lines[0] == '-----BEGIN CERTIFICATE-----' and lines[-1] == '-----END CERTIFICATE-----':
-            params['certificate'] = base64.b64encode(cert.encode()).decode()
-        elif not re.match('LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t', cert):
-            self.module.fail_json(msg='Could not recognize certificate format: %s' % (cert))
+        if params['method'] == 'existing':
+            if params['certificate'] is None:
+                self.module.fail_json(msg='Missing required argument "certificate"')
 
-        if params['crl'] is not None:
-            crl = params['crl']
-            lines = crl.splitlines()
-            if lines[0] == '-----BEGIN X509 CRL-----' and lines[-1] == '-----END X509 CRL-----':
-                params['crl'] = base64.b64encode(crl.encode()).decode()
-            elif not re.match('LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0t', crl):
-                self.module.fail_json(msg='Could not recognize CRL format: %s' % (crl))
+            # TODO - Make sure certificate purpose includes CA
+            cert = params['certificate']
+            lines = cert.splitlines()
+            if lines[0] == '-----BEGIN CERTIFICATE-----' and lines[-1] == '-----END CERTIFICATE-----':
+                params['certificate'] = base64.b64encode(cert.encode()).decode()
+            elif not re.match('LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t', cert):
+                self.module.fail_json(msg='Could not recognize certificate format: %s' % (cert))
 
-        if params['key'] is not None:
-            ca_key = params['key']
-            lines = ca_key.splitlines()
-            if lines[0] == '-----BEGIN PRIVATE KEY-----' and lines[-1] == '-----END PRIVATE KEY-----':
-                params['key'] = base64.b64encode(ca_key.encode()).decode()
-            elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', ca_key):
-                self.module.fail_json(msg='Could not recognize CA key format: %s' % (ca_key))
+            if params['crl'] is not None:
+                crl = params['crl']
+                lines = crl.splitlines()
+                if lines[0] == '-----BEGIN X509 CRL-----' and lines[-1] == '-----END X509 CRL-----':
+                    params['crl'] = base64.b64encode(crl.encode()).decode()
+                elif not re.match('LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0t', crl):
+                    self.module.fail_json(msg='Could not recognize CRL format: %s' % (crl))
+
+            if params['key'] is not None:
+                ca_key = params['key']
+                lines = ca_key.splitlines()
+                if lines[0] == '-----BEGIN PRIVATE KEY-----' and lines[-1] == '-----END PRIVATE KEY-----':
+                    params['key'] = base64.b64encode(ca_key.encode()).decode()
+                elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', ca_key):
+                    self.module.fail_json(msg='Could not recognize CA key format: %s' % (ca_key))
 
         if params['serial'] is not None:
             if int(params['serial']) < 1:
@@ -194,16 +284,18 @@ class PFSenseCAModule(PFSenseModuleBase):
         obj = dict()
         obj['descr'] = params['name']
         if params['state'] == 'present':
-            if 'certificate' in params and params['certificate'] is not None:
-                obj['crt'] = params['certificate']
-            if params['crl'] is not None:
-                self.crl = {}
-                self.crl['method'] = 'existing'
-                self.crl['text'] = params['crl']
-                self._get_ansible_param(self.crl, 'crlname', fname='descr', force=True, force_value=obj['descr'] + ' CRL')
-                self._get_ansible_param(self.crl, 'crlrefid', fname='refid')
-            if params['key'] is not None:
-                obj['prv'] = params['key']
+
+            if params['method'] == 'existing':
+                if 'certificate' in params and params['certificate'] is not None:
+                    obj['crt'] = params['certificate']
+                if params['crl'] is not None:
+                    self.crl = {}
+                    self.crl['method'] = 'existing'
+                    self.crl['text'] = params['crl']
+                    self._get_ansible_param(self.crl, 'crlname', fname='descr', force=True, force_value=obj['descr'] + ' CRL')
+                    self._get_ansible_param(self.crl, 'crlrefid', fname='refid')
+                if params['key'] is not None:
+                    obj['prv'] = params['key']
 
         for arg in CA_BOOL_VALUES:
             self._get_ansible_param_bool(obj, arg, value=CA_BOOL_VALUES[arg][1], value_false=CA_BOOL_VALUES[arg][0])
@@ -305,30 +397,83 @@ class PFSenseCAModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
+        (dummy, stdout, stderr) = ('', '', '')
         if self.params['state'] == 'present':
-            # ca_import will base64 encode the cert + key  and will fix 'caref' for CAs that reference each other
-            # $ca needs to be an existing reference (particularly 'refid' must be set) before calling ca_import
-            # key and serial are optional arguments.  TODO - handle key and serial
-            (dummy, stdout, stderr) = self.pfsense.phpshell("""
-                $ca =& lookup_ca('{refid}');
-                ca_import($ca, '{cert}');
-                write_config('Update CA reference');
-                ca_setup_trust_store();""".format(refid=self.target_elt.find('refid').text,
-                                                  cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode()))
+            if self.params['method'] == 'existing':
+                # ca_import will base64 encode the cert + key  and will fix 'caref' for CAs that reference each other
+                # $ca needs to be an existing reference (particularly 'refid' must be set) before calling ca_import
+                # key and serial are optional arguments.  TODO - handle key and serial
+                (dummy, stdout, stderr) = self.pfsense.phpshell("""
+                    $ca =& lookup_ca('{refid}')['item'];
+                    ca_import($ca, '{cert}');
+                    write_config('Update CA reference');
+                    ca_setup_trust_store();""".format(refid=self.target_elt.find('refid').text,
+                                                      cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode()))
 
-            crl_stdout = ''
-            crl_stderr = ''
-            if self.refresh_crls:
-                (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
-                    require_once("openvpn.inc");
-                    openvpn_refresh_crls();
-                    require_once("vpn.inc");
-                    ipsec_configure();""")
-                return (dummy, stdout + crl_stdout, stderr + crl_stderr)
+                if self.refresh_crls:
+                    (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
+                        require_once("openvpn.inc");
+                        openvpn_refresh_crls();
+                        require_once("vpn.inc");
+                        ipsec_configure();""")
+                    stdout += crl_stdout
+                    stderr += crl_stderr
 
-            return (dummy, stdout + crl_stdout, stderr + crl_stderr)
-        else:
-            return ('', '', '')
+            if self.params['method'] == 'internal':
+                # Create an internal CA
+                (dummy, stdout, stderr) = self.pfsense.phpshell("""
+                    $caent =& lookup_ca('{refid}');
+                    $ca =& $caent['item'];
+
+                    $dn = array('commonName' => '{dn_commonname}');
+                    $pconfig = array( 'dn_country'            => '{dn_country}',
+                                      'dn_state'              => '{dn_state}',
+                                      'dn_city'               => '{dn_city}',
+                                      'dn_organization'       => '{dn_organization}',
+                                      'dn_organizationalunit' => '{dn_organizationalunit}' );
+                    if (!empty($pconfig['dn_country'])) {{
+                        $dn['countryName'] = $pconfig['dn_country'];
+                    }}
+                    if (!empty($pconfig['dn_state'])) {{
+                        $dn['stateOrProvinceName'] = $pconfig['dn_state'];
+                    }}
+                    if (!empty($pconfig['dn_city'])) {{
+                        $dn['localityName'] = $pconfig['dn_city'];
+                    }}
+                    if (!empty($pconfig['dn_organization'])) {{
+                        $dn['organizationName'] = $pconfig['dn_organization'];
+                    }}
+                    if (!empty($pconfig['dn_organizationalunit'])) {{
+                        $dn['organizationalUnitName'] = $pconfig['dn_organizationalunit'];
+                    }}
+                    print_r($dn);
+                    if (!ca_create($ca, '{keylen}', '{lifetime}', $dn, '{digest_alg}', '{keytype}', '{ecname}')) {{
+                        print("ca_create failed");
+                        $input_errors = array();
+                        while ($ssl_err = openssl_error_string()) {{
+                            if (strpos($ssl_err, 'NCONF_get_string:no value') === false) {{
+                                array_push($input_errors, "openssl library returns: " . $ssl_err);
+                            }}
+                        }}
+                        print_r($input_errors);
+                    }}
+                    $savemsg = sprintf(gettext("Created internal Certificate Authority %s"), $ca['descr']);
+                    config_set_path("ca/{{$caent['idx']}}", $ca);
+                    write_config($savemsg);
+                    ca_setup_trust_store();""".format(refid=self.target_elt.find('refid').text,
+                                                      dn_commonname=self.params['dn_commonname'],
+                                                      dn_country=self.params['dn_country'],
+                                                      dn_state=self.params['dn_state'],
+                                                      dn_city=self.params['dn_city'],
+                                                      dn_organization=self.params['dn_organization'],
+                                                      dn_organizationalunit=self.params['dn_organizationalunit'],
+                                                      keylen=self.params['keylen'],
+                                                      lifetime=self.params['lifetime'],
+                                                      keytype=self.params['keytype'],
+                                                      digest_alg=self.params['digest_alg'],
+                                                      ecname=self.params['ecname']))
+
+        return (dummy, stdout, stderr)
 
     def _pre_remove_target_elt(self):
         self.diff['after'] = {}
@@ -346,9 +491,6 @@ class PFSenseCAModule(PFSenseModuleBase):
 def main():
     module = AnsibleModule(
         argument_spec=PFSENSE_CA_ARGUMENT_SPEC,
-        required_if=[
-            ["state", "present", ["certificate"]],
-        ],
         supports_check_mode=True)
 
     pfmodule = PFSenseCAModule(module)
