@@ -342,9 +342,11 @@ class PFSenseCertModule(PFSenseModuleBase):
                     $cert =& lookup_cert('{refid}');
                     cert_import($cert, '{cert}', '{key}');
                     $savemsg = sprintf(gettext("Imported certificate %s"), $cert['descr']);
-                    write_config($savemsg);""".format(refid=self.target_elt.find('refid').text,
-                                                      cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode(),
-                                                      key=base64.b64decode(self.target_elt.find('prv').text.encode()).decode()))
+                    write_config($savemsg);
+                    cert_restart_services(cert_get_all_services('{refid}'));
+                    """.format(refid=self.target_elt.find('refid').text,
+                               cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode(),
+                               key=base64.b64decode(self.target_elt.find('prv').text.encode()).decode()))
             else:
                 # generate internal certificate
                 return self.pfsense.phpshell("""
@@ -400,21 +402,23 @@ class PFSenseCertModule(PFSenseModuleBase):
                     }}
                     config_set_path("cert/${{certent['idx']}}", $cert);
                     $savemsg = sprintf(gettext("Created internal certificate %s"), $cert['descr']);
-                    write_config($savemsg);""".format(refid=self.target_elt.find('refid').text,
-                                                      dn_commonname=self.params['name'],
-                                                      dn_country=self.params['dn_country'],
-                                                      dn_state=self.params['dn_state'],
-                                                      dn_city=self.params['dn_city'],
-                                                      dn_organization=self.params['dn_organization'],
-                                                      dn_organizationalunit=self.params['dn_organizationalunit'],
-                                                      altnames=self.params['altnames'],
-                                                      caref=self.target_elt.find('caref').text,
-                                                      keylen=self.params['keylen'],
-                                                      lifetime=self.params['lifetime'],
-                                                      certtype=self.params['certtype'],
-                                                      keytype=self.params['keytype'],
-                                                      digest_alg=self.params['digestalg'],
-                                                      ecname=self.params['ecname']))
+                    write_config($savemsg);
+                    cert_restart_services(cert_get_all_services('{refid}'));
+                    """.format(refid=self.target_elt.find('refid').text,
+                               dn_commonname=self.params['name'],
+                               dn_country=self.params['dn_country'],
+                               dn_state=self.params['dn_state'],
+                               dn_city=self.params['dn_city'],
+                               dn_organization=self.params['dn_organization'],
+                               dn_organizationalunit=self.params['dn_organizationalunit'],
+                               altnames=self.params['altnames'],
+                               caref=self.target_elt.find('caref').text,
+                               keylen=self.params['keylen'],
+                               lifetime=self.params['lifetime'],
+                               certtype=self.params['certtype'],
+                               keytype=self.params['keytype'],
+                               digest_alg=self.params['digestalg'],
+                               ecname=self.params['ecname']))
         else:
             return (None, '', '')
 

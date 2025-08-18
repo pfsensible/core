@@ -407,8 +407,9 @@ class PFSenseCAModule(PFSenseModuleBase):
                     $ca =& lookup_ca('{refid}')['item'];
                     ca_import($ca, '{cert}');
                     write_config('Update CA reference');
-                    ca_setup_trust_store();""".format(refid=self.target_elt.find('refid').text,
-                                                      cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode()))
+                    ca_setup_trust_store();
+                    cert_restart_services(ca_get_all_services('{refid}'));""".format(refid=self.target_elt.find('refid').text,
+                                                                                     cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode()))
 
                 if self.refresh_crls:
                     (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
