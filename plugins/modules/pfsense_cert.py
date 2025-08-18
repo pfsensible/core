@@ -234,19 +234,23 @@ class PFSenseCertModule(PFSenseModuleBase):
         # validate Certificate
         if params['certificate'] is not None:
             cert = params['certificate']
+            if re.match('LS0', cert):
+                cert = base64.b64decode(cert.encode()).decode()
             lines = cert.splitlines()
             if lines[0] == '-----BEGIN CERTIFICATE-----' and lines[-1] == '-----END CERTIFICATE-----':
                 params['certificate'] = base64.b64encode(cert.encode()).decode()
-            elif not re.match('LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t', cert):
+            else:
                 self.module.fail_json(msg='Could not recognize certificate format: %s' % (cert))
 
         # validate key
         if params['key'] is not None:
             key = params['key']
+            if re.match('LS0', key):
+                key = base64.b64decode(key.encode()).decode()
             lines = key.splitlines()
             if re.match('^-----BEGIN ((EC|RSA) )?PRIVATE KEY-----$', lines[0]) and re.match('^-----END ((EC|RSA) )?PRIVATE KEY-----$', lines[-1]):
                 params['key'] = base64.b64encode(key.encode()).decode()
-            elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', key):
+            else:
                 self.module.fail_json(msg='Could not recognize key format: %s' % (key))
 
     def _params_to_obj(self):
