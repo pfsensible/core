@@ -1,0 +1,2 @@
+minor_changes:
+ - pfsense_dns_resolver - Add support for `acl`.
