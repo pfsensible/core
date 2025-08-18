@@ -1,0 +1,151 @@
+# Copyright: (c) 2025, Orion Poplawski <orion@nwra.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+import pytest
+import sys
+
+if sys.version_info < (2, 7):
+    pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
+
+from ansible_collections.pfsensible.core.plugins.modules import pfsense_cert
+from .pfsense_module import TestPFSenseModule
+
+TESTDEL_CRT = (
+    "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVDRENDQXZDZ0F3SUJBZ0lJRmpGT2hzMW5NelF3RFFZSktvWklodmNOQVFFTEJRQXdYREVUTUJFR0ExVUUKQXhNS2IzQmxiblp3YmkxallURUxN"
+    "QWtHQTFVRUJoTUNWVk14RVRBUEJnTlZCQWdUQ0VOdmJHOXlZV1J2TVJBdwpEZ1lEVlFRSEV3ZENiM1ZzWkdWeU1STXdFUVlEVlFRS0V3cHdabE5sYm5OcFlteGxNQjRYRFRJeU1ESXhOREExCk1EZ3pN"
+    "Vm9YRFRNeU1ESXhNakExTURnek1Wb3dYREVUTUJFR0ExVUVBeE1LYjNCbGJuWndiaTFqWVRFTE1Ba0cKQTFVRUJoTUNWVk14RVRBUEJnTlZCQWdUQ0VOdmJHOXlZV1J2TVJBd0RnWURWUVFIRXdkQ2Iz"
+    "VnNaR1Z5TVJNdwpFUVlEVlFRS0V3cHdabE5sYm5OcFlteGxNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDCkFRRUFtc3ZpSk1FMUVUZWQ0Zk90YmtIcEYzZDllTSs2NDA4WFBu"
+    "YTh0SkdkQnEzVUFDeEV6b2FCS1J0MnkxY3QKNnpRRGU1RkY0QUF2dFYxdWNacHNsNW80RFMvSUdTYm42ZDNZTWsrajhqQVEzRW16UjhHT29obmdmMVE5QVhDNgpvaDRyQlA1c1g0WTh1WThrSjNZclg1"
+    "cVRwRlk1S0hMVTFBb1BleVE3eXlNWkhMb2t0OW5jK0ZGWnd3VTdSQ0dTCmNOTFppVnhDUVFLNXA4azltQThiZ3hscVlrZjBtQXlCTnc5TUFmUFVjVWtxRjZQMGdXUEhsSXJIWi91aGc3ZFUKKzIyYW9j"
+    "S1VFTml2OW1xYStCNmNVZ0xURlQ2czBWU0VzWC9kQWVoNjJZTGdmbVhKZzZkTkhRSStNZzZTa2VscAprOVZSVGVqaUVUSUVWOEpnZHYyTjdSU201d0lEQVFBQm80SE5NSUhLTUIwR0ExVWREZ1FXQkJS"
+    "azVvQS8wcWEyCktQd2dvWEpxS010K0FvS0pnVENCalFZRFZSMGpCSUdGTUlHQ2dCUms1b0EvMHFhMktQd2dvWEpxS010K0FvS0oKZ2FGZ3BGNHdYREVUTUJFR0ExVUVBeE1LYjNCbGJuWndiaTFqWVRF"
+    "TE1Ba0dBMVVFQmhNQ1ZWTXhFVEFQQmdOVgpCQWdUQ0VOdmJHOXlZV1J2TVJBd0RnWURWUVFIRXdkQ2IzVnNaR1Z5TVJNd0VRWURWUVFLRXdwd1psTmxibk5wCllteGxnZ2dXTVU2R3pXY3pOREFNQmdO"
+    "VkhSTUVCVEFEQVFIL01Bc0dBMVVkRHdRRUF3SUJCakFOQmdrcWhraUcKOXcwQkFRc0ZBQU9DQVFFQVVIOUtDZG1KZG9BSmxVMHdCSkhZeGpMcktsbFBZNk9OYnpyNUpiaENNNjlIeHhZTgpCa2lpbXd1"
+    "N09mRmFGZkZDT25NSjhvcStKVGxjMG9vREoxM2xCdHRONkdybnZrUTNQMXdZYkNFTmJuaWxPYVVCClRJcmlIeXRORFFhb3VOYS9LV3M3RmF1b2JjdEJsMXc5YXRvSFpzTjVvZWhUM3JBVHYxQ0NBdGpw"
+    "YVRKSWZKUjMKMElRT1lrZTRvWTZEa0l3SHAydlBQbW9vR2dJdGJUdzNVK0U0MVlaZTdxQ21FLzd6TFRTWmtJTTJseDZ6RDQ2agpEZjRyZ044TVVMNnhpd09MbzlyQUp5ckRNM2JEeTJ1QjY0QkVzRFFM"
+    "a2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4CmgxL2d6RFpJRGkrV1hDWUFjYmdMaFpWQnF0bjYydW1GcE1SSXV3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=")
+TESTDEL_KEY = (
+    "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tDQpNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNheStJa3dUVVJONTNoDQo4NjF1UWVrWGQzMTR6N3JqVHhj"
+    "K2RyeTBrWjBHcmRRQUxFVE9ob0VwRzNiTFZ5M3JOQU43a1VYZ0FDKzFYVzV4DQptbXlYbWpnTkw4Z1pKdWZwM2RneVQ2UHlNQkRjU2JOSHdZNmlHZUIvVkQwQmNMcWlIaXNFL214ZmhqeTVqeVFuDQpk"
+    "aXRmbXBPa1Zqa29jdFRVQ2c5N0pEdkxJeGtjdWlTMzJkejRVVm5EQlR0RUlaSncwdG1KWEVKQkFybW55VDJZDQpEeHVER1dwaVIvU1lESUUzRDB3Qjg5UnhTU29Yby9TQlk4ZVVpc2RuKzZHRHQxVDdi"
+    "WnFod3BRUTJLLzJhcHI0DQpIcHhTQXRNVlBxelJWSVN4ZjkwQjZIclpndUIrWmNtRHAwMGRBajR5RHBLUjZXbVQxVkZONk9JUk1nUlh3bUIyDQovWTN0RktibkFnTUJBQUVDZ2dFQUNYN0FIR2tOakVU"
+    "UkZtOFFFRmRTcVBIWGJIV3hqUWZvOFJmdmMxUUxRY0dmDQo0M0xUdGFkaWZOY0dibXFta21yYVc5WUpaemdidFJCS0dnWFM2Mm0yVG5qRDJXY2RpcWJsQUJFS2lXeVJYREhaDQpJV21xQ2g5ME9kczg4"
+    "cjJyZFE1TXJUMitBQTRINDRuNE9jTngzYWRwcndicThxUTRrZGtjSWYyUy9WN2x4M0U3DQpLWVNyVnNZT3hUS0dwQVl4MzVtU3oyckRadXFhcVhyRGtwSTYxa2tFVDluaGJzQStVZDE5aXZrZ3J1WlU3"
+    "bVp3DQpmRzQ0V3JDeEhSNjdiYW1LQ3VPei81SnlKNUt5US9VaFkzak9lczkxZXRpeHJXUkRpaXRCVVIwc01kMXZuQ2cyDQpTSkpjQnAvYXRwbWNjMGY1OVZFSDRGOTNqY01jR3V5cE1mQmkwNExFd1FL"
+    "QmdRRE1BUSsyVk5aQWJ5aVM0cWZqDQpXelE0UWl6MDNSdmUybVhaNHc1aEdKSmk0QnkvdmI4K2xoOE9acGFWSFBjRTVya0tBbExEaFRwUEl0dTFwNWZzDQpic05MTHpJYkIwUmVBdGUxc3JGOU9SRHp0"
+    "VThKblhrNDEwcnFMbmdBZmhVTGUvSUttNjBtUG4vWWU0UnhVSVI3DQp2TjFNemJXMnlYdHJCSlZ5VG1jbFRkRDZ5UUtCZ1FEQ1FCa1B2NnFpYXZXaG1IRnBiZ3QvMklpSUlBUk5iSUJjDQpmVnVUYVFJ"
+    "bXlOZlVSVzlUVG10UHFiYXRuOGhaWFFaL1ZCbWdaMklPOCtCMXBFYW5zYjZCS2xJMXFUMFdMUzR4DQpaV0hLQ3hEdVFiMXNUYmNRMnd3NW5jbk50c1dlWlkxUlV1dlpYcVQwZFU4WUIwb2FsdGVYWTNV"
+    "bDJrUWJuWUcvDQpINUpJeWJPOEx3S0JnUURKNE1zQnJoYVBrUERmMm5nMW4wMmYxcXpTYS9SbXBrMWdQemM5a3FsYU8xbDN6WGZ4DQpvWEYrT0xzUE9LaWlLd2cyQlhLTmxjdk1BRHpZR005WTQ0dFRY"
+    "Wk1CK0VFSm4xcURyaC9DUWJTcTEyTXRxcTRKDQpOOVFreG5OdVdWYk9GSXZEUDZjclQzSUljc0x2dDdSREZ2VVFTZ2xtcHlBQkdYb2lzYitVeE5ybk1RS0JnR09QDQpZc2oxbmNsOU5NUk1VK1NMcUkw"
+    "d09Gbzh2cmZJSXNwRTNnamh5MTZCbGsyUUFRMGJwbGpBVFljVDNDWWhUZEU1DQpFNkZwRzVNNllCTXJ6YUxwc1JDVzFtZjJnLzYzelhNMzJUVXJFdFJyRVdGUE84TUI0blF0Y1Y5a2pFa3hGNHRWDQpD"
+    "dGp3YjI5MEtNUFNDS00wS08vSTVDUXdpTFAydUtkeTBSRkpnRHUxQW9HQUxqSTdGZDl0ckFrY1dSenMyVHpRDQptaDRTZWxHRDFvdFAxRXpFa1hYVlZwK1lMNXlxOWM3V3hsa09RY1lFVmd1N2huNVFn"
+    "cnBRUFZPTFVmbkJoajdXDQo1MC9IVmR6V21wSXg5NUlqZXFDZklBV1U3N0I5cmJUR2hvWWMzbTdJcEdObzl2WlhHYWgrc2JHY3BEK1phV3UzDQp1Q25pTnJpZEhORGgzWHZQVFZkRTRlVT0NCi0tLS0t"
+    "RU5EIFBSSVZBVEUgS0VZLS0tLS0NCg==")
+WEB_CRT = (
+    "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVsRENDQTN5Z0F3SUJBZ0lJU2JlZ00zSWZSTEV3RFFZSktvWklodmNOQVFFTEJRQXdXakU0TURZR0ExVUUKQ2hNdmNHWlRaVzV6WlNCM1pXSkRi"
+    "MjVtYVdkMWNtRjBiM0lnVTJWc1ppMVRhV2R1WldRZ1EyVnlkR2xtYVdOaApkR1V4SGpBY0JnTlZCQU1URlhCbVUyVnVjMlV0TmpJd09ETTJOemxqWkROa05EQWVGdzB5TWpBeU1USXlNak0yCk5ERmFG"
+    "dzB5TXpBek1UY3lNak0yTkRGYU1Gb3hPREEyQmdOVkJBb1RMM0JtVTJWdWMyVWdkMlZpUTI5dVptbG4KZFhKaGRHOXlJRk5sYkdZdFUybG5ibVZrSUVObGNuUnBabWxqWVhSbE1SNHdIQVlEVlFRREV4"
+    "VndabE5sYm5ObApMVFl5TURnek5qYzVZMlF6WkRRd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURHCjkzVW5PMm1MbTRFVTRwOUtlMCtmbkZCQTZGV245eTBDcjhaY0dx"
+    "VFZiN0E3ejY4Y1JBd0l4bEVDYmtWaUx1ejcKSnNUK2gwd1Jiclo3RWI1dkpvZ3JaUHZSV1ByeW9JQWwrT2w1b1dFbE0ycTBQMVJQdjZETndaYjFsUHgzNXdXOApBa1gxQkhLL3FEWWJibjVVRXdqOVdm"
+    "aVpmcnNJeFBHM21ubmpHMHpiMktOaGJGNDM4Tk1xVTVadVRvQW5PYW9PCmJqb2tveWhNUUh1N0JGV2tQS25lTFJGN3lmN0Q3TVp1QnBBbWVCbnllYkl1ZkpzS1ViWGE3OTNFanVPcjN4disKb2J3Qmht"
+    "MUN3NWRpc1o2SDZzS2ZudFJ6UWFUZXhZWEo3WGo2MDdtMWc2YkpqR2FweG9WTTlvU1VlUGlzVWNCOQpNbEp1WkpnVmVOYVlFQkJPbEgxWkFnTUJBQUdqZ2dGY01JSUJXREFKQmdOVkhSTUVBakFBTUJF"
+    "R0NXQ0dTQUdHCitFSUJBUVFFQXdJR1FEQUxCZ05WSFE4RUJBTUNCYUF3TXdZSllJWklBWWI0UWdFTkJDWVdKRTl3Wlc1VFUwd2cKUjJWdVpYSmhkR1ZrSUZObGNuWmxjaUJEWlhKMGFXWnBZMkYwWlRB"
+    "ZEJnTlZIUTRFRmdRVWNHMlpNNHdKRlpQRQoxV1ZndXd0eFRUT0RhOGd3Z1lzR0ExVWRJd1NCZ3pDQmdJQVVjRzJaTTR3SkZaUEUxV1ZndXd0eFRUT0RhOGloClhxUmNNRm94T0RBMkJnTlZCQW9UTDNC"
+    "bVUyVnVjMlVnZDJWaVEyOXVabWxuZFhKaGRHOXlJRk5sYkdZdFUybG4KYm1Wa0lFTmxjblJwWm1sallYUmxNUjR3SEFZRFZRUURFeFZ3WmxObGJuTmxMVFl5TURnek5qYzVZMlF6WkRTQwpDRW0zb0RO"
+    "eUgwU3hNQ2NHQTFVZEpRUWdNQjRHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWdZSUt3WUJCUVVJCkFnSXdJQVlEVlIwUkJCa3dGNElWY0daVFpXNXpaUzAyTWpBNE16WTNPV05rTTJRME1BMEdDU3FH"
+    "U0liM0RRRUIKQ3dVQUE0SUJBUUFzazBrTU12dVR0T3c2Ymx5a1U5cWNkRnQvVDlGOFZBZ0taNHgzYXNxNlArRG96N1FGVFpKVwprdmlrQVVUekpMMys4c0NKRDdjV3BZa2ZpdDRBYndhWFIyRzVsczhj"
+    "L0JRcUdmY1ZOUnJVdWRscG12UUYrYk5iClMxZ2xjS2hYYXZuYnlQdkRMem9CZGVlTmhqYXIzcWc1TTV6T3I0aXYyM0hCZVc2aEY2c0FrV3dpVkU5NEJmZ00KOS9qeW5GalVYTkJheStMODM2TXBpNDhp"
+    "NnE4OHdlQ25UdDdaTFFjWlZXb0IwcWNQSS96SExTUFlTNlhhcmdvdgpva3E1M3ZQSG9HNnRGUHpFSkpFVmNmOTV1bVcwaUpFR3hCQ3dTeVlnd2xSY0pEeGJ1QklFY0xWb2JKclVveHNLClJXcW13SHdQ"
+    "YkFxRjBOMUZ0cFJ6K3Yvd0lQYWdSQ2lVCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K")
+WEB_KEY = (
+    "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRREc5M1VuTzJtTG00RVUKNHA5S2UwK2ZuRkJBNkZXbjl5MENy"
+    "FpjR3FUVmI3QTd6NjhjUkF3SXhsRUNia1ZpTHV6N0pzVCtoMHdSYnJaNwpFYjV2Sm9nclpQdlJXUHJ5b0lBbCtPbDVvV0VsTTJxMFAxUlB2NkROd1piMWxQeDM1d1c4QWtYMUJISy9xRFliCmJuNVVFd"
+    "2o5V2ZpWmZyc0l4UEczbW5uakcwemIyS05oYkY0MzhOTXFVNVp1VG9Bbk9hb09iam9rb3loTVFIdTcKQkZXa1BLbmVMUkY3eWY3RDdNWnVCcEFtZUJueWViSXVmSnNLVWJYYTc5M0VqdU9yM3h2K29id"
+    "0JobTFDdzVkaQpzWjZINnNLZm50UnpRYVRleFlYSjdYajYwN20xZzZiSmpHYXB4b1ZNOW9TVWVQaXNVY0I5TWxKdVpKZ1ZlTmFZCkVCQk9sSDFaQWdNQkFBRUNnZ0VCQUxldGVIeVlUMjV2UnpIVnFFS"
+    "GxKbk50cFhUV1IwVUJYWThPWUN0aytXaUUKYkFnN1NTZnA5Y1lmOW1jdEQyWjlkWTdCa3JoNmhKSFBTQ3pEQzYrbXZheDUxRExHVnh5bmFNWWxUTHhaYThvZwo5aytoNng2WUJFWU9nbU1DZ0RQY2xTR"
+    "2tZNXEyMll2dktNd1lMQTFIYVZRaHUrdFA0REJQUitvOGRHdGhKNG9ICmlna3Z4OWhQOVAzc1VBZjFQQWtKMzkyYjZ6dGJOYkRWdXhGSTFVbklCKzF1c2s5VUduWlM5bUVXTkxDRTEwYngKT2U1YlVJa"
+    "TlCWkkzM3pTamdra3ZFQVdJMlBzVWJDaEFqa0RPUStFT1V1dktyQVJoUnBXUDVWUmdxVUJpc0ZuaApmeWFFMUNtTTQ4RWZyVGZ4QklXaTA0cHZ2U0I3Zm4rbXN3RkRCcjcvUGtVQ2dZRUE3L05NcHlZd"
+    "Gw2dng5b043ClNWUmdIY01JZlVZR2xJSVNvTGNJbmRURGQ3K3krR0pvRkFBclhBcVMvR2dKUFgxZkMxbWVYZWJDY0dqeHVGZEgKTlNNbnMxVk1OVHlEdjNMWVhhV0lBSlVvMWtTMlVYaWZHcUN3WEpSc"
+    "kVmVE11U1NlRXpXOGJaNE5Cdmk1R1VsdQpyTnJWNnBqTFQ5eS85ZENUbitHeWthamNMZzhDZ1lFQTFFWmpZTldhTXltbHgydDlpS3hsVTR2SlcxVDMrbW1DCkhWRDM5bDlUSS9BWlQ4Ti9VVGRYVXhjd"
+    "DN2MnA4OTdPRWJ6cThBRno1dFRrNUV6Y1dJZDcwRmYwRUYxTFpMaXkKME1NZlVLVUlBTExwekh4T294T3YxNVRJTzlXSVF4d2J2TWcxaDh2M2M1MkNCVEpsVzFUektJM3dKMWV2RXBrRwpzcDVqN1NMS"
+    "UJoY0NnWUVBeTdqTHlkWldPMEhYU3k3U2k2M0JkVU5UZjlqbVdVd2VPS2x0L1dMWkdtQjl1UGtECjJJZFVTTzhKWUplTDBOTVMwUFlqeVNIVXo4K3ArcExQZUVRQ3Z2V2FvRkJpb3pjRWtHMnNES0tYY"
+    "TJRblR3Q1UKUk8xTkR5MUx3cEVQQjlvWkE4SkoydCtudTlXTWdmV2dxODJZZFhlSWxxT2JyejZKTitOTjB2R0ZEdTBDZ1lCcQp5a1p3anNVV2ZCdEVhZFVyanQ4aTJxNGYzbTBxY3kzY0pjRzVGbGV6T"
+    "3JUaEpjN0ZRdndSZHhYQ213YUhBMDNVCktxQmV3YnhYSWo5TWcwWk8yMG4wbEdyYVdMVDNKTndBbmtrQXZ5VjVoSWlPTVBNMm8wN1JPNjVJTzdKallKNnIKcUdVVnZnenRBdzVJSXdST29Edjc2UHdxT"
+    "HJpS3VLVmY4c0wrcDRMTlhRS0JnUUNrbXlIR3dielVJLzN6Z1FNSApxY1RkMUttMDhxTXJjUzZXdU03RGJxTEpIQXdlcFRSYUpuVmVLcnRRS2t4SGRlcjZsK2VWUjNvWXArUE9EbTVECjBGSXMxbXd2R"
+    "Fp3TjI2RVhmZnZkWG9EK1luNnVEeGlvVU9QZ1A2U1hLT3dxcnBuenVFZTFBNFpDQTFnRXJhd2MKTTNmejdiV3d0a1JUUE5uaGxybkVJNXY5Qmc9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==")
+RSA_KEY = (
+    "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlCUFFJQkFBSkJBTmNObWdtNFlsU1VBcjJ4ZFdlaTVhUlUvRGJXdHNRNDdnamt2MjhFa2plM29iKzZxME0rCkQ1cGh3WURjdjl5Z1ltdUo1"
+    "d09pMWNQcHJzV2RGV212U3VzQ0F3RUFBUUpCQUtRQ3paM29MNllOaytHVU85UWsKV2p0d1RVS05rcW9vT1BJemN3UjZXZ0YrOXEydlNIaTQxLzZmdjFOaDJQZU91ZDcvZHFxTklLbGxGZXdIYnJsbApp"
+    "dUVDSVFENHZvZUZqSEdMMzllcGVXVlRpYnF6UWdQTFYzWmlmbHYzMEdkb3ZqTGhVd0loQU4xVGZNOFNxdlBiCjJtelVzL2pITDJQMjl1U1B1bHd3b3lOQ052dFk3a1VKQWlFQTI5YUFMYzYzRjVrSW9G"
+    "YVM3K2JjNDhyblVaS0cKSlh4cHliWWRmcHdDbWRNQ0lRREhGbnFHcW53c3IrOWpSbEk5enE3S2RUVFJsSmhHcFZtYU5jM1Blc2VhUVFJaApBTzl6UUUralBYK2pXbGhpTWMzZnM5amNiVWJKMWpTUDYv"
+    "aDBXd3Iyb1dJRwotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==")
+
+
+class TestPFSenseCertModule(TestPFSenseModule):
+
+    module = pfsense_cert
+
+    def __init__(self, *args, **kwargs):
+        super(TestPFSenseCertModule, self).__init__(*args, **kwargs)
+        self.config_file = 'pfsense_cert_config.xml'
+        self.pfmodule = pfsense_cert.PFSenseCertModule
+
+    @staticmethod
+    def runTest():
+        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        pass
+
+    def get_target_elt(self, obj, absent=False, module_result=None):
+        """ return target elt from XML """
+        root_elt = self.xml_result.getroot()
+        result = root_elt.findall("cert[descr='{0}']".format(obj['name']))
+        if len(result) == 1:
+            return result[0]
+        elif len(result) > 1:
+            self.fail('Found multiple certs for name {0}.'.format(obj['name']))
+        else:
+            return None
+
+    def check_target_elt(self, obj, target_elt):
+        """ check XML definition of target elt """
+
+        self.check_param_equal(obj, target_elt, 'name', xml_field='descr')
+        self.check_param_equal(obj, target_elt, 'certificate', xml_field='crt')
+        if 'key' in obj:
+            self.check_param_equal_or_present(obj, target_elt, 'prv')
+
+    ##############
+    # tests
+    #
+    def test_cert_create(self):
+        """ test creation of a new cert """
+        obj = dict(name='cert1', ca='testdel')
+        self.do_module_test(obj, command="create cert 'cert1'")
+
+    def test_cert_import(self):
+        """ test import of a new cert """
+        obj = dict(name='cert1', method='import', certificate=WEB_CRT, key=RSA_KEY)
+        self.do_module_test(obj, command="create cert 'cert1'")
+
+    def test_cert_delete(self):
+        """ test deletion of a cert """
+        obj = dict(name='webConfigurator default (62083679cd3d4)')
+        self.do_module_test(obj, command="delete cert 'webConfigurator default (62083679cd3d4)'", delete=True)
+
+    def test_cert_update_noop(self):
+        """ test not updating a cert """
+        obj = dict(name='webConfigurator default (62083679cd3d4)', method='import', certificate=WEB_CRT)
+        self.do_module_test(obj, changed=False)
+
+    ##############
+    # misc
+    #
+    def test_add_invalid_key(self):
+        """ test adding an invalid key """
+        key = 'blah'
+        obj = dict(name='invalid', method='import', certificate=WEB_CRT, key=key)
+        msg = 'Could not recognize key format: %s' % (key)
+        self.do_module_test(obj, failed=True, msg=msg)

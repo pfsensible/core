@@ -251,26 +251,32 @@ class PFSenseCAModule(PFSenseModuleBase):
 
             # TODO - Make sure certificate purpose includes CA
             cert = params['certificate']
+            if re.match('LS0', cert):
+                cert = base64.b64decode(cert.encode()).decode()
             lines = cert.splitlines()
             if lines[0] == '-----BEGIN CERTIFICATE-----' and lines[-1] == '-----END CERTIFICATE-----':
                 params['certificate'] = base64.b64encode(cert.encode()).decode()
-            elif not re.match('LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t', cert):
+            else:
                 self.module.fail_json(msg='Could not recognize certificate format: %s' % (cert))
 
             if params['crl'] is not None:
                 crl = params['crl']
+                if re.match('LS0', crl):
+                    crl = base64.b64decode(crl.encode()).decode()
                 lines = crl.splitlines()
                 if lines[0] == '-----BEGIN X509 CRL-----' and lines[-1] == '-----END X509 CRL-----':
                     params['crl'] = base64.b64encode(crl.encode()).decode()
-                elif not re.match('LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0t', crl):
+                else:
                     self.module.fail_json(msg='Could not recognize CRL format: %s' % (crl))
 
             if params['key'] is not None:
                 ca_key = params['key']
+                if re.match('LS0', ca_key):
+                    ca_key = base64.b64decode(ca_key.encode()).decode()
                 lines = ca_key.splitlines()
                 if lines[0] == '-----BEGIN PRIVATE KEY-----' and lines[-1] == '-----END PRIVATE KEY-----':
                     params['key'] = base64.b64encode(ca_key.encode()).decode()
-                elif not re.match('LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t', ca_key):
+                else:
                     self.module.fail_json(msg='Could not recognize CA key format: %s' % (ca_key))
 
         if params['serial'] is not None:
