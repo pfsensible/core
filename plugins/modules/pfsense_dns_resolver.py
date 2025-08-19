@@ -455,31 +455,30 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 new_custom_options = [line.strip() for line in params["custom_options"].strip().split("\n")]
                 merged_custom_options = existing_custom_options.copy()
                 for option in new_custom_options:
-                    if "view:" or "server:" in option:
+                    if "view:" in option or "server:" in option:
                         merged_custom_options.append(option)
                     elif option not in existing_custom_options:
                         merged_custom_options.append(option)
                     else:
-                      pass
+                        pass
 
                 custom_opts_base64 = base64.b64encode(bytes("\n".join(merged_custom_options), "utf-8")).decode()
 
             else:
-              # If no new custom options are provided, retain the existing ones
-              custom_opts_base64 = custom_options_elt.text if custom_options_elt is not None else ""
+                # If no new custom options are provided, retain the existing ones
+                custom_opts_base64 = custom_options_elt.text if custom_options_elt is not None else ""
 
             if params.get("preserve"):
-              for host_elt in self.root_elt.findall("hosts"):
-                  host_entry = {}
-                  for child in host_elt:
-                      if child.tag == "aliases" and child.text is not None:
-                          # Handle aliases as a string if it's not an XML element
-                          host_entry["aliases"] = child.text
-                      else:
-                          host_entry[child.tag] = child.text
-                  existing_hosts.append(host_entry)
-              existing_hosts.extend(params.get("hosts"))
-            # exit()
+                for host_elt in self.root_elt.findall("hosts"):
+                    host_entry = {}
+                    for child in host_elt:
+                        if child.tag == "aliases" and child.text is not None:
+                            # Handle aliases as a string if it's not an XML element
+                            host_entry["aliases"] = child.text
+                        else:
+                            host_entry[child.tag] = child.text
+                    existing_hosts.append(host_entry)
+                existing_hosts.extend(params.get("hosts"))
 
             # Preserve existing domain overrides
             existing_overrides = []
@@ -534,11 +533,11 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 self._get_ansible_param_bool(domainoverride, "forward_tls_upstream", value="", params=domainoverride)
             obj["custom_options"] = base64.b64encode(bytes(params['custom_options'], 'utf-8')).decode()
             if params.get("preserve"):
-              obj["hosts"] = existing_hosts
-              if existing_overrides:
-                obj["domainoverrides"] = existing_overrides
-              if existing_custom_options:
-                obj["custom_options"] = custom_opts_base64
+                obj["hosts"] = existing_hosts
+                if existing_overrides:
+                  obj["domainoverrides"] = existing_overrides
+                if existing_custom_options:
+                  obj["custom_options"] = custom_opts_base64
 
             # Append new hosts if provided
             if params.get("hosts"):
@@ -683,6 +682,7 @@ clear_subsystem_dirty("unbound");
 
         # todo: hosts and domainoverrides is not logged
         return values
+
 
 def main():
     module = AnsibleModule(
