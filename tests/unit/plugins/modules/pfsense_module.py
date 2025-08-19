@@ -176,18 +176,18 @@ class TestPFSenseModule(ModuleTestCase):
                 self.assertFalse(self.load_xml_result())
             elif not changed:
                 self.assertFalse(self.load_xml_result())
-                self.assertEqual(result['commands'], [])
+                self.assertEqual(result['commands'], [], result)
             elif delete:
                 self.assertTrue(self.load_xml_result())
                 target_elt = self.get_target_elt(obj, absent=True, module_result=result)
                 self.assertIsNone(target_elt)
-                self.assertEqual(result['commands'], command)
+                self.assertEqual(result['commands'], command, result)
             else:
                 self.assertTrue(self.load_xml_result())
                 target_elt = self.get_target_elt(obj, module_result=result)
                 self.assertIsNotNone(target_elt)
+                self.assertEqual(result['commands'], command, result)
                 self.check_target_elt(obj, target_elt, **kwargs)
-                self.assertEqual(result['commands'], command)
 
     def failed(self):
         with self.assertRaises(AnsibleFailJson) as exc:
@@ -318,7 +318,7 @@ class TestPFSenseModule(ModuleTestCase):
     def assert_xml_elt_equal(self, tag, elt_name, elt_value):
         elt = tag.find(elt_name)
         if elt is None:
-            self.fail('Element not found: ' + elt_name)
+            self.fail('Element not found: ' + elt_name + ' in tag:' + tag)
 
         if isinstance(elt_value, int):
             value = str(elt_value)
