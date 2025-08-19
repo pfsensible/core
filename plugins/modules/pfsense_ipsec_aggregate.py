@@ -212,7 +212,7 @@ options:
       dhgroup:
         description: DH group. DH groups 1, 2, 22, 23, and 24 provide weak security and should be avoided.
         required: True
-        choices: [ 1, 2, 5, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29, 30 ]
+        choices: [ 1, 2, 5, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 28, 29, 30, 31, 32 ]
         type: int
       descr:
         description: The description of the IPsec tunnel on which to create/delete the proposal.
@@ -340,7 +340,7 @@ options:
       pfsgroup:
         description: PFS key group, 0 for off. DH groups 1, 2, 22, 23, and 24 provide weak security and should be avoided.
         default: '14'
-        choices: [ '0', '1', '2', '5', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '28', '29', '30' ]
+        choices: [ '0', '1', '2', '5', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '28', '29', '30', '31', '32' ]
         type: str
       lifetime:
         description: Specifies how often the connection must be rekeyed, in seconds
