@@ -535,9 +535,9 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             if params.get("preserve"):
                 obj["hosts"] = existing_hosts
                 if existing_overrides:
-                  obj["domainoverrides"] = existing_overrides
+                    obj["domainoverrides"] = existing_overrides
                 if existing_custom_options:
-                  obj["custom_options"] = custom_opts_base64
+                    obj["custom_options"] = custom_opts_base64
 
             # Append new hosts if provided
             if params.get("hosts"):
@@ -581,12 +581,12 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         return obj
 
     def _find_host_index(self, obj, new_host):
-      for index, nested_dict in enumerate(obj["hosts"]):
-        existing_host = f"{nested_dict.get('host')}.{nested_dict.get('domain')}"
-        new_host_fqdn = f"{new_host.get('host')}.{new_host.get('domain')}"
-        if existing_host == new_host_fqdn:
-            return index
-      return None
+        for index, nested_dict in enumerate(obj["hosts"]):
+          existing_host = f"{nested_dict.get('host')}.{nested_dict.get('domain')}"
+          new_host_fqdn = f"{new_host.get('host')}.{new_host.get('domain')}"
+          if existing_host == new_host_fqdn:
+              return index
+        return None
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
