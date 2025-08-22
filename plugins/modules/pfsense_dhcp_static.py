@@ -379,7 +379,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
             require_once("services.inc");
             $retvaldhcp = services_dhcpd_configure();
             if ($retvaldhcp == 0) {
-              clear_subsystem_dirty('staticmaps');
+              clear_subsystem_dirty('dhcpd');
             }""")
 
     def _pre_remove_target_elt(self):
