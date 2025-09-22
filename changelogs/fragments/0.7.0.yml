@@ -1,0 +1,8 @@
+release_summary: |-
+  This is a major refactoring of the ``pfsensible.core`` collection.  The goal
+  was to support easier creation of new modules via the ``pfsensible-generate-module``
+  script. PFSenseModuleBase was expanded to handle more common functions via
+  configuration options and callback functions.
+breaking_changes: |-
+  This release is only expected to work with pfSense 2.8.0+ / pfSense Plus 24.11+
+  due to changes in various lookup_*() functions in pfSense.
