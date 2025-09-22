@@ -1,2 +1,0 @@
-bugfixes:
-  - "pfsense_ca/pfsense_cert - Restart services affected by updated certificates. (https://github.com/pfsensible/core/issues/191)"

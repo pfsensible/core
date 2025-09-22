@@ -1,2 +1,0 @@
-bugfixes:
-  - "pfsense_interface - fixes removal of an interface when interface group is empty. (https://github.com/pfsensible/core/issues/182)"

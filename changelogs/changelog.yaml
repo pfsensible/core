@@ -113,3 +113,58 @@ releases:
     - phpshell_config.yml
     - user_groups.yml
     release_date: '2025-01-30'
+  0.7.0:
+    changes:
+      breaking_changes:
+      - This release is only expected to work with pfSense 2.8.0+ / pfSense Plus 24.11+
+        due to changes in various lookup_*() functions in pfSense.
+      bugfixes:
+      - Use config_get_path() to load configuration in php update commands. Fixes
+        various update commands not working with pfSense 2.8.0 (https://github.com/pfsensible/core/issues/190)
+      - pfsense_ca / pfsense_cert - Fix validation of base64 encoded keys and certs.
+        (https://github.com/pfsensible/core/issues/174)
+      - pfsense_ca/pfsense_cert - Restart services affected by updated certificates.
+        (https://github.com/pfsensible/core/issues/191)
+      - pfsense_cert - Write generated internal certificate into config. (https://github.com/pfsensible/core/issues/186)
+      - pfsense_dns_resolver - do not always add an empty domainoverrides item. (https://github.com/pfsensible/core/issues/187)
+      - pfsense_interface - fixes removal of an interface when interface group is
+        empty. (https://github.com/pfsensible/core/issues/182)
+      - 'pfsense_interface - fixes removal of an interface with `state: absent`. _remove_all_separators()
+        works when no separator exists for that interface. (https://github.com/pfsensible/core/issues/170)'
+      minor_changes:
+      - pfsense_alias - Add `url` parameter and deprecate using `address` for `urltable`
+        and `urltable_ports` types.
+      - pfsense_ca - Add ability to create internal CAs. (https://github.com/pfsensible/core/issues/135)
+      - pfsense_rule - Change `after` to insert after the last match instead of the
+        first.
+      release_summary: 'This is a major refactoring of the ``pfsensible.core`` collection.  The
+        goal
+
+        was to support easier creation of new modules via the ``pfsensible-generate-module``
+
+        script. PFSenseModuleBase was expanded to handle more common functions via
+
+        configuration options and callback functions.'
+    fragments:
+    - 0.7.0.yml
+    - 135_pfsense_ca_create_internal.yml
+    - 170_pfsense_interface_fix_remove_all_separators.yml
+    - 174_pfsense_cert_validate_base64.yml
+    - 182_interface_group_null_check.yml
+    - 186_fix_pfsense_cert_internal.yml
+    - 187_dns_resolver_domainoverrides.yml
+    - 190_config_get_path.yml
+    - 191_cert_restart_services.yml
+    - pfsense_alias-add-url.yml
+    - pfsense_rule-after.yml
+    modules:
+    - description: Manage pfSense DHCP servers
+      name: pfsense_dhcp_server
+      namespace: ''
+    - description: PHP Shell
+      name: pfsense_phpshell
+      namespace: ''
+    - description: Manage pfSense shellcmds
+      name: pfsense_shellcmd
+      namespace: ''
+    release_date: '2025-09-22'

@@ -1,2 +1,0 @@
-bugfixes:
-  - "pfsense_ca / pfsense_cert - Fix validation of base64 encoded keys and certs. (https://github.com/pfsensible/core/issues/174)"

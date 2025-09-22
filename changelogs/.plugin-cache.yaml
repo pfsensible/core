@@ -51,6 +51,11 @@ plugins:
       name: pfsense_default_gateway
       namespace: ''
       version_added: 0.6.0
+    pfsense_dhcp_server:
+      description: Manage pfSense DHCP servers
+      name: pfsense_dhcp_server
+      namespace: ''
+      version_added: 0.7.0
     pfsense_dhcp_static:
       description: Manage pfSense DHCP static mapping
       name: pfsense_dhcp_static
@@ -141,6 +146,11 @@ plugins:
       name: pfsense_openvpn_server
       namespace: ''
       version_added: 0.5.0
+    pfsense_phpshell:
+      description: PHP Shell
+      name: pfsense_phpshell
+      namespace: ''
+      version_added: 0.7.0
     pfsense_rewrite_config:
       description: Rewrite pfSense config.xml
       name: pfsense_rewrite_config
@@ -166,6 +176,11 @@ plugins:
       name: pfsense_setup
       namespace: ''
       version_added: 0.1.0
+    pfsense_shellcmd:
+      description: Manage pfSense shellcmds
+      name: pfsense_shellcmd
+      namespace: ''
+      version_added: 0.7.0
     pfsense_user:
       description: Manage pfSense users
       name: pfsense_user
@@ -181,4 +196,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 0.6.2
+version: 0.7.0

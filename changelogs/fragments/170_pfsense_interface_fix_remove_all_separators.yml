@@ -1,2 +1,0 @@
-bugfixes:
-  - "pfsense_interface - fixes removal of an interface with `state: absent`. _remove_all_separators() works when no separator exists for that interface. (https://github.com/pfsensible/core/issues/170)"

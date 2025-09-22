@@ -1,2 +1,0 @@
-bugfixes:
-  - "Use config_get_path() to load configuration in php update commands. Fixes various update commands not working with pfSense 2.8.0 (https://github.com/pfsensible/core/issues/190)"

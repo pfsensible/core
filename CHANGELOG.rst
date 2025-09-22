@@ -4,6 +4,47 @@ pfSensible.Core Release Notes
 
 .. contents:: Topics
 
+v0.7.0
+======
+
+Release Summary
+---------------
+
+This is a major refactoring of the ``pfsensible.core`` collection.  The goal
+was to support easier creation of new modules via the ``pfsensible-generate-module``
+script. PFSenseModuleBase was expanded to handle more common functions via
+configuration options and callback functions.
+
+Minor Changes
+-------------
+
+- pfsense_alias - Add `url` parameter and deprecate using `address` for `urltable` and `urltable_ports` types.
+- pfsense_ca - Add ability to create internal CAs. (https://github.com/pfsensible/core/issues/135)
+- pfsense_rule - Change `after` to insert after the last match instead of the first.
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- This release is only expected to work with pfSense 2.8.0+ / pfSense Plus 24.11+ due to changes in various lookup_*() functions in pfSense.
+
+Bugfixes
+--------
+
+- Use config_get_path() to load configuration in php update commands. Fixes various update commands not working with pfSense 2.8.0 (https://github.com/pfsensible/core/issues/190)
+- pfsense_ca / pfsense_cert - Fix validation of base64 encoded keys and certs. (https://github.com/pfsensible/core/issues/174)
+- pfsense_ca/pfsense_cert - Restart services affected by updated certificates. (https://github.com/pfsensible/core/issues/191)
+- pfsense_cert - Write generated internal certificate into config. (https://github.com/pfsensible/core/issues/186)
+- pfsense_dns_resolver - do not always add an empty domainoverrides item. (https://github.com/pfsensible/core/issues/187)
+- pfsense_interface - fixes removal of an interface when interface group is empty. (https://github.com/pfsensible/core/issues/182)
+- pfsense_interface - fixes removal of an interface with `state: absent`. _remove_all_separators() works when no separator exists for that interface. (https://github.com/pfsensible/core/issues/170)
+
+New Modules
+-----------
+
+- pfsensible.core.pfsense_dhcp_server - Manage pfSense DHCP servers
+- pfsensible.core.pfsense_phpshell - PHP Shell
+- pfsensible.core.pfsense_shellcmd - Manage pfSense shellcmds
+
 v0.6.2
 ======
 

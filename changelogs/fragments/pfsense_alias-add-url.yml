@@ -1,2 +1,0 @@
-minor_changes:
- - pfsense_alias - Add `url` parameter and deprecate using `address` for `urltable` and `urltable_ports` types.

@@ -1,2 +1,0 @@
-minor_changes:
- - pfsense_rule - Change `after` to insert after the last match instead of the first.
