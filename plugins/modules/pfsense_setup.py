@@ -72,10 +72,12 @@ options:
     choices: ['bs', 'de_DE', 'en_US', 'es_AR', 'es_ES', 'fr_FR', 'it_IT', 'ko_FR', 'nb_NO', 'nl_NL', 'pl_PL', 'pt_BR', 'pt_PT', 'ru_RU', 'zh_CN', 'zh_Hans_CN',
       'zh_Hans_HK', 'zh_Hant_TW']
   webguicss:
-    description: Choose an alternative CSS file (if installed) to change the appearance of the webConfigurator. Custom themes are also supported. If you want to use a custom pfsense CSS theme you need to upload it to the appliance first.
+    description: >
+        Choose an alternative CSS file (if installed) to change the appearance of the webConfigurator. Custom themes are also supported.
+        If you want to use a custom pfsense CSS theme you need to upload it to the appliance first.
+        Standard choices are 'pfsense', 'pfsense-dark','pfsense-dark-BETA','pfsense-BETA', and 'Compact-RED'.
     required: false
     type: str
-    choices: ['pfsense', 'pfsense-dark','pfsense-dark-BETA','pfsense-BETA','Compact-RED','$your-Custom-Theme-Name-here']
   webguifixedmenu:
     description: When enabled, menu remains visible at top of page
     required: false
