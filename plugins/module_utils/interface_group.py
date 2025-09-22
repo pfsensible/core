@@ -38,7 +38,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseInterfaceGroupModule, self).__init__(module, pfsense, root='ifgroups', node='ifgroupentry', key='ifname')
+        super(PFSenseInterfaceGroupModule, self).__init__(module, pfsense, root='ifgroups', create_root=True, node='ifgroupentry', key='ifname')
         self.name = "pfsense_interface_group"
 
     ##############################
