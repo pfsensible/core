@@ -91,7 +91,7 @@ openvpn_resync_csc_all();
 """
 
 OPENVPN_SERVER_PHP_COMMAND_DEL = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
-openvpn_delete('server',$ovpn]);
+openvpn_delete('server',$ovpn);
 """
 
 
