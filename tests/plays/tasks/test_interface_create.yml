@@ -1,5 +1,5 @@
 ---
-    - name: "Define {{ interface_args.descr }}"
+    - name: "Define interface {{ interface_args.descr }}"
       pfsensible.core.pfsense_interface: "{{ interface_args }}"
       register: interface
 

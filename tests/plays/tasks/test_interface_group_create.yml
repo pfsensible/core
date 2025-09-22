@@ -1,5 +1,5 @@
 ---
-    - name: "Define {{ interface_group_args.name }}"
+    - name: "Define interface group {{ interface_group_args.name }}"
       pfsensible.core.pfsense_interface_group: "{{ interface_group_args }}"
       register: interface_group
 

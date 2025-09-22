@@ -1,5 +1,5 @@
 ---
-    - name: "Define {{ openvpn_server_args.name }}"
+    - name: "Define openvpn server {{ openvpn_server_args.name }}"
       pfsensible.core.pfsense_openvpn_server: "{{ openvpn_server_args }}"
       register: openvpn_server
       tags: openvpn

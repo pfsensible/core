@@ -1,5 +1,5 @@
 ---
-    - name: "Remove {{ openvpn_override_args.name }}"
+    - name: "Remove openvpn override {{ openvpn_override_args.name }}"
       pfsensible.core.pfsense_openvpn_override:
         name: "{{ openvpn_override_args.name }}"
         state: absent
