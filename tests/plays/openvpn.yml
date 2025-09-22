@@ -300,6 +300,15 @@
         - openvpn
         - openvpn_interface_delete
 
+    - name: Delete VPN1 interfce
+      pfsensible.core.pfsense_interface:
+        descr: VPN1
+        state: absent
+      register: interface
+      tags:
+        - openvpn
+        - openvpn_interface_delete
+
     - name: Delete OpenVPN Server 1
       import_tasks: tasks/test_openvpn_server_delete.yml
       vars:
@@ -310,6 +319,15 @@
         - openvpn
         - openvpn_delete
 
+    - name: Delete VPN2 interfce
+      pfsensible.core.pfsense_interface:
+        descr: VPN2
+        state: absent
+      register: interface
+      tags:
+        - openvpn
+        - openvpn_interface_delete
+
     - name: Delete OpenVPN Server 2
       import_tasks: tasks/test_openvpn_server_delete.yml
       vars:
@@ -319,6 +337,15 @@
       tags:
         - openvpn
         - openvpn_delete
+
+    - name: Delete VPN3 interfce
+      pfsensible.core.pfsense_interface:
+        descr: VPN3
+        state: absent
+      register: interface
+      tags:
+        - openvpn
+        - openvpn_interface_delete
 
     - name: Delete OpenVPN Server 3
       import_tasks: tasks/test_openvpn_server_delete.yml
