@@ -53,7 +53,7 @@ parser.add_argument('--ssh-password-prompt', action='store_true', help='Prompt f
 parser.add_argument('--author-name', default=author_name, help='The full name of the module author')
 parser.add_argument('--author-email', default=author_email, help='The email address of the module author')
 parser.add_argument('--author-handle', default='', help='The github handle of the module author')
-parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url')
+parser.add_argument('--module-name', help='The name of the module to generate - defaults to being based on the url, required with --urlfile')
 parser.add_argument('--is-config', action='store_true', help='This is a configuration module', )
 parser.add_argument('--name-param', help='The name of the primary module parameter - defaults to the key, but often "name" is used instead of "descr"')
 parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
@@ -61,6 +61,7 @@ parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help=
 parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml (defaults to "item_min")')
 parser.add_argument('--item-full', default='item_full',
                     help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation (defaults to "item_max")')
+parser.add_argument('--host', help='The name of the pfsense host to connect to - only used with --urlfile')
 parser.add_argument('--force', action=argparse.BooleanOptionalAction, help='Force overwriting the output file if it exists')
 parser.add_argument('--keep-tmpdir', action=argparse.BooleanOptionalAction, help='Keep the downloaded files in the temporary directory')
 parser.add_argument('--keep-params', action=argparse.BooleanOptionalAction, help='Keep parameters from the web interface not found in the XML')
@@ -144,8 +145,8 @@ if args.url is not None:
 elif args.urlfile is not None:
     # Use a cached copy of the web page - get rid of this?  Need to specify host and module name
     html = lxml.html.parse(args.urlfile)
-    host = '192.168.100.2'
-    module_name = 'nat_1to1'
+    host = args.host
+    module_name = args.module_name
 
 else:
     sys.exit('You must specify one of --url or --urlfile')
