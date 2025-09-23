@@ -404,7 +404,7 @@ for input in html.forms[0].inputs:
                 print(f'Found element-required')
             param['required'] = True
         help_elt = form_group.find('./div/span[@class="help-block"]')
-        if help_elt is not None:
+        if help_elt is not None and help_elt.text is not None:
             if args.verbose >= 2:
                 print(f'help_elt text {help_elt.text.strip()}')
             descr = enforce_period(help_elt.text.strip())
