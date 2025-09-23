@@ -510,6 +510,9 @@ if not args.is_config:
 if args.is_config:
     module_base = 'PFSenseModuleConfigBase'
 
+# Generate PFSense module name
+pfsense_module_name = 'PFSense' + ''.join([word.capitalize() for word in module_name.split('_')]) + 'Module'
+
 # Template variables
 context = dict(
     module_base=module_base,
@@ -517,6 +520,7 @@ context = dict(
     module_root=module_root,
     module_node=module_node,
     module_key=module_key,
+    pfsense_module_name=pfsense_module_name,
     params=params,
     params_xml_only=params_xml_only,
     name_param=name_param,

@@ -205,7 +205,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('{{ php_subsystem }}'); }
 
 {% endif %}
 
-class PFSense{{ module_name | capitalize() }}Module({{ module_base }}):
+class {{ pfsense_module_name }}({{ module_base }}):
     """ module managing pfsense {{ module_name }}s """
 
     ##############################
@@ -218,7 +218,7 @@ class PFSense{{ module_name | capitalize() }}Module({{ module_base }}):
         return {{ module_name | upper() }}_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSense{{ module_name | capitalize() }}Module, self).__init__(module, pfsense, {{ 'package=\'' ~ package ~ '\', ' if is_package else ''}}root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}'{{ ', update_php=' ~ module_name | upper() ~ '_PHP_COMMAND_SET' if 'filter.inc' in php_requires else '' }},
+        super({{ pfsense_module_name }}, self).__init__(module, pfsense, {{ 'package=\'' ~ package ~ '\', ' if is_package else ''}}root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}'{{ ', update_php=' ~ module_name | upper() ~ '_PHP_COMMAND_SET' if 'filter.inc' in php_requires else '' }},
                                                 arg_route={{ module_name | upper() }}_ARG_ROUTE{% if params_xml_only %}, map_param={{ module_name | upper() }}_MAP_PARAM{% endif %}{% if not is_config %}, create_default={{ module_name | upper() }}_CREATE_DEFAULT{% endif %})
 
 
@@ -228,7 +228,7 @@ def main():
         required_if={{ module_name | upper() }}_REQUIRED_IF,
         supports_check_mode=True)
 
-    pfmodule = PFSense{{ module_name | capitalize() }}Module(module)
+    pfmodule = {{ pfesense_module_name }}(module)
     # Pass params for testing framework
     pfmodule.run(module.params)
     pfmodule.commit_changes()
