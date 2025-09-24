@@ -45,23 +45,38 @@ options:
     required: false
     type: bool
   nologbogons:
-    description: Don't log packets blocked by 'Block Bogon Networks' rules
+    description: Don't log packets blocked by 'Block Bogon Networks' rules.
     required: false
     type: bool
   nologprivatenets:
-    description: Don't log packets blocked by 'Block Private Networks' rules
+    description: Don't log packets blocked by 'Block Private Networks' rules.
     required: false
     type: bool
+  nologlinklocal4:
+    description: Don't log packets blocked by the default 'Block IPv4 link-local' rules.
+    required: false
+    type: bool
+    version_added: "0.7.1"
+  nologsnort2c:
+    description: Don't log packets that are blocked by IDS.
+    required: false
+    type: bool
+    version_added: "0.7.1"
   nolognginx:
-    description: Don't log errors from the web server process
+    description: Don't log errors from the web server process.
     required: false
     type: bool
+  logconfigchanges:
+    description: Log changes to the configuration.
+    required: false
+    type: bool
+    version_added: "0.7.1"
   rawfilter:
-    description: Show raw filter logs
+    description: Show raw filter logs.
     required: false
     type: bool
   filterdescriptions:
-    description: Where to show rule descriptions
+    description: Where to show rule descriptions.
     required: false
     type: int
     choices: [0,1,2]
@@ -196,7 +211,10 @@ LOG_SETTINGS_ARGUMENT_SPEC = dict(
     nologdefaultpass=dict(required=False, type='bool'),
     nologbogons=dict(required=False, type='bool'),
     nologprivatenets=dict(required=False, type='bool'),
+    nologlinklocal4=dict(required=False, type='bool'),
+    nologsnort2c=dict(required=False, type='bool'),
     nolognginx=dict(required=False, type='bool'),
+    logconfigchanges=dict(required=False, type='bool'),
     rawfilter=dict(required=False, type='bool'),
     filterdescriptions=dict(required=False, type='int',
                             choices=[0, 1, 2]),
@@ -451,7 +469,7 @@ require_once("filter.inc");
 $retval = 0;
 $retval |= system_syslogd_start();'''
 
-        for param in ['nologdefaultblock', 'nologdefaultpass', 'nologbogons', 'nologprivatenets']:
+        for param in ['nologdefaultblock', 'nologdefaultpass', 'nologbogons', 'nologprivatenets', 'nologlinklocal4', 'nologsnort2c']:
             if self.params.get(param) is not None:
                 if (self.params[param] and param not in self.before or not self.params[param] and param in self.before):
                     cmd += '$retval |= filter_configure();\n'
