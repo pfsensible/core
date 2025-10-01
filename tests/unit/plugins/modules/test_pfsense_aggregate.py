@@ -318,6 +318,23 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             self.assert_not_find_rule_separator('last_test_separator', 'lan')
             self.assert_not_find_rule_separator('test_sep_floating', 'floatingrules')
 
+    def test_aggregate_nat_outbound(self):
+        """ test creation of some nat outbound """
+        args = dict(
+            purge_nat_outbounds=True,
+            aggregated_nat_outbounds=[
+                dict(descr='snat 1', source='192.168.100.0/24', destination='1.1.1.0/24', interface='lan', staticnatport=True),
+            ]
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            result_nat_outbounds = []
+            result_nat_outbounds.append("delete nat_outbound 'None'")
+            result_nat_outbounds.append(
+                "create nat_outbound 'snat 1', interface='lan', source='192.168.100.0/24', destination='1.1.1.0/24', staticnatport=True")
+
+            self.assertEqual(result['result_nat_outbounds'], result_nat_outbounds)
+
     def test_aggregate_vlans(self):
         """ test creation of some vlans """
         args = dict(
