@@ -69,6 +69,8 @@ class PFSenseRuleModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseRuleModule, self).__init__(module, pfsense)
         self.name = "pfsense_rule"
+        # Override for use with aggregate
+        self.argument_spec = RULE_ARGUMENT_SPEC
         self.root_elt = self.pfsense.get_element('filter')
         self.obj = dict()
 
