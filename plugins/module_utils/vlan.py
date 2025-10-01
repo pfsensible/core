@@ -30,6 +30,8 @@ class PFSenseVlanModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseVlanModule, self).__init__(module, pfsense)
         self.name = "pfsense_vlan"
+        # Override for use with aggregate
+        self.argument_spec = VLAN_ARGUMENT_SPEC
         self.root_elt = self.pfsense.get_element('vlans')
         self.obj = dict()
 

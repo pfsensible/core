@@ -94,6 +94,8 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         super(PFSenseNatOutboundModule, self).__init__(module, pfsense, root='nat/outbound', create_root=True, arg_route=NAT_OUTBOUND_ARG_ROUTE,
                                                        bool_values=NAT_OUTBOUND_BOOL_VALUES)
         self.name = "pfsense_nat_outbound"
+        # Override for use with aggregate
+        self.argument_spec = NAT_OUTBOUND_ARGUMENT_SPEC
 
         self.after = None
         self.before = None

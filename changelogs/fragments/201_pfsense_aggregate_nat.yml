@@ -1,0 +1,3 @@
+bugfixes:
+  - pfsense_aggregate - fix argument_spec handling for aggregated modules that broke aggregated_nat_outbounds
+    (https://github.com/pfsensible/core/issues/201).

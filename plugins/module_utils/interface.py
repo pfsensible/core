@@ -61,6 +61,8 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseInterfaceModule, self).__init__(module, pfsense)
         self.name = "pfsense_interface"
+        # Override for use with aggregate
+        self.argument_spec = INTERFACE_ARGUMENT_SPEC
         self.obj = dict()
 
         self.root_elt = self.pfsense.interfaces

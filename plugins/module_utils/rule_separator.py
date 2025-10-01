@@ -36,6 +36,8 @@ class PFSenseRuleSeparatorModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseRuleSeparatorModule, self).__init__(module, pfsense)
         self.name = "pfsense_rule_separator"
+        # Override for use with aggregate
+        self.argument_spec = RULE_SEPARATOR_ARGUMENT_SPEC
         self.root_elt = None
         self.obj = dict()
 
