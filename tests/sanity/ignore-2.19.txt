@@ -1,0 +1,9 @@
+misc/pfsensible-generate-module shebang # This is not a module
+misc/pfsense_module.py.j2 shebang # This is not a module
+plugins/modules/pfsense_cert.py validate-modules:no-log-needed # Argument 'keylen' is not sensitive
+plugins/modules/pfsense_dhcp_static.py validate-modules:no-log-needed # Arguments 'ddnsdomainkeyname' and 'ddnsdomainkeyalgorithm' are not sensitive
+plugins/modules/pfsense_ipsec.py validate-modules:no-log-needed # Argument 'rekey_time' is not sensitive
+plugins/modules/pfsense_ipsec_aggregate.py validate-modules:no-log-needed # Argument 'rekey_time' is not sensitive
+plugins/modules/pfsense_user.py validate-modules:no-log-needed # Argument 'authorizedkeys' is not sensitive
+tests/unit/plugins/modules/test_pfsense_dns_resolver.py pep8:E101 # inline noqa is not working
+tests/unit/plugins/modules/test_pfsense_dns_resolver.py pep8:W191 # inline noqa is not working

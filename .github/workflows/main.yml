@@ -19,8 +19,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10']
-        ansible-version: ['2.14', '2.15', '2.16', '2.17']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        ansible-version: ['2.14', '2.15', '2.16', '2.17', '2.18', '2.19']
+        exclude:
+          - python-version: '3.10'
+            ansible-version: '2.18'
+          - python-version: '3.10'
+            ansible-version: '2.19'
+          - python-version: '3.12'
+            ansible-version: '2.14'
+          - python-version: '3.12'
+            ansible-version: '2.15'
+          - python-version: '3.13'
+            ansible-version: '2.14'
+          - python-version: '3.13'
+            ansible-version: '2.15'
+          - python-version: '3.13'
+            ansible-version: '2.16'
+          - python-version: '3.13'
+            ansible-version: '2.16'
+          - python-version: '3.13'
+            ansible-version: '2.17'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
