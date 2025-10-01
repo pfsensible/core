@@ -594,11 +594,24 @@ result_interfaces:
     returned: success
     type: list
     sample: ["create interface 'VOICE', port='mvneta1.100'", "create interface 'VIDEO', port='mvneta1.200'"]
-aggregated_rules:
-    description: final set of rules
+result_nat_oubounds:
+    description: the set of nat outbounds commands that would be pushed to the remote device (if pfSense had a CLI)
     returned: success
     type: list
-    sample: []
+    sample: ["create nat_outbound 'NAT outbound traffic', interface='wan', source='any', destination='any'", "delete nat_outbound 'NAT outbound traffic'"]
+result_nat_port_forwards:
+    description: the set of nat port forwards commands that would be pushed to the remote device (if pfSense had a CLI)
+    returned: success
+    type: list
+    sample: ["create nat_port_forward 'ssh', interface='wan', source='any', destination='any:22', target='1.2.3.4:22', associated_rule='pass'"]
+result_rules:
+    description: the set of rules commands that would be pushed to the remote device (if pfSense had a CLI)
+    returned: success
+    type: list
+    sample:
+      - "create rule 'allow_all_ssh', source='any', destination='any:port_ssh', protocol='tcp', interface='lan'"
+      - "update rule 'allow_all_http' set destination='any:port_http'"
+      - "delete rule 'allow_all'"
 result_separators:
     description: the set of separators commands that would be pushed to the remote device (if pfSense had a CLI)
     returned: success
