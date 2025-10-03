@@ -71,6 +71,8 @@ Bugfixes
 - pfsense_openvpn_client/server - apply ``tls`` setting to config (https://github.com/pfsensible/core/issues/132)
 - pfsense_user - fixed setting multiple groups for a user (https://github.com/pfsensible/core/issues/130)
 - set `global $config;` in phpshell() to find update commands in pfSense Plus 24.11
+- pfsense_ipsec_proposal - Missing new DH Groups 31, 32 support in Phase 1 ipsec vpn (https://github.com/pfsensible/core/issues/183)
+- pfsense_ipsec_p2 - Missing new DH Groups 31, 32 support in Phase 2 ipsec vpn (https://github.com/pfsensible/core/issues/183)
 
 v0.6.1
 ======
