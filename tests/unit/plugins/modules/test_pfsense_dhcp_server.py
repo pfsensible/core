@@ -96,6 +96,20 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
+    def test_dhcp_server_update_disable_denyunknown(self):
+        """ test disabling denyunknown from an existing DHCP server """
+        obj = dict(
+            interface='opt1',
+            enable=True,
+            range_from='10.0.0.100',
+            range_to='10.0.0.199',
+            denyunknown='disabled',
+        )
+        command_as_list = ["update dhcp_server 'opt1' set , ",
+                           "defaultleasetime='', maxleasetime='', domain='', denyunknown=none"]
+        command = "".join(command_as_list)
+        self.do_module_test(obj, command=command)
+
     def test_dhcp_server_delete(self):
         """ test deletion of a DHCP server """
         obj = dict(interface='opt1', state='absent')

@@ -44,7 +44,7 @@ DHCPSERVER_ARGUMENT_SPEC = dict(
     dnsserver=dict(type='list', elements='str'),
     ntpserver=dict(type='list', elements='str'),
     ignorebootp=dict(type='bool'),
-    denyunknown=dict(type='str', choices=['enabled', 'class']),
+    denyunknown=dict(type='str', choices=['disabled', 'enabled', 'class']),
     nonak=dict(type='bool'),
     ignoreclientuids=dict(type='bool'),
     staticarp=dict(type='bool'),
@@ -152,6 +152,8 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
                 self._get_ansible_param_bool(obj, option, value='yes')
 
             self._get_ansible_param(obj, 'denyunknown')
+            if obj.get('denyunknown') == 'disabled':
+                del obj['denyunknown']
 
             # Defaulted options
             self._get_ansible_param(obj, 'ddnsdomainkeyalgorithm', force_value='hmac-md5', force=True)
@@ -200,17 +202,17 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
                     if not is_valid:
                         self.module.fail_json(msg=f"The MAC address {macaddr} is invalid")
 
-            if params.get('denyunknown'):
-                if params['denyunknown'] not in ['enabled', 'class']:
-                    self.module.fail_json(msg=f"The option {params['denyunknown']} is invalid, use none, 'enabled' or 'class'")
+            if params.get('denyunknown') not in [None, 'disabled', 'enabled', 'class']:
+                self.module.fail_json(msg=f"The option {params['denyunknown']} is invalid, use 'disabled', 'enabled' or 'class'")
 
     ##############################
     # XML processing
     #
-    @staticmethod
-    def _get_params_to_remove():
+    def _get_params_to_remove(self):
         """returns the list of params to remove if they are not set"""
         params = ['enable', 'ignorebootp', 'nonak', 'ignoreclientuids', 'staticarp', 'disablepingcheck', 'dhcpinlocaltime', 'statsgraph']
+        if self.params.get('denyunknown') == 'disabled':
+            params.append('denyunknown')
         return params
 
     def _create_target(self):
@@ -258,6 +260,7 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             values += self.format_cli_field(self.obj, 'filename64')
             values += self.format_cli_field(self.obj, 'rootpath')
             values += self.format_cli_field(self.obj, 'numberoptions')
+            values += self.format_cli_field(self.obj, 'denyunknown')
         else:
             values += self.format_updated_cli_field(self.obj, before, 'enable', fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.obj["range"], before["range"], 'from', fname="range_from")
@@ -285,6 +288,7 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, 'filename64')
             values += self.format_updated_cli_field(self.obj, before, 'rootpath')
             values += self.format_updated_cli_field(self.obj, before, 'numberoptions')
+            values += self.format_updated_cli_field(self.obj, before, 'denyunknown')
         return values
 
     ##############################

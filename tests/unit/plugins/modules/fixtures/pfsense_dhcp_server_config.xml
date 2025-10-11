@@ -191,6 +191,7 @@
 			<filename64></filename64>
 			<rootpath></rootpath>
 			<numberoptions></numberoptions>
+                        <denyunknown>enabled</denyunknown>
 		</opt1>
 	</dhcpd>
 	<revision>

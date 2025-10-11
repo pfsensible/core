@@ -119,9 +119,11 @@ options:
     description: Disable BOOTP
     type: bool
   denyunknown:
-    description: Enable DHCP to ignore unknown clients
+    description: >
+      Enable DHCP to ignore unknown clients. Choices are `disabled` - "Allow all clients", `enabled` - "Allow known clients from any
+      interface", and `class` - "Allow known clients from only this interface".  Default is `disabled`.
     type: str
-    choices: ['enabled', 'class']
+    choices: ['disabled', 'enabled', 'class']
   nonak:
     description: Ignore denied clients
     type: bool
