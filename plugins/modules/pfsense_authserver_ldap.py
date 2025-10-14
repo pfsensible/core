@@ -189,6 +189,14 @@ AUTHSERVER_LDAP_CREATE_DEFAULT = dict(
     ldap_allow_unauthenticated=None
 )
 
+AUTHSERVER_LDAP_PHP_COMMAND = """
+require_once('auth.inc');
+if (config_path_enabled('system/webgui', 'shellauth') &&
+  (config_get_path('system/webgui/authmode') == '{name}')) {{
+    set_pam_auth();
+}}
+"""
+
 
 class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
     """ module managing pfsense LDAP authentication """
@@ -289,6 +297,13 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
             self.module.fail_json(msg='Found multiple ldap authentication servers for name {0}.'.format(self.obj['name']))
         else:
             return None
+
+    ##############################
+    # run
+    #
+    def _update(self):
+        """ update system configuration if needed """
+        return self.pfsense.phpshell(AUTHSERVER_LDAP_PHP_COMMAND.format(name=self.obj['name']))
 
 
 def main():
