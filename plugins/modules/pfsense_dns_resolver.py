@@ -481,9 +481,10 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 if not self.pfsense.is_ipv4_address(ipaddr):
                     self.module.fail_json(msg=f'ip, {ipaddr} is not a ipv4 address')
 
-        for domain in params.get("domainoverrides", []):
-            if not self.pfsense.is_ipv4_address(domain["ip"]):
-                self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4 address')
+        if params["domainoverrides"] is not None:
+            for domain in params["domainoverrides"]:
+                if not self.pfsense.is_ipv4_address(domain["ip"]):
+                    self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4 address')
 
         for if_descr in params["active_interface"] + params["outgoing_interface"]:
             if not self.pfsense.is_interface_display_name(if_descr) and if_descr.lower() != "all":
