@@ -1,0 +1,3 @@
+bugfixes:
+  - pfsense_dns_resolver - Fix configuration without domainoverrides set
+    (https://github.com/pfsensible/core/issues/206).
