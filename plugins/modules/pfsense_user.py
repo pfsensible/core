@@ -59,6 +59,7 @@ options:
     description: Disables the user, so that they cannot login.
     default: false
     type: bool
+    version_added: 0.7.1
 '''
 
 EXAMPLES = r'''
