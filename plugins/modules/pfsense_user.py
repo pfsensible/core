@@ -230,7 +230,7 @@ class PFSenseUserModule(PFSenseModuleBase):
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
         if 'priv' in self.diff['after']:
             self.diff['after']['priv'] = self._format_diff_priv(self.diff['after']['priv'])
-        if self._remove_deleted_disabled_param(self):
+        if self._remove_deleted_disabled_param():
             changed = True
         if self._update_groups():
             changed = True
