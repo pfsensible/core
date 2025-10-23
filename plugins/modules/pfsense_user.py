@@ -96,7 +96,7 @@ USER_ARGUMENT_SPEC = dict(
     groups=dict(type='list', elements='str'),
     priv=dict(type='list', elements='str'),
     authorizedkeys=dict(type='str'),
-    disabled=dict(type='bool', default=False)
+    disabled=dict(type='bool', default=False),
 )
 
 USER_CREATE_DEFAULT = dict(
