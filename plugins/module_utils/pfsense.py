@@ -250,11 +250,11 @@ class PFSenseModule(object):
         """ Copy/update top_elt from src """
         changed = False
         for (key, value) in src.items():
-            self.debug.write('changed=%s key=%s value=%s\n' % (changed, key, value))
             this_elt = top_elt.find(key)
+            self.debug.write('changed=%s key=%s value=%s this_elt=%s\n' % (changed, key, value, this_elt))
             if this_elt is None:
-                changed = True
                 if isinstance(value, dict):
+                    changed = True
                     self.debug.write('calling copy_dict_to_element()\n')
                     # Create a new element
                     new_elt = ET.Element(key)
@@ -263,14 +263,17 @@ class PFSenseModule(object):
                     self.copy_dict_to_element(value, new_elt, sub=sub + 1)
                     top_elt.append(new_elt)
                 elif isinstance(value, list):
-                    for item in value:
-                        new_elt = self.new_element(key)
-                        if isinstance(item, dict):
-                            self.copy_dict_to_element(item, new_elt, sub=sub + 1)
-                        else:
-                            new_elt.text = item
-                        top_elt.append(new_elt)
+                    if value:
+                        changed = True
+                        for item in value:
+                            new_elt = self.new_element(key)
+                            if isinstance(item, dict):
+                                self.copy_dict_to_element(item, new_elt, sub=sub + 1)
+                            else:
+                                new_elt.text = item
+                            top_elt.append(new_elt)
                 else:
+                    changed = True
                     # Create a new element
                     new_elt = ET.Element(key)
                     new_elt.text = value
