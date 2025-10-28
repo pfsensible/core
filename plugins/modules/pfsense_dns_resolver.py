@@ -68,7 +68,7 @@ options:
   dnssec:
     description: Enable DNSSEC Support
     required: false
-    default: false
+    default: true
     type: bool
   forwarding:
     description: DNS Query Forwarding.
@@ -160,8 +160,8 @@ options:
       forward_tls_upstream:
         description: Use SSL/TLS for DNS Queries forwarded to this server
         required: false
-        default: ''
-        type: str
+        default: false
+        type: bool
       tls_hostname:
         description: An optional TLS hostname used to verify the server certificate when performing TLS Queries.
         required: false
@@ -306,7 +306,7 @@ DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC = dict(
     ip=dict(required=True, type='str'),
     descr=dict(type='str'),
     tls_hostname=dict(default='', type='str'),
-    forward_tls_upstream=dict(default='', type='str'),
+    forward_tls_upstream=dict(default=False, type='bool'),
 )
 
 DNS_RESOLVER_HOST_ALIAS_SPEC = dict(
@@ -336,7 +336,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     # TODO: Strict Outgoing Network interface Binding: check box option
     system_domain_local_zone_type=dict(default='transparent', choices=['deny', 'refuse', 'static', 'transparent', 'typetransparent', 'redirect', 'inform',
                                                                        'inform_deny', 'nodefault']),
-    dnssec=dict(default=False, type='bool'),
+    dnssec=dict(default=True, type='bool'),
     # TODO: Python Module: Enable the Python Module. These 3 options omited when disabled
     # python=dict(default=False, type='bool'),
     # python_order=dict(default="pre_validator", type='str', choices=["pre_validator", "post_validator"]),
@@ -452,6 +452,8 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self._get_ansible_param(obj, "log_verbosity")
             self._get_ansible_param(obj, "hosts")
             self._get_ansible_param(obj, "domainoverrides")
+            for domainoverride in obj.get("domainoverrides", []):
+                self._get_ansible_param_bool(domainoverride, "forward_tls_upstream", value="", params=domainoverride)
 
             if obj["active_interface"] != "all":
                 obj["active_interface"] += ",lo0"
@@ -506,7 +508,8 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         if self.params["state"] == "absent":
             return ["enable"]
         else:
-            return []
+            return ["hideidentity", "hideversion", "dnssecstripped", "forwarding", "regdhcp", "regdhcpstatic", "regovpnclients", "enablessl", "dnssec",
+                    "forward_tls_upstream", "prefetch", "prefetchkey"]
 
     ##############################
     # run
