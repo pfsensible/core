@@ -403,11 +403,20 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self.root_elt = self.pfsense.new_element('unbound')
             self.pfsense.root.append(self.root_elt)
 
-    def get_interface_by_display_name(self, if_descr: str):
-        if if_descr.lower() == "all":
+        cmd = ('require_once("interfaces.inc");;'
+               '$iflist = get_possible_listen_ips(true);'
+               'echo json_encode($iflist);')
+        self.iflist = self.pfsense.php(cmd)
+
+    def _get_interface_name(self, iface: str):
+        ifacelow = iface.lower()
+        if ifacelow == "all":
             return "all"
         else:
-            return self.pfsense.get_interface_by_display_name(if_descr)
+            for iname, idescr in self.iflist.items():
+                if ifacelow == iname.lower() or ifacelow == idescr.lower():
+                    return iname
+        self.module.fail_json(msg=f"Invalid interface '{iface}'")
 
     def _params_to_obj(self):
         """ return a dict from module params """
@@ -418,8 +427,8 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         if params["state"] == "present":
 
             obj["enable"] = ""
-            obj["active_interface"] = ",".join(self.get_interface_by_display_name(x) for x in params["active_interface"])
-            obj["outgoing_interface"] = ",".join(self.get_interface_by_display_name(x) for x in params["outgoing_interface"])
+            obj["active_interface"] = ",".join(self._get_interface_name(x) for x in params["active_interface"])
+            obj["outgoing_interface"] = ",".join(self._get_interface_name(x) for x in params["outgoing_interface"])
             obj["custom_options"] = base64.b64encode(bytes(params['custom_options'], 'utf-8')).decode()
             self._get_ansible_param_bool(obj, "hideidentity", value="")
             self._get_ansible_param_bool(obj, "hideversion", value="")
@@ -455,8 +464,10 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             for domainoverride in obj.get("domainoverrides", []):
                 self._get_ansible_param_bool(domainoverride, "forward_tls_upstream", value="", params=domainoverride)
 
-            if obj["active_interface"] != "all":
-                obj["active_interface"] += ",lo0"
+            if ((self.pfsense.config_get_path('system/dnslocalhost') != 'remote') and ("lo0" not in obj['active_interface']) and
+                    ("all" not in obj['active_interface'])):
+                self.module.fail_json(msg="This system is configured to use the DNS Resolver as its DNS server, so Localhost or All must be selected in"
+                                          " active_interface.")
 
             # wrap <item> to all hosts.alias
             for host in obj["hosts"]:
@@ -487,10 +498,6 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             for domain in params["domainoverrides"]:
                 if not self.pfsense.is_ipv4_address(domain["ip"]):
                     self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4 address')
-
-        for if_descr in params["active_interface"] + params["outgoing_interface"]:
-            if not self.pfsense.is_interface_display_name(if_descr) and if_descr.lower() != "all":
-                self.module.fail_json(msg=f'if_descr, {if_descr}, is not exist')
 
     ##############################
     # XML processing
