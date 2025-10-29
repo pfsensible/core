@@ -328,6 +328,13 @@ class PFSenseModule(object):
         return changed
 
     @staticmethod
+    def array_to_php(src, php_name):
+        """ Generate PHP commands to initialiaze a variable with contents of an array """
+        array_values = "'" + "','".join(src) + "'"
+        cmd = f"${php_name} = array({array_values});\n"
+        return cmd
+
+    @staticmethod
     def dict_to_php(src, php_name):
         """ Generate PHP commands to initialiaze a variable with contents of a dict """
         cmd = "${0} = array();\n".format(php_name)
@@ -669,6 +676,10 @@ class PFSenseModule(object):
         if nsubs > 0:
             self.module.warn('/var/run/booting appears to be present, confirm successful boot and remove if appropriate.')
         # TODO: check stderr for errors
+        try:
+            result = json.loads(stdout)
+        except json.JSONDecodeError as e:
+            self.module.fail_json(msg=f"{e}", cmd=cmd, stdout=stdout, stderr=stderr)
         return json.loads(stdout)
 
     def write_config(self, descr='Updated by ansible pfsense module'):
