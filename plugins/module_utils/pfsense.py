@@ -363,6 +363,14 @@ class PFSenseModule(object):
                 res[elt.tag] = value
         return res
 
+    def config_get_path(self, name, default=None):
+        """ get value of a specific configuration path """
+        elt = self.find_elt_xpath(name)
+        if elt is not None:
+            return elt.text
+        else:
+            return default
+
     def get_refid(self, node, name):
         """ get refid of name in specific nodes """
         elt = self.find_elt(node, name)
