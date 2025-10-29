@@ -28,7 +28,7 @@ options:
     choices: [ "present", "absent" ]
     type: str
   descr:
-    description: Description of the user
+    description: Description of the user.
     type: str
   scope:
     description: Scope of the user ('user' is a normal user, use 'system' for 'admin' user). Defaults to `user`.
@@ -55,6 +55,11 @@ options:
   authorizedkeys:
     description: Authorized SSH Keys of the user. Can be base64 encoded.
     type: str
+  disabled:
+    description: Disables the user, so that they cannot login.
+    default: false
+    type: bool
+    version_added: 0.7.1
 '''
 
 EXAMPLES = r'''
@@ -92,6 +97,7 @@ USER_ARGUMENT_SPEC = dict(
     groups=dict(type='list', elements='str'),
     priv=dict(type='list', elements='str'),
     authorizedkeys=dict(type='str'),
+    disabled=dict(type='bool', default=False),
 )
 
 USER_CREATE_DEFAULT = dict(
@@ -224,6 +230,8 @@ class PFSenseUserModule(PFSenseModuleBase):
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
         if 'priv' in self.diff['after']:
             self.diff['after']['priv'] = self._format_diff_priv(self.diff['after']['priv'])
+        if self._remove_deleted_disabled_param():
+            changed = True
         if self._update_groups():
             changed = True
 
@@ -270,6 +278,15 @@ class PFSenseUserModule(PFSenseModuleBase):
         for k in self.diff:
             if 'authorizedkeys' in self.diff[k]:
                 self.diff[k]['authorizedkeys'] = base64.b64decode(self.diff[k]['authorizedkeys'])
+
+        return changed
+
+    def _remove_deleted_disabled_param(self):
+        """ Remove disabled param if user is re-enabled """
+        changed = False
+
+        if self.pfsense.remove_deleted_param_from_elt(self.target_elt, 'disabled', self.obj):
+            changed = True
 
         return changed
 
