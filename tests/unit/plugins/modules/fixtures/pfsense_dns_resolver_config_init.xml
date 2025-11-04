@@ -194,6 +194,17 @@
                         <denyunknown>enabled</denyunknown>
 		</opt1>
 	</dhcpd>
+        <unbound>
+                <enable></enable>
+                <dnssec></dnssec>
+                <active_interface></active_interface>
+                <outgoing_interface></outgoing_interface>
+                <custom_options></custom_options>
+                <hideidentity></hideidentity>
+                <hideversion></hideversion>
+                <dnssecstripped></dnssecstripped>
+                <qname-minimisation></qname-minimisation>
+        </unbound>
 	<revision>
 			<time>1545602758</time>
 			<description>aggregated change</description>

@@ -8,6 +8,7 @@ __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_dns_resolver
 from ansible_collections.pfsensible.core.plugins.modules.pfsense_dns_resolver import PFSenseDNSResolverModule
 from .pfsense_module import TestPFSenseModule
+from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 
 
 class TestPFSenseDNSResolverModule(TestPFSenseModule):
@@ -16,8 +17,17 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseDNSResolverModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_dns_resolver_config.xml'
+        self.config_file = 'pfsense_dns_resolver_config_full.xml'
         self.pfmodule = PFSenseDNSResolverModule
+
+    def setUp(self):
+        """ mocking up """
+
+        super(TestPFSenseDNSResolverModule, self).setUp()
+
+        self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
+        self.php = self.mock_php.start()
+        self.php.return_value = {'wan': 'WAN', 'lan': 'LAN', '_llocwan': 'WAN IPv6 Link-Local', '_lloclan': 'LAN IPv6 Link-Local', 'lo0': 'Localhost'}
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
         """ test the xml definition """
@@ -29,7 +39,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         # self.check_param_equal(obj, target_elt, 'active_interface')
         # self.check_param_equal(obj, target_elt, 'outgoing_interface')
         # self.check_param_equal(obj, target_elt, 'system_domain_local_zone_type')
-        self.check_param_bool(obj, target_elt, 'dnssec')
+        self.check_param_bool(obj, target_elt, 'dnssec', default=True)
         self.check_param_bool(obj, target_elt, 'forwarding')
         self.check_param_bool(obj, target_elt, 'forward_tls_upstream')
         self.check_param_bool(obj, target_elt, 'regdhcp')
@@ -64,16 +74,43 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
     # tests
     #
     def test_dns_resolver_init(self):
+        """ test init of the DNS Resolver """
+        obj = dict()
+        command_as_list = ["update dns_resolver pfsense_dns_resolver set active_interface='all', "
+                           "outgoing_interface='all', system_domain_local_zone_type='transparent', "
+                           "msgcachesize='4', outgoing_num_tcp='10', incoming_num_tcp='10', "
+                           "edns_buffer_size='auto', num_queries_per_thread='512', jostle_timeout='200', "
+                           "cache_max_ttl='86400', cache_min_ttl='0', infra_host_ttl='900', "
+                           "infra_cache_numhosts='10000', unwanted_reply_threshold='disabled', "
+                           "log_verbosity='1'"]
+        command = "".join(command_as_list)
+        self.config_file = 'pfsense_dns_resolver_config_init.xml'
+        self.do_module_test(obj, command=command)
+
+    def test_dns_resolver_change(self):
         """ test initialization of the DNS Resolver """
         obj = dict(
+          active_interface=['lan', 'lo0'],
+          outgoing_interface=['wan']
         )
-        command_as_list = ["update dns_resolver pfsense_dns_resolver set enable=True, ",
-                           "active_interface='all', outgoing_interface='all', custom_options=True, ",
-                           "hideidentity=True, hideversion=True, dnssecstripped=True, ",
-                           "system_domain_local_zone_type=True, msgcachesize='4', outgoing_num_tcp='10', ",
-                           "incoming_num_tcp='10', edns_buffer_size='auto', ",
-                           "num_queries_per_thread='512', jostle_timeout='200', cache_max_ttl='86400', ",
-                           "cache_min_ttl='0', infra_host_ttl='900', infra_cache_numhosts='10000', ",
-                           "unwanted_reply_threshold='disabled', log_verbosity='1'"]
+        command_as_list = ["update dns_resolver pfsense_dns_resolver set active_interface='lan,lo0', outgoing_interface='wan'"]
+        command = "".join(command_as_list)
+        self.do_module_test(obj, command=command)
+
+    def test_dns_resolver_noop(self):
+        """ test noop of the DNS Resolver """
+        obj = dict(
+         #   active_interface='all', outgoing_interface='all', system_domain_local_zone_type='transparent', msgcachesize='4', outgoing_num_tcp='10',
+         #   incoming_num_tcp='10', edns_buffer_size='auto', num_queries_per_thread='512', jostle_timeout='200', cache_max_ttl='86400', cache_min_ttl='0',
+         #   infra_host_ttl='900', infra_cache_numhosts='10000', unwanted_reply_threshold='disabled', log_verbosity='1'
+        )
+        self.do_module_test(obj, changed=False)
+
+    def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
+        """ test initialization of the DNS Resolver """
+        obj = dict(
+           domainoverrides = [dict(domain="example.com", descr="override", forward_tls_upstream=False, ip="10.0.0.3")]
+        )
+        command_as_list = ["update dns_resolver pfsense_dns_resolver set "]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
