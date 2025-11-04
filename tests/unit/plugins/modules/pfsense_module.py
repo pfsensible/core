@@ -327,9 +327,9 @@ class TestPFSenseModule(ModuleTestCase):
 
         if elt.text != value:
             if elt.text is None:
-                self.fail('Element <' + elt_name + '> differs. Expected: \'' + value + '\' result: None')
+                self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(value) + '\' result: None')
             else:
-                self.fail('Element <' + elt_name + '> differs. Expected: \'' + value + '\' result: \'' + elt.text + '\'')
+                self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(value) + '\' result: \'' + elt.text + '\'')
         return elt
 
     def assert_xml_elt_match(self, tag, elt_name, elt_regex):
@@ -397,9 +397,6 @@ class TestPFSenseModule(ModuleTestCase):
             value = params[param]
 
         if value is not None:
-            if not isinstance(value, str):
-                value = str(value)
-
             if not_find_val is not None and not_find_val == default:
                 self.assert_not_find_xml_elt(target_elt, xml_field)
             else:
