@@ -161,13 +161,15 @@ class PFSenseModuleBase(object):
     ##############################
     # params processing
     #
-    def _get_ansible_param(self, obj, name, fname=None, force=False, exclude=None, force_value=''):
+    def _get_ansible_param(self, obj, name, fname=None, force=False, exclude=None, force_value='', params=None):
         """ get parameter from params and set it into obj """
         if fname is None:
             fname = name
+        if params is None:
+            params = self.params
 
-        if self.params.get(name) is not None:
-            if not (exclude is not None and exclude == self.params[name]):
+        if params.get(name) is not None:
+            if not (exclude is not None and exclude == params[name]):
                 if isinstance(self.params[name], int):
                     obj[fname] = str(self.params[name])
                 else:
