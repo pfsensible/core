@@ -90,8 +90,8 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
     def test_dns_resolver_change(self):
         """ test initialization of the DNS Resolver """
         obj = dict(
-          active_interface=['lan', 'lo0'],
-          outgoing_interface=['wan']
+            active_interface=['lan', 'lo0'],
+            outgoing_interface=['wan']
         )
         command_as_list = ["update dns_resolver pfsense_dns_resolver set active_interface='lan,lo0', outgoing_interface='wan'"]
         command = "".join(command_as_list)
@@ -99,18 +99,45 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
 
     def test_dns_resolver_noop(self):
         """ test noop of the DNS Resolver """
-        obj = dict(
-         #   active_interface='all', outgoing_interface='all', system_domain_local_zone_type='transparent', msgcachesize='4', outgoing_num_tcp='10',
-         #   incoming_num_tcp='10', edns_buffer_size='auto', num_queries_per_thread='512', jostle_timeout='200', cache_max_ttl='86400', cache_min_ttl='0',
-         #   infra_host_ttl='900', infra_cache_numhosts='10000', unwanted_reply_threshold='disabled', log_verbosity='1'
-        )
+        obj = dict()
         self.do_module_test(obj, changed=False)
 
     def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
         """ test initialization of the DNS Resolver """
         obj = dict(
-           domainoverrides = [dict(domain="example.com", descr="override", forward_tls_upstream=False, ip="10.0.0.3")]
+            domainoverrides=[dict(domain="test.example.com", descr="A description", forward_tls_upstream=False, ip="10.0.0.3", tls_hostname='')]
         )
         command_as_list = ["update dns_resolver pfsense_dns_resolver set "]
         command = "".join(command_as_list)
-        self.do_module_test(obj, command=command)
+        expected_elt_string = """<unbound>
+		<enable></enable>
+		<dnssec></dnssec>
+		<active_interface>all</active_interface>
+		<outgoing_interface>all</outgoing_interface>
+		<custom_options></custom_options>
+		<hideidentity></hideidentity>
+		<hideversion></hideversion>
+		<dnssecstripped></dnssecstripped>
+		<qname-minimisation></qname-minimisation>
+		<system_domain_local_zone_type>transparent</system_domain_local_zone_type>
+		<msgcachesize>4</msgcachesize>
+		<outgoing_num_tcp>10</outgoing_num_tcp>
+		<incoming_num_tcp>10</incoming_num_tcp>
+		<edns_buffer_size>auto</edns_buffer_size>
+		<num_queries_per_thread>512</num_queries_per_thread>
+		<jostle_timeout>200</jostle_timeout>
+		<cache_max_ttl>86400</cache_max_ttl>
+		<cache_min_ttl>0</cache_min_ttl>
+		<infra_host_ttl>900</infra_host_ttl>
+		<infra_cache_numhosts>10000</infra_cache_numhosts>
+		<unwanted_reply_threshold>disabled</unwanted_reply_threshold>
+		<log_verbosity>1</log_verbosity>
+		<domainoverrides>
+			<domain>test.example.com</domain>
+			<descr>A description</descr>
+			<ip>10.0.0.3</ip>
+			<tls_hostname></tls_hostname>
+		</domainoverrides>
+	</unbound>
+	"""  # noqa: E101,W191
+        self.do_module_test(obj, command=command, expected_elt_string=expected_elt_string)
