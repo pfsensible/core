@@ -118,6 +118,11 @@ class TestPFSenseModule(ModuleTestCase):
         """ check XML definition of target elt """
         raise NotImplementedError()
 
+    def check_target_elt_direct(self, target_elt, expected_elt_string):
+        """ check XML definition of target elt against expected XML """
+        target_elt_string = ET.tostring(target_elt, encoding="unicode", short_empty_elements=False)
+        self.assertEqual(target_elt_string, expected_elt_string)
+
     def args_from_var(self, var, state='present', **kwargs):
         """ return arguments for module from var """
         args = {}
@@ -156,7 +161,7 @@ class TestPFSenseModule(ModuleTestCase):
 
         return result
 
-    def do_module_test(self, obj, command=None, changed=True, failed=False, msg=None, delete=False, state='present', **kwargs):
+    def do_module_test(self, obj, command=None, changed=True, failed=False, msg=None, delete=False, state='present', expected_elt_string=None, **kwargs):
         """ run test """
         if command is not None:
             command = self.strip_commands(command)
@@ -187,7 +192,10 @@ class TestPFSenseModule(ModuleTestCase):
                 target_elt = self.get_target_elt(obj, module_result=result)
                 self.assertIsNotNone(target_elt)
                 self.assertEqual(result['commands'], command, result)
-                self.check_target_elt(obj, target_elt, **kwargs)
+                if expected_elt_string is not None:
+                    self.check_target_elt_direct(target_elt, expected_elt_string)
+                else:
+                    self.check_target_elt(obj, target_elt, **kwargs)
 
     def failed(self):
         with self.assertRaises(AnsibleFailJson) as exc:
