@@ -246,12 +246,12 @@ class PFSenseModule(object):
 
         return found
 
-    def copy_dict_to_element(self, src, top_elt, sub=0):
+    def copy_dict_to_element(self, src, top_elt, sub=0, prev_elt=None):
         """ Copy/update top_elt from src """
         changed = False
         for (key, value) in src.items():
             this_elt = top_elt.find(key)
-            self.debug.write('changed=%s key=%s value=%s this_elt=%s\n' % (changed, key, value, this_elt))
+            self.debug.write('changed=%s key=%s value=%s this_elt=%s, sub=%d\n' % (changed, key, value, this_elt, sub))
             if this_elt is None:
                 if isinstance(value, dict):
                     changed = True
@@ -259,16 +259,22 @@ class PFSenseModule(object):
                     # Create a new element
                     new_elt = ET.Element(key)
                     new_elt.text = '\n%s' % ('\t' * (sub + 4))
-                    new_elt.tail = '\n%s' % ('\t' * (sub + 3))
-                    self.copy_dict_to_element(value, new_elt, sub=sub + 1)
+                    new_elt.tail = '\n%s' % ('\t' * (sub + 2))
+                    if prev_elt is not None:
+                        prev_elt.tail = '\n%s' % ('\t' * (sub + 2))
+                    prev_elt = new_elt
+                    self.copy_dict_to_element(value, new_elt, sub=sub + 1, prev_elt=prev_elt)
                     top_elt.append(new_elt)
                 elif isinstance(value, list):
                     if value:
                         changed = True
+                        if prev_elt is not None:
+                            prev_elt.tail = '\n%s' % ('\t' * (sub + 2))
                         for item in value:
                             new_elt = self.new_element(key)
+                            prev_elt = new_elt
                             if isinstance(item, dict):
-                                self.copy_dict_to_element(item, new_elt, sub=sub + 1)
+                                self.copy_dict_to_element(item, new_elt, sub=sub + 1, prev_elt=prev_elt)
                             else:
                                 new_elt.text = item
                             top_elt.append(new_elt)
@@ -277,13 +283,16 @@ class PFSenseModule(object):
                     # Create a new element
                     new_elt = ET.Element(key)
                     new_elt.text = value
-                    new_elt.tail = '\n%s' % ('\t' * (sub + 3))
+                    new_elt.tail = '\n%s' % ('\t' * (sub + 2))
+                    if prev_elt is not None:
+                        prev_elt.tail = '\n%s' % ('\t' * (sub + 2))
+                    prev_elt = new_elt
                     top_elt.append(new_elt)
                 self.debug.write('changed=%s added key=%s value=%s tag=%s\n' % (changed, key, value, top_elt.tag))
             else:
                 if isinstance(value, dict):
                     self.debug.write('calling copy_dict_to_element()\n')
-                    if self.copy_dict_to_element(value, this_elt, sub=sub + 1):
+                    if self.copy_dict_to_element(value, this_elt, sub=sub + 1, prev_elt=this_elt):
                         changed = True
                 elif isinstance(value, list):
                     all_sub_elts = top_elt.findall(key)
@@ -299,6 +308,7 @@ class PFSenseModule(object):
                         top_elt.append(new_elt)
                         all_sub_elts.append(new_elt)
                         changed = True
+                        prev_elt = new_elt
 
                     # set all elts
                     for idx, item in enumerate(value):
@@ -308,7 +318,7 @@ class PFSenseModule(object):
                             elif all_sub_elts[idx].text != item:
                                 all_sub_elts[idx].text = item
                                 changed = True
-                        elif self.copy_dict_to_element(item, all_sub_elts[idx], sub=sub + 1):
+                        elif self.copy_dict_to_element(item, all_sub_elts[idx], sub=sub + 1, prev_elt=prev_elt):
                             changed = True
                 elif this_elt.text is None and value == '':
                     pass
@@ -316,6 +326,8 @@ class PFSenseModule(object):
                     this_elt.text = value
                     changed = True
                 self.debug.write('changed=%s this_elt.text=%s value=%s\n' % (changed, this_elt.text, value))
+                prev_elt = this_elt
+
         # Sub-elements must be completely described, so remove any missing elements
         if sub:
             for child_elt in list(top_elt):
@@ -323,6 +335,9 @@ class PFSenseModule(object):
                     changed = True
                     self.debug.write('changed=%s removed tag=%s\n' % (changed, child_elt.tag))
                     top_elt.remove(child_elt)
+
+        if prev_elt is not None:
+            prev_elt.tail = '\n%s' % ('\t' * (sub + 1))
 
         self.debug.flush()
         return changed
