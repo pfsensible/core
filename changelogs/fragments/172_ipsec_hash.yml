@@ -1,0 +1,3 @@
+bugfixes:
+ - pfsense_ipsec_p2 - Allow disabling hash algorithms
+   (https://github.com/pfsensible/core/issues/172)

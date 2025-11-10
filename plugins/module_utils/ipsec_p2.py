@@ -39,7 +39,6 @@ IPSEC_P2_ARGUMENT_SPEC = dict(
     blowfish_len=dict(required=False, choices=['auto', '128', '192', '256'], type='str'),
 
     # hashes
-    md5=dict(required=False, type='bool'),
     sha1=dict(required=False, type='bool'),
     sha256=dict(required=False, type='bool'),
     sha384=dict(required=False, type='bool'),
@@ -235,7 +234,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             else:
                 need_one_hash = True
 
-            if need_one_hash and not has_one_of(['md5', 'sha1', 'sha256', 'sha384', 'sha512', 'aesxcbc']):
+            if need_one_hash and not has_one_of(['sha1', 'sha256', 'sha384', 'sha512', 'aesxcbc']):
                 self.module.fail_json(msg='At least one hashing algorithm needs to be selected.')
 
     ##############################
@@ -400,7 +399,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             return None
 
         def sync_hash(hashes_elt, name, param_name):
-            if self.params.get(param_name) is not None:
+            if self.params.get(param_name) is True:
                 if get_hash(hashes_elt, name) is None:
                     hash_elt = self.pfsense.new_element('hash-algorithm-option')
                     hash_elt.text = name
@@ -415,8 +414,6 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
 
         changed = False
         hashes_elt = phase2_elt.findall('hash-algorithm-option')
-        if sync_hash(hashes_elt, 'hmac_md5', 'md5'):
-            changed = True
         if sync_hash(hashes_elt, 'hmac_sha1', 'sha1'):
             changed = True
         if sync_hash(hashes_elt, 'hmac_sha256', 'sha256'):
@@ -467,7 +464,6 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             values += log_enc('des')
             values += log_enc('cast128')
 
-            values += self.format_cli_field(self.params, 'md5', fvalue=self.fvalue_bool)
             values += self.format_cli_field(self.params, 'sha1', fvalue=self.fvalue_bool)
             values += self.format_cli_field(self.params, 'sha256', fvalue=self.fvalue_bool)
             values += self.format_cli_field(self.params, 'sha384', fvalue=self.fvalue_bool)
@@ -504,7 +500,6 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.params, before, 'des', add_comma=(values), fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.params, before, 'cast128', add_comma=(values), fvalue=self.fvalue_bool)
 
-            values += self.format_updated_cli_field(self.params, before, 'md5', add_comma=(values), fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.params, before, 'sha1', add_comma=(values), fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.params, before, 'sha256', add_comma=(values), fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.params, before, 'sha384', add_comma=(values), fvalue=self.fvalue_bool)
