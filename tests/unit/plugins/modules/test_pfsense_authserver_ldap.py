@@ -61,7 +61,7 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, 'attr_member', xml_field='ldap_attr_member', default='member')
         self.check_param_equal(obj, target_elt, 'attr_groupobj', xml_field='ldap_attr_groupobj', default='posixGroup')
         self.check_param_equal(obj, target_elt, 'pam_groupdn', xml_field='ldap_pam_groupdn', default=None)
-        self.check_param_bool(obj, target_elt, 'allow_unauthenticated', xml_field='ldap_allow_unauthenticated', default=True)
+        self.check_param_bool(obj, target_elt, 'ldap_allow_unauthenticated', xml_field='ldap_allow_unauthenticated', default=True)
         self.check_param_equal(obj, target_elt, 'timeout', xml_field='ldap_timeout', default=25)
 
     ##############
@@ -86,6 +86,11 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
         """ test updating host of a authserver """
         obj = dict(name='DELLDAP', ldap_timeout=5, host='ldap2.blah.com', transport='tcp', scope='one', authcn='CN=Users')
         self.do_module_test(obj, command="update authserver_ldap 'DELLDAP' set host='ldap2.blah.com'")
+
+    def test_authserver_disable_allow_unauthenticated(self):
+        """ test disabling ldap_allow_unauthenticated """
+        obj = dict(name='DELLDAP', host='ldap.example.com', transport='tcp', scope='one', authcn='CN=Users', ldap_allow_unauthenticated=False)
+        self.do_module_test(obj, command="update authserver_ldap 'DELLDAP' set ldap_allow_unauthenticated=False")
 
     ##############
     # misc
