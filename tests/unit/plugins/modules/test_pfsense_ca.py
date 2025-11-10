@@ -12,6 +12,7 @@ if sys.version_info < (2, 7):
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_ca
 from .pfsense_module import TestPFSenseModule
+from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 
 CERTIFICATE = (
     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVDRENDQXZDZ0F3SUJBZ0lJRmpGT2hzMW5NelF3RFFZSktvWklodmNOQVFFTEJRQXdYREVUTUJFR0ExVUUKQXhNS2IzQmxiblp3YmkxallURUxN"
@@ -62,6 +63,15 @@ class TestPFSenseCAModule(TestPFSenseModule):
         super(TestPFSenseCAModule, self).__init__(*args, **kwargs)
         self.config_file = 'pfsense_ca_config.xml'
         self.pfmodule = pfsense_ca.PFSenseCAModule
+
+    def setUp(self):
+        """ mocking up """
+
+        super(TestPFSenseCAModule, self).setUp()
+
+        self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
+        self.php = self.mock_php.start()
+        self.php.return_value = '12000'
 
     @staticmethod
     def runTest():

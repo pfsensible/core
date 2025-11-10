@@ -99,6 +99,7 @@ options:
   keylen:
     description: The length to use when generating a new RSA key, in bits
     default: '2048'
+    choices: [ "1024", "2048", "3072", "4096", "6144", "7680", "8192", "15360", "16384" ]
     type: str
   digest_alg:
     description: The digest algorithm for the internal Certificate Authority.
@@ -194,7 +195,7 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
             'wap-wsg-idm-ecid-wtls9', 'wap-wsg-idm-ecid-wtls10', 'wap-wsg-idm-ecid-wtls11', 'wap-wsg-idm-ecid-wtls12', 'Oakley-EC2N-3', 'Oakley-EC2N-4',
             'brainpoolP160r1', 'brainpoolP160t1', 'brainpoolP192r1', 'brainpoolP192t1', 'brainpoolP224r1', 'brainpoolP224t1', 'brainpoolP256r1',
             'brainpoolP256t1', 'brainpoolP320r1', 'brainpoolP320t1', 'brainpoolP384r1', 'brainpoolP384t1', 'brainpoolP512r1', 'brainpoolP512t1', 'SM2']),
-    keylen=dict(type='str', default='2048'),
+    keylen=dict(type='str', default='2048', choices=["1024", "2048", "3072", "4096", "6144", "7680", "8192", "15360", "16384"]),
     digest_alg=dict(type='str', default='sha256', choices=['sha1', 'sha224', 'sha256', 'sha384', 'sha512']),
     lifetime=dict(default=3650, type='int'),
     dn_commonname=dict(default='internal-ca', type='str'),
@@ -235,6 +236,11 @@ class PFSenseCAModule(PFSenseModuleBase):
         self.refresh_crls = False
         self.crl = None
 
+        cmd = ('require_once("certs.inc");'
+               '$max_lifetime = cert_get_max_lifetime();'
+               'echo json_encode($max_lifetime);')
+        self.max_lifetime = int(self.pfsense.php(cmd))
+
     ##############################
     # params processing
     #
@@ -244,6 +250,16 @@ class PFSenseCAModule(PFSenseModuleBase):
 
         if params['state'] == 'absent':
             return
+
+        if re.search(r"[\?\>\<\&\/\\\"\']", params['name']):
+            self.module.fail_json(msg='name contains invalid characters')
+        pattern = re.compile(r"[^a-zA-Z0-9 '/~`!@#$%\^&*()_\-+={}[\]|;:\"<>,.?\\]")
+        for param in ['dn_commonname', 'dn_state', 'dn_city', 'dn_organization', 'dn_organizationalunit']:
+            if re.search(pattern, self.params[param]):
+                self.module.fail_json(msg=f'{param} contains invalid characters')
+
+        if params['lifetime'] > self.max_lifetime:
+            self.module.fail_json(msg=f'Lifetime is longer than the maximum allowed value ({self.max_lifetime})')
 
         if params['method'] == 'existing':
             if params['certificate'] is None:

@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_ca - Better validation for name, lifetime, and dn_* parameters (https://github.com/pfsensible/core/pull/142).
