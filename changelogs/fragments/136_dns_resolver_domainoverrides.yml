@@ -1,3 +1,0 @@
-bugfixes:
-  - pfsense_dns_resolver - Add ability to specify Virtual IPs for interfaces
-    (https://github.com/pfsensible/core/issues/136).

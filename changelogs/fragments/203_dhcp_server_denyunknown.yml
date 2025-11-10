@@ -1,3 +1,0 @@
-bugfixes:
-  - pfsense_dhcp_server - Describe denyunknown options and allow disabling it via `disabled`
-    (https://github.com/pfsensible/core/issues/203).

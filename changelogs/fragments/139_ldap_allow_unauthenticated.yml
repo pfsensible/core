@@ -1,3 +1,0 @@
-bugfixes:
-  - pfsense_authserver_ldap - Fix disabling ldap_allow_unauthenticated
-    (https://github.com/pfsensible/core/issues/139).

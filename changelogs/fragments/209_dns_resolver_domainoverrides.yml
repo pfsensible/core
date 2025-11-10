@@ -1,3 +1,0 @@
-bugfixes:
-  - pfsense_dns_resolver - Fix forward_tls_upstream handling in domainoverrides
-    (https://github.com/pfsensible/core/issues/209).

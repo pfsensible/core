@@ -1,2 +1,0 @@
-bugfixes:
-  - pfsense_authserver_ldap - Call set_pam_auth() if needed to update system config.

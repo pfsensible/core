@@ -1,2 +1,0 @@
-bugfixes:
-  - pfsense_setup - Fix PHP command to update system broken in 0.7.0 (https://github.com/pfsensible/core/pull/210).

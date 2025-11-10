@@ -1,3 +1,0 @@
-minor_changes:
-  - pfsense_log_settings - add nologlinklocal4, nologsnort2c, and logconfigchanges parameters
-    (https://github.com/pfsensible/core/pull/199).

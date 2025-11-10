@@ -4,6 +4,30 @@ pfSensible.Core Release Notes
 
 .. contents:: Topics
 
+v0.7.1
+======
+
+Minor Changes
+-------------
+
+- pfsense_ipsec_p2/proposal - Add missing new DH Groups 31, 32 support in ipsec vpn (https://github.com/pfsensible/core/issues/183)
+- pfsense_log_settings - add nologlinklocal4, nologsnort2c, and logconfigchanges parameters (https://github.com/pfsensible/core/pull/199).
+- pfsense_user - add disabled parameter (https://github.com/pfsensible/core/pull/208).
+
+Bugfixes
+--------
+
+- pfsense_aggregate - fix argument_spec handling for aggregated modules that broke aggregated_nat_outbounds (https://github.com/pfsensible/core/issues/201).
+- pfsense_authserver_ldap - Call set_pam_auth() if needed to update system config.
+- pfsense_authserver_ldap - Fix disabling ldap_allow_unauthenticated (https://github.com/pfsensible/core/issues/139).
+- pfsense_ca - Better validation for name, lifetime, and dn_* parameters (https://github.com/pfsensible/core/pull/142).
+- pfsense_dhcp_server - Describe denyunknown options and allow disabling it via `disabled` (https://github.com/pfsensible/core/issues/203).
+- pfsense_dns_resolver - Add ability to specify Virtual IPs for interfaces (https://github.com/pfsensible/core/issues/136).
+- pfsense_dns_resolver - Fix configuration without domainoverrides set (https://github.com/pfsensible/core/issues/206).
+- pfsense_dns_resolver - Fix forward_tls_upstream handling in domainoverrides (https://github.com/pfsensible/core/issues/209).
+- pfsense_ipsec_p2 - Allow disabling hash algorithms (https://github.com/pfsensible/core/issues/172)
+- pfsense_setup - Fix PHP command to update system broken in 0.7.0 (https://github.com/pfsensible/core/pull/210).
+
 v0.7.0
 ======
 
