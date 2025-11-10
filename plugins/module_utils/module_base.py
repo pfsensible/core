@@ -346,14 +346,15 @@ class PFSenseModuleBase(object):
             raise NotImplementedError()
 
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are not set """
+        """ returns the list of params to remove if they are set to false """
         to_remove = []
-        # We need to remove any unset booleans that are "None" when unset
+        # We need to remove any booleans set to false that are "None" when unset
         for param in [n for n in self.argument_spec.keys() if self.argument_spec[n].get('type') == 'bool']:
-            if param in self.bool_values and self.bool_values[param][0] is None:
-                to_remove.append(param)
-            elif self.bool_style == 'absent/present':
-                to_remove.append(param)
+            if self.params.get(param, None) is False:
+                if param in self.bool_values and self.bool_values[param][0] is None:
+                    to_remove.append(param)
+                elif self.bool_style == 'absent/present':
+                    to_remove.append(param)
         return to_remove
 
     def _remove_deleted_params(self):
