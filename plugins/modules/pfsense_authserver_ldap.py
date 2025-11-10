@@ -212,7 +212,7 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
 
     def __init__(self, module, pfsense=None):
         super(PFSenseAuthserverLDAPModule, self).__init__(module, pfsense, name='pfsense_authserver_ldap', root='system', node='authserver', key='name',
-                                                          have_refid=True, create_default=AUTHSERVER_LDAP_CREATE_DEFAULT)
+                                                          bool_style='absent/present', have_refid=True, create_default=AUTHSERVER_LDAP_CREATE_DEFAULT)
 
     ##############################
     # params processing
