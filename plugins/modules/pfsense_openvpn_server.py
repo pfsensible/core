@@ -127,9 +127,11 @@ options:
     default: true
     type: bool
   digest:
-    description: Auth digest algorithm.
+    description:
+      - 'Auth digest algorithm. The list of valid digest algorithms is determined from the output of C(openvpn --show-digests), but curently includes:'
+      - BLAKE2b512, BLAKE2s256, KECCAK-KMAC-128, KECCAK-KMAC-256, MD5, MD5-SHA1, NULL, RIPEMD160, SHA1, SHA224, SHA256, SHA3-224, SHA3-256, SHA3-384, SHA3-512,
+      - SHA384, SHA512, SHA512-224, SHA512-256, SHAKE128, SHAKE256
     default: SHA256
-    choices: ['SHA256', 'SHA1']
     type: str
   tunnel_network:
     description: IPv4 virtual network used for private communications between this server and client hosts expressed using CIDR notation.

@@ -58,6 +58,10 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         self.run_command = self.mock_run_command.start()
         self.run_command.return_value = (0, base64.b64decode(TLSKEY.encode()).decode(), '')
 
+        self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
+        self.php = self.mock_php.start()
+        self.php.return_value = {'SHA256': 'SHA256 (256-bit)'}
+
     def tearDown(self):
         """ mocking down """
         super(TestPFSenseOpenVPNServerModule, self).tearDown()

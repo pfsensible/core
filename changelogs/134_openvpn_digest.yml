@@ -1,0 +1,3 @@
+bugfixes:
+  - pfsense_openvpn_client/server - Support additional digest values
+    (https://github.com/pfsensible/core/issues/134).

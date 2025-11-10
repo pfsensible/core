@@ -40,7 +40,7 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     data_ciphers=dict(default=['AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], required=False,
                       choices=['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], type='list', elements='str'),
     data_ciphers_fallback=dict(default='AES-256-CBC', required=False, choices=['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305']),
-    digest=dict(default='SHA256', required=False, choices=['SHA256', 'SHA1']),
+    digest=dict(default='SHA256', required=False, type='str'),
     tunnel_network=dict(default='', required=False, type='str'),
     tunnel_networkv6=dict(default='', required=False, type='str'),
     local_network=dict(default='', required=False, type='str'),
@@ -112,9 +112,20 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         self.root_elt = self.pfsense.get_element('openvpn', create_node=True)
         self.obj = dict()
 
+        cmd = ('require_once("openvpn.inc");;'
+               '$digestlist = openvpn_get_digestlist();'
+               'echo json_encode($digestlist);')
+        self.digestlist = self.pfsense.php(cmd)
+
     ##############################
     # params processing
     #
+    def _get_digest_name(self, digest: str):
+        for dname, ddescr in self.digestlist.items():
+            if digest == dname or digest == ddescr:
+                return dname
+        self.module.fail_json(msg=f"Invalid digest '{digest}'")
+
     def _params_to_obj(self):
         """ return dict from module params """
         obj = dict()
@@ -142,7 +153,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, 'dynamic_ip', force=True, value='yes', value_false='')
             self._get_ansible_param_bool(obj, 'push_register_dns')
             self._get_ansible_param_bool(obj, 'username_as_common_name', force=True, value='enabled', value_false='disabled')
-            obj['digest'] = self.params['digest']
+            obj['digest'] = self._get_digest_name(self.params['digest'])
             obj['tunnel_network'] = self.params['tunnel_network']
             obj['tunnel_networkv6'] = self.params['tunnel_networkv6']
             obj['local_network'] = self.params['local_network']

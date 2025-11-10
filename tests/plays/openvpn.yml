@@ -112,6 +112,7 @@
             - AES-256-GCM
             - AES-128-GCM
             - AES-256-CBC
+          digest: SHA256 (256-bit)
           tunnel_network: 10.100.0.0/24
           compression: ""
           gwredir: no
@@ -144,6 +145,7 @@
           tunnel_network: 10.1.0.1/28
           remote_network: 10.20.0.0/24
           compression: ""
+          digest: RIPEMD160
           passtos: yes
           custom_options: ping-restart 0
           verbosity_level: 3
