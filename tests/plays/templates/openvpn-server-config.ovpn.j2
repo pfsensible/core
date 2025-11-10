@@ -12,7 +12,7 @@ ping-timer-rem
 persist-tun
 persist-key
 proto udp4
-auth SHA256
+auth {{ openvpn_server_args.digest | default('SHA256') | regex_replace(' \(.*\)', '') }}
 up /usr/local/sbin/ovpn-linkup
 down /usr/local/sbin/ovpn-linkdown
 {% if 'user' in openvpn_server_args.mode %}
