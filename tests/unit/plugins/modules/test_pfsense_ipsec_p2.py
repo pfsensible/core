@@ -176,7 +176,6 @@ class TestPFSenseIpsecP2Module(TestPFSenseModule):
         self.check_enc(obj, target_elt, 'cast128', 'cast128')
 
         # hashes
-        self.check_hash(obj, target_elt, 'hmac_md5', 'md5')
         self.check_hash(obj, target_elt, 'hmac_sha1', 'sha1')
         self.check_hash(obj, target_elt, 'hmac_sha256', 'sha256')
         self.check_hash(obj, target_elt, 'hmac_sha384', 'sha384')

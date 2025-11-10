@@ -101,10 +101,6 @@ options:
     description: Set this option to enable CAST128 encryption.
     required: false
     type: bool
-  md5:
-    description: Set this option to enable MD5 hashing.
-    required: false
-    type: bool
   sha1:
     description: Set this option to enable SHA1 hashing.
     required: false
