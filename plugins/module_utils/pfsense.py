@@ -703,7 +703,7 @@ class PFSenseModule(object):
             result = json.loads(stdout)
         except json.JSONDecodeError as e:
             self.module.fail_json(msg=f"{e}", cmd=cmd, stdout=stdout, stderr=stderr)
-        return json.loads(stdout)
+        return result
 
     def write_config(self, descr='Updated by ansible pfsense module'):
         """ Generate config file """
