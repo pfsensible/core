@@ -7,8 +7,8 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 
-# NOTE - Ansible sets unsepecified parameters to None, so these functions
-# must be able to handle the case where params[name] is None
+# module_base _params_to_obj currently does not call thse functions if
+# params[name] is None.
 
 def p2o_interface(self, name, params, obj):
     obj[name] = self.pfsense.parse_interface(params[name], with_virtual=True)
