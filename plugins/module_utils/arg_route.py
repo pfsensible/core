@@ -10,6 +10,10 @@ __metaclass__ = type
 # module_base _params_to_obj currently does not call thse functions if
 # params[name] is None.
 
+def p2o_cert(self, name, params, obj):
+    obj[name] = self.pfsense.get_certref(params[name])
+
+
 def p2o_interface(self, name, params, obj):
     obj[name] = self.pfsense.parse_interface(params[name], with_virtual=True)
 
