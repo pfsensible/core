@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_setup - add ``webguicert`` parameter (https://github.com/pfsensible/core/pull/217).
