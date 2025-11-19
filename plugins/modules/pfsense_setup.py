@@ -71,6 +71,11 @@ options:
     type: str
     choices: ['bs', 'de_DE', 'en_US', 'es_AR', 'es_ES', 'fr_FR', 'it_IT', 'ko_FR', 'nb_NO', 'nl_NL', 'pl_PL', 'pt_BR', 'pt_PT', 'ru_RU', 'zh_CN', 'zh_Hans_CN',
       'zh_Hans_HK', 'zh_Hant_TW']
+  webguicert:
+    description: SSL/TLS certificate for the web GUI.
+    required: false
+    type: str
+    version_added: 0.7.2
   webguicss:
     description: >
         Choose an alternative CSS file (if installed) to change the appearance of the webConfigurator. Custom themes are also supported.
@@ -178,6 +183,8 @@ import re
 from os import listdir
 from os.path import isfile, join
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import p2o_cert
+from ansible_collections.pfsensible.core.plugins.module_utils.arg_validate import validate_cert
 from ansible_collections.pfsensible.core.plugins.module_utils.module_config_base import PFSenseModuleConfigBase
 
 
@@ -206,6 +213,7 @@ SETUP_ARGUMENT_SPEC = dict(
     session_timeout=dict(required=False, type='int'),
     authmode=dict(required=False, type='str'),
     shellauth=dict(required=False, type='bool'),
+    webguicert=dict(required=False, type='str'),
     webguicss=dict(required=False, type='str'),
     webguifixedmenu=dict(required=False, type='bool'),
     webguihostnamemenu=dict(required=False, type='str', choices=['nohost', 'hostonly', 'fqdn']),
@@ -254,6 +262,7 @@ def validate_webguicss(self, webguicss):
 
 SETUP_ARG_ROUTE = dict(
     dnslocalhost=dict(parse=p2o_dnslocalhost),
+    webguicert=dict(parse=p2o_cert, validate=validate_cert),
     webguicss=dict(parse=p2o_webguicss, validate=validate_webguicss),
 )
 
@@ -277,6 +286,7 @@ SETUP_MAP_PARAM = [
     ('statusmonitoringsettingspanel', 'webgui/statusmonitoringsettingspanel'),
     ('systemlogsfilterpanel', 'webgui/systemlogsfilterpanel'),
     ('systemlogsmanagelogpanel', 'webgui/systemlogsmanagelogpanel'),
+    ('webguicert', 'webgui/ssl-certref'),
     ('webguicss', 'webgui/webguicss'),
     ('webguifixedmenu', 'webgui/webguifixedmenu'),
     ('webguihostnamemenu', 'webgui/webguihostnamemenu'),
@@ -493,6 +503,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         cmd = '''
 require_once("auth.inc");
 require_once("filter.inc");
+require_once("system_advanced_admin.inc");
 $retval = 0;
 $retval |= system_hostname_configure();
 $retval |= system_hosts_generate();
@@ -515,6 +526,14 @@ $retval |= system_ntp_configure();'''
 
         cmd += '$retval |= filter_configure();\n'
 
+        restart_webgui = False
+        for param in ['ssl-certref']:
+            if self.obj['webgui'].get(param) != self.diff['before']['webgui'].get(param):
+                restart_webgui = True
+        if restart_webgui:
+            cmd += 'restart_GUI();\n'
+
+        self.result['cmd'] = cmd
         return self.pfsense.phpshell(cmd)
 
     ##############################
@@ -548,6 +567,7 @@ $retval |= system_ntp_configure();'''
         values += self.format_updated_cli_field(self.obj, self.diff['before'], 'dnsallowoverride', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, self.diff['before'], 'dnslocalhost', add_comma=(values), log_none=False)
 
+        values += self.format_updated_cli_field(obj_after, obj_before, 'webguicert', add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(obj_after, obj_before, 'webguicss', add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, 'webguifixedmenu', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, 'webguihostnamemenu', add_comma=(values), log_none=False)

@@ -209,7 +209,7 @@ class PFSenseModuleBase(object):
                     force = True
 
                 # If we have defined a parser for this arg, use it
-                if param in self.arg_route and 'parse' in self.arg_route[param]:
+                if param in self.arg_route and 'parse' in self.arg_route[param] and self.params.get(param) is not None:
                     self.arg_route[param]['parse'](self, param, self.params, obj)
                 elif self.argument_spec[param].get('type') == 'bool':
                     if param in self.bool_values:
