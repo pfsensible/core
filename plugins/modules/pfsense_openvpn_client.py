@@ -5,9 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: pfsense_openvpn_client
 short_description: Manage pfSense OpenVPN configuration
@@ -220,15 +221,15 @@ options:
     required: false
     default: null
     type: str
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: "Add OpenVPN client"
   pfsense_openvpn_client:
     name: 'OpenVPN Client'
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 shared_key:
     description: The generated shared key, base64 encoded
     returned: when `generate` is passed as the shared_key argument and a key is generated.
@@ -251,13 +252,13 @@ tls:
         4ODNjNDU3NTdlZTVjMWQ4ZDk5ZjM4ZjcKZGNiZDAwZmI3Nzc2ZWFlYjQ1ZmQwOTBjNGNlYTNmMGMKMzgzNDE0ZTJlYmU4MWNiZGIxZmNlN2M2YmFhMDlkMWYKMTU4OGUzNGRkYzUxY2NjOTE5NDNjNTFh
         OTI2OTE3NWQKNzZiZjdhOWI1ZmM3NDAyNmE3MTVkNGVmODVkYzY2Y2UKMWE5MWQwNjNhODIwZDY4MTc0ODlmYjJkZjNmYzY2MmMKMmU2OWZiMzNiMzM5MjdjYjUyNThkZDQ4M2NkNDE0Y2QKMDJhZWE3Z
         jA3MmNhZmEwOTY5Yjg5NWVjYzNiYmExNGQKLS0tLS1FTkQgT3BlblZQTiBTdGF0aWMga2V5IFYxLS0tLS0K
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.openvpn_client import (
     PFSenseOpenVPNClientModule,
     OPENVPN_CLIENT_ARGUMENT_SPEC,
-    OPENVPN_CLIENT_REQUIRED_IF
+    OPENVPN_CLIENT_REQUIRED_IF,
 )
 
 
@@ -265,12 +266,13 @@ def main():
     module = AnsibleModule(
         argument_spec=OPENVPN_CLIENT_ARGUMENT_SPEC,
         required_if=OPENVPN_CLIENT_REQUIRED_IF,
-        supports_check_mode=True)
+        supports_check_mode=True,
+    )
 
     pfopenvpn = PFSenseOpenVPNClientModule(module)
     pfopenvpn.run(module.params)
     pfopenvpn.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
