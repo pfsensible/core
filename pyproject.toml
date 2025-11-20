@@ -1,0 +1,4 @@
+[tool.black]
+line-length = 160
+# Normalize string quotes to a consistent style (double quotes)
+skip-string-normalization = false

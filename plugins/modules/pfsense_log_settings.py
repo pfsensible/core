@@ -6,12 +6,15 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
 DOCUMENTATION = """
 ---
@@ -200,67 +203,67 @@ commands:
 import re
 from copy import deepcopy
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
+from ansible_collections.pfsensible.core.plugins.module_utils.module_base import (
+    PFSenseModuleBase,
+)
 
 LOG_SETTINGS_ARGUMENT_SPEC = dict(
-    logformat=dict(required=False, type='str',
-                   choices=['rfc3164', 'rfc5424']),
-    reverse=dict(required=False, type='bool'),
-    nentries=dict(required=False, type='int'),
-    nologdefaultblock=dict(required=False, type='bool'),
-    nologdefaultpass=dict(required=False, type='bool'),
-    nologbogons=dict(required=False, type='bool'),
-    nologprivatenets=dict(required=False, type='bool'),
-    nologlinklocal4=dict(required=False, type='bool'),
-    nologsnort2c=dict(required=False, type='bool'),
-    nolognginx=dict(required=False, type='bool'),
-    logconfigchanges=dict(required=False, type='bool'),
-    rawfilter=dict(required=False, type='bool'),
-    filterdescriptions=dict(required=False, type='int',
-                            choices=[0, 1, 2]),
-    disablelocallogging=dict(required=False, type='bool'),
-    logfilesize=dict(required=False, type='int'),
-    logcompressiontype=dict(required=False, type='str',
-                            choices=['bzip2', 'gzip', 'xz', 'zstd', 'none']),
-    rotatecount=dict(required=False, type='int'),
-    enable=dict(required=False, type='bool'),
-    sourceip=dict(required=False, type='str'),
-    ipproto=dict(required=False, type='str',
-                 choices=['ipv4', 'ipv6']),
-    remoteserver=dict(required=False, type='str'),
-    remoteserver2=dict(required=False, type='str'),
-    remoteserver3=dict(required=False, type='str'),
-    logall=dict(required=False, type='bool'),
-    system=dict(required=False, type='bool'),
-    logfilter=dict(required=False, type='bool'),
-    resolver=dict(required=False, type='bool'),
-    dhcp=dict(required=False, type='bool'),
-    ppp=dict(required=False, type='bool'),
-    auth=dict(required=False, type='bool'),
-    portalauth=dict(required=False, type='bool'),
-    vpn=dict(required=False, type='bool'),
-    dpinger=dict(required=False, type='bool'),
-    routing=dict(required=False, type='bool'),
-    ntpd=dict(required=False, type='bool'),
-    hostapd=dict(required=False, type='bool'),
+    logformat=dict(required=False, type="str", choices=["rfc3164", "rfc5424"]),
+    reverse=dict(required=False, type="bool"),
+    nentries=dict(required=False, type="int"),
+    nologdefaultblock=dict(required=False, type="bool"),
+    nologdefaultpass=dict(required=False, type="bool"),
+    nologbogons=dict(required=False, type="bool"),
+    nologprivatenets=dict(required=False, type="bool"),
+    nologlinklocal4=dict(required=False, type="bool"),
+    nologsnort2c=dict(required=False, type="bool"),
+    nolognginx=dict(required=False, type="bool"),
+    logconfigchanges=dict(required=False, type="bool"),
+    rawfilter=dict(required=False, type="bool"),
+    filterdescriptions=dict(required=False, type="int", choices=[0, 1, 2]),
+    disablelocallogging=dict(required=False, type="bool"),
+    logfilesize=dict(required=False, type="int"),
+    logcompressiontype=dict(
+        required=False, type="str", choices=["bzip2", "gzip", "xz", "zstd", "none"]
+    ),
+    rotatecount=dict(required=False, type="int"),
+    enable=dict(required=False, type="bool"),
+    sourceip=dict(required=False, type="str"),
+    ipproto=dict(required=False, type="str", choices=["ipv4", "ipv6"]),
+    remoteserver=dict(required=False, type="str"),
+    remoteserver2=dict(required=False, type="str"),
+    remoteserver3=dict(required=False, type="str"),
+    logall=dict(required=False, type="bool"),
+    system=dict(required=False, type="bool"),
+    logfilter=dict(required=False, type="bool"),
+    resolver=dict(required=False, type="bool"),
+    dhcp=dict(required=False, type="bool"),
+    ppp=dict(required=False, type="bool"),
+    auth=dict(required=False, type="bool"),
+    portalauth=dict(required=False, type="bool"),
+    vpn=dict(required=False, type="bool"),
+    dpinger=dict(required=False, type="bool"),
+    routing=dict(required=False, type="bool"),
+    ntpd=dict(required=False, type="bool"),
+    hostapd=dict(required=False, type="bool"),
 )
 
 # rename the reserved words with log prefix
 params_map = {
-    'logformat': 'format',
-    'logfilter': 'filter',
+    "logformat": "format",
+    "logfilter": "filter",
 }
 
 # fields with inverted logic
-inverted_list = ['nologdefaultpass']
+inverted_list = ["nologdefaultpass"]
 
 
 class PFSenseLogSettingsModule(PFSenseModuleBase):
-    """ module managing pfsense log settings """
+    """module managing pfsense log settings"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return LOG_SETTINGS_ARGUMENT_SPEC
 
     ##############################
@@ -269,7 +272,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseLogSettingsModule, self).__init__(module, pfsense)
         self.name = "log_settings"
-        self.root_elt = self.pfsense.get_element('syslog')
+        self.root_elt = self.pfsense.get_element("syslog")
         self.target_elt = self.root_elt
         self.params = dict()
         self.obj = dict()
@@ -282,7 +285,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = self.pfsense.element_to_dict(self.root_elt)
@@ -293,7 +296,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
             # get possibly mapped settings name
             _param = params_map.get(param, param)
             if params.get(param) is not None:
-                if param == 'sourceip':
+                if param == "sourceip":
                     target[param] = self._get_source_ip_interface(params[param])
                 else:
                     if isinstance(params[param], str):
@@ -305,14 +308,18 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
             # get possibly mapped settings name
             _param = params_map.get(param, param)
             if params.get(param) is not None:
-                value = not params.get(param) if param in inverted_list else params.get(param)
+                value = (
+                    not params.get(param)
+                    if param in inverted_list
+                    else params.get(param)
+                )
                 if value is True and _param not in target:
-                    target[_param] = ''
+                    target[_param] = ""
                 elif value is False and _param in target:
                     del target[_param]
 
         for param in LOG_SETTINGS_ARGUMENT_SPEC:
-            if LOG_SETTINGS_ARGUMENT_SPEC[param]['type'] == 'bool':
+            if LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
                 _set_param_bool(obj, param)
             else:
                 _set_param(obj, param)
@@ -322,12 +329,12 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     def _is_interface_ip_or_descr(self, address):
         result = False
 
-        if address in ['127.0.0.1', 'Localhost']:
+        if address in ["127.0.0.1", "Localhost"]:
             return True
 
         for interface_elt in self.pfsense.interfaces:
-            descr = interface_elt.find('descr')
-            ipaddr = interface_elt.find('ipaddr')
+            descr = interface_elt.find("descr")
+            ipaddr = interface_elt.find("ipaddr")
 
             if descr is not None and descr.text == address:
                 return True
@@ -337,14 +344,14 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         return result
 
     def _get_interface_by_ip_or_display_name(self, address):
-        """ return interface_id by ip address or name """
+        """return interface_id by ip address or name"""
 
-        if address in ['127.0.0.1', 'Localhost']:
-            return 'lo0'
+        if address in ["127.0.0.1", "Localhost"]:
+            return "lo0"
 
         for interface_elt in self.pfsense.interfaces:
-            descr = interface_elt.find('descr')
-            ipaddr = interface_elt.find('ipaddr')
+            descr = interface_elt.find("descr")
+            ipaddr = interface_elt.find("ipaddr")
 
             if descr is not None and descr.text == address:
                 return interface_elt.tag
@@ -365,17 +372,17 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         return result
 
     def _validate_syslog_server(self, hostname, name):
-        """ check hostname / ip address combinations with optional port """
+        """check hostname / ip address combinations with optional port"""
         if not hostname:
             return
 
         host = hostname.lower()
-        contains_port = re.match(r'^(\[.+\]|[^:]+):[0-9]+$', host)
+        contains_port = re.match(r"^(\[.+\]|[^:]+):[0-9]+$", host)
         if contains_port is not None:
-            host, port = host.rsplit(':', 1)
+            host, port = host.rsplit(":", 1)
 
             # check if we got a ipv6 address with port - need to remove '[' and ']'
-            host = host.strip('[]')
+            host = host.strip("[]")
 
             if port is not None and (int(port) <= 0 or int(port) >= 65536):
                 self.module.fail_json(msg="Invalid port {0}".format(port))
@@ -386,51 +393,93 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         if self.pfsense.is_ipv6_address(host):
             return
 
-        groups = re.match(r'^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$', host)
+        groups = re.match(
+            r"^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$",
+            host,
+        )
         if groups is None:
-            self.module.fail_json(msg="The {0} can only contain the characters A-Z, 0-9 and '-'. It may not start or end with '-'".format(name))
+            self.module.fail_json(
+                msg="The {0} can only contain the characters A-Z, 0-9 and '-'. It may not start or end with '-'".format(
+                    name
+                )
+            )
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
-        if params.get('sourceip') is not None:
-            address = params.get('sourceip')
-            if address == '':
+        if params.get("sourceip") is not None:
+            address = params.get("sourceip")
+            if address == "":
                 return
 
-            if not self.pfsense.is_virtual_ip(address) and not self._is_interface_ip_or_descr(address):
-                self.module.fail_json(msg="sourceip: Invalid address {address}!".format(address=params.get('sourceip')))
+            if not self.pfsense.is_virtual_ip(
+                address
+            ) and not self._is_interface_ip_or_descr(address):
+                self.module.fail_json(
+                    msg="sourceip: Invalid address {address}!".format(
+                        address=params.get("sourceip")
+                    )
+                )
 
-        if params.get('logall') is True:
-            for log_param in ['system', 'logfilter', 'resolver',
-                              'dhcp', 'ppp', 'auth', 'portalauth',
-                              'vpn', 'dpinger', 'routing', 'ntpd', 'hostapd']:
+        if params.get("logall") is True:
+            for log_param in [
+                "system",
+                "logfilter",
+                "resolver",
+                "dhcp",
+                "ppp",
+                "auth",
+                "portalauth",
+                "vpn",
+                "dpinger",
+                "routing",
+                "ntpd",
+                "hostapd",
+            ]:
                 if params.get(log_param) is True:
-                    self.module.fail_json(msg="{log_param} = True is invalid when logall is True".format(log_param=log_param))
+                    self.module.fail_json(
+                        msg="{log_param} = True is invalid when logall is True".format(
+                            log_param=log_param
+                        )
+                    )
 
-        if params.get('enable') is True:
-            remote_params = ['remoteserver', 'remoteserver2', 'remoteserver3']
-            if params.get('remoteserver') is None and params.get('remoteserver2') is None and params.get('remoteserver3') is None:
-                self.module.fail_json(msg="Need at least one remote syslog server when remote logging is enabled")
+        if params.get("enable") is True:
+            remote_params = ["remoteserver", "remoteserver2", "remoteserver3"]
+            if (
+                params.get("remoteserver") is None
+                and params.get("remoteserver2") is None
+                and params.get("remoteserver3") is None
+            ):
+                self.module.fail_json(
+                    msg="Need at least one remote syslog server when remote logging is enabled"
+                )
             else:
                 for param in remote_params:
                     self._validate_syslog_server(params.get(param), param)
 
-        if params.get('nentries') is not None:
-            nentries = int(params.get('nentries'))
+        if params.get("nentries") is not None:
+            nentries = int(params.get("nentries"))
             if nentries < 5 or nentries > 200000:
-                self.module.fail_json(msg="nentries must be an integer from 5 to 200000")
+                self.module.fail_json(
+                    msg="nentries must be an integer from 5 to 200000"
+                )
 
-        if params.get('logfilesize') is not None:
-            logfilesize = int(params.get('logfilesize'))
+        if params.get("logfilesize") is not None:
+            logfilesize = int(params.get("logfilesize"))
             if logfilesize < 100000:
-                self.module.fail_json(msg="logfilesize must be an integer greater or equal than 100000")
-            elif logfilesize >= (2 ** 32) / 2:
-                self.module.fail_json(msg="logfilesize is too large: {logfilesize}".format(logfilesize=logfilesize))
+                self.module.fail_json(
+                    msg="logfilesize must be an integer greater or equal than 100000"
+                )
+            elif logfilesize >= (2**32) / 2:
+                self.module.fail_json(
+                    msg="logfilesize is too large: {logfilesize}".format(
+                        logfilesize=logfilesize
+                    )
+                )
 
-        if params.get('rotatecount') is not None:
-            rotatecount = int(params.get('rotatecount'))
+        if params.get("rotatecount") is not None:
+            rotatecount = int(params.get("rotatecount"))
             if rotatecount < 0 or rotatecount > 99:
                 self.module.fail_json(msg="rotatecount must be an integer from 0 to 99")
 
@@ -438,12 +487,14 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     # XML processing
     #
     def _remove_deleted_params(self):
-        """ Remove from target_elt a few deleted params """
+        """Remove from target_elt a few deleted params"""
         changed = False
         for param in LOG_SETTINGS_ARGUMENT_SPEC:
-            if LOG_SETTINGS_ARGUMENT_SPEC[param]['type'] == 'bool':
+            if LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
                 _param = params_map.get(param, param)
-                if self.pfsense.remove_deleted_param_from_elt(self.target_elt, _param, self.obj):
+                if self.pfsense.remove_deleted_param_from_elt(
+                    self.target_elt, _param, self.obj
+                ):
                     changed = True
 
         return changed
@@ -452,7 +503,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     # run
     #
     def run(self, params):
-        """ process input params to add/update/delete """
+        """process input params to add/update/delete"""
         self.params = params
         self.target_elt = self.root_elt
         self._validate_params()
@@ -460,28 +511,45 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         self._add()
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         for cmd in self.route_cmds:
             self.module.run_command(cmd)
 
-        cmd = '''
+        cmd = """
 require_once("filter.inc");
 $retval = 0;
-$retval |= system_syslogd_start();'''
+$retval |= system_syslogd_start();"""
 
-        for param in ['nologdefaultblock', 'nologdefaultpass', 'nologbogons', 'nologprivatenets', 'nologlinklocal4', 'nologsnort2c']:
+        for param in [
+            "nologdefaultblock",
+            "nologdefaultpass",
+            "nologbogons",
+            "nologprivatenets",
+            "nologlinklocal4",
+            "nologsnort2c",
+        ]:
             if self.params.get(param) is not None:
-                if (self.params[param] and param not in self.before or not self.params[param] and param in self.before):
-                    cmd += '$retval |= filter_configure();\n'
+                if (
+                    self.params[param]
+                    and param not in self.before
+                    or not self.params[param]
+                    and param in self.before
+                ):
+                    cmd += "$retval |= filter_configure();\n"
                     break
 
-        if self.params.get('nolognginx') is not None:
-            if (self.params['nolognginx'] and 'nolognginx' not in self.before or not self.params['nolognginx'] and 'nolognginx' in self.before):
-                cmd += 'ob_flush();\n'
-                cmd += 'flush();\n'
+        if self.params.get("nolognginx") is not None:
+            if (
+                self.params["nolognginx"]
+                and "nolognginx" not in self.before
+                or not self.params["nolognginx"]
+                and "nolognginx" in self.before
+            ):
+                cmd += "ob_flush();\n"
+                cmd += "flush();\n"
                 cmd += 'send_event("service restart webgui");\n'
 
-        cmd += '$retval |= filter_pflog_start(true);\n'
+        cmd += "$retval |= filter_pflog_start(true);\n"
 
         return self.pfsense.phpshell(cmd)
 
@@ -490,32 +558,41 @@ $retval |= system_syslogd_start();'''
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "syslog"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
+        """generate pseudo-CLI command fields parameters to create an obj"""
+        values = ""
 
         for param in LOG_SETTINGS_ARGUMENT_SPEC:
             _param = params_map.get(param, param)
-            if LOG_SETTINGS_ARGUMENT_SPEC[param]['type'] == 'bool':
-                values += self.format_updated_cli_field(self.obj, self.before, _param, fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+            if LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
+                values += self.format_updated_cli_field(
+                    self.obj,
+                    self.before,
+                    _param,
+                    fvalue=self.fvalue_bool,
+                    add_comma=(values),
+                    log_none=False,
+                )
             else:
-                values += self.format_updated_cli_field(self.obj, self.before, _param, add_comma=(values), log_none=False)
+                values += self.format_updated_cli_field(
+                    self.obj, self.before, _param, add_comma=(values), log_none=False
+                )
 
         return values
 
 
 def main():
     module = AnsibleModule(
-        argument_spec=LOG_SETTINGS_ARGUMENT_SPEC,
-        supports_check_mode=True)
+        argument_spec=LOG_SETTINGS_ARGUMENT_SPEC, supports_check_mode=True
+    )
 
     pfmodule = PFSenseLogSettingsModule(module)
     pfmodule.run(module.params)
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
