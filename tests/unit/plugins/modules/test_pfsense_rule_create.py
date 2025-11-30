@@ -329,10 +329,22 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         command = "create rule 'one_rule' on 'lan', source='10.10.1.1', destination='10.10.10.1'"
         self.do_module_test(obj, command=command)
 
+    def test_rule_create_ip6_to_ip6(self):
+        """ test creation of a new rule with valid ips """
+        obj = dict(name='one_rule', source='2001:db8:1::1', destination='2001:db8:2::2', ipprotocol='inet6', interface='lan')
+        command = "create rule 'one_rule' on 'lan', source='2001:db8:1::1', destination='2001:db8:2::2', ipprotocol='inet6'"
+        self.do_module_test(obj, command=command)
+
     def test_rule_create_net_to_net(self):
         """ test creation of a new rule valid networks """
         obj = dict(name='one_rule', source='10.10.1.0/24', destination='10.10.10.0/24', interface='lan')
         command = "create rule 'one_rule' on 'lan', source='10.10.1.0/24', destination='10.10.10.0/24'"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_net6_to_net6(self):
+        """ test creation of a new rule valid networks """
+        obj = dict(name='one_rule', source='2001:db8:1::/64', destination='2001:db8:2::/64', ipprotocol='inet6', interface='lan')
+        command = "create rule 'one_rule' on 'lan', source='2001:db8:1::/64', destination='2001:db8:2::/64', ipprotocol='inet6'"
         self.do_module_test(obj, command=command)
 
     def test_rule_create_net_interface(self):
