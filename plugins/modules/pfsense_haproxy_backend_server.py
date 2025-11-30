@@ -5,11 +5,14 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
 DOCUMENTATION = """
 ---
@@ -147,12 +150,13 @@ def main():
     module = AnsibleModule(
         argument_spec=HAPROXY_BACKEND_SERVER_ARGUMENT_SPEC,
         mutually_exclusive=HAPROXY_BACKEND_SERVER_MUTUALLY_EXCLUSIVE,
-        supports_check_mode=True)
+        supports_check_mode=True,
+    )
 
     pfmodule = PFSenseHaproxyBackendServerModule(module)
     pfmodule.run(module.params)
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

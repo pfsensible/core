@@ -1,7 +1,8 @@
 # Copyright: (c) 2025, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -26,7 +27,8 @@ TESTDEL_CRT = (
     "VkhSTUVCVEFEQVFIL01Bc0dBMVVkRHdRRUF3SUJCakFOQmdrcWhraUcKOXcwQkFRc0ZBQU9DQVFFQVVIOUtDZG1KZG9BSmxVMHdCSkhZeGpMcktsbFBZNk9OYnpyNUpiaENNNjlIeHhZTgpCa2lpbXd1"
     "N09mRmFGZkZDT25NSjhvcStKVGxjMG9vREoxM2xCdHRONkdybnZrUTNQMXdZYkNFTmJuaWxPYVVCClRJcmlIeXRORFFhb3VOYS9LV3M3RmF1b2JjdEJsMXc5YXRvSFpzTjVvZWhUM3JBVHYxQ0NBdGpw"
     "YVRKSWZKUjMKMElRT1lrZTRvWTZEa0l3SHAydlBQbW9vR2dJdGJUdzNVK0U0MVlaZTdxQ21FLzd6TFRTWmtJTTJseDZ6RDQ2agpEZjRyZ044TVVMNnhpd09MbzlyQUp5ckRNM2JEeTJ1QjY0QkVzRFFM"
-    "a2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4CmgxL2d6RFpJRGkrV1hDWUFjYmdMaFpWQnF0bjYydW1GcE1SSXV3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=")
+    "a2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4CmgxL2d6RFpJRGkrV1hDWUFjYmdMaFpWQnF0bjYydW1GcE1SSXV3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+)
 TESTDEL_KEY = (
     "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tDQpNSUlFdlFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLY3dnZ1NqQWdFQUFvSUJBUUNheStJa3dUVVJONTNoDQo4NjF1UWVrWGQzMTR6N3JqVHhj"
     "K2RyeTBrWjBHcmRRQUxFVE9ob0VwRzNiTFZ5M3JOQU43a1VYZ0FDKzFYVzV4DQptbXlYbWpnTkw4Z1pKdWZwM2RneVQ2UHlNQkRjU2JOSHdZNmlHZUIvVkQwQmNMcWlIaXNFL214ZmhqeTVqeVFuDQpk"
@@ -43,7 +45,8 @@ TESTDEL_KEY = (
     "d09Gbzh2cmZJSXNwRTNnamh5MTZCbGsyUUFRMGJwbGpBVFljVDNDWWhUZEU1DQpFNkZwRzVNNllCTXJ6YUxwc1JDVzFtZjJnLzYzelhNMzJUVXJFdFJyRVdGUE84TUI0blF0Y1Y5a2pFa3hGNHRWDQpD"
     "dGp3YjI5MEtNUFNDS00wS08vSTVDUXdpTFAydUtkeTBSRkpnRHUxQW9HQUxqSTdGZDl0ckFrY1dSenMyVHpRDQptaDRTZWxHRDFvdFAxRXpFa1hYVlZwK1lMNXlxOWM3V3hsa09RY1lFVmd1N2huNVFn"
     "cnBRUFZPTFVmbkJoajdXDQo1MC9IVmR6V21wSXg5NUlqZXFDZklBV1U3N0I5cmJUR2hvWWMzbTdJcEdObzl2WlhHYWgrc2JHY3BEK1phV3UzDQp1Q25pTnJpZEhORGgzWHZQVFZkRTRlVT0NCi0tLS0t"
-    "RU5EIFBSSVZBVEUgS0VZLS0tLS0NCg==")
+    "RU5EIFBSSVZBVEUgS0VZLS0tLS0NCg=="
+)
 WEB_CRT = (
     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVsRENDQTN5Z0F3SUJBZ0lJU2JlZ00zSWZSTEV3RFFZSktvWklodmNOQVFFTEJRQXdXakU0TURZR0ExVUUKQ2hNdmNHWlRaVzV6WlNCM1pXSkRi"
     "MjVtYVdkMWNtRjBiM0lnVTJWc1ppMVRhV2R1WldRZ1EyVnlkR2xtYVdOaApkR1V4SGpBY0JnTlZCQU1URlhCbVUyVnVjMlV0TmpJd09ETTJOemxqWkROa05EQWVGdzB5TWpBeU1USXlNak0yCk5ERmFG"
@@ -59,7 +62,8 @@ WEB_CRT = (
     "U0liM0RRRUIKQ3dVQUE0SUJBUUFzazBrTU12dVR0T3c2Ymx5a1U5cWNkRnQvVDlGOFZBZ0taNHgzYXNxNlArRG96N1FGVFpKVwprdmlrQVVUekpMMys4c0NKRDdjV3BZa2ZpdDRBYndhWFIyRzVsczhj"
     "L0JRcUdmY1ZOUnJVdWRscG12UUYrYk5iClMxZ2xjS2hYYXZuYnlQdkRMem9CZGVlTmhqYXIzcWc1TTV6T3I0aXYyM0hCZVc2aEY2c0FrV3dpVkU5NEJmZ00KOS9qeW5GalVYTkJheStMODM2TXBpNDhp"
     "NnE4OHdlQ25UdDdaTFFjWlZXb0IwcWNQSS96SExTUFlTNlhhcmdvdgpva3E1M3ZQSG9HNnRGUHpFSkpFVmNmOTV1bVcwaUpFR3hCQ3dTeVlnd2xSY0pEeGJ1QklFY0xWb2JKclVveHNLClJXcW13SHdQ"
-    "YkFxRjBOMUZ0cFJ6K3Yvd0lQYWdSQ2lVCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K")
+    "YkFxRjBOMUZ0cFJ6K3Yvd0lQYWdSQ2lVCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+)
 WEB_KEY = (
     "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRREc5M1VuTzJtTG00RVUKNHA5S2UwK2ZuRkJBNkZXbjl5MENy"
     "FpjR3FUVmI3QTd6NjhjUkF3SXhsRUNia1ZpTHV6N0pzVCtoMHdSYnJaNwpFYjV2Sm9nclpQdlJXUHJ5b0lBbCtPbDVvV0VsTTJxMFAxUlB2NkROd1piMWxQeDM1d1c4QWtYMUJISy9xRFliCmJuNVVFd"
@@ -75,77 +79,86 @@ WEB_KEY = (
     "TJRblR3Q1UKUk8xTkR5MUx3cEVQQjlvWkE4SkoydCtudTlXTWdmV2dxODJZZFhlSWxxT2JyejZKTitOTjB2R0ZEdTBDZ1lCcQp5a1p3anNVV2ZCdEVhZFVyanQ4aTJxNGYzbTBxY3kzY0pjRzVGbGV6T"
     "3JUaEpjN0ZRdndSZHhYQ213YUhBMDNVCktxQmV3YnhYSWo5TWcwWk8yMG4wbEdyYVdMVDNKTndBbmtrQXZ5VjVoSWlPTVBNMm8wN1JPNjVJTzdKallKNnIKcUdVVnZnenRBdzVJSXdST29Edjc2UHdxT"
     "HJpS3VLVmY4c0wrcDRMTlhRS0JnUUNrbXlIR3dielVJLzN6Z1FNSApxY1RkMUttMDhxTXJjUzZXdU03RGJxTEpIQXdlcFRSYUpuVmVLcnRRS2t4SGRlcjZsK2VWUjNvWXArUE9EbTVECjBGSXMxbXd2R"
-    "Fp3TjI2RVhmZnZkWG9EK1luNnVEeGlvVU9QZ1A2U1hLT3dxcnBuenVFZTFBNFpDQTFnRXJhd2MKTTNmejdiV3d0a1JUUE5uaGxybkVJNXY5Qmc9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==")
+    "Fp3TjI2RVhmZnZkWG9EK1luNnVEeGlvVU9QZ1A2U1hLT3dxcnBuenVFZTFBNFpDQTFnRXJhd2MKTTNmejdiV3d0a1JUUE5uaGxybkVJNXY5Qmc9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg=="
+)
 RSA_KEY = (
     "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlCUFFJQkFBSkJBTmNObWdtNFlsU1VBcjJ4ZFdlaTVhUlUvRGJXdHNRNDdnamt2MjhFa2plM29iKzZxME0rCkQ1cGh3WURjdjl5Z1ltdUo1"
     "d09pMWNQcHJzV2RGV212U3VzQ0F3RUFBUUpCQUtRQ3paM29MNllOaytHVU85UWsKV2p0d1RVS05rcW9vT1BJemN3UjZXZ0YrOXEydlNIaTQxLzZmdjFOaDJQZU91ZDcvZHFxTklLbGxGZXdIYnJsbApp"
     "dUVDSVFENHZvZUZqSEdMMzllcGVXVlRpYnF6UWdQTFYzWmlmbHYzMEdkb3ZqTGhVd0loQU4xVGZNOFNxdlBiCjJtelVzL2pITDJQMjl1U1B1bHd3b3lOQ052dFk3a1VKQWlFQTI5YUFMYzYzRjVrSW9G"
     "YVM3K2JjNDhyblVaS0cKSlh4cHliWWRmcHdDbWRNQ0lRREhGbnFHcW53c3IrOWpSbEk5enE3S2RUVFJsSmhHcFZtYU5jM1Blc2VhUVFJaApBTzl6UUUralBYK2pXbGhpTWMzZnM5amNiVWJKMWpTUDYv"
-    "aDBXd3Iyb1dJRwotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==")
+    "aDBXd3Iyb1dJRwotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ=="
+)
 
 
 class TestPFSenseCertModule(TestPFSenseModule):
-
     module = pfsense_cert
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseCertModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_cert_config.xml'
+        self.config_file = "pfsense_cert_config.xml"
         self.pfmodule = pfsense_cert.PFSenseCertModule
 
     @staticmethod
     def runTest():
-        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        """dummy function needed to instantiate this test module from another in python 2.7"""
         pass
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         root_elt = self.xml_result.getroot()
-        result = root_elt.findall("cert[descr='{0}']".format(obj['name']))
+        result = root_elt.findall("cert[descr='{0}']".format(obj["name"]))
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
-            self.fail('Found multiple certs for name {0}.'.format(obj['name']))
+            self.fail("Found multiple certs for name {0}.".format(obj["name"]))
         else:
             return None
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
 
-        self.check_param_equal(obj, target_elt, 'name', xml_field='descr')
-        self.check_param_equal(obj, target_elt, 'certificate', xml_field='crt')
-        if 'key' in obj:
-            self.check_param_equal_or_present(obj, target_elt, 'prv')
+        self.check_param_equal(obj, target_elt, "name", xml_field="descr")
+        self.check_param_equal(obj, target_elt, "certificate", xml_field="crt")
+        if "key" in obj:
+            self.check_param_equal_or_present(obj, target_elt, "prv")
 
     ##############
     # tests
     #
     def test_cert_create(self):
-        """ test creation of a new cert """
-        obj = dict(name='cert1', ca='testdel')
+        """test creation of a new cert"""
+        obj = dict(name="cert1", ca="testdel")
         self.do_module_test(obj, command="create cert 'cert1'")
 
     def test_cert_import(self):
-        """ test import of a new cert """
-        obj = dict(name='cert1', method='import', certificate=WEB_CRT, key=RSA_KEY)
+        """test import of a new cert"""
+        obj = dict(name="cert1", method="import", certificate=WEB_CRT, key=RSA_KEY)
         self.do_module_test(obj, command="create cert 'cert1'")
 
     def test_cert_delete(self):
-        """ test deletion of a cert """
-        obj = dict(name='webConfigurator default (62083679cd3d4)')
-        self.do_module_test(obj, command="delete cert 'webConfigurator default (62083679cd3d4)'", delete=True)
+        """test deletion of a cert"""
+        obj = dict(name="webConfigurator default (62083679cd3d4)")
+        self.do_module_test(
+            obj,
+            command="delete cert 'webConfigurator default (62083679cd3d4)'",
+            delete=True,
+        )
 
     def test_cert_update_noop(self):
-        """ test not updating a cert """
-        obj = dict(name='webConfigurator default (62083679cd3d4)', method='import', certificate=WEB_CRT)
+        """test not updating a cert"""
+        obj = dict(
+            name="webConfigurator default (62083679cd3d4)",
+            method="import",
+            certificate=WEB_CRT,
+        )
         self.do_module_test(obj, changed=False)
 
     ##############
     # misc
     #
     def test_add_invalid_key(self):
-        """ test adding an invalid key """
-        key = 'blah'
-        obj = dict(name='invalid', method='import', certificate=WEB_CRT, key=key)
-        msg = 'Could not recognize key format: %s' % (key)
+        """test adding an invalid key"""
+        key = "blah"
+        obj = dict(name="invalid", method="import", certificate=WEB_CRT, key=key)
+        msg = "Could not recognize key format: %s" % (key)
         self.do_module_test(obj, failed=True, msg=msg)

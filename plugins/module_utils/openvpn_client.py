@@ -5,67 +5,86 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import base64
 import re
 
-from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
+from ansible_collections.pfsensible.core.plugins.module_utils.module_base import (
+    PFSenseModuleBase,
+)
 
 OPENVPN_CLIENT_ARGUMENT_SPEC = dict(
-    name=dict(required=True, type='str'),
-    mode=dict(default='p2p_tls', required=False, choices=['p2p_tls', 'p2p_shared_key']),
-    authmode=dict(default=list(), required=False, type='list', elements='str'),
-    state=dict(default='present', choices=['present', 'absent']),
-    custom_options=dict(default=None, required=False, type='str'),
-    disable=dict(default=False, required=False, type='bool'),
-    interface=dict(default='wan', required=False, type='str'),
-    server_addr=dict(required=True, type='str'),
-    server_port=dict(default=1194, required=False, type='int'),
-    protocol=dict(default='UDP4', required=False, choices=['UDP4', 'TCP4']),
-    dev_mode=dict(default='tun', required=False, choices=['tun', 'tap']),
-    tls=dict(required=False, type='str'),
-    tls_type=dict(default='auth', required=False, choices=['auth', 'crypt']),
-    ca=dict(required=False, type='str'),
-    crl=dict(required=False, type='str'),
-    cert=dict(required=False, type='str'),
-    cert_depth=dict(default=1, required=False, type='int'),
-    strictusercn=dict(default=False, required=False, type='bool'),
-    shared_key=dict(required=False, type='str', no_log=True),
-    dh_length=dict(default=2048, required=False, type='int'),
-    ecdh_curve=dict(default='none', required=False, choices=['none', 'prime256v1', 'secp384r1', 'secp521r1']),
-    ncp_enable=dict(default=False, required=False, type='bool'),
+    name=dict(required=True, type="str"),
+    mode=dict(default="p2p_tls", required=False, choices=["p2p_tls", "p2p_shared_key"]),
+    authmode=dict(default=list(), required=False, type="list", elements="str"),
+    state=dict(default="present", choices=["present", "absent"]),
+    custom_options=dict(default=None, required=False, type="str"),
+    disable=dict(default=False, required=False, type="bool"),
+    interface=dict(default="wan", required=False, type="str"),
+    server_addr=dict(required=True, type="str"),
+    server_port=dict(default=1194, required=False, type="int"),
+    protocol=dict(default="UDP4", required=False, choices=["UDP4", "TCP4"]),
+    dev_mode=dict(default="tun", required=False, choices=["tun", "tap"]),
+    tls=dict(required=False, type="str"),
+    tls_type=dict(default="auth", required=False, choices=["auth", "crypt"]),
+    ca=dict(required=False, type="str"),
+    crl=dict(required=False, type="str"),
+    cert=dict(required=False, type="str"),
+    cert_depth=dict(default=1, required=False, type="int"),
+    strictusercn=dict(default=False, required=False, type="bool"),
+    shared_key=dict(required=False, type="str", no_log=True),
+    dh_length=dict(default=2048, required=False, type="int"),
+    ecdh_curve=dict(
+        default="none",
+        required=False,
+        choices=["none", "prime256v1", "secp384r1", "secp521r1"],
+    ),
+    ncp_enable=dict(default=False, required=False, type="bool"),
     # ncp_ciphers=dict(default=list('AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'), required=False,
     #                  choices=['AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], type='list', elements='str'),
-    data_ciphers=dict(default=None, required=False, choices=['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], type='list', elements='str'),
-    data_ciphers_fallback=dict(default='AES-256-CBC', required=False, choices=['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305']),
-    digest=dict(default='SHA256', required=False, type='str'),
-    tunnel_network=dict(default='', required=False, type='str'),
-    tunnel_networkv6=dict(default='', required=False, type='str'),
-    remote_network=dict(default='', required=False, type='str'),
-    remote_networkv6=dict(default='', required=False, type='str'),
-    gwredir=dict(default=False, required=False, type='bool'),
-    gwredir6=dict(default=False, required=False, type='bool'),
-    maxclients=dict(default=None, required=False, type='int'),
-    compression=dict(default='adaptive', required=False, choices=['adaptive', '']),
-    compression_push=dict(default=False, required=False, type='bool'),
-    passtos=dict(default=False, required=False, type='bool'),
-    client2client=dict(default=False, required=False, type='bool'),
-    dynamic_ip=dict(default=False, required=False, type='bool'),
-    topology=dict(default='subnet', required=False, choices=['net30', 'subnet']),
-    dns_domain=dict(default='', required=False, type='str'),
-    dns_client1=dict(default='', required=False, type='str'),
-    dns_client2=dict(default='', required=False, type='str'),
-    dns_client3=dict(default='', required=False, type='str'),
-    dns_client4=dict(default='', required=False, type='str'),
-    push_register_dns=dict(default=False, required=False, type='bool'),
-    create_gw=dict(default='both', required=False, choices=['both', 'v4only', 'v6only']),
-    verbosity_level=dict(default=3, required=False, type='int'),
+    data_ciphers=dict(
+        default=None,
+        required=False,
+        choices=["AES-256-CBC", "AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"],
+        type="list",
+        elements="str",
+    ),
+    data_ciphers_fallback=dict(
+        default="AES-256-CBC",
+        required=False,
+        choices=["AES-256-CBC", "AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"],
+    ),
+    digest=dict(default="SHA256", required=False, type="str"),
+    tunnel_network=dict(default="", required=False, type="str"),
+    tunnel_networkv6=dict(default="", required=False, type="str"),
+    remote_network=dict(default="", required=False, type="str"),
+    remote_networkv6=dict(default="", required=False, type="str"),
+    gwredir=dict(default=False, required=False, type="bool"),
+    gwredir6=dict(default=False, required=False, type="bool"),
+    maxclients=dict(default=None, required=False, type="int"),
+    compression=dict(default="adaptive", required=False, choices=["adaptive", ""]),
+    compression_push=dict(default=False, required=False, type="bool"),
+    passtos=dict(default=False, required=False, type="bool"),
+    client2client=dict(default=False, required=False, type="bool"),
+    dynamic_ip=dict(default=False, required=False, type="bool"),
+    topology=dict(default="subnet", required=False, choices=["net30", "subnet"]),
+    dns_domain=dict(default="", required=False, type="str"),
+    dns_client1=dict(default="", required=False, type="str"),
+    dns_client2=dict(default="", required=False, type="str"),
+    dns_client3=dict(default="", required=False, type="str"),
+    dns_client4=dict(default="", required=False, type="str"),
+    push_register_dns=dict(default=False, required=False, type="bool"),
+    create_gw=dict(
+        default="both", required=False, choices=["both", "v4only", "v6only"]
+    ),
+    verbosity_level=dict(default=3, required=False, type="int"),
 )
 
 OPENVPN_CLIENT_REQUIRED_IF = [
-    ['mode', 'p2p_tls', ['ca']],
-    ['mode', 'p2p_shared_key', ['shared_key']],
+    ["mode", "p2p_tls", ["ca"]],
+    ["mode", "p2p_shared_key", ["shared_key"]],
 ]
 
 OPENVPN_CLIENT_PHP_COMMAND_PREFIX = """
@@ -73,19 +92,25 @@ require_once('openvpn.inc');
 $ovpn = config_get_path('openvpn/openvpn-client')[{idx}];
 """
 
-OPENVPN_CLIENT_PHP_COMMAND_SET = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
+OPENVPN_CLIENT_PHP_COMMAND_SET = (
+    OPENVPN_CLIENT_PHP_COMMAND_PREFIX
+    + """
 openvpn_resync('client',$ovpn);
 """
+)
 
-OPENVPN_CLIENT_PHP_COMMAND_DEL = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
+OPENVPN_CLIENT_PHP_COMMAND_DEL = (
+    OPENVPN_CLIENT_PHP_COMMAND_PREFIX
+    + """
 openvpn_delete($ovpn);
 unset($ovpn);
 openvpn_resync('client',$ovpn);
 """
+)
 
 
 class PFSenseOpenVPNClientModule(PFSenseModuleBase):
-    """ module managing pfSense OpenVPN configuration """
+    """module managing pfSense OpenVPN configuration"""
 
     ##############################
     # init
@@ -93,12 +118,14 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseOpenVPNClientModule, self).__init__(module, pfsense)
         self.name = "pfsense_openvpn"
-        self.root_elt = self.pfsense.get_element('openvpn', create_node=True)
+        self.root_elt = self.pfsense.get_element("openvpn", create_node=True)
         self.obj = dict()
 
-        cmd = ('require_once("openvpn.inc");;'
-               '$digestlist = openvpn_get_digestlist();'
-               'echo json_encode($digestlist);')
+        cmd = (
+            'require_once("openvpn.inc");;'
+            "$digestlist = openvpn_get_digestlist();"
+            "echo json_encode($digestlist);"
+        )
         self.digestlist = self.pfsense.php(cmd)
 
     ##############################
@@ -111,116 +138,143 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         self.module.fail_json(msg=f"Invalid digest '{digest}'")
 
     def _params_to_obj(self):
-        """ return dict from module params """
+        """return dict from module params"""
         obj = dict()
-        obj['description'] = self.params['name']
-        if self.params['state'] == 'present':
-            obj['custom_options'] = self.params['custom_options']
-            self._get_ansible_param_bool(obj, 'disable')
-            self._get_ansible_param_bool(obj, 'strictusercn')
-            obj['mode'] = self.params['mode']
-            obj['dev_mode'] = self.params['dev_mode']
-            obj['interface'] = self.params['interface']
-            obj['protocol'] = self.params['protocol']
-            obj['server_addr'] = self.params['server_addr']
-            obj['server_port'] = str(self.params['server_port'])
-            self._get_ansible_param(obj, 'maxclients')
-            obj['verbosity_level'] = str(self.params['verbosity_level'])
-            obj['data_ciphers_fallback'] = self.params['data_ciphers_fallback']
-            obj['data_ciphers'] = ",".join(self.params['data_ciphers'])
-            self._get_ansible_param_bool(obj, 'ncp_enable', 'enabled')
-            self._get_ansible_param_bool(obj, 'gwredir')
-            self._get_ansible_param_bool(obj, 'gwredirr6')
-            self._get_ansible_param_bool(obj, 'compression_push')
-            self._get_ansible_param_bool(obj, 'passtos')
-            self._get_ansible_param_bool(obj, 'client2client')
-            self._get_ansible_param_bool(obj, 'dynamic_ip')
-            self._get_ansible_param_bool(obj, 'push_register_dns')
-            obj['digest'] = self._get_digest_name(self.params['digest'])
-            obj['tunnel_network'] = self.params['tunnel_network']
-            obj['tunnel_networkv6'] = self.params['tunnel_networkv6']
-            obj['remote_network'] = self.params['remote_network']
-            obj['remote_networkv6'] = self.params['remote_networkv6']
-            obj['compression'] = self.params['compression']
-            obj['topology'] = self.params['topology']
-            obj['create_gw'] = self.params['create_gw']
+        obj["description"] = self.params["name"]
+        if self.params["state"] == "present":
+            obj["custom_options"] = self.params["custom_options"]
+            self._get_ansible_param_bool(obj, "disable")
+            self._get_ansible_param_bool(obj, "strictusercn")
+            obj["mode"] = self.params["mode"]
+            obj["dev_mode"] = self.params["dev_mode"]
+            obj["interface"] = self.params["interface"]
+            obj["protocol"] = self.params["protocol"]
+            obj["server_addr"] = self.params["server_addr"]
+            obj["server_port"] = str(self.params["server_port"])
+            self._get_ansible_param(obj, "maxclients")
+            obj["verbosity_level"] = str(self.params["verbosity_level"])
+            obj["data_ciphers_fallback"] = self.params["data_ciphers_fallback"]
+            obj["data_ciphers"] = ",".join(self.params["data_ciphers"])
+            self._get_ansible_param_bool(obj, "ncp_enable", "enabled")
+            self._get_ansible_param_bool(obj, "gwredir")
+            self._get_ansible_param_bool(obj, "gwredirr6")
+            self._get_ansible_param_bool(obj, "compression_push")
+            self._get_ansible_param_bool(obj, "passtos")
+            self._get_ansible_param_bool(obj, "client2client")
+            self._get_ansible_param_bool(obj, "dynamic_ip")
+            self._get_ansible_param_bool(obj, "push_register_dns")
+            obj["digest"] = self._get_digest_name(self.params["digest"])
+            obj["tunnel_network"] = self.params["tunnel_network"]
+            obj["tunnel_networkv6"] = self.params["tunnel_networkv6"]
+            obj["remote_network"] = self.params["remote_network"]
+            obj["remote_networkv6"] = self.params["remote_networkv6"]
+            obj["compression"] = self.params["compression"]
+            obj["topology"] = self.params["topology"]
+            obj["create_gw"] = self.params["create_gw"]
 
-            if 'user' in self.params['mode']:
-                obj['authmode'] = ",".join(self.params['authmode'])
+            if "user" in self.params["mode"]:
+                obj["authmode"] = ",".join(self.params["authmode"])
 
-            if 'tls' in self.params['mode']:
+            if "tls" in self.params["mode"]:
                 # Find the caref id for the named CA
                 if self.params is not None:
-                    ca_elt = self.pfsense.find_ca_elt(self.params['ca'])
+                    ca_elt = self.pfsense.find_ca_elt(self.params["ca"])
                     if ca_elt is None:
-                        self.module.fail_json(msg='%s is not a valid certificate authority' % (self.params['ca']))
-                    obj['caref'] = ca_elt.find('refid').text
+                        self.module.fail_json(
+                            msg="%s is not a valid certificate authority"
+                            % (self.params["ca"])
+                        )
+                    obj["caref"] = ca_elt.find("refid").text
                 # Find the crlref id for the named CRL if any
-                if self.params['crl'] is not None:
-                    crl_elt = self.pfsense.find_crl_elt(self.params['crl'])
+                if self.params["crl"] is not None:
+                    crl_elt = self.pfsense.find_crl_elt(self.params["crl"])
                     if crl_elt is None:
-                        self.module.fail_json(msg='%s is not a valid certificate revocation list' % (self.params['crl']))
-                    obj['crlref'] = crl_elt.find('refid').text
+                        self.module.fail_json(
+                            msg="%s is not a valid certificate revocation list"
+                            % (self.params["crl"])
+                        )
+                    obj["crlref"] = crl_elt.find("refid").text
                 else:
-                    obj['crlref'] = ''
+                    obj["crlref"] = ""
                 # Find the certref id for the named certificate if any
-                if self.params['cert'] is not None:
-                    cert_elt = self.pfsense.find_cert_elt(self.params['cert'])
+                if self.params["cert"] is not None:
+                    cert_elt = self.pfsense.find_cert_elt(self.params["cert"])
                     if cert_elt is None:
-                        self.module.fail_json(msg='%s is not a valid certificate' % (self.params['cert']))
-                    obj['certref'] = cert_elt.find('refid').text
+                        self.module.fail_json(
+                            msg="%s is not a valid certificate" % (self.params["cert"])
+                        )
+                    obj["certref"] = cert_elt.find("refid").text
 
-            if self.params['tls'] is not None:
-                obj['tls'] = self.params['tls']
-                obj['tls_type'] = self.params['tls_type']
+            if self.params["tls"] is not None:
+                obj["tls"] = self.params["tls"]
+                obj["tls_type"] = self.params["tls_type"]
 
-            if self.params['mode'] == 'p2p_shared_key':
-                obj['shared_key'] = self.params['shared_key']
+            if self.params["mode"] == "p2p_shared_key":
+                obj["shared_key"] = self.params["shared_key"]
 
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         # check name
-        self.pfsense.validate_string(params['name'], 'openvpn')
+        self.pfsense.validate_string(params["name"], "openvpn")
 
-        if params['state'] == 'absent':
+        if params["state"] == "absent":
             return True
 
         # tls is not valid for p2p_shared_key
-        if params['mode'] == 'p2p_shared_key' and params['tls'] is not None:
-            self.module.fail_json(msg='tls parameter is not valied with p2p_shared_key mode.')
+        if params["mode"] == "p2p_shared_key" and params["tls"] is not None:
+            self.module.fail_json(
+                msg="tls parameter is not valied with p2p_shared_key mode."
+            )
 
         # check tunnel_networks - can be network alias or non-strict IP CIDR network
-        self.pfsense.validate_openvpn_tunnel_network(params.get('tunnel_network'), 'ipv4')
-        self.pfsense.validate_openvpn_tunnel_network(params.get('tunnel_network6'), 'ipv6')
+        self.pfsense.validate_openvpn_tunnel_network(
+            params.get("tunnel_network"), "ipv4"
+        )
+        self.pfsense.validate_openvpn_tunnel_network(
+            params.get("tunnel_network6"), "ipv6"
+        )
 
         # Check auth clients
-        if len(params['authmode']) > 0:
-            system = self.pfsense.get_element('system')
-            for authsrv in params['authmode']:
+        if len(params["authmode"]) > 0:
+            system = self.pfsense.get_element("system")
+            for authsrv in params["authmode"]:
                 if len(system.findall("authclient[name='{0}']".format(authsrv))) == 0:
-                    self.module.fail_json(msg='Cannot find authentication client {0}.'.format(authsrv))
+                    self.module.fail_json(
+                        msg="Cannot find authentication client {0}.".format(authsrv)
+                    )
 
         # validate key
-        for param in ['shared_key', 'tls']:
+        for param in ["shared_key", "tls"]:
             if params[param] is not None:
                 key = params[param]
-                if key == 'generate':
+                if key == "generate":
                     # generate during params_to_obj
                     pass
-                elif re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$', key, flags=re.MULTILINE | re.DOTALL):
+                elif re.search(
+                    "^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$",
+                    key,
+                    flags=re.MULTILINE | re.DOTALL,
+                ):
                     params[param] = base64.b64encode(key.encode()).decode()
                 else:
                     key_decoded = base64.b64decode(key.encode()).decode()
-                    if not re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$',
-                                     key_decoded, flags=re.MULTILINE | re.DOTALL):
-                        self.module.fail_json(msg='Could not recognize {0} key format: {1}'.format(param, key_decoded))
+                    if not re.search(
+                        "^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$",
+                        key_decoded,
+                        flags=re.MULTILINE | re.DOTALL,
+                    ):
+                        self.module.fail_json(
+                            msg="Could not recognize {0} key format: {1}".format(
+                                param, key_decoded
+                            )
+                        )
 
     def _nextvpnid(self):
-        """ find next available vpnid """
+        """find next available vpnid"""
         vpnid = 1
         while len(self.root_elt.findall("*[vpnid='{0}']".format(vpnid))) != 0:
             vpnid += 1
@@ -229,8 +283,8 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _find_openvpn_client(self, value, field='description'):
-        """ return openvpn-client element """
+    def _find_openvpn_client(self, value, field="description"):
+        """return openvpn-client element"""
         i = 0
         for elt in self.root_elt:
             field_elt = elt.find(field)
@@ -246,34 +300,42 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return i
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
-        (before, changed) = super(PFSenseOpenVPNClientModule, self)._copy_and_update_target()
+        """update the XML target_elt"""
+        (before, changed) = super(
+            PFSenseOpenVPNClientModule, self
+        )._copy_and_update_target()
 
         if not changed:
-            self.diff['after'] = self.obj
+            self.diff["after"] = self.obj
 
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
-        target_elt = self.pfsense.new_element('openvpn-client')
-        self.obj['vpnid'] = self._nextvpnid()
-        self.diff['before'] = ''
-        self.diff['after'] = self.obj
-        self.result['changed'] = True
+        """create the XML target_elt"""
+        target_elt = self.pfsense.new_element("openvpn-client")
+        self.obj["vpnid"] = self._nextvpnid()
+        self.diff["before"] = ""
+        self.diff["after"] = self.obj
+        self.result["changed"] = True
         self.idx = self._find_last_openvpn_idx()
         return target_elt
 
     def _find_target(self):
-        """ find the XML target_elt """
-        (target_elt, self.idx) = self._find_openvpn_client(self.obj['description'])
-        for param in ['shared_key', 'tls']:
+        """find the XML target_elt"""
+        (target_elt, self.idx) = self._find_openvpn_client(self.obj["description"])
+        for param in ["shared_key", "tls"]:
             current_elt = self.pfsense.get_element(param, target_elt)
-            if self.params[param] == 'generate':
+            if self.params[param] == "generate":
                 if current_elt is None:
-                    (dummy, key, stderr) = self.module.run_command('/usr/local/sbin/openvpn --genkey secret /dev/stdout')
+                    (dummy, key, stderr) = self.module.run_command(
+                        "/usr/local/sbin/openvpn --genkey secret /dev/stdout"
+                    )
                     if stderr != "":
-                        self.module.fail_json(msg='generate for "{0}" secret key: {1}'.format(param, stderr))
+                        self.module.fail_json(
+                            msg='generate for "{0}" secret key: {1}'.format(
+                                param, stderr
+                            )
+                        )
                     self.obj[param] = base64.b64encode(key.encode()).decode()
                     self.result[param] = self.obj[param]
                 else:
@@ -281,36 +343,42 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return target_elt
 
     def _remove_target_elt(self):
-        """ delete target_elt from xml """
+        """delete target_elt from xml"""
         super(PFSenseOpenVPNClientModule, self)._remove_target_elt()
-        self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
+        self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
 
     ##############################
     # run
     #
     def _remove(self):
-        """ delete obj """
-        self.diff['after'] = ''
-        self.diff['before'] = ''
+        """delete obj"""
+        self.diff["after"] = ""
+        self.diff["before"] = ""
         super(PFSenseOpenVPNClientModule, self)._remove()
-        return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_DEL.format(idx=self.idx))
+        return self.pfsense.phpshell(
+            OPENVPN_CLIENT_PHP_COMMAND_DEL.format(idx=self.idx)
+        )
 
     def _update(self):
-        """ make the target pfsense reload """
-        return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_SET.format(idx=self.idx))
+        """make the target pfsense reload"""
+        return self.pfsense.phpshell(
+            OPENVPN_CLIENT_PHP_COMMAND_SET.format(idx=self.idx)
+        )
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
-        return "'" + self.obj['description'] + "'"
+        """return obj's name"""
+        return "'" + self.obj["description"] + "'"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
+        """generate pseudo-CLI command fields parameters to create an obj"""
+        values = ""
         if before is None:
-            values += self.format_cli_field(self.obj, 'description')
+            values += self.format_cli_field(self.obj, "description")
         else:
-            values += self.format_updated_cli_field(self.obj, before, 'description', add_comma=(values))
+            values += self.format_updated_cli_field(
+                self.obj, before, "description", add_comma=(values)
+            )
         return values

@@ -6,11 +6,14 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
 DOCUMENTATION = """
 ---
@@ -84,7 +87,12 @@ diff:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.alias import PFSenseAliasModule, ALIAS_ARGUMENT_SPEC, ALIAS_MUTUALLY_EXCLUSIVE, ALIAS_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.alias import (
+    PFSenseAliasModule,
+    ALIAS_ARGUMENT_SPEC,
+    ALIAS_MUTUALLY_EXCLUSIVE,
+    ALIAS_REQUIRED_IF,
+)
 
 
 def main():
@@ -92,12 +100,13 @@ def main():
         argument_spec=ALIAS_ARGUMENT_SPEC,
         mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE,
         required_if=ALIAS_REQUIRED_IF,
-        supports_check_mode=True)
+        supports_check_mode=True,
+    )
 
     pfmodule = PFSenseAliasModule(module)
     pfmodule.run(module.params)
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
