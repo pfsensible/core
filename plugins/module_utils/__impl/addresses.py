@@ -103,9 +103,12 @@ def parse_ip_network(address, strict=True, returns_ip=True):
 
 def parse_address(self, param, allow_self=True):
     """ validate param address field and returns it as a dict """
-    addr = param.split(':')
-    if len(addr) > 3:
-        self.module.fail_json(msg='Cannot parse address %s' % (param))
+    if self.is_ipv6_address(param) or self.is_ipv6_network(param):
+        addr = [param]
+    else:
+        addr = param.split(':', maxsplit=3)
+        if len(addr) > 3:
+            self.module.fail_json(msg='Cannot parse address %s' % (param))
 
     address = addr[0]
 

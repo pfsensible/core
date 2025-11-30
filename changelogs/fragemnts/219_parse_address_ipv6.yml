@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_rule - Allow IPv6 addresses in source and destination (https://github.com/pfsensible/core/issues/219).
