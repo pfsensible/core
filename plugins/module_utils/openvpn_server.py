@@ -82,6 +82,7 @@ OPENVPN_SERVER_REQUIRED_IF = [
 
 OPENVPN_SERVER_PHP_COMMAND_PREFIX = """
 require_once('openvpn.inc');
+alias_make_table();
 $ovpn = config_get_path('openvpn/openvpn-server')[{idx}];
 """
 
