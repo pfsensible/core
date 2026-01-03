@@ -744,9 +744,13 @@ class PFSenseModule(object):
         return version
 
     @staticmethod
-    def is_ce_version(version):
+    def is_ce_version(version=None):
         """ return True if version is a CE version (for now, we only have 2.x patterns) """
-        return version[0] == 2
+        if type(version) is list:
+            return version[0] == 2
+        if version is None:
+            version = PFSenseModule.get_version()
+        return len(version.split('.')[0]) == 1
 
     def is_version(self, version, or_more=True):
         """ check target pfSense version """

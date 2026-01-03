@@ -15,6 +15,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     name=dict(required=True, type='str'),
     mode=dict(type='str', choices=['p2p_tls', 'p2p_shared_key', 'server_tls', 'server_tls_user', 'server_user']),
+    dco=dict(default=False, required=False, type='bool'),
     authmode=dict(default=list(), required=False, type='list', elements='str'),
     state=dict(default='present', choices=['present', 'absent']),
     custom_options=dict(default=None, required=False, type='str'),
@@ -212,6 +213,15 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
 
             if self.params['mode'] == 'p2p_shared_key':
                 obj['shared_key'] = self.params['shared_key']
+
+            if not self.pfsense.is_ce_version():
+                self._get_ansible_param_bool(obj, 'dco', force=True, value='enabled', value_false='disabled')
+                if self.params['dco']:
+                    #these are requirements for DCO
+                    obj['allow_compression'] = 'no'
+                    obj['data_ciphers_fallback'] = 'AES-256-GCM'
+                    obj.pop('compression')
+                    obj.pop('compression_push')
 
         return obj
 
