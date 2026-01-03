@@ -746,6 +746,8 @@ class PFSenseModule(object):
     @staticmethod
     def is_ce_version(version=None):
         """ return True if version is a CE version (for now, we only have 2.x patterns) """
+        if type(version) is list:
+            return version[0] == 2
         if version is None:
             version = PFSenseModule.get_version()
         return len(version.split('.')[0]) == 1
