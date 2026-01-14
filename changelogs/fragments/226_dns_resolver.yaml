@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_dns_resolver - Allow IPv6 addresses for hosts and domainoverrides (https://github.com/pfsensible/core/pull/245).
