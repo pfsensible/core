@@ -92,6 +92,7 @@ import json
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
+# Check this https://github.com/pfsensible/core/wiki/PFSenseModuleBase-Template
 
 SAML_ARGUMENT_SPEC = dict(
   enable=dict(default=True, type='bool'),
@@ -112,6 +113,7 @@ IDP_ENTITY_REGEX = "[a-zA-Z0-9\-._~:\/?#\[\]@!$&\'()*+,;=]+"
 
 # Alternatively...
 # URL_REGEX = "^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$"
+
 
 class PFSenseSAMLModule(PFSenseModuleBase):
     """ module managing saml config """
