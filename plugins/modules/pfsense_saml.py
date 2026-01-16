@@ -201,19 +201,6 @@ class PFSenseSAMLModule(PFSenseModuleBase):
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         
         return (self.diff["before"], changed)
-    
-    # def _remove_deleted_params(self):
-    #     """" todo """
-    #     return False
-    
-    # # TODO: Does not work for ignore
-    # def _get_params_to_remove(self):
-    #     """ returns the list of params to remove if they are not set """
-    #     return []
-
-    ##############################
-    # run
-    #
 
     ##############################
     # logging

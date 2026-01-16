@@ -64,7 +64,6 @@ class TestPFSenseSAMLModule(TestPFSenseModule):
 
         self.check_param_equal(obj, target_elt, 'custom_conf')
 
-
     ##############
     # test validation
     #
