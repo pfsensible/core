@@ -89,7 +89,7 @@ class TestPFSenseSAMLModule(TestPFSenseModule):
 
     def test_entity_id_update_noop(self):
         """ test not applying entity id with invalid characters """
-        obj = CURRENT_CONFIG | dict(idp_entity_id="£://£")
+        obj = CURRENT_CONFIG | dict(idp_entity_id="£")
         self.do_module_test(obj, state=None, failed=True, msg="idp_entity_id contains invalid characters")
 
     def test_entity_id_update_noop(self):
