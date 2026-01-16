@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 INSTALLATION = """
@@ -78,7 +79,7 @@ EXAMPLES = """
 - name: Modify SAML config
   pfsense_saml:
     enable: true
-    idp_metadata_url: http://keycloak.local/realms/master/protocol/saml/descriptor
+    idp_metadata_url: https://keycloak.local/realms/master/protocol/saml/descriptor
     sp_base_url: https://pfSense.local
 """
 
@@ -88,163 +89,173 @@ RETURN = """
 
 import re
 import json
+from urllib.parse import urlparse
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
-# Check this https://github.com/pfsensible/core/wiki/PFSenseModuleBase-Template
-
 SAML_ARGUMENT_SPEC = dict(
-  enable=dict(default=True, type='bool'),
-  strip_username=dict(default=False, type='bool'),
-  debug_mode=dict(default=False, type='bool'),
-  idp_metadata_url=dict(default="", type='str'),
-  idp_entity_id=dict(default="", type='str'),
-  idp_sign_on_url=dict(default="", type='str'),
-  idp_groups_attribute=dict(default="", type='str'),
-  idp_x509_cert=dict(default="", type='str'),
-  sp_base_url=dict(required=True, type='str'),
-  custom_conf=dict(default="", type='str'),
+    enable=dict(default=True, type="bool"),
+    strip_username=dict(default=False, type="bool"),
+    debug_mode=dict(default=False, type="bool"),
+    idp_metadata_url=dict(default="", type="str"),
+    idp_entity_id=dict(default="", type="str"),
+    idp_sign_on_url=dict(default="", type="str"),
+    idp_groups_attribute=dict(default="", type="str"),
+    idp_x509_cert=dict(default="", type="str"),
+    sp_base_url=dict(required=True, type="str"),
+    custom_conf=dict(default="", type="str"),
 )
 
-# URL as defined in RFC 2396
-URL_REGEX = "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?"
-IDP_ENTITY_REGEX = "[a-zA-Z0-9\-._~:\/?#\[\]@!$&\'()*+,;=]+"
-
-# Alternatively...
-# URL_REGEX = "^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$"
-
+IDP_ENTITY_REGEX = r"[a-zA-Z0-9\-._~:\/?#\[\]@!$&'()*+,;=]+"
 
 class PFSenseSAMLModule(PFSenseModuleBase):
     """ module managing saml config """
 
+    ##############################
+    # unit tests
+    #
+    # Must be class method for unit test usage
+    @staticmethod
+    def get_argument_spec():
+        """return argument spec"""
+        return SAML_ARGUMENT_SPEC
+
     def __init__(self, module, pfsense=None):
         super(PFSenseSAMLModule, self).__init__(module, pfsense, key="sp_base_url")
-        
+
         self.name = "saml2-auth"
         self.root_elt = self._find_target()
         self.obj = dict()
-
 
     ##############################
     # params processing
     #
     def _validate_set_if_idp_metadata_unset(self, params, key):
         if params[key] == "":
-          if params["idp_metadata_url"] == "":
-            self.module.fail_json(msg="{0} is required when idp_metadata_url is unset.".format(key))
+            if params["idp_metadata_url"] == "":
+                self.module.fail_json(msg="{0} is required when idp_metadata_url is unset".format(key))
 
     def _validate_url(self, params, key):
-       if not re.fullmatch(URL_REGEX, params[key]):
-          self.module.fail_json(msg="{0} is not a valid URL".format(key))
+        try:    
+            url = urlparse(params[key])
+            if not all([url.scheme, url.netloc]):
+                raise Exception
+        except Exception:
+            self.module.fail_json(msg="{0} is not a valid URL".format(key))
 
     def _validate_params(self):
-      """ do some extra checks on input parameters """
-      
-      params = self.params
+        """do some extra checks on input parameters"""
 
-      self._validate_url(params, 'sp_base_url')
+        params = self.params
 
-      if params['idp_metadata_url'] != "":
-        self._validate_url(params, 'idp_metadata_url')
+        self._validate_url(params, "sp_base_url")
 
-      self._validate_set_if_idp_metadata_unset(params, 'idp_entity_idp')
-      if params['idp_entity_idp'] != "":
-        if len(params['idp_entity_idp']) > 1024:
-          self.module.fail_json(msg="idp_entity_idp must be less than 1024 characters long.")
-        if not re.fullmatch(IDP_ENTITY_REGEX, params['idp_entity_idp']):
-          self.module.fail_json(msg="idp_entity_idp contains invalid characters.")
+        if params["idp_metadata_url"] != "":
+            self._validate_url(params, "idp_metadata_url")  
 
-      self._validate_set_if_idp_metadata_unset(params, 'idp_sign_on_url')
-      if params['idp_sign_on_url'] != "":
-        self._validate_url(params, 'idp_sign_on_url')
+        self._validate_set_if_idp_metadata_unset(params, "idp_entity_id")
+        if params["idp_entity_id"] != "":
+            if len(params["idp_entity_id"]) > 1024:
+                self.module.fail_json(msg="idp_entity_id must be less than 1025 characters long")
+            if not re.fullmatch(IDP_ENTITY_REGEX, params["idp_entity_id"]):
+                self.module.fail_json(msg="idp_entity_id contains invalid characters")
 
-      self._validate_set_if_idp_metadata_unset(params, 'idp_x509_cert')
-      if params['idp_x509_cert'] != "":
-        if not (params['idp_x509_cert'].startswith('-----BEGIN CERTIFICATE-----') and params['idp_x509_cert'].endswith('-----END CERTIFICATE-----')):
-          self.module.fail_json(msg="idp_x509_cert is missing BEGIN and/or END tags.")
+        self._validate_set_if_idp_metadata_unset(params, "idp_sign_on_url")
+        if params["idp_sign_on_url"] != "":
+            self._validate_url(params, "idp_sign_on_url")
 
-      if params['custom_conf'] != "":
-        try:
-          json.loads(params['custom_conf'])
-        except json.decoder.JSONDecodeError:
-          self.module.fail_json(msg="custom_conf is not valid JSON")
+        self._validate_set_if_idp_metadata_unset(params, "idp_x509_cert")
+        if params["idp_x509_cert"] != "":
+            if not (params["idp_x509_cert"].startswith("-----BEGIN CERTIFICATE-----") and params["idp_x509_cert"].endswith("-----END CERTIFICATE-----")):
+                self.module.fail_json(msg="idp_x509_cert is missing BEGIN and/or END tags")
 
+        if params["custom_conf"] != "":
+            try:
+                json.loads(params["custom_conf"])
+            except json.decoder.JSONDecodeError:
+                self.module.fail_json(msg="custom_conf is not valid JSON")
 
     ##############################
     # XML processing
     #
     def _find_target(self):
-        installed_pkgs_elt = self.pfsense.get_element('installedpackages')
-        pkgs_elts = installed_pkgs_elt.findall('package') if installed_pkgs_elt is not None else None
+        installed_pkgs_elt = self.pfsense.get_element("installedpackages")
+        pkgs_elts = installed_pkgs_elt.findall("package") if installed_pkgs_elt is not None else None
 
         for elt in pkgs_elts:
-            pkg_name = elt.find('internal_name')
+            pkg_name = elt.find("internal_name")
             if pkg_name is not None and pkg_name.text == self.name:
-                conf_elt = elt.find('conf')
+                conf_elt = elt.find("conf")
                 if conf_elt is not None:
                     return conf_elt
-        
-        return self.module.fail_json(msg='Unable to find XML configuration entry. Are you sure SAML2 package is installed?')
+
+        return self.module.fail_json(msg="Unable to find XML configuration entry. Are you sure SAML2 package is installed?")
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
 
-        before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
+        self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
+        self.diff["after"] = self.pfsense.element_to_dict(self.target_elt)
+        
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        if self._remove_deleted_params():
-            changed = True
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-
-        return (before, changed)
-
+        
+        return (self.diff["before"], changed)
+    
+    # def _remove_deleted_params(self):
+    #     """" todo """
+    #     return False
+    
+    # # TODO: Does not work for ignore
+    # def _get_params_to_remove(self):
+    #     """ returns the list of params to remove if they are not set """
+    #     return []
 
     ##############################
     # run
     #
 
-
     ##############################
     # logging
     #
     def _log_fields(self, before=None):
-        """generate pseudo-CLI command fields parameters to create an obj"""
-        values = ''
-        if before is None:            
-            values += self.format_cli_field(self.obj, 'enable', fvalue=self.fvalue_bool)
-            values += self.format_cli_field(self.obj, 'strip_username', fvalue=self.fvalue_bool)
-            values += self.format_cli_field(self.obj, 'debug_mode', fvalue=self.fvalue_bool)
-            values += self.format_cli_field(self.obj, 'idp_metadata_url')
-            values += self.format_cli_field(self.obj, 'idp_entity_id')
-            values += self.format_cli_field(self.obj, 'idp_sign_on_url')
-            values += self.format_cli_field(self.obj, 'idp_groups_attribute')
-            values += self.format_cli_field(self.obj, 'idp_x509_cert')
-            values += self.format_cli_field(self.obj, 'sp_base_url')
-            values += self.format_cli_field(self.obj, 'custom_config')
-        else:
-            values += self.format_updated_cli_field(self.obj, before, 'enable', fvalue=self.fvalue_bool)
-            values += self.format_updated_cli_field(self.obj, before, 'strip_username', fvalue=self.fvalue_bool)
-            values += self.format_updated_cli_field(self.obj, before, 'debug_mode', fvalue=self.fvalue_bool)
-            values += self.format_updated_cli_field(self.obj, before, 'idp_metadata_url')
-            values += self.format_updated_cli_field(self.obj, before, 'idp_entity_id')
-            values += self.format_updated_cli_field(self.obj, before, 'idp_sign_on_url')
-            values += self.format_updated_cli_field(self.obj, before, 'idp_groups_attribute')
-            values += self.format_updated_cli_field(self.obj, before, 'idp_x509_cert')
-            values += self.format_updated_cli_field(self.obj, before, 'sp_base_url')
-            values += self.format_updated_cli_field(self.obj, before, 'custom_config')
-        return values
+        """ generate pseudo-CLI command fields parameters to create an obj """
+        values = ""
 
+        if before is None:
+            values += self.format_cli_field(self.obj, "enable", fvalue=self.fvalue_bool, none_value='')
+            values += self.format_cli_field(self.obj, "strip_username", fvalue=self.fvalue_bool, none_value='')
+            values += self.format_cli_field(self.obj, "debug_mode", fvalue=self.fvalue_bool, none_value='')
+            values += self.format_cli_field(self.obj, "idp_metadata_url")
+            values += self.format_cli_field(self.obj, "idp_entity_id")
+            values += self.format_cli_field(self.obj, "idp_sign_on_url")
+            values += self.format_cli_field(self.obj, "idp_groups_attribute")
+            values += self.format_cli_field(self.obj, "idp_x509_cert")
+            values += self.format_cli_field(self.obj, "sp_base_url")
+            values += self.format_cli_field(self.obj, "custom_config")
+        else:
+            values += self.format_updated_cli_field(self.obj, before, "enable", add_comma=(values), fvalue=self.fvalue_bool, none_value='')
+            values += self.format_updated_cli_field(self.obj, before, "strip_username", add_comma=(values), fvalue=self.fvalue_bool, none_value='')
+            values += self.format_updated_cli_field(self.obj, before, "debug_mode", add_comma=(values), fvalue=self.fvalue_bool, none_value='')
+            values += self.format_updated_cli_field(self.obj, before, "idp_metadata_url", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "idp_entity_id", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "idp_sign_on_url", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "idp_groups_attribute", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "idp_x509_cert", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "sp_base_url", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "custom_config", add_comma=(values))
+        return values
 
 def main():
     module = AnsibleModule(
         argument_spec=SAML_ARGUMENT_SPEC,
-        supports_check_mode=True)
+        supports_check_mode=True,
+    )
 
     pfmodule = PFSenseSAMLModule(module)
     pfmodule.run(module.params)
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

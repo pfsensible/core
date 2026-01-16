@@ -321,10 +321,10 @@
 				<enable>yes</enable>
 				<strip_username></strip_username>
 				<debug_mode></debug_mode>
-				<idp_metadata_url>http://keycloak.local/realms/master/protocol/saml/descriptor</idp_metadata_url>
+				<idp_metadata_url>https://keycloak.local/realms/master/protocol/saml/descriptor</idp_metadata_url>
 				<idp_entity_id></idp_entity_id>
 				<idp_sign_on_url></idp_sign_on_url>
-				<idp_groups_attribute>memberOf</idp_groups_attribute>
+				<idp_groups_attribute></idp_groups_attribute>
 				<idp_x509_cert></idp_x509_cert>
 				<sp_base_url>https://pfSense.local</sp_base_url>
 				<custom_conf></custom_conf>
