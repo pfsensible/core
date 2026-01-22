@@ -217,15 +217,13 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     def _copy_and_add_target(self):
         """ create the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
+        self.diff['after'] = self.obj
         self.setup_interface_cmds += "interface_configure('{0}', true);\n".format(self.target_elt.tag)
         self.result['ifname'] = self.target_elt.tag
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
-        before = self.pfsense.element_to_dict(self.target_elt)
-        changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        if self._remove_deleted_params():
-            changed = True
+        (before, changed) = super(PFSenseInterfaceModule, self)._copy_and_update_target()
 
         if changed:
             if self.params['enable']:
@@ -326,6 +324,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
 
     def _pre_remove_target_elt(self):
         """ processing before removing elt """
+        super(PFSenseInterfaceModule, self)._pre_remove_target_elt()
         self.obj['if'] = self.target_elt.find('if').text
 
         ifname = self.target_elt.tag

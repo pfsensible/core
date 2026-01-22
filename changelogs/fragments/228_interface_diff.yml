@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_interface - support ``--diff`` (https://github.com/pfsensible/core/pull/228).
