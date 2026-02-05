@@ -19,7 +19,9 @@ NAT_PORT_FORWARD_ARGUMENT_SPEC = dict(
     ipprotocol=dict(default='inet', choices=['inet', 'inet6']),
     protocol=dict(default='tcp', required=False, choices=["tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "pim", "ospf"]),
     source=dict(required=False, type='str'),
+    source_port=dict(required=False, type='str'),
     destination=dict(required=False, type='str'),
+    destination_port=dict(required=False, type='str'),
     target=dict(required=False, type='str'),
     natreflection=dict(default='system-default', choices=["system-default", "enable", "purenat", "disable"]),
     associated_rule=dict(default='associated', required=False, choices=["associated", "unassociated", "pass", "none"]),
@@ -47,8 +49,6 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseNatPortForwardModule, self).__init__(module, pfsense)
         self.name = "pfsense_nat_port_forward"
-        # Override for use with aggregate
-        self.argument_spec = NAT_PORT_FORWARD_ARGUMENT_SPEC
         self.obj = dict()
 
         self.after = None
@@ -102,7 +102,15 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
                 self.before = self.params['before']
 
             obj['source'] = self.pfsense.parse_address(self.params['source'], allow_self=False)
+            if self.params.get('source_port'):
+                if not self.pfsense.is_port_or_alias(self.params['source_port']):
+                    self.module.fail_json(msg='Cannot parse port %s, not port number or alias' % (self.params['source_port']))
+                obj['source']['port'] = self.params['source_port']
             obj['destination'] = self.pfsense.parse_address(self.params['destination'])
+            if self.params.get('destination_port'):
+                if not self.pfsense.is_port_or_alias(self.params['destination_port']):
+                    self.module.fail_json(msg='Cannot parse port %s, not port number or alias' % (self.params['destination_port']))
+                obj['destination']['port'] = self.params['destination_port']
             self._parse_target_address(obj)
 
         return obj
