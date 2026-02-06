@@ -499,13 +499,13 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
 
         for host in params["hosts"]:
             for ipaddr in host["ip"].split(","):
-                if not self.pfsense.is_ipv4_address(ipaddr):
-                    self.module.fail_json(msg=f'ip, {ipaddr} is not a ipv4 address')
+                if not self.pfsense.is_ipv4_address(ipaddr) and not self.pfsense.is_ipv6_address(ipaddr):
+                    self.module.fail_json(msg=f'ip, {ipaddr} is not a ipv4/ipv6 address')
 
         if params["domainoverrides"] is not None:
             for domain in params["domainoverrides"]:
-                if not self.pfsense.is_ipv4_address(domain["ip"]):
-                    self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4 address')
+                if not self.pfsense.is_ipv4_address(domain["ip"]) and not self.pfsense.is_ipv6_address(domain["ip"]):
+                    self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4/ipv6 address')
 
     ##############################
     # XML processing
