@@ -15,7 +15,7 @@ from .pfsense_module import TestPFSenseModule
 
 CURRENT_CONFIG = dict(
     enable=True,
-    sp_base_url="https://pfSense.local", 
+    sp_base_url="https://pfSense.local",
     idp_metadata_url="https://keycloak.local/realms/master/protocol/saml/descriptor",
 )
 
@@ -44,9 +44,9 @@ class TestPFSenseSAMLModule(TestPFSenseModule):
                 conf_elt = elt.find('conf')
                 if conf_elt is not None:
                     return conf_elt
-        
+
         return None
-    
+
     def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 

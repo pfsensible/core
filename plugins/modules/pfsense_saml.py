@@ -137,7 +137,7 @@ class PFSenseSAMLModule(PFSenseModuleBase):
                 self.module.fail_json(msg="{0} is required when idp_metadata_url is unset".format(key))
 
     def _validate_url(self, params, key):
-        try:    
+        try:
             url = urlparse(params[key])
             if not all([url.scheme, url.netloc]):
                 raise Exception
@@ -152,7 +152,7 @@ class PFSenseSAMLModule(PFSenseModuleBase):
         self._validate_url(params, "sp_base_url")
 
         if params["idp_metadata_url"] != "":
-            self._validate_url(params, "idp_metadata_url")  
+            self._validate_url(params, "idp_metadata_url")
 
         self._validate_set_if_idp_metadata_unset(params, "idp_entity_id")
         if params["idp_entity_id"] != "":
@@ -197,9 +197,9 @@ class PFSenseSAMLModule(PFSenseModuleBase):
 
         self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
         self.diff["after"] = self.pfsense.element_to_dict(self.target_elt)
-        
+
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        
+
         return (self.diff["before"], changed)
 
     ##############################
