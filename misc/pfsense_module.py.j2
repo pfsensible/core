@@ -228,7 +228,7 @@ def main():
         required_if={{ module_name | upper() }}_REQUIRED_IF,
         supports_check_mode=True)
 
-    pfmodule = {{ pfesense_module_name }}(module)
+    pfmodule = {{ pfsense_module_name }}(module)
     # Pass params for testing framework
     pfmodule.run(module.params)
     pfmodule.commit_changes()
