@@ -1365,8 +1365,8 @@ class PFSenseDataParser(object):
     def check_alias_name(name):
         """ check an alias name """
         # todo: check reserved keywords (any, self, ...)
-        if re.match('^[a-zA-Z0-9_]+$', name) is None:
-            raise AnsibleError(name + ': the name of the alias may only consist of the characters "a-z, A-Z, 0-9 and _"')
+        if re.match('^[a-zA-Z0-9_-]+$', name) is None:
+            raise AnsibleError(name + ': the name of the alias may only consist of the characters "a-z, A-Z, 0-9, - and _"')
 
     def parse_host_alias(self, obj, src_name, type_name, name, allow_any, dns_servers=None):
         """ Parse an host alias definition """
