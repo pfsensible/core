@@ -156,17 +156,17 @@ if args.ssh_password_prompt:
     args.ssh_password = getpass.getpass("Enter your ssh user password: ")
 
 # Collect the /cf/conf/config.xml file
-ssh = SSHClient()
-ssh.load_system_host_keys()
-ssh.connect(host, username=args.ssh_user, allow_agent=not args.ssh_no_agent, password=args.ssh_password)
-scp = SCPClient(ssh.get_transport())
-scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
-if phpfile is not None:
-    scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
-if is_package:
-    scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
-    scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
-scp.close()
+
+with SSHClient() as ssh:
+    ssh.load_system_host_keys()
+    ssh.connect(host, username=args.ssh_user, allow_agent=not args.ssh_no_agent, password=args.ssh_password)
+    with SCPClient(ssh.get_transport()) as scp:
+        scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
+        if phpfile is not None:
+            scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
+        if is_package:
+            scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
+            scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
 
 # Save the scraped web page if asked to keep files
 if args.keep_tmpdir:
