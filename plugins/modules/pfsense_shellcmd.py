@@ -102,7 +102,7 @@ class PFSenseShellcmdModule(PFSenseModuleBase):
         return SHELLCMD_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseShellcmdModule, self).__init__(module, pfsense, package='shellcmd', root='shellcmdsettings', node='config', key='description',
+        super(PFSenseShellcmdModule, self).__init__(module, pfsense, package='Shellcmd', root='shellcmdsettings', node='config', key='description',
                                                     update_php=SHELLCMD_PHP_COMMAND_SET, create_default=SHELLCMD_CREATE_DEFAULT)
 
     ##############################

@@ -88,10 +88,14 @@ class PFSenseModuleBase(object):
                 self.root_is_exclusive = False
             else:
                 if package is not None:
-                    self.root_elt = self.pfsense.get_element(root, root_elt=self.pfsense.root.find('installedpackages'))
+                    self.package_elt = self.pfsense.find_elt('package', package, search_field='name', root_elt=self.pfsense.root.find('installedpackages'))
+                    if self.package_elt is None:
+                        self.module.fail_json(
+                            msg=f'Unable to find package {package} in installed packages.  Are you sure that it is installed?')
+                    self.root_elt = self.pfsense.get_element(root, root_elt=self.pfsense.root.find('installedpackages'), create_node=create_root)
                     if self.root_elt is None:
                         self.module.fail_json(
-                            msg='Unable to find configuration for the package {package}.  Are you sure that it is installed?'.format(package=package))
+                            msg=f'Unable to find configuration for the package {package}.  Are you sure that it is installed?')
                 else:
                     root_elt = self.pfsense.root
                     for this in root.split('/'):
@@ -116,6 +120,7 @@ class PFSenseModuleBase(object):
 
         self.key = key          # item that identifies a target element
         self.obj = dict()       # dict holding target pfsense parameters
+        self.package = package
 
         # routing for argument handling
         self.arg_route = BASE_ARG_ROUTE
