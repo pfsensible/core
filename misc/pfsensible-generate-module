@@ -37,7 +37,8 @@ module_key = None
 module_node = None
 name_param = None
 params_xml_only = []
-is_package = False
+is_simple_package = False
+is_full_package = False
 args_imports = []
 
 parser = argparse.ArgumentParser(description='Generate a pfsensible module.')
@@ -86,7 +87,7 @@ if args.url is not None:
     host = f'{uri.netloc}'
 
     # Collect phpfile to scp later
-    phpfile = re.sub(r'^/(.*\.php).*$', r'\1', uri.path)
+    phpfile = re.sub(r'^.*/([^/]+\.php).*$', r'\1', uri.path)
 
     # Construct a likely module name from the URL
     if args.module_name is None:
@@ -94,7 +95,11 @@ if args.url is not None:
         if re.match(r'/pkg', uri.path):
             module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', uri.query)
             package = module_name
-            is_package = True
+            is_simple_package = True
+        elif (match := re.match(r'/([^/]+)/[^_]+_(.*)\.php', uri.path)) is not None:
+            module_name = match.group(2)
+            package = match.group(1)
+            is_full_package = True
         else:
             module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
@@ -162,11 +167,15 @@ with SSHClient() as ssh:
     ssh.connect(host, username=args.ssh_user, allow_agent=not args.ssh_no_agent, password=args.ssh_password)
     with SCPClient(ssh.get_transport()) as scp:
         scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
-        if phpfile is not None:
-            scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
-        if is_package:
+        if is_simple_package:
             scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
             scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
+        elif is_full_package:
+            scp.get(f'/usr/local/www/{package}/{phpfile}', f'{tmpdir.name}')
+            scp.get(f'/usr/local/pkg/{package}/{package}.inc', f'{tmpdir.name}')
+            scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
+        elif phpfile is not None:
+            scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
 
 # Save the scraped web page if asked to keep files
 if args.keep_tmpdir:
@@ -526,7 +535,8 @@ context = dict(
     name_param=name_param,
     args_imports=args_imports,
     is_config=args.is_config,
-    is_package=is_package,
+    is_simple_package=is_simple_package,
+    is_full_package=is_full_package,
     package=package,
     author_name=args.author_name,
     author_email=args.author_email,
