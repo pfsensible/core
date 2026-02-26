@@ -306,8 +306,8 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseSetupModule, self).__init__(module, pfsense, name='pfsense_setup', root='system', arg_route=SETUP_ARG_ROUTE, bool_style='absent/present',
-                                                 bool_values=SETUP_BOOL_VALUES, map_param=SETUP_MAP_PARAM)
+        super(PFSenseSetupModule, self).__init__(module, pfsense, name='pfsense_setup', root='pfsense', node='system', arg_route=SETUP_ARG_ROUTE,
+                                                 bool_style='absent/present', bool_values=SETUP_BOOL_VALUES, map_param=SETUP_MAP_PARAM)
         self.route_cmds = list()
         self.params_to_delete = list()
 
