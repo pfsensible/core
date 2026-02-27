@@ -325,7 +325,7 @@ class PFSenseModule(object):
                 elif this_elt.text != value:
                     this_elt.text = value
                     changed = True
-                self.debug.write('changed=%s this_elt.text=%s value=%s\n' % (changed, this_elt.text, value))
+                    self.debug.write('changed=%s this_elt.text=%s != value=%s\n' % (changed, repr(this_elt.text), repr(value)))
                 prev_elt = this_elt
 
         # Sub-elements must be completely described, so remove any missing elements
