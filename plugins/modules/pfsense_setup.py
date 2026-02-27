@@ -425,7 +425,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         if params.get('authmode') is not None:
             value = params.get('authmode')
             if value != 'Local Database':
-                authserver_elt = self.pfsense.find_elt('authserver', value, search_field='name', root_elt=self.root_elt)
+                authserver_elt = self.pfsense.find_elt('authserver', value, search_field='name', root_elt=self.root_elt.find(self.node))
                 if authserver_elt is None:
                     self.module.fail_json(msg="Given authserver '{0}' could not be found.".format(value))
 
