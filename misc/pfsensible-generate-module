@@ -97,11 +97,11 @@ if args.url is not None:
             package = module_name
             is_simple_package = True
         elif (match := re.match(r'/([^/]+)/([^_]+_.+)\.php', uri.path)) is not None:
-            module_name = match.group(2)
+            module_name = re.sub(r'(?:_edit|manager)$', '', match.group(2))
             package = match.group(1)
             is_full_package = True
         else:
-            module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php.*$', r'\1', uri.path)
+            module_name = re.sub(r'^/(?:firewall_|services_|system_)?(.*?)(?:_edit|manager)?\.php$', r'\1', uri.path)
         module_name_singular = re.sub(r'ses$', 's', module_name)
         if module_name_singular != module_name:
             module_name = module_name_singular
@@ -279,8 +279,11 @@ if phpfile is not None:
 # See if this is not a proper form URL
 if len(html.forms) != 1 or len(html.forms[0].inputs) <= 1:
     action_buttons_urls = html.find('.//nav[@class="action-buttons"]/a')
-    action_href = re.sub(r'\?.*', '', action_buttons_urls.attrib["href"])
-    sys.exit(f'ERROR: This does not appear to be a proper form URL, you probably want {uri.scheme}://{uri.netloc}/{action_href}')
+    if action_buttons_urls is not None:
+        action_href = re.sub(r'\?.*', '', action_buttons_urls.attrib["href"])
+        sys.exit(f'ERROR: This does not appear to be a proper form URL, you probably want {uri.scheme}://{uri.netloc}/{action_href}')
+    else:
+        sys.exit(f'ERROR: This does not appear to be a proper form URL, do you need a ? parameter?')
 
 # TODO - For packages we could parse /usr/local/pkg/{package}.xml instead
 
@@ -402,17 +405,21 @@ for input in html.forms[0].inputs:
     if form_groups:
         form_group = form_groups[0]
         descr_elt = form_group.find('*span')
-        if descr_elt.text:
-            if args.verbose >= 2:
-                print(f'Found descr_elt {descr_elt.tag} {descr_elt.text} {descr_elt.attrib}')
-            if input.get('type') == 'radio':
-                param['description'] = f'{descr_elt.text.strip()} of the {module_name}.'
-            else:
-                param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
-        if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
-            if args.verbose >= 2:
-                print(f'Found element-required')
-            param['required'] = True
+        if descr_elt is not None:
+            if descr_elt.text:
+                if args.verbose >= 2:
+                    print(f'Found descr_elt {descr_elt.tag} {descr_elt.text} {descr_elt.attrib}')
+                if input.get('type') == 'radio':
+                    param['description'] = f'{descr_elt.text.strip()} of the {module_name}.'
+                else:
+                    param['description'] += f'{descr_elt.text.strip()} of the {module_name}.'
+            if 'class' in descr_elt.attrib and descr_elt.attrib['class'] == 'element-required':
+                if args.verbose >= 2:
+                    print(f'Found element-required')
+                param['required'] = True
+        else:
+            if args.verbose >= 3:
+                print(f'Could not find descriptive element for item')
         help_elt = form_group.find('./div/span[@class="help-block"]')
         if help_elt is not None and help_elt.text is not None:
             if args.verbose >= 2:
@@ -444,8 +451,14 @@ if args.type_param in params_full:
         module_name += f'_{module_type}'
     if isinstance(args.type_suffix, str):
         module_name += f'_{args.type_suffix}'
+elif (match := re.match(r'type=([^&]+)', uri.query)):
+    module_type = match.group(1)
+    module_name += f'_{module_type}'
 elif args.type_param in params:
     # The type of item is purely a fuction of the web form
+    choices = params[args.type_param].get('choices')
+    if choices is None:
+        sys.exit(f"Detected item type parameter '{args.type_param}' but no choices parameter in {params[args.type_param]}.  You must set --type-suffix to something.")
     if args.type_suffix not in params[args.type_param]['choices']:
         sys.exit(f"Detected item type parameter '{args.type_param}' with choices {params[args.type_param]['choices']}.  You must set --type-suffix to one of these.")
     else:
