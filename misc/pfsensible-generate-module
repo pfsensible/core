@@ -96,7 +96,7 @@ if args.url is not None:
             module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', uri.query)
             package = module_name
             is_simple_package = True
-        elif (match := re.match(r'/([^/]+)/[^_]+_(.*)\.php', uri.path)) is not None:
+        elif (match := re.match(r'/([^/]+)/([^_]+_.+)\.php', uri.path)) is not None:
             module_name = match.group(2)
             package = match.group(1)
             is_full_package = True
@@ -559,7 +559,7 @@ if os.path.isfile(filename) and not args.force:
 if args.verbose > 0:
     print(f'Writing module {filename} with {context}')
 else:
-    print(f'Writing module {filename}.')
+    print(f'Writing module {filename}')
 f = open(f'{filename}', 'w')
 f.write(template.render(context))
 f.close()
