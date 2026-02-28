@@ -253,6 +253,12 @@ if not args.is_config:
             # Likely a bool?
         params_full[elt.tag] = param
 
+# Try to determine the "proper" package name
+if package != 'core':
+    package_elt = root.xpath(f"//package[translate(name/text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = '{package}']")
+    if package_elt is not None:
+        package = package_elt[0].find('name').text
+
 # Parse the php file
 if phpfile is not None:
     php_requires = ''
@@ -533,7 +539,10 @@ if args.is_config:
     module_base = 'PFSenseModuleConfigBase'
 
 # Generate PFSense module name
-pfsense_module_name = 'PFSense' + ''.join([word.capitalize() for word in module_name.split('_')]) + 'Module'
+if package == 'core':
+    pfsense_module_name = 'PFSense' + ''.join([word.capitalize() for word in module_name.split('_')]) + 'Module'
+else:
+    pfsense_module_name = f'PFSense{package}' + ''.join([word.capitalize() for word in module_name.split('_')[1:]]) + 'Module'
 
 # Template variables
 context = dict(
