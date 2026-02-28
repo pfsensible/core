@@ -64,6 +64,13 @@
            -----END OpenVPN Static key V1-----
       tags: always
 
+    - name: Define tunnel network alias
+      pfsensible.core.pfsense_alias:
+        name: TUNNEL_NET
+        address: 10.100.0.0/24
+        type: network
+      tags: openvpn
+
     - name: Create OpenVPN Server 1
       import_tasks: tasks/test_openvpn_server_create.yml
       vars:
@@ -82,7 +89,7 @@
             - AES-256-GCM
             - AES-128-GCM
             - AES-256-CBC
-          tunnel_network: 10.100.0.0/24
+          tunnel_network: TUNNEL_NET
           compression: ""
           gwredir: yes
           passtos: yes

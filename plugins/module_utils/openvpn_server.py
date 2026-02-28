@@ -86,6 +86,10 @@ $ovpn = config_get_path('openvpn/openvpn-server')[{idx}];
 """
 
 OPENVPN_SERVER_PHP_COMMAND_SET = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
+// Handle network aliases in tunnel_network*
+foreach (array('', 'v6') as $ntype) {{
+    $ovpn["tunnel_network{{$ntype}}"] = openvpn_tunnel_network_fix($ovpn["tunnel_network{{$ntype}}"]);
+}}
 openvpn_resync('server',$ovpn);
 openvpn_resync_csc_all();
 """
