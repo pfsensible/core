@@ -29,6 +29,12 @@ options:
     description: The server mode.
     choices: ["p2p_tls", "p2p_shared_key", "server_tls", "server_tls_user", "server_user"]
     type: str
+  dco:
+    description: Enable Data Channel Offload (Supported on Plus versions only)
+    default: false
+    required: false
+    type: bool
+    version_added: 0.7.1
   authmode:
     description:
       - Authentication servers. Required if mode == server_tls_user.
