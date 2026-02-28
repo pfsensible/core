@@ -214,14 +214,16 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             if self.params['mode'] == 'p2p_shared_key':
                 obj['shared_key'] = self.params['shared_key']
 
-            if not self.pfsense.is_ce_version():
-                self._get_ansible_param_bool(obj, 'dco', force=True, value='enabled', value_false='disabled')
-                if self.params['dco']:
-                    #these are requirements for DCO
+            if self.params['dco']:
+                if not self.pfsense.is_ce_version():
+                    self._get_ansible_param_bool(obj, 'dco', force=True, value='enabled', value_false='disabled')
+                    # these are requirements for DCO
                     obj['allow_compression'] = 'no'
                     obj['data_ciphers_fallback'] = 'AES-256-GCM'
                     obj.pop('compression')
                     obj.pop('compression_push')
+                else:
+                    self.module.warn("DCO option specified but not supported on CE versions, ignoring...")
 
         return obj
 
