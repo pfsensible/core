@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_rule - Prevent duplicate tracker IDs from being generated or added (https://github.com/pfsensible/core/issues/222).
