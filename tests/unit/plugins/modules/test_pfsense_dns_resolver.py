@@ -9,6 +9,7 @@ from ansible_collections.pfsensible.core.plugins.modules import pfsense_dns_reso
 from ansible_collections.pfsensible.core.plugins.modules.pfsense_dns_resolver import PFSenseDNSResolverModule
 from .pfsense_module import TestPFSenseModule
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 
 
 class TestPFSenseDNSResolverModule(TestPFSenseModule):
@@ -101,6 +102,52 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         """ test noop of the DNS Resolver """
         obj = dict()
         self.do_module_test(obj, changed=False)
+
+    def test_dns_resolver_hosts_reorder_aliases_stay(self):
+        """ test that aliases stay with their parent host when hosts are reordered
+
+        Regression test: copy_dict_to_element() pairs list items by position.
+        When hosts are provided in a different order than config.xml, a host
+        with no aliases could inherit stale <item> children from a host that
+        previously occupied the same position.
+        """
+        # Use a fixture that has two hosts: "server" (with aliases) at position 0,
+        # "other" (no aliases) at position 1.
+        self.config_file = 'pfsense_dns_resolver_config_hosts_aliases.xml'
+
+        # Provide hosts reversed: other first, server second.
+        obj = dict(
+            hosts=[
+                dict(host="other", domain="example.com", ip="10.0.0.2", descr="", aliases=[]),
+                dict(host="server", domain="example.com", ip="10.0.0.1", descr="",
+                     aliases=[dict(host="alias1", domain="example.com", description="Alias 1"),
+                              dict(host="alias2", domain="example.com", description="Alias 2")]),
+            ]
+        )
+        # Run the module directly and inspect XML — bypass check_target_elt
+        # which cannot handle complex nested hosts/aliases structures.
+        with set_module_args(self.args_from_var(obj, state='present')):
+            result = self.execute_module(changed=True)
+            self.assertTrue(self.load_xml_result())
+
+        # Verify aliases stayed with the correct host after reorder.
+        # "other" must have NO alias <item> children; "server" must keep its 2.
+        unbound = self.xml_result.find('unbound')
+        hosts_elts = unbound.findall('hosts')
+        self.assertEqual(len(hosts_elts), 2)
+
+        for host_elt in hosts_elts:
+            hostname = host_elt.find('host').text
+            aliases_elt = host_elt.find('aliases')
+            if hostname == 'other':
+                items = aliases_elt.findall('item') if aliases_elt is not None else []
+                self.assertEqual(len(items), 0,
+                                 'Host "other" should have no alias items but got %d — '
+                                 'aliases bled from "server" due to positional matching' % len(items))
+            elif hostname == 'server':
+                items = aliases_elt.findall('item') if aliases_elt is not None else []
+                self.assertEqual(len(items), 2,
+                                 'Host "server" should have 2 alias items but got %d' % len(items))
 
     def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
         """ test initialization of the DNS Resolver """
