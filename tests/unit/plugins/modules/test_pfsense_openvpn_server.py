@@ -145,7 +145,6 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
         self.check_param_equal(obj, target_elt, 'data_ciphers_fallback', default='AES-256-CBC')
         self.check_param_equal(obj, target_elt, 'data_ciphers', default='AES-256-GCM,AES-128-GCM,CHACHA20-POLY1305')
-        self.check_param_bool(obj, target_elt, 'ncp_enable', default=True, value_true='enabled')
         self.check_param_equal(obj, target_elt, 'digest', default='SHA256')
         self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
         self.check_param_equal(obj, target_elt, 'allow_compression', default='no')

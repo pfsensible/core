@@ -122,10 +122,6 @@ options:
     choices: ['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305']
     type: list
     elements: str
-  ncp_enable:
-    description: Enable data encryption negotiation.
-    default: true
-    type: bool
   digest:
     description:
       - 'Auth digest algorithm. The list of valid digest algorithms is determined from the output of C(openvpn --show-digests), but curently includes:'
