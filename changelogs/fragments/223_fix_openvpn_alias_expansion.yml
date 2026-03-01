@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_openvpn_server - add call to ``alias_make_table()`` to allow alias expansion (https://github.com/pfsensible/core/pull/223).
