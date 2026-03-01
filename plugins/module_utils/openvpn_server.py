@@ -34,9 +34,6 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     shared_key=dict(required=False, type='str', no_log=True),
     dh_length=dict(default=2048, required=False, type='int'),
     ecdh_curve=dict(default='none', required=False, choices=['none', 'prime256v1', 'secp384r1', 'secp521r1']),
-    ncp_enable=dict(default=True, required=False, type='bool'),
-    # ncp_ciphers=dict(default=list('AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'), required=False,
-    #                  choices=['AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], type='list', elements='str'),
     data_ciphers=dict(default=['AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], required=False,
                       choices=['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305'], type='list', elements='str'),
     data_ciphers_fallback=dict(default='AES-256-CBC', required=False, choices=['AES-256-CBC', 'AES-256-GCM', 'AES-128-GCM', 'CHACHA20-POLY1305']),
@@ -95,6 +92,10 @@ OPENVPN_SERVER_PHP_COMMAND_DEL = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
 openvpn_delete('server',$ovpn);
 """
 
+# Define the line endings in bytes for binary mode
+UNIX_LINE_ENDING = b'\n'
+WINDOWS_LINE_ENDING = b'\r\n'
+
 
 class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     """ module managing pfSense OpenVPN configuration """
@@ -145,7 +146,6 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             obj['verbosity_level'] = str(self.params['verbosity_level'])
             obj['data_ciphers_fallback'] = self.params['data_ciphers_fallback']
             obj['data_ciphers'] = ",".join(self.params['data_ciphers'])
-            self._get_ansible_param_bool(obj, 'ncp_enable', force=True, value='enabled', value_false='disabled')
             self._get_ansible_param_bool(obj, 'gwredir', force=True, value='yes')
             self._get_ansible_param_bool(obj, 'gwredir6', force=True, value='yes')
             self._get_ansible_param_bool(obj, 'compression_push', force=True, value='yes', value_false='')
@@ -249,7 +249,9 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                     # generate during _find_target (after _params_to_obj) - for just generate if not exists
                     pass
                 elif re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$', key, flags=re.MULTILINE | re.DOTALL):
-                    params[param] = base64.b64encode(key.encode()).decode()
+                    key = key.encode().replace(WINDOWS_LINE_ENDING, UNIX_LINE_ENDING)  # Normalize existing CRLF to LF
+                    key = key.replace(UNIX_LINE_ENDING, WINDOWS_LINE_ENDING)  # Convert all LF to CRLF
+                    params[param] = base64.b64encode(key).decode()
                 else:
                     key_decoded = base64.b64decode(key.encode()).decode()
                     if not re.search('^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$',
@@ -310,7 +312,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     def _get_params_to_remove(self):
         """ returns the list of params to remove if they are not set """
         params_to_remove = []
-        for param in ['disable', 'strictusercn', 'push_register_dns', 'remote_cert_tls']:
+        for param in ['disable', 'push_register_dns', 'remote_cert_tls']:
             if not self.params[param]:
                 params_to_remove.append(param)
 

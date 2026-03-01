@@ -349,7 +349,6 @@
                         <create_gw>both</create_gw>
                         <verbosity_level>3</verbosity_level>
                         <data_ciphers>AES-256-GCM,AES-128-GCM,AES-256-CBC</data_ciphers>
-                        <ncp_enable>enabled</ncp_enable>
                         <ping_method>keepalive</ping_method>
                         <keepalive_interval>10</keepalive_interval>
                         <keepalive_timeout>60</keepalive_timeout>
@@ -413,7 +412,6 @@
                         <create_gw>both</create_gw>
                         <verbosity_level>1</verbosity_level>
                         <data_ciphers>AES-256-GCM,AES-128-GCM,CHACHA20-POLY1305</data_ciphers>
-                        <ncp_enable>enabled</ncp_enable>
                         <ping_method>keepalive</ping_method>
                         <keepalive_interval>10</keepalive_interval>
                         <keepalive_timeout>60</keepalive_timeout>

@@ -1,0 +1,5 @@
+bugfixes:
+  - pfsense_openvpn_server - Normalize `tls` text to CRLF line endings to match web interface (https://github.com/pfsensible/core/issues/163).
+minor_changes:
+  - pfsense_openvpn_server - Drop `ncp_enable` parameter no longer used (https://github.com/pfsensible/core/pull/238).
+  - pfsense_openvpn_server - No longer remove `strictusercn` option if not specified to match web interface (https://github.com/pfsensible/core/pull/238).
