@@ -641,6 +641,12 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         msg = 'tracker -1234 must be a positive integer'
         self.do_module_test(obj, failed=True, msg=msg)
 
+    def test_rule_create_tracker_duplicate(self):
+        """ test creation of a new rule with duplicate tracker """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', tracker='1545574416')
+        msg = 'tracker 1545574416 is not unique'
+        self.do_module_test(obj, failed=True, msg=msg)
+
     def test_rule_create_schedule(self):
         """ test creation of a new rule with schedule """
         obj = dict(name='one_rule', source='any', destination='any', interface='lan', sched='workdays')

@@ -291,28 +291,36 @@ class PFSenseRuleModule(PFSenseModuleBase):
                 elif idx > start_idx:
                     row_elt.text = 'fr' + str(idx - 1)
 
-    def _check_tracker(self):
+    def _check_tracker(self, tracker, fail=False):
         """ check the tracking used is unique and change it if required """
         if not self.trackers:
-            trackers = self.root_elt.findall('tracker')
-            for tracker in trackers:
-                self.trackers.add(tracker.text)
+            tracker_elts = self.root_elt.findall('rule/tracker')
+            for t_elt in tracker_elts:
+                self.trackers.add(t_elt.text)
 
-        start = int(time.time())
-        while self.obj['tracker'] in self.trackers:
-            start = start + 1
-            self.obj['tracker'] = str(start)
+        if tracker in self.trackers:
+            if fail:
+                self.module.fail_json(msg=f"tracker {tracker} is not unique")
 
-        # keep the tracker for future calls if module is used with aggregate
-        self.trackers.add(self.obj['tracker'])
+            t = int(tracker)
+            while t in self.trackers:
+                t = t + 1
+            tracker = str(t)
+
+            # keep the tracker for future calls if module is used with aggregate
+            self.trackers.add(tracker)
+
+        return tracker
 
     def _copy_and_add_target(self):
         """ create the XML target_elt """
         timestamp = '%d' % int(time.time())
         self.obj['id'] = ''
         if 'tracker' not in self.obj:
-            self.obj['tracker'] = timestamp
-        self._check_tracker()
+            self.obj['tracker'] = self._check_tracker(timestamp)
+        else:
+            # When creating a new rule with a given tracker, it must be unique
+            self._check_tracker(self.obj['tracker'], fail=True)
 
         self.obj['created'] = self.obj['updated'] = dict()
         self.obj['created']['time'] = self.obj['updated']['time'] = timestamp
@@ -328,6 +336,9 @@ class PFSenseRuleModule(PFSenseModuleBase):
         before = self._rule_element_to_dict()
         if 'tracker' not in self.obj:
             self.obj['tracker'] = before['tracker']
+        elif self.obj['tracker'] != before['tracker']:
+            # When updating the tracker of a rule, it must be unique
+            self._check_tracker(self.obj['tracker'], fail=True)
 
         if 'associated-rule-id' not in self.obj and 'associated-rule-id' in before and before['associated-rule-id'] != '':
             self.module.fail_json(msg='Target filter rule is associated with a NAT rule.')
