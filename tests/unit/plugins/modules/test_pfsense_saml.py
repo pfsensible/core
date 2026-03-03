@@ -19,6 +19,7 @@ CURRENT_CONFIG = dict(
     idp_metadata_url="https://keycloak.local/realms/master/protocol/saml/descriptor",
 )
 
+
 class TestPFSenseSAMLModule(TestPFSenseModule):
 
     module = pfsense_saml
@@ -74,17 +75,23 @@ class TestPFSenseSAMLModule(TestPFSenseModule):
 
     def test_sign_on_url_required_if_metadata_unset(self):
         """ test not applying if not composite requirement fulfilled """
-        obj = dict(enable=True, sp_base_url="https://pfSense.local", idp_entity_id="https://keycloak.local/realms/master")
+        obj = dict(enable=True, sp_base_url="https://pfSense.local",
+                   idp_entity_id="https://keycloak.local/realms/master")
         self.do_module_test(obj, state=None, failed=True, msg="idp_sign_on_url is required when idp_metadata_url is unset")
 
     def test_x509_cert_required_if_metadata_unset(self):
         """ test not applying if not composite requirement fulfilled """
-        obj = dict(enable=True, sp_base_url="https://pfSense.local", idp_entity_id="https://keycloak.local/realms/master", idp_sign_on_url="https://keycloak.local/realms/master/protocol/saml")
+        obj = dict(enable=True, sp_base_url="https://pfSense.local",
+                   idp_entity_id="https://keycloak.local/realms/master",
+                   idp_sign_on_url="https://keycloak.local/realms/master/protocol/saml")
         self.do_module_test(obj, state=None, failed=True, msg="idp_x509_cert is required when idp_metadata_url is unset")
 
     def test_composite_requirement_fulfilled_when_metadata_unset(self):
         """ test not applying if not composite requirement fulfilled """
-        obj = dict(enable=True, sp_base_url="https://pfSense.local", idp_entity_id="https://keycloak.local/realms/master", idp_sign_on_url="https://keycloak.local/realms/master/protocol/saml", idp_x509_cert="-----BEGIN CERTIFICATE-----\nSOME_CERT\n-----END CERTIFICATE-----")
+        obj = dict(enable=True, sp_base_url="https://pfSense.local",
+                   idp_entity_id="https://keycloak.local/realms/master",
+                   idp_sign_on_url="https://keycloak.local/realms/master/protocol/saml",
+                   idp_x509_cert="-----BEGIN CERTIFICATE-----\nSOME_CERT\n-----END CERTIFICATE-----")
         self.do_module_test(obj, state=None, changed=True, command="update saml2-auth 'https://pfSense.local' set idp_metadata_url='', idp_entity_id='https://keycloak.local/realms/master', idp_sign_on_url='https://keycloak.local/realms/master/protocol/saml', idp_x509_cert='-----BEGIN CERTIFICATE-----\nSOME_CERT\n-----END CERTIFICATE-----'")
 
     def test_entity_id_update_noop(self):

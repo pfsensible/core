@@ -109,6 +109,7 @@ SAML_ARGUMENT_SPEC = dict(
 
 IDP_ENTITY_REGEX = r"[a-zA-Z0-9\-._~:\/?#\[\]@!$&'()*+,;=]+"
 
+
 class PFSenseSAMLModule(PFSenseModuleBase):
     """ module managing saml config """
 
@@ -232,6 +233,7 @@ class PFSenseSAMLModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, "sp_base_url", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "custom_config", add_comma=(values))
         return values
+
 
 def main():
     module = AnsibleModule(
