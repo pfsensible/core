@@ -11,12 +11,12 @@ DOCUMENTATION = r'''
 ---
 module: pfsense_{{ module_name }}
 
-short_description: Manage pfSense {{ module_name }}s
+short_description: Manage pfSense {{ module_name }}{{ ' configuration' if is_config else 's' }}
 
 version_added: "0.7.0"
 
 description:
-  - Manage pfSense {{ module_name }}s.{{ ' This requires the pfSense ' ~ package ~ ' package to be installed.' if package != 'core' else '' }}
+  - Manage pfSense {{ module_name }}{{ ' configuration' if is_config else 's' }}.{{ ' This requires the pfSense ' ~ package ~ ' package to be installed.' if package != 'core' else '' }}
 
 options:
 {% if not is_config %}
@@ -206,7 +206,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('{{ php_subsystem }}'); }
 {% endif %}
 
 class {{ pfsense_module_name }}({{ module_base }}):
-    """ module managing pfsense {{ module_name }}s """
+    """ module managing pfsense {{ module_name }}{{ ' configuration' if is_config else 's' }} """
 
     ##############################
     # unit tests
