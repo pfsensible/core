@@ -450,6 +450,19 @@ if not args.is_config:
 if args.verbose >= 2:
     print(f'Web paramters: {params.keys()}')
 
+# Determine the type of the bool parameters
+bool_style = None
+bool_values = {}
+for name, param in params.items():
+    if param.get('type') != 'bool':
+        continue
+    bool_values[name] = param['value']
+    if bool_style is None:
+        bool_style = param['value']
+    elif bool_style != param['value']:
+        # Not consistent
+        bool_style = 'inconsistent'
+
 # Determine if the form produces different types of items
 if args.type_param in params_full:
     # The type of item is recorded in the item configuration
@@ -556,6 +569,8 @@ context = dict(
     params=params,
     params_xml_only=params_xml_only,
     name_param=name_param,
+    bool_style=bool_style,
+    bool_values=bool_values,
     args_imports=args_imports,
     is_config=args.is_config,
     is_simple_package=is_simple_package,
