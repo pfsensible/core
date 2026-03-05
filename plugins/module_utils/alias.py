@@ -47,6 +47,7 @@ ALIAS_CREATE_DEFAULT = dict(
 
 ALIAS_PHP_COMMAND_SET = """
 require_once("filter.inc");
+mark_subsystem_dirty('aliases');
 if (filter_configure() == 0) { clear_subsystem_dirty('aliases'); }
 """
 
