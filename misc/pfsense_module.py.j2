@@ -178,6 +178,14 @@ PHP_VALIDATION = r'''
     password=dict(validate=validate_password),
 {% endif %}
 )
+{% if bool_values == 'inconsistent' %}
+
+{{ module_name | upper() }}_BOOL_VALUES = dict(
+{% for k, v in bool_values.items() %}
+    {{ k }}=(None, "{{ v }}"),
+{% endfor %}
+)
+{% endif %}
 
 {% if not is_config %}
 # TODO - Check for validity - what are default values when creating a new {{ module_name }}
@@ -219,7 +227,7 @@ class {{ pfsense_module_name }}({{ module_base }}):
 
     def __init__(self, module, pfsense=None):
         super({{ pfsense_module_name }}, self).__init__(module, pfsense, {{ 'package=\'' ~ package ~ '\', ' if package != 'core' else ''}}root='{{ module_root }}', node='{{ module_node }}', key='{{ module_key }}'{{ ', update_php=' ~ module_name | upper() ~ '_PHP_COMMAND_SET' if 'filter.inc' in php_requires else '' }},
-                                                arg_route={{ module_name | upper() }}_ARG_ROUTE{% if params_xml_only %}, map_param={{ module_name | upper() }}_MAP_PARAM{% endif %}{% if not is_config %}, create_default={{ module_name | upper() }}_CREATE_DEFAULT{% endif %})
+                                                arg_route={{ module_name | upper() }}_ARG_ROUTE{% if bool_style != 'inconsistent' %}, bool_style="{{ bool_style }}"{% else %}, bool_values={{ module_name | upper() }}_BOOL_VALUES{% endif %}{% if params_xml_only %}, map_param={{ module_name | upper() }}_MAP_PARAM{% endif %}{% if not is_config %}, create_default={{ module_name | upper() }}_CREATE_DEFAULT{% endif %})
 {% if package != 'core' %}
 
     ##############################
@@ -230,7 +238,7 @@ class {{ pfsense_module_name }}({{ module_base }}):
         """ make the target pfsense reload """
         return self.pfsense.phpshell({{ module_name | upper() }}_PHP_COMMAND_SET)
 {% endif %}
-{% if if_config %}
+{% if is_config %}
 
     ##############################
     # Logging
