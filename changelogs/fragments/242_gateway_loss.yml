@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_gateway - Add losshigh/losslow parameters (https://github.com/pfsensible/core/pull/242).

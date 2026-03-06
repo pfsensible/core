@@ -69,6 +69,14 @@ options:
     description: Weight for this gateway when used in a Gateway Group. Must be between 1 and 30.
     default: 1
     type: int
+    version_added: 0.7.2
+  losslow:
+    description: Low threshold for packet loss in %.  Default is 10.
+    type: int
+    version_added: 0.7.2
+  losshigh:
+    description: High threshold for packet loss in %.  Default is 20.
+    type: int
   nonlocalgateway:
     description:
       - This will allow use of a gateway outside of this interface's subnet.
