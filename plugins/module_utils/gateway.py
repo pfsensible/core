@@ -21,6 +21,8 @@ GATEWAY_ARGUMENT_SPEC = dict(
     action_disable=dict(default=False, type='bool'),
     force_down=dict(default=False, type='bool'),
     weight=dict(default=1, required=False, type='int'),
+    losslow=dict(required=False, type='int'),
+    losshigh=dict(required=False, type='int'),
     nonlocalgateway=dict(default=False, type='bool'),
 )
 
@@ -133,6 +135,8 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             self._get_ansible_param(obj, 'descr')
             self._get_ansible_param(obj, 'monitor')
             self._get_ansible_param(obj, 'weight')
+            self._get_ansible_param(obj, 'losslow')
+            self._get_ansible_param(obj, 'losshigh')
 
             self._get_ansible_param_bool(obj, 'disabled', value=None)
             self._get_ansible_param_bool(obj, 'monitor_disable', value=None)
@@ -161,6 +165,11 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             # check weight
             if params.get('weight') is not None and (params['weight'] < 1 or params['weight'] > 30):
                 self.module.fail_json(msg='weight must be between 1 and 30')
+
+            # check loss thresholds
+            for param in ['losslow', 'losshigh']:
+                if params.get(param) is not None and (params[param] < 1 or params[param] > 100):
+                    self.module.fail_json(msg=f'{param} must be between 1 and 100')
 
             if self.dynamic:
                 if params['gateway'] != 'dynamic':
@@ -227,6 +236,8 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
             values += self.format_cli_field(self.params, 'action_disable', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, 'force_down', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.obj, 'weight', default='1')
+            values += self.format_cli_field(self.obj, 'losslow')
+            values += self.format_cli_field(self.obj, 'losshigh')
             values += self.format_cli_field(self.params, 'nonlocalgateway', fvalue=self.fvalue_bool, default=False)
         else:
             fbefore = dict()
@@ -242,6 +253,8 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
             values += self.format_updated_cli_field(self.obj, before, 'action_disable', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'force_down', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'weight', default='1', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'losslow', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'losshigh', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'nonlocalgateway', fvalue=self.fvalue_bool)
 
         return values
