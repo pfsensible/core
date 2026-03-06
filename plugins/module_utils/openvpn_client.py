@@ -70,7 +70,7 @@ OPENVPN_CLIENT_REQUIRED_IF = [
 
 OPENVPN_CLIENT_PHP_COMMAND_PREFIX = """
 require_once('openvpn.inc');
-$ovpn = config_get_path('openvpn/openvpn-client')[{idx}];
+$ovpn = config_get_path('openvpn/openvpn-client', [])[{idx}];
 """
 
 OPENVPN_CLIENT_PHP_COMMAND_SET = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
@@ -232,7 +232,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     def _find_openvpn_client(self, value, field='description'):
         """ return openvpn-client element """
         i = 0
-        for elt in self.root_elt:
+        for elt in self.root_elt.findall('openvpn-client'):
             field_elt = elt.find(field)
             if field_elt is not None and field_elt.text == value:
                 return (elt, i)
@@ -241,7 +241,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
 
     def _find_last_openvpn_idx(self):
         i = 0
-        for elt in self.root_elt:
+        for elt in self.root_elt.findall('openvpn-client'):
             i += 1
         return i
 
@@ -252,16 +252,19 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         if not changed:
             self.diff['after'] = self.obj
 
+        self.result['vpnid'] = int(before['vpnid'])
         return (before, changed)
 
     def _create_target(self):
         """ create the XML target_elt """
         target_elt = self.pfsense.new_element('openvpn-client')
         self.obj['vpnid'] = self._nextvpnid()
+        self.result['vpnid'] = int(self.obj['vpnid'])
         self.diff['before'] = ''
         self.diff['after'] = self.obj
         self.result['changed'] = True
         self.idx = self._find_last_openvpn_idx()
+        self.result['idx'] = self.idx
         return target_elt
 
     def _find_target(self):
