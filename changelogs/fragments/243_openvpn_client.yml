@@ -1,0 +1,4 @@
+bugfixes:
+ - pfsense_openvpn_client - Fix index calculation so that it actually updates the running client configuration (https://github.com/pfsensible/core/pull/243).
+minor_changes:
+ - pfsense_openvpn_client - Return the vpnid (https://github.com/pfsensible/core/pull/243).
