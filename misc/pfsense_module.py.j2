@@ -50,7 +50,7 @@ author: {{ author_name }} (@{{ author_handle }})
 
 EXAMPLES = r'''
 - name: {{ 'Configure' if is_config else 'Add myitem' }} {{ module_name }}
-  pfsensible.{{ package }}.pfsense_{{ module_name }}:
+  pfsensible.{{ package | lower() }}.pfsense_{{ module_name }}:
 {% if not is_config %}
     {{ name_param }}: myitem
 {% endif %}
@@ -72,7 +72,7 @@ EXAMPLES = r'''
     state: present
 
 - name: Remove myitem {{ module_name }}
-  pfsensible.{{ package }}.pfsense_{{ module_name }}:
+  pfsensible.{{ package | lower() }}.pfsense_{{ module_name }}:
     {{ name_param }}: myitem
     state: absent
 {% endif %}
@@ -193,8 +193,8 @@ PHP_VALIDATION = r'''
 {% endif %}
 {% if package != 'core' %}
 {{ module_name | upper() }}_PHP_COMMAND_SET = r'''
-require_once("{{ package }}.inc");
-{{ package }}_sync_package();
+require_once("{{ package | lower() }}.inc");
+{{ package | lower() }}_sync_package();
 '''
 
 {% elif 'filter.inc' in php_requires %}
