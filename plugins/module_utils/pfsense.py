@@ -320,12 +320,24 @@ class PFSenseModule(object):
                                 changed = True
                         elif self.copy_dict_to_element(item, all_sub_elts[idx], sub=sub + 1, prev_elt=prev_elt):
                             changed = True
-                elif this_elt.text is None and value == '':
-                    pass
-                elif this_elt.text != value:
-                    this_elt.text = value
-                    changed = True
-                    self.debug.write('changed=%s this_elt.text=%s != value=%s\n' % (changed, repr(this_elt.text), repr(value)))
+                else:
+                    # If this element previously held a dict/list (has children)
+                    # but the new value is a scalar, remove stale children first.
+                    # Without this, nested elements (e.g. <item> inside <aliases>)
+                    # persist even when the parent is set to an empty string,
+                    # causing data from one list entry to bleed into another.
+                    # Note: ET.Element.clear() is not used here because it also
+                    # resets .tail, which would corrupt pretty-print whitespace.
+                    if len(this_elt) > 0:
+                        for child in list(this_elt):
+                            this_elt.remove(child)
+                        changed = True
+                    if this_elt.text is None and value == '':
+                        pass
+                    elif this_elt.text != value:
+                        this_elt.text = value
+                        changed = True
+                    self.debug.write('changed=%s this_elt.text=%s value=%s\n' % (changed, this_elt.text, value))
                 prev_elt = this_elt
 
         # Sub-elements must be completely described, so remove any missing elements
