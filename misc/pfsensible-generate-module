@@ -22,7 +22,7 @@ import os
 from paramiko import SSHClient
 import re
 import requests
-from scp import SCPClient
+from scp import SCPClient, SCPException
 import shutil
 import sys
 import tempfile
@@ -96,8 +96,8 @@ if args.url is not None:
     if args.module_name is None:
         # See if this pkg_edit URL first
         if re.match(r'/pkg', uri.path):
-            module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', uri.query)
-            package = module_name
+            module_name = re.sub(r'^xml=.*?([^/]+)\.xml.*$', r'\1', uri.query)
+            package = re.sub(r'([^_]+).*', r'\1', module_name)
             is_simple_package = True
             phpfile = None
         elif (match := re.match(r'/([^/]+)/([^_]+_.+)\.php', uri.path)) is not None:
@@ -169,17 +169,25 @@ if args.ssh_password_prompt:
 with SSHClient() as ssh:
     ssh.load_system_host_keys()
     ssh.connect(host, username=args.ssh_user, allow_agent=not args.ssh_no_agent, password=args.ssh_password)
-    with SCPClient(ssh.get_transport()) as scp:
-        scp.get('/cf/conf/config.xml', f'{tmpdir.name}')
-        if is_simple_package:
-            scp.get(f'/usr/local/pkg/{package}.inc', f'{tmpdir.name}')
-            scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
-        elif is_full_package:
-            scp.get(f'/usr/local/www/{package}/{phpfile}', f'{tmpdir.name}')
-            scp.get(f'/usr/local/pkg/{package}/{package}.inc', f'{tmpdir.name}')
-            scp.get(f'/usr/local/pkg/{package}.xml', f'{tmpdir.name}')
-        elif phpfile is not None:
-            scp.get(f'/usr/local/www/{phpfile}', f'{tmpdir.name}')
+    files_to_sftp = ['/cf/conf/config.xml']
+    if is_simple_package:
+        files_to_sftp.append(f'/usr/local/pkg/{package}.inc')
+        files_to_sftp.append(f'/usr/local/pkg/inc/{package}.inc')
+        files_to_sftp.append(f'/usr/local/pkg/{package}.xml')
+    elif is_full_package:
+        files_to_sftp.append(f'/usr/local/www/{package}/{phpfile}')
+        files_to_sftp.append(f'/usr/local/pkg/{package}/{package}.inc')
+        files_to_sftp.append(f'/usr/local/pkg/{package}.xml')
+    elif phpfile is not None:
+        files_to_sftp.append(f'/usr/local/www/{phpfile}')
+    with ssh.open_sftp() as sftp:
+        for file in files_to_sftp:
+            try:
+                if (args.verbose >= 1):
+                    print(f'Copying {file}')
+                sftp.get(file, f'{tmpdir.name}/{os.path.basename(file)}')
+            except FileNotFoundError as e:
+                pass
 
 # Save the scraped web page if asked to keep files
 if args.keep_tmpdir:
@@ -260,8 +268,10 @@ if not args.is_config:
 # Try to determine the "proper" package name
 if package != 'core':
     package_elt = root.xpath(f"//package[translate(name/text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') = '{package}']")
-    if package_elt is not None:
+    if package_elt:
         package = package_elt[0].find('name').text
+    else:
+        print(f"WARNING: Could not find proper package name for {package}!")
 
 # Parse the php file
 if phpfile is not None:
