@@ -40,6 +40,9 @@ params_xml_only = []
 is_simple_package = False
 is_full_package = False
 args_imports = []
+php_requires = ''
+php_save = ''
+php_subsystem = ''
 
 parser = argparse.ArgumentParser(description='Generate a pfsensible module.')
 parser.add_argument('--url', help='The URL to scrape')
@@ -96,6 +99,7 @@ if args.url is not None:
             module_name = re.sub(r'^xml=(.*?)\.xml.*$', r'\1', uri.query)
             package = module_name
             is_simple_package = True
+            phpfile = None
         elif (match := re.match(r'/([^/]+)/([^_]+_.+)\.php', uri.path)) is not None:
             module_name = re.sub(r'(?:_edit|manager)$', '', match.group(2))
             package = match.group(1)
@@ -255,9 +259,6 @@ if not args.is_config:
 
 # Parse the php file
 if phpfile is not None:
-    php_requires = ''
-    php_save = ''
-    php_subsystem = ''
     found_save = False
     with open(f'{tmpdir.name}/{phpfile}', 'r') as f:
         for line in f:
