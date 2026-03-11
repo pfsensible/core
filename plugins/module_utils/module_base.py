@@ -148,7 +148,7 @@ class PFSenseModuleBase(object):
             self.bool_values = bool_values    # boolean values for specific arguments
         else:
             self.bool_values = dict()
-        self.create_default = create_default  # default values for a created target
+        self.create_default = create_default or {}  # default values for a created target
         self.have_refid = have_refid      # if the element has a refid item
         self.target_elt = None  # xml object holding target pfsense parameters
 
@@ -204,7 +204,7 @@ class PFSenseModuleBase(object):
     def _params_to_obj(self, obj=None):
         """ return a dict from module params that sets self.obj """
         if obj is None:
-            obj = dict()
+            obj = self.create_default
         # Not all modules have 'state', treat them like they did
         if self.params.get('state', 'present') == 'present':
             # Skip 'state', but otherwise process all parameters.  Ansible sets unspecified parameters to None.

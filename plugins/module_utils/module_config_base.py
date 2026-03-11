@@ -33,7 +33,7 @@ class PFSenseModuleConfigBase(PFSenseModuleBase):
         # We need to pre-populate our object with the current config (if it exists) so that we only modify the options we specified
         config_elt = self.pfsense.get_element(self.node, root_elt=self.root_elt)
         if config_elt is None:
-            obj = {}
+            obj = self.create_default
         else:
             obj = self.pfsense.element_to_dict(config_elt)
         merge_dicts(obj, super(PFSenseModuleConfigBase, self)._params_to_obj(obj=obj))
