@@ -1,0 +1,2 @@
+bugfixes:
+  - Fix initialization of arg_route (https://github.com/pfsensible/core/pull/245).

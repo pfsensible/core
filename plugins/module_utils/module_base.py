@@ -123,7 +123,7 @@ class PFSenseModuleBase(object):
         self.package = package
 
         # routing for argument handling
-        self.arg_route = BASE_ARG_ROUTE
+        self.arg_route = BASE_ARG_ROUTE.copy()
         if arg_route is not None:
             self.arg_route.update(arg_route)
 
