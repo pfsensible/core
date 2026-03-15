@@ -95,6 +95,22 @@ These modules allow you to manage installed packages:
 
 ## [Change Log](https://github.com/pfsensible/core/blob/master/CHANGELOG.rst)
 
+## High-Availability Configuration Syncing
+pfsensible modules do not trigger an XMLRPC configuration sync to a secondary system.  But this can be done with the use of a handler as shown:
+```
+tasks:
+  -  name: Make a chage
+     pfsensible.core.alias:
+       name: an_alias
+       state: absent
+     become: true
+     notify: sync config
+handlers:
+  - name: sync config
+    pfsensible.core.pfsense_rewrite_config:
+    become: true
+```
+
 ## Writing new modules
 
 See [GENERATING_MODULES](https://github.com/pfsensible/core/blob/master/GENERATING_MODULES.md) for instructions on how to use the
