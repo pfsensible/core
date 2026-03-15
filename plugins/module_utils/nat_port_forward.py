@@ -204,7 +204,9 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         params['statetype'] = 'keep state'
         params['interface'] = self.params['interface']
         params['source'] = self.params['source']
+        params['source_port'] = self.params.get('source_port')
         params['destination'] = self.params['target']
+        params['destination_port'] = self.params.get('target_port')
         params['disabled'] = self.params['disabled']
         params['protocol'] = self.params['protocol']
         if self.params['associated_rule'] == 'associated':
