@@ -20,6 +20,7 @@ author: Orion Poplawski (@opoplawski)
 short_description: Rewrite pfSense config.xml
 description:
   - Rewrites pfSense's config.xml using native tools to reproduce formatting.
+  - This also triggers an XMLRPC configuration sync to a high availability secondary system.
 notes:
 """
 
@@ -68,11 +69,7 @@ class PFSenseRewriteConfigModule(PFSenseModuleBase):
 
     def _update(self):
         """ make the target pfsense rewrite the config.xml file """
-
-        cmd = '''
-parse_config(true);
-write_config('pfsense_rewrite_config');'''
-
+        cmd = '''write_config('pfsense_rewrite_config');'''
         return self.pfsense.phpshell(cmd)
 
 

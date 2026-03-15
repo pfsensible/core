@@ -1,0 +1,4 @@
+bugfixes:
+  - pfsense_rewrite_config - Drop obsolete and unneeded call to parse_config() (https://github.com/pfsensible/core/issues/239).
+minor_changes:
+  - Add note to README about using pfsense_write_config to trigger XMLRPC configuration syncs (https://github.com/pfsensible/core/issues/239).
