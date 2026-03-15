@@ -1038,13 +1038,13 @@ class PFSenseInterface(object):
 
         if isinstance(address, ipaddress.IPv4Address):
             addr_is_private = is_private_ip(address)
-            
+
             for snet in networks:
                 # Use the network object's is_private property directly (faster than the helper function)
                 if addr_is_private == snet.is_private:
                     if address in snet:
                         return True
-                        
+
         # Case 2: address is a network
         elif isinstance(address, ipaddress.IPv4Network):
             addr_is_private = address.is_private  # Faster than is_private_network(address)
@@ -2273,7 +2273,7 @@ class PFSenseDataParser(object):
                 del _pfsense['descr']
             dup = json.dumps(_pfsense)
             if dup in dups:
-                display.warning("duplicate pfsense definition for ip " + pfsense['ip'] + " (" + dups[dup] + ", " + name + ")")
+                display.warning("duplicate pfsense definition (" + dups[dup] + ", " + name + ")")
             else:
                 dups[dup] = name
 
@@ -3568,7 +3568,7 @@ def main():
     parser.add_argument("pfsense", help="target_fw")
     parser.add_argument('filter', help="rule_name", nargs='?')
     parser.add_argument("-a", "--dont-aggregate", action="store_false", help="dont generate aliases to aggregate rules")
-    parser.add_argument("-g", "--gendiff", action="store_true", help="output more suitable for diffs (debbuging)")
+    parser.add_argument("-g", "--gendiff", action="store_true", help="output more suitable for diffs (debugging)")
     parser.add_argument("-d", "--debug-rule", action="store", help="debug rule")
     args = parser.parse_args()
 
