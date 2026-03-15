@@ -218,8 +218,8 @@ from ansible.plugins.lookup import LookupBase
 import ipaddress
 
 OPTION_FIELDS = [
-    'gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'queue_error', 'icmptype', 'filter', 'efilter', 'ifilter', 'eifilter', 'sched', 'quick', 'direction',
-    'staticnatport', 'ipprotocol',
+    'gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'queue_error', 'icmptype', 'filter', 'efilter', 'ifilter', 'eifilter', 'sched', 'quick',
+    'direction', 'staticnatport', 'ipprotocol',
     'associated_rule', 'natreflection',
 ]
 OUTPUT_OPTION_FIELDS = ['gateway', 'log', 'queue', 'ackqueue', 'in_queue', 'out_queue', 'queue_error', 'icmptype', 'sched', 'quick', 'direction', 'ipprotocol']
@@ -236,7 +236,7 @@ def to_unicode(string):
     return string.decode("utf-8")
 
 
-def ordered_load(stream, loader_cls=yaml.Loader, object_pairs_hook=OrderedDict):
+def ordered_load(stream, loader_cls=yaml.SafeLoader, object_pairs_hook=OrderedDict):
     """ load and return yaml data from stream using ordered dicts """
 
     class OrderedLoader(loader_cls):
@@ -293,7 +293,7 @@ def to_ip_network(address, strict=True):
     classA=ipaddress.IPv4Network((u"10.0.0.0", u"255.0.0.0")),
     classB=ipaddress.IPv4Network((u"172.16.0.0", u"255.240.0.0")),
     classC=ipaddress.IPv4Network((u"192.168.0.0", u"255.255.0.0")),
-    )
+)
 def is_private_ip(address):
     """ check if ip address is class A, B or C """
     if not isinstance(address, ipaddress.IPv4Address):
@@ -308,7 +308,7 @@ def is_private_ip(address):
     classA=ipaddress.IPv4Network((u"10.0.0.0", u"255.0.0.0")),
     classB=ipaddress.IPv4Network((u"172.16.0.0", u"255.240.0.0")),
     classC=ipaddress.IPv4Network((u"192.168.0.0", u"255.255.0.0")),
-    )
+)
 def is_private_network(address):
     """ check if network is class A, B or C """
     if not isinstance(address, ipaddress.IPv4Network):
@@ -322,7 +322,7 @@ def is_private_network(address):
 @static_vars(
     ip_broadcast=ipaddress.IPv4Address((u"255.255.255.255")),
     net_multicast=ipaddress.IPv4Network((u"224.0.0.0", u"255.255.255.0")),
-    )
+)
 def is_ip_broadcast(address):
     """ check if ip address is ip broadcast address """
     if not isinstance(address, ipaddress.IPv4Address):
@@ -379,7 +379,6 @@ def is_valid_ip(address):
         return True
     except ValueError:
         return False
-    return False
 
 
 def is_valid_port(port):
@@ -409,7 +408,6 @@ def is_valid_network(address):
         return True
     except ValueError:
         return False
-    return False
 
 
 def rule_product_dict(tab, rule, field, out_field=None):
@@ -480,9 +478,6 @@ class PFSenseHostAlias(object):
         self.routed_interfaces = {}
 
         self._computed = False
-
-    # def __deepcopy__(self, memodict=dict()):
-    #    raise AssertionError()
 
     def copy(self):
         copy_object = PFSenseHostAlias()
@@ -841,9 +836,6 @@ class PFSenseRule(object):
         self.interfaces = None
         self.generated_names = {}
 
-    # def __deepcopy__(self, memodict={}):
-    #    raise AssertionError()
-
     def copy(self):
         copy_object = PFSenseRule()
         copy_object.name = self.name
@@ -1030,32 +1022,6 @@ class PFSenseInterface(object):
             raise AssertionError('wrong type in remote_networks_contains:' + type(address))
         return False
 
-    @staticmethod
-    def _gemini_networks_contains(address, networks):
-        """ return true if address is in networks """
-        if not networks:
-            return False
-
-        if isinstance(address, ipaddress.IPv4Address):
-            addr_is_private = is_private_ip(address)
-
-            for snet in networks:
-                # Use the network object's is_private property directly (faster than the helper function)
-                if addr_is_private == snet.is_private:
-                    if address in snet:
-                        return True
-
-        # Case 2: address is a network
-        elif isinstance(address, ipaddress.IPv4Network):
-            addr_is_private = address.is_private  # Faster than is_private_network(address)
-            for snet in networks:
-                if addr_is_private == snet.is_private:
-                    if address.subnet_of(snet):
-                        return True
-        else:
-            raise AssertionError('wrong type in remote_networks_contains:' + type(address))
-        return False
-
     def remote_networks_contains(self, address):
         """ return true if address is defined in remote_networks of this interface """
         cache_key = id(address)
@@ -1215,8 +1181,9 @@ class PFSense(object):
 
     @static_vars(internet=ipaddress.IPv4Network((u"0.0.0.0", u"0.0.0.0")))
     def hack_internet_routing(self, interfaces, address, use_remote_networks=True):
-        """ internet (defined as route to 0.0.0.0/0) is an issue to automatically detect interfaces on which routing is done because every host or network match.
-            if multiple interfaces can be used and there is at least one specific route which match the address,
+        """ internet (defined as route to 0.0.0.0/0) is an issue to automatically detect interfaces on which routing is done,
+            because every host or network match.
+            If multiple interfaces can be used and there is at least one specific route which match the address,
             we consider the internet ones as mistakes and remove them """
         if not isinstance(interfaces, frozenset):
             interfaces = frozenset(interfaces)
