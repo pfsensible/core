@@ -139,7 +139,9 @@ commands:
     returned: always
     type: list
     sample:
-      - create nat_port_forward 'ssh', interface='wan', source='any', destination='any', destination_port='22', target='1.2.3.4', target_port='22', associated_rule='pass'"
+      - >
+        create nat_port_forward 'ssh', interface='wan', source='any', destination='any', destination_port='22', target='1.2.3.4', target_port='22', 
+        associated_rule='pass'"
       - delete nat_port_forward 'ssh'
 """
 
