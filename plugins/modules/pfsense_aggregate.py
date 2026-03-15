@@ -299,6 +299,14 @@ options:
         required: false
         default: null
         type: str
+      target_port:
+        description:
+          - Local target port or port range specification.
+          - This can either be a alias or a port number.
+          - An inclusive range can also be specified, using the format C(first-last).
+        default: null
+        type: str
+        version_added: 0.7.2
       natreflection:
         description: Allows NAT reflection to be enabled or disabled on a per-port forward basis.
         default: system-default
