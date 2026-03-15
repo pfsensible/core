@@ -153,6 +153,12 @@ options:
     description: Show hostname on login banner
     required: false
     type: bool
+  sshguard_whitelist:
+    description: Addresses (in CIDR notation) listed will bypass login protection.
+    required: false
+    type: list
+    elements: str
+    version_added: 0.7.2
 """
 
 EXAMPLES = """
@@ -229,6 +235,7 @@ SETUP_ARGUMENT_SPEC = dict(
     roworderdragging=dict(required=False, type='bool'),
     logincss=dict(required=False, type='str'),
     loginshowhost=dict(required=False, type='bool'),
+    sshguard_whitelist=dict(required=False, type='list', elements='str'),
 )
 
 
@@ -240,6 +247,14 @@ def p2o_dnslocalhost(self, name, params, obj):
             obj[name] = 'remote'
         elif params.get(name).lower() == 'local':
             obj[name] = 'local'
+
+
+def p2o_network_list_to_space_separated(self, name, params, obj):
+    if params[name] is not None:
+        for net in params[name]:
+            if not (self.pfsense.is_ipv4_network(net, strict=False) or self.pfsense.is_ipv6_network(net, strict=False)):
+                self.module.fail_json(msg=f"Address {net} is not a valid network")
+        obj[name] = ' '.join(params[name])
 
 
 def p2o_webguicss(self, name, params, obj):
@@ -262,6 +277,7 @@ def validate_webguicss(self, webguicss):
 
 SETUP_ARG_ROUTE = dict(
     dnslocalhost=dict(parse=p2o_dnslocalhost),
+    sshguard_whitelist=dict(parse=p2o_network_list_to_space_separated),
     webguicert=dict(parse=p2o_cert, validate=validate_cert),
     webguicss=dict(parse=p2o_webguicss, validate=validate_webguicss),
 )
@@ -525,6 +541,13 @@ $retval |= system_ntp_configure();'''
             cmd += '$retval |= set_pam_auth();'
 
         cmd += '$retval |= filter_configure();\n'
+
+        restart_sshguard = False
+        for param in ['sshguard_whitelist']:
+            if self.obj.get(param) != self.diff['before'].get(param):
+                restart_sshguard = True
+        if restart_sshguard:
+            cmd += 'system_sshguard_stop();$retval |= system_syslogd_start(true);\n'
 
         restart_webgui = False
         for param in ['ssl-certref']:
