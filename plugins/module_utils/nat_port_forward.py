@@ -106,14 +106,10 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
 
             obj['source'] = self.pfsense.parse_address(self.params['source'], allow_self=False)
             if self.params.get('source_port'):
-                if not self.pfsense.is_port_or_alias(self.params['source_port']):
-                    self.module.fail_json(msg='Cannot parse port %s, not port number or alias' % (self.params['source_port']))
-                obj['source']['port'] = self.params['source_port']
+                self.pfsense.parse_port(params['source_port'], obj['source'])
             obj['destination'] = self.pfsense.parse_address(self.params['destination'])
             if self.params.get('destination_port'):
-                if not self.pfsense.is_port_or_alias(self.params['destination_port']):
-                    self.module.fail_json(msg='Cannot parse port %s, not port number or alias' % (self.params['destination_port']))
-                obj['destination']['port'] = self.params['destination_port']
+                self.pfsense.parse_port(params['destination_port'], obj['destination'])
             self._parse_target_address(obj)
 
         return obj
