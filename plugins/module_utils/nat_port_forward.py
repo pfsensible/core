@@ -106,10 +106,10 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
 
             obj['source'] = self.pfsense.parse_address(self.params['source'], allow_self=False)
             if self.params.get('source_port'):
-                self.pfsense.parse_port(params['source_port'], obj['source'])
+                self.pfsense.parse_port(self.params['source_port'], obj['source'])
             obj['destination'] = self.pfsense.parse_address(self.params['destination'])
             if self.params.get('destination_port'):
-                self.pfsense.parse_port(params['destination_port'], obj['destination'])
+                self.pfsense.parse_port(self.params['destination_port'], obj['destination'])
             self._parse_target_address(obj)
 
         return obj
