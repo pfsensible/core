@@ -23,6 +23,7 @@ NAT_PORT_FORWARD_ARGUMENT_SPEC = dict(
     destination=dict(required=False, type='str'),
     destination_port=dict(required=False, type='str'),
     target=dict(required=False, type='str'),
+    target_port=dict(required=False, type='str'),
     natreflection=dict(default='system-default', choices=["system-default", "enable", "purenat", "disable"]),
     associated_rule=dict(default='associated', required=False, choices=["associated", "unassociated", "pass", "none"]),
     nosync=dict(default=False, required=False, type='bool'),

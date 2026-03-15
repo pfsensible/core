@@ -50,7 +50,7 @@ options:
     choices: [ "tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "pim", "ospf" ]
     type: str
   source:
-    description: The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
+    description: The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE} format.
     default: null
     type: str
   source_port:
@@ -62,7 +62,7 @@ options:
     type: str
     version_added: 0.7.2
   destination:
-    description: The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
+    description: The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE} format.
     default: null
     type: str
   destination_port:
@@ -74,10 +74,18 @@ options:
     type: str
     version_added: 0.7.2
   target:
-    description: The translated to address, in {ALIAS,IP}[:port] format.
+    description: The translated to address, in {ALIAS,IP} format.
     required: false
     default: null
     type: str
+  target_port:
+    description:
+      - Local target port or port range specification.
+      - This can either be a alias or a port number.
+      - An inclusive range can also be specified, using the format C(first-last).
+    default: null
+    type: str
+    version_added: 0.7.2
   natreflection:
     description: Allows NAT reflection to be enabled or disabled on a per-port forward basis.
     default: system-default
@@ -113,8 +121,10 @@ EXAMPLES = """
     descr: 'ssh'
     interface: wan
     source: any
-    destination: any:22
-    target: 1.2.3.4:22
+    destination: any
+    destination_port: 22
+    target: 1.2.3.4
+    target_pourt: 22
     associated_rule: pass
     state: present
 - name: "Delete NAT port forward traffic rule"
@@ -129,7 +139,7 @@ commands:
     returned: always
     type: list
     sample: [
-        "create nat_port_forward 'ssh', interface='wan', source='any', destination='any:22', target='1.2.3.4:22', associated_rule='pass'",
+        "create nat_port_forward 'ssh', interface='wan', source='any', destination='any', destination_port='22', target='1.2.3.4', target_port='22', associated_rule='pass'",
         "delete nat_port_forward 'ssh'"
     ]
 """
