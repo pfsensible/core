@@ -62,6 +62,7 @@ parser.add_argument('--is-config', action='store_true', help='This is a configur
 parser.add_argument('--name-param', help='The name of the primary module parameter - defaults to the key, but often "name" is used instead of "descr"')
 parser.add_argument('--type-param', default='type', help='The name of the parameter for selecting different types of elements', )
 parser.add_argument('--type-suffix', const=True, default=False, nargs='?', help='Suffix the module name with the item type', )
+parser.add_argument('--root-elt', default='root', help='The xml config element to find items under')
 parser.add_argument('--item-min', default='item_min', help='The name of the minimally configured item to search for in config.xml (defaults to "item_min")')
 parser.add_argument('--item-full', default='item_full',
                     help='The name of the fully configured item to search for in config.xml, will be used for exmaples in the documentation (defaults to "item_max")')
@@ -204,6 +205,8 @@ params_full = dict()
 if not args.is_config:
     # Search for any element with our target text, make sure we found only one
     xpath = f'.//*[.="{args.item_min}"]'
+    if args.root_elt != 'root':
+        root = root.find(f'.//{args.root_elt}')
     key_elts = root.findall(xpath)
     if len(key_elts) > 1:
         sys.exit(f'Found {len(key_elts)} items with path "{xpath}"')
