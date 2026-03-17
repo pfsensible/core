@@ -342,11 +342,11 @@ class PFSenseModuleBase(object):
     def _find_target(self):
         """ find the XML target_elt """
         if self.node is not None:
-            result = self.root_elt.findall("{node}[{key}='{value}']".format(node=self.node, key=self.key, value=self.obj[self.key]))
+            result = self.root_elt.findall("{node}[{key}='{value}']".format(node=self.node, key=self.key, value=self.params[self.key]))
             if len(result) == 1:
                 return result[0]
             elif len(result) > 1:
-                self.module.fail_json(msg='Found multiple {node}s for {key} {value}.'.format(node=self.node, key=self.key, value=self.obj[self.key]))
+                self.module.fail_json(msg='Found multiple {node}s for {key} {value}.'.format(node=self.node, key=self.key, value=self.params[self.key]))
             else:
                 return None
         else:
