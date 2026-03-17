@@ -477,7 +477,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         res['interface'] = self.pfsense.get_interface_display_name(rule['interface'])
 
         if rule.get('target', '') != '':
-            if re.match(r'[a-zA-Z]', rule['target']):
+            if re.match(r'[a-zA-Z]', rule['target']) or rule.get('target_subnet') is None:
                 res['address'] = rule['target']
             else:
                 res['address'] = rule['target'] + '/' + rule['target_subnet']
