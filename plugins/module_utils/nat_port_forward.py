@@ -45,7 +45,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseNatPortForwardModule, self).__init__(module, pfsense)
+        super(PFSenseNatPortForwardModule, self).__init__(module, pfsense, root_elt='nat', node='rule', key='descr', create_root=True)
         self.name = "pfsense_nat_port_forward"
         # Override for use with aggregate
         self.argument_spec = NAT_PORT_FORWARD_ARGUMENT_SPEC
@@ -54,11 +54,6 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         self.after = None
         self.before = None
         self.position_changed = False
-
-        self.root_elt = self.pfsense.get_element('nat')
-        if self.root_elt is None:
-            self.root_elt = self.pfsense.new_element('nat')
-            self.pfsense.root.append(self.root_elt)
 
         self.pfsense_rule_module = None
 
@@ -235,16 +230,6 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
             if rule_elt.find('descr').text == descr:
                 return (rule_elt, idx)
         return (None, None)
-
-    def _find_target(self):
-        """ find the XML target_elt """
-        for rule_elt in self.root_elt:
-            if rule_elt.tag != 'rule':
-                continue
-
-            if rule_elt.find('descr').text == self.obj['descr']:
-                return rule_elt
-        return None
 
     def _get_expected_rule_position(self):
         """ get expected rule position in interface/floating """
