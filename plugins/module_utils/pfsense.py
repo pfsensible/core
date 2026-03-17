@@ -442,10 +442,13 @@ class PFSenseModule(object):
         """ return <node> configuration element """
         if root_elt is None:
             root_elt = self.root
-        elt = root_elt.find(node)
-        if elt is None and create_node:
-            elt = self.new_element(node)
-            root_elt.append(elt)
+        top_elt = root_elt
+        for item in node.split('/'):
+            elt = top_elt.find(item)
+            if elt is None and create_node:
+                elt = self.new_element(item)
+                top_elt.append(elt)
+            top_elt = elt
         return elt
 
     def get_elements(self, node, root_elt=None):
