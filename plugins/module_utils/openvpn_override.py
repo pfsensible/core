@@ -52,8 +52,6 @@ unset($csc);
 class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
     """ module managing pfSense OpenVPN Client Specific Overrides """
 
-    from ansible_collections.pfsensible.core.plugins.module_utils.__impl.checks import validate_openvpn_tunnel_network
-
     @staticmethod
     def get_argument_spec():
         """ return argument spec """
