@@ -62,13 +62,13 @@ def p2o_before(self, name, params, obj):
 def p2o_ipprotocol(self, name, params, obj):
     # IPv4+6 is marked by the absense of an ipprotocol element
     if params[name] != 'inet46':
-        self.obj[name] = params[name]
+        obj[name] = params[name]
 
 
 def p2o_protocol(self, name, params, obj):
     # 'any' is marked by the absense of a protocol element
     if params[name] != 'any':
-        self.obj[name] = params[name]
+        obj[name] = params[name]
 
 
 NAT_OUTBOUND_ARG_ROUTE = dict(
