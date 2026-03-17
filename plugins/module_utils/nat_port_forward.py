@@ -45,7 +45,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseNatPortForwardModule, self).__init__(module, pfsense, root_elt='nat', node='rule', key='descr', create_root=True)
+        super(PFSenseNatPortForwardModule, self).__init__(module, pfsense, root='nat', node='rule', key='descr', create_root=True)
         self.name = "pfsense_nat_port_forward"
         # Override for use with aggregate
         self.argument_spec = NAT_PORT_FORWARD_ARGUMENT_SPEC
