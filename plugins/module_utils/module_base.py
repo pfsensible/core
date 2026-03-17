@@ -204,7 +204,7 @@ class PFSenseModuleBase(object):
     def _params_to_obj(self, obj=None):
         """ return a dict from module params that sets self.obj """
         if obj is None:
-            obj = self.create_default
+            obj = dict()
         # Not all modules have 'state', treat them like they did
         if self.params.get('state', 'present') == 'present':
             # Skip 'state', but otherwise process all parameters.  Ansible sets unspecified parameters to None.
@@ -455,9 +455,12 @@ class PFSenseModuleBase(object):
         self._check_onward_params()
         self._validate_params()
 
-        self.obj = self._params_to_obj()
+        # Initialize the target
         if self.target_elt is None:
             self.target_elt = self._find_target()
+
+        # Construct the dictionary representation from the module parameters
+        self.obj = self._params_to_obj()
 
         if params.get('state', None) == 'absent':
             self._remove()
