@@ -19,6 +19,8 @@ from .pfsense_module import TestPFSenseModule
 class TestPFSenseRuleModule(TestPFSenseModule):
 
     module = pfsense_rule
+    is_ipv6_address = is_ipv6_address
+    is_ipv6_network = is_ipv6_network
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseRuleModule, self).__init__(*args, **kwargs)
@@ -32,7 +34,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
 
     def parse_address(self, addr):
         """ return address parsed in dict """
-        if is_ipv6_address(addr) or is_ipv6_network(addr):
+        if self.is_ipv6_address(addr) or self.is_ipv6_network(addr):
             parts = [addr]
         else:
             parts = addr.split(':')
