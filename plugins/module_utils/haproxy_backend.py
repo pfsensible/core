@@ -100,7 +100,7 @@ class PFSenseHaproxyBackendModule(PFSenseModuleBase):
             if item_elt.tag != 'item':
                 continue
             name_elt = item_elt.find('name')
-            if name_elt is not None and name_elt.text == self.obj['name']:
+            if name_elt is not None and name_elt.text == self.params['name']:
                 return item_elt
         return None
 
