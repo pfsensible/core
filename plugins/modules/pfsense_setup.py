@@ -159,6 +159,24 @@ options:
     type: list
     elements: str
     version_added: 0.7.2
+  crypto_hardware:
+    description: >
+      A cryptographic accelerator module will use hardware support to speed up some cryptographic functions on systems which have the chip. Loading the BSD
+      Crypto Device module will allow access to acceleration devices using drivers built into the kernel, such as Hifn or ubsec chipsets. If the firewall does
+      not contain a crypto chip, this option will have no effect. To unload the selected module, set this option to "" and then reboot.
+    required: false
+    type: str
+    choices: ['', 'aesni', 'aesni_cryptodev', 'qat']
+    version_added: 0.7.2
+  thermal_hardware:
+    description: >
+      With a supported CPU, selecting a thermal sensor will load the appropriate driver to read its temperature. Setting this to "None" will attempt to read
+      the temperature from an ACPI-compliant motherboard sensor instead, if one is present. If there is not a supported thermal sensor chip in the system, this
+      option will have no effect. To unload the selected module, set this option to "" and then reboot.
+    required: false
+    type: str
+    choices: ['', 'coretemp', 'amdtemp']
+    version_added: 0.7.2
 """
 
 EXAMPLES = """
@@ -236,6 +254,8 @@ SETUP_ARGUMENT_SPEC = dict(
     logincss=dict(required=False, type='str'),
     loginshowhost=dict(required=False, type='bool'),
     sshguard_whitelist=dict(required=False, type='list', elements='str'),
+    crypto_hardware=dict(required=False, type='str', choices=['', 'aesni', 'aesni_cryptodev', 'qat']),
+    thermal_hardware=dict(required=False, type='str', choices=['', 'coretemp', 'amdtemp']),
 )
 
 
@@ -275,6 +295,7 @@ def validate_webguicss(self, webguicss):
         raise ValueError("The submitted theme '%s' could not be found. Pick a different theme." % webguicss)
 
 
+# TODO - validate crypto_hardware against $crypto_modules = getSystemAdvancedMiscCryptoModules();
 SETUP_ARG_ROUTE = dict(
     dnslocalhost=dict(parse=p2o_dnslocalhost),
     sshguard_whitelist=dict(parse=p2o_network_list_to_space_separated),
@@ -519,6 +540,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         cmd = '''
 require_once("auth.inc");
 require_once("filter.inc");
+require_once("pfsense-utils.inc");
 require_once("system_advanced_admin.inc");
 $retval = 0;
 $retval |= system_hostname_configure();
@@ -530,7 +552,9 @@ if (config_path_enabled('dnsmasq')) {
         $retval |= services_unbound_configure();
 }
 $retval |= system_timezone_configure();
-$retval |= system_ntp_configure();'''
+$retval |= system_ntp_configure();
+load_crypto();
+load_thermal_hardware();'''
 
         if self.params.get('dnsallowoverride') is not None:
             if (self.params['dnsallowoverride'] and 'dnsallowoverride' not in self.diff['before'] or
