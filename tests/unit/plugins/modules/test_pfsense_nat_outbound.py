@@ -121,8 +121,8 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         self.check_param_equal_or_not_find(obj, target_elt, 'nonat')
 
         self.check_value_equal(target_elt, 'interface', self.unalias_interface(obj['interface']))
-        self.check_param_equal(obj, target_elt, 'ipprotocol', 'inet46', not_find_val='inet46')
-        self.check_param_equal(obj, target_elt, 'protocol', 'any', not_find_val='any')
+        self.check_param_equal(obj, target_elt, 'ipprotocol', not_find_val='inet46')
+        self.check_param_equal(obj, target_elt, 'protocol', not_find_val='any')
         self.check_param_equal(obj, target_elt, 'poolopts')
         self.check_value_equal(target_elt, 'source_hash_key', self.md5(obj.get('source_hash_key')))
 
