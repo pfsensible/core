@@ -259,6 +259,48 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         """ update the XML target_elt """
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff['before'] = before
+
+        # Remove empty/None optional fields from obj when the XML doesn't have them to avoid false change detection
+        # (copy_dict_to_element would create empty elements and report changed=True even though the semantic value is unchanged)
+        for field in ['poolopts', 'source_hash_key', 'target', 'target_subnet', 'address']:
+            if field in self.obj and (self.obj[field] == '' or self.obj[field] is None) and field not in before:
+                del self.obj[field]
+
+        # pfSense omits <target_subnet> for single-host IPs (implicit /32).
+        # Don't create it if the target itself hasn't changed.
+        if ('target_subnet' in self.obj and 'target_subnet' not in before
+                and 'target' in self.obj and before.get('target', '') == self.obj['target']):
+            del self.obj['target_subnet']
+
+        # pfSense XML may use either 'network' or 'address' as the key inside <source>/<destination>.
+        # Adjust to match the existing XML to avoid a phantom sub-element swap.
+        for field in ('source', 'destination'):
+            if field in self.obj and isinstance(self.obj[field], dict) and 'network' in self.obj[field]:
+                field_elt = self.target_elt.find(field)
+                if field_elt is not None and field_elt.find('network') is None and field_elt.find('address') is not None:
+                    self.obj[field]['address'] = self.obj[field].pop('network')
+
+        # pfSense may store a special reference (e.g. 'other-subnet') in <target> instead of the raw IP.
+        # When the existing XML target is not a plain IP and the semantic value hasn't changed, preserve it.
+        if 'target' in self.obj:
+            xml_target_elt = self.target_elt.find('target')
+            if xml_target_elt is not None and xml_target_elt.text:
+                xml_target = xml_target_elt.text
+                if (xml_target != self.obj['target']
+                        and not self.pfsense.is_ipv4_address(xml_target)
+                        and not self.pfsense.is_ipv4_network(xml_target, False)):
+                    self.obj['target'] = xml_target
+                    if 'target_subnet' in self.obj and self.target_elt.find('target_subnet') is None:
+                        del self.obj['target_subnet']
+
+        # For presence-based booleans (true_val=''), pfSense may store the element text as 'yes' or '' - both mean "present/true".
+        # Match the existing XML text so copy_dict_to_element doesn't see a difference.
+        for param, (false_val, true_val) in NAT_OUTBOUND_BOOL_VALUES.items():
+            if true_val == '' and param in self.obj and self.obj[param] == '':
+                param_elt = self.target_elt.find(param)
+                if param_elt is not None and param_elt.text is not None and param_elt.text != '':
+                    self.obj[param] = param_elt.text
+
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
         if self._remove_deleted_params():
@@ -441,7 +483,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_updated_cli_field(fafter, fbefore, 'source', add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, 'destination', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'invert', fvalue=self.fvalue_bool, default=False, add_comma=(values))
-            values += self.format_updated_cli_field(fafter, before, 'address', default='', add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, 'address', default='', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'poolopts', default='', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'source_hash_key', default='', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'staticnatport', fvalue=self.fvalue_bool, default=False, add_comma=(values))
@@ -456,10 +498,14 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         """ return formated address from dict """
         field = ''
         if addr in rule:
-            if target in rule[addr]:
-                if self.pfsense.interfaces.find(rule[addr][target]):
+            # pfSense XML may use 'address' instead of 'network' as the key
+            actual_target = target
+            if target not in rule[addr] and target == 'network' and 'address' in rule[addr]:
+                actual_target = 'address'
+            if actual_target in rule[addr]:
+                if self.pfsense.interfaces.find(rule[addr][actual_target]):
                     field = 'NET:'
-                field += rule[addr][target]
+                field += rule[addr][actual_target]
             elif addr == 'destination' and 'any' in rule[addr]:
                 field = 'any'
 
