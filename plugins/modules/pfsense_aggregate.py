@@ -700,7 +700,9 @@ class PFSenseModuleAggregate(object):
         """ parse interfaces """
         res = set()
         for interface in interfaces.split(','):
-            res.add(self.pfsense.parse_interface(interface))
+            parsed = self.pfsense.parse_interface(interface, fail=False)
+            if parsed is not None:
+                res.add(parsed)
         return res
 
     def want_rule(self, rule_elt, rules, name_field='name'):
@@ -738,7 +740,11 @@ class PFSenseModuleAggregate(object):
             if floating != rule_floating:
                 continue
 
-            if floating or self.pfsense.parse_interface(rule['interface']) == interface.text:
+            if floating:
+                defined_rules.add(descr.text)
+                return True
+            parsed = self.pfsense.parse_interface(rule['interface'], fail=False)
+            if parsed is not None and parsed == interface.text:
                 defined_rules.add(descr.text)
                 return True
         return False
@@ -756,8 +762,10 @@ class PFSenseModuleAggregate(object):
             if separator.get('floating'):
                 if interface == 'floatingrules':
                     return True
-            elif self.pfsense.parse_interface(separator['interface']) == interface:
-                return True
+            else:
+                parsed = self.pfsense.parse_interface(separator['interface'], fail=False)
+                if parsed is not None and parsed == interface:
+                    return True
         return False
 
     def want_alias(self, alias_elt, aliases):
@@ -850,8 +858,8 @@ class PFSenseModuleAggregate(object):
                             target = self.pfsense.get_interface_display_name(interface, return_none=True)
                             if target is not None:
                                 params['interface'].append(target)
-                            else:
-                                params['interface'].append(interface)
+                        if not params['interface']:
+                            continue
                         params['interface'] = ','.join(params['interface'])
                     else:
                         params['interface'] = self.pfsense.get_interface_display_name(rule_elt.find('interface').text, return_none=True)
@@ -894,6 +902,18 @@ class PFSenseModuleAggregate(object):
         for params in want:
             if self.is_filtered(interface_filter, params):
                 continue
+            # Skip rules whose interface doesn't exist on this firewall
+            if params.get('state', 'present') != 'absent' and params.get('interface') is not None:
+                if params.get('floating'):
+                    # For floating rules, filter out invalid interfaces from the list
+                    valid = [i for i in params['interface'].split(',')
+                             if i == 'any' or self.pfsense.parse_interface(i, fail=False) is not None]
+                    if not valid:
+                        continue
+                    params['interface'] = ','.join(valid)
+                else:
+                    if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+                        continue
             self.pfsense_rules.run(params)
 
     def run_nat_outbounds_rules(self):
@@ -929,6 +949,10 @@ class PFSenseModuleAggregate(object):
         for params in want:
             if self.is_filtered(interface_filter, params):
                 continue
+            # Skip rules whose interface doesn't exist on this firewall
+            if params.get('state', 'present') != 'absent' and params.get('interface') is not None:
+                if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+                    continue
             self.pfsense_nat_outbounds.run(params)
 
     def run_nat_port_forwards_rules(self):
@@ -964,6 +988,10 @@ class PFSenseModuleAggregate(object):
         for params in want:
             if self.is_filtered(interface_filter, params):
                 continue
+            # Skip rules whose interface doesn't exist on this firewall
+            if params.get('state', 'present') != 'absent' and params.get('interface') is not None:
+                if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+                    continue
             self.pfsense_nat_port_forwards.run(params)
 
     def run_aliases(self):
@@ -1028,6 +1056,10 @@ class PFSenseModuleAggregate(object):
         for params in want:
             if self.is_filtered(interface_filter, params):
                 continue
+            # Skip separators whose interface doesn't exist on this firewall
+            if params.get('state', 'present') != 'absent' and params.get('interface') is not None and not params.get('floating'):
+                if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+                    continue
             self.pfsense_rule_separators.run(params)
 
         # delete every other if required

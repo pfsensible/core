@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_setup - add crypto_hardware and thermal_hardware parameters (https://github.com/pfsensible/core/pull/251).

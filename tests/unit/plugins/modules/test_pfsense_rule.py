@@ -12,7 +12,7 @@ if sys.version_info < (2, 7):
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_rule
 from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule
-from ansible_collections.pfsensible.core.plugins.module_utils.__impl.addresses import is_ipv6_address, is_ipv6_network
+from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 from .pfsense_module import TestPFSenseModule
 
 
@@ -32,7 +32,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
 
     def parse_address(self, addr):
         """ return address parsed in dict """
-        if is_ipv6_address(addr) or is_ipv6_network(addr):
+        if PFSenseModule.is_ipv6_address(addr) or PFSenseModule.is_ipv6_network(addr):
             parts = [addr]
         else:
             parts = addr.split(':')
