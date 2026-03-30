@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_rule - New pass/match rules without explicit ``after`` or ``before`` are now inserted before the first block/reject rule on the same interface, preserving correct allow-before-deny ordering.

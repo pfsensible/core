@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_rule - Allow protocol ``any`` with destination/source ports, matching pfSense UI behaviour.

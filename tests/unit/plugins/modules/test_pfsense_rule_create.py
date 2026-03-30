@@ -278,7 +278,7 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
     def test_rule_create_invalid_ports(self):
         """ test creation of a new rule with an invalid use of ports """
         obj = dict(name='one_rule', source='192.193.194.195', destination='any:22', interface='lan', protocol='icmp')
-        msg = "'one_rule' on 'lan': you can't use ports on protocols other than tcp, udp or tcp/udp"
+        msg = "'one_rule' on 'lan': you can't use ports on protocols other than tcp, udp, tcp/udp or any"
         self.do_module_test(obj, failed=True, msg=msg)
 
     def test_rule_create_source_ip_invalid(self):
@@ -652,3 +652,85 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         obj = dict(name='one_rule', source='any', destination='any', interface='lan', sched='acme')
         msg = 'Schedule acme does not exist'
         self.do_module_test(obj, failed=True, msg=msg)
+
+    ##################################
+    # protocol any with ports
+    #
+    def test_rule_create_protocol_any_with_dst_port(self):
+        """ test creation of a rule with protocol any and destination port """
+        obj = dict(name='one_rule', source='any', destination='any:443', interface='lan', protocol='any')
+        command = "create rule 'one_rule' on 'lan', source='any', destination='any:443'"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_protocol_icmp_with_dst_port(self):
+        """ test creation of a rule with protocol icmp and destination port should fail """
+        obj = dict(name='one_rule', source='any', destination='any:443', interface='lan', protocol='icmp')
+        msg = "'one_rule' on 'lan': you can't use ports on protocols other than tcp, udp, tcp/udp or any"
+        self.do_module_test(obj, failed=True, msg=msg)
+
+    ##################################
+    # pass rule ordering (insert before first block/reject)
+    #
+    def test_rule_create_pass_before_block(self):
+        """ test that a new pass rule is inserted before the first block rule on the same interface """
+        obj = dict(name='new_pass_rule', source='any', destination='any', interface='lan')
+        command = "create rule 'new_pass_rule' on 'lan', source='any', destination='any'"
+        self.do_module_test(obj, command=command)
+        # Verify the new pass rule appears before block_all_lan in the XML
+        self.load_xml_result()
+        filter_elt = self.xml_result.find('filter')
+        rules = []
+        for rule_elt in filter_elt.findall('rule'):
+            iface_elt = rule_elt.find('interface')
+            descr_elt = rule_elt.find('descr')
+            if iface_elt is not None and iface_elt.text == 'lan' and descr_elt is not None:
+                rules.append(descr_elt.text)
+        self.assertIn('new_pass_rule', rules)
+        self.assertIn('block_all_lan', rules)
+        pass_idx = rules.index('new_pass_rule')
+        block_idx = rules.index('block_all_lan')
+        self.assertLess(pass_idx, block_idx, "pass rule should be positioned before block rule")
+
+    def test_rule_create_block_appends_to_end(self):
+        """ test that a new block rule appends to the end (after existing block rules) """
+        obj = dict(name='new_block_rule', source='any', destination='any', interface='lan', action='block')
+        command = "create rule 'new_block_rule' on 'lan', source='any', destination='any', action='block'"
+        self.do_module_test(obj, command=command)
+        # Verify the new block rule appears after block_all_lan
+        self.load_xml_result()
+        filter_elt = self.xml_result.find('filter')
+        rules = []
+        for rule_elt in filter_elt.findall('rule'):
+            iface_elt = rule_elt.find('interface')
+            descr_elt = rule_elt.find('descr')
+            if iface_elt is not None and iface_elt.text == 'lan' and descr_elt is not None:
+                rules.append(descr_elt.text)
+        self.assertIn('new_block_rule', rules)
+        self.assertIn('block_all_lan', rules)
+        new_idx = rules.index('new_block_rule')
+        existing_idx = rules.index('block_all_lan')
+        self.assertGreater(new_idx, existing_idx, "new block rule should append after existing block rule")
+
+    def test_rule_create_pass_before_reject(self):
+        """ test that a new pass rule is inserted before a reject rule, not just block """
+        # Fixture has both block_all_lan and reject_all_lan on lan.
+        # A new pass rule should be inserted before both.
+        obj = dict(name='new_pass_above_reject', source='any', destination='any:80', interface='lan', protocol='tcp')
+        command = "create rule 'new_pass_above_reject' on 'lan', source='any', destination='any:80', protocol='tcp'"
+        self.do_module_test(obj, command=command)
+        self.load_xml_result()
+        filter_elt = self.xml_result.find('filter')
+        rules = []
+        for rule_elt in filter_elt.findall('rule'):
+            iface_elt = rule_elt.find('interface')
+            descr_elt = rule_elt.find('descr')
+            if iface_elt is not None and iface_elt.text == 'lan' and descr_elt is not None:
+                rules.append(descr_elt.text)
+        self.assertIn('new_pass_above_reject', rules)
+        self.assertIn('block_all_lan', rules)
+        self.assertIn('reject_all_lan', rules)
+        pass_idx = rules.index('new_pass_above_reject')
+        block_idx = rules.index('block_all_lan')
+        reject_idx = rules.index('reject_all_lan')
+        self.assertLess(pass_idx, block_idx, "pass rule should be before block rule")
+        self.assertLess(pass_idx, reject_idx, "pass rule should be before reject rule")
