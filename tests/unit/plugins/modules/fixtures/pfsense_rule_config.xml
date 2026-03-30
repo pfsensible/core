@@ -1010,6 +1010,52 @@
 		<rule>
 			<updated>
 				<username></username>
+				<time>1545602800</time>
+			</updated>
+			<descr>block_all_lan</descr>
+			<created>
+				<username></username>
+				<time>1545602800</time>
+			</created>
+			<destination>
+				<any></any>
+			</destination>
+			<statetype>keep state</statetype>
+			<source>
+				<any></any>
+			</source>
+			<tracker>1545602800</tracker>
+			<interface>lan</interface>
+			<ipprotocol>inet</ipprotocol>
+			<type>block</type>
+			<id></id>
+		</rule>
+		<rule>
+			<updated>
+				<username></username>
+				<time>1545602801</time>
+			</updated>
+			<descr>reject_all_lan</descr>
+			<created>
+				<username></username>
+				<time>1545602801</time>
+			</created>
+			<destination>
+				<any></any>
+			</destination>
+			<statetype>keep state</statetype>
+			<source>
+				<any></any>
+			</source>
+			<tracker>1545602801</tracker>
+			<interface>lan</interface>
+			<ipprotocol>inet</ipprotocol>
+			<type>reject</type>
+			<id></id>
+		</rule>
+		<rule>
+			<updated>
+				<username></username>
 				<time>1545574416</time>
 			</updated>
 			<protocol>tcp</protocol>

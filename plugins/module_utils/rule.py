@@ -118,8 +118,8 @@ class PFSenseRuleModule(PFSenseModuleBase):
             if params.get('destination_port'):
                 self.pfsense.parse_port(params['destination_port'], obj['destination'])
 
-            if params['protocol'] not in ['tcp', 'udp', 'tcp/udp'] and ('port' in obj['source'] or 'port' in obj['destination']):
-                self.module.fail_json(msg="{0}: you can't use ports on protocols other than tcp, udp or tcp/udp".format(self._get_obj_name()))
+            if params['protocol'] not in ['tcp', 'udp', 'tcp/udp', 'any'] and ('port' in obj['source'] or 'port' in obj['destination']):
+                self.module.fail_json(msg="{0}: you can't use ports on protocols other than tcp, udp, tcp/udp or any".format(self._get_obj_name()))
 
             for param in ['destination', 'source']:
                 if 'address' in obj[param]:
@@ -447,6 +447,12 @@ class PFSenseRuleModule(PFSenseModuleBase):
             found, i = self._find_rule(self.obj['descr'])
             if found is not None:
                 return i
+            # For pass/match rules, insert before the first block/reject rule
+            # on the same interface to maintain correct allow-before-deny ordering.
+            if self.obj.get('type', 'pass') not in ('block', 'reject'):
+                idx = self._get_first_deny_rule_xml_index()
+                if idx is not None:
+                    return idx
             return self._get_last_rule_xml_index() + 1
         return -1
 
@@ -468,6 +474,18 @@ class PFSenseRuleModule(PFSenseModuleBase):
                 last_found = i
             i += 1
         return last_found
+
+    def _get_first_deny_rule_xml_index(self):
+        """ Find the first block/reject rule for the interface/floating and return its xml index.
+            Returns None if no block/reject rules exist for this interface. """
+        i = 0
+        for rule_elt in self.root_elt:
+            if self._match_interface(rule_elt):
+                type_elt = rule_elt.find('type')
+                if type_elt is not None and type_elt.text in ('block', 'reject'):
+                    return i
+            i += 1
+        return None
 
     @staticmethod
     def _get_params_to_remove():
