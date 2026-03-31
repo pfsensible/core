@@ -40,6 +40,12 @@ RULE_ARGUMENT_SPEC = dict(
     icmptype=dict(default='any', required=False, type='str'),
     sched=dict(required=False, type='str'),
     quick=dict(default=False, type='bool'),
+    max_src_conn=dict(required=False, type='int'),
+    max_src_states=dict(required=False, type='int'),
+    max_src_nodes=dict(required=False, type='int'),
+    max_src_conn_rate=dict(required=False, type='int'),
+    max_src_conn_rates=dict(required=False, type='int'),
+    statetimeout=dict(required=False, type='int'),
 )
 
 RULE_REQUIRED_IF = [
@@ -50,8 +56,8 @@ RULE_REQUIRED_IF = [
 
 # These are rule elements that are (currently) unmanaged by this module
 RULE_UNMANAGED_ELEMENTS = [
-    'created', 'id', 'max', 'max-src-conn', 'max-src-nodes', 'max-src-states', 'os',
-    'statetimeout', 'statetype', 'tag', 'tagged', 'updated'
+    'created', 'id', 'max', 'os',
+    'statetype', 'tag', 'tagged', 'updated'
 ]
 
 
@@ -146,6 +152,13 @@ class PFSenseRuleModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, 'quick')
             self._get_ansible_param_bool(obj, 'tcpflags_any', value='')
 
+            self._get_ansible_param(obj, 'max_src_conn', fname='max-src-conn')
+            self._get_ansible_param(obj, 'max_src_states', fname='max-src-states')
+            self._get_ansible_param(obj, 'max_src_nodes', fname='max-src-nodes')
+            self._get_ansible_param(obj, 'max_src_conn_rate', fname='max-src-conn-rate')
+            self._get_ansible_param(obj, 'max_src_conn_rates', fname='max-src-conn-rates')
+            self._get_ansible_param(obj, 'statetimeout')
+
         self._floating = 'floating' in self.obj and self.obj['floating'] == 'yes'
         self._after = params.get('after')
         self._before = params.get('before')
@@ -226,6 +239,19 @@ class PFSenseRuleModule(PFSenseModuleBase):
         # quick
         if params.get('quick') and not params.get('floating'):
             self.module.fail_json(msg='quick can only be used on floating rules')
+
+        # state tracking options require TCP and pass rules
+        state_tracking_params = ['max_src_conn', 'max_src_states', 'max_src_nodes', 'max_src_conn_rate', 'max_src_conn_rates', 'statetimeout']
+        has_state_tracking = any(params.get(p) is not None for p in state_tracking_params)
+        if has_state_tracking:
+            if params.get('action') and params['action'] != 'pass':
+                self.module.fail_json(msg='State tracking options (max_src_conn, max_src_states, etc.) can only be used on pass rules')
+            if params.get('protocol') and params['protocol'] not in ['tcp', 'any']:
+                self.module.fail_json(msg='max_src_conn and max_src_conn_rate can only be used with TCP protocol')
+
+        # max_src_conn_rate and max_src_conn_rates must be set together
+        if (params.get('max_src_conn_rate') is not None) != (params.get('max_src_conn_rates') is not None):
+            self.module.fail_json(msg='max_src_conn_rate and max_src_conn_rates must both be set')
 
         # ICMP
         if params.get('protocol') == 'icmp' and params.get('icmptype') is not None:
@@ -490,7 +516,8 @@ class PFSenseRuleModule(PFSenseModuleBase):
     @staticmethod
     def _get_params_to_remove():
         """ returns the list of params to remove if they are not set """
-        return ['log', 'protocol', 'disabled', 'defaultqueue', 'ackqueue', 'dnpipe', 'pdnpipe', 'gateway', 'icmptype', 'sched', 'quick', 'tcpflags_any']
+        return ['log', 'protocol', 'disabled', 'defaultqueue', 'ackqueue', 'dnpipe', 'pdnpipe', 'gateway', 'icmptype', 'sched', 'quick', 'tcpflags_any',
+                'max-src-conn', 'max-src-states', 'max-src-nodes', 'max-src-conn-rate', 'max-src-conn-rates', 'statetimeout']
 
     def _get_rule_position(self, descr=None, fail=True, first=True):
         """ get rule position in interface/floating """
@@ -601,6 +628,12 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }''')
             values += self.format_cli_field(self.params, 'tracker')
             values += self.format_cli_field(self.params, 'sched')
             values += self.format_cli_field(self.params, 'quick', fvalue=self.fvalue_bool, default=False)
+            values += self.format_cli_field(self.params, 'max_src_conn')
+            values += self.format_cli_field(self.params, 'max_src_states')
+            values += self.format_cli_field(self.params, 'max_src_nodes')
+            values += self.format_cli_field(self.params, 'max_src_conn_rate')
+            values += self.format_cli_field(self.params, 'max_src_conn_rates')
+            values += self.format_cli_field(self.params, 'statetimeout')
         else:
             fbefore = self._obj_to_log_fields(before)
             fafter = self._obj_to_log_fields(self.obj)
@@ -633,6 +666,12 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }''')
             values += self.format_updated_cli_field(self.obj, before, 'tracker', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'sched', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'quick', fvalue=self.fvalue_bool, add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'max-src-conn', fname='max_src_conn', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'max-src-states', fname='max_src_states', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'max-src-nodes', fname='max_src_nodes', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'max-src-conn-rate', fname='max_src_conn_rate', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'max-src-conn-rates', fname='max_src_conn_rates', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'statetimeout', add_comma=(values))
         return values
 
     def _obj_address_to_log_field(self, rule, addr):
