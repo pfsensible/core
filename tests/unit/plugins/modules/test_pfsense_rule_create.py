@@ -734,3 +734,57 @@ class TestPFSenseRuleCreateModule(TestPFSenseRuleModule):
         reject_idx = rules.index('reject_all_lan')
         self.assertLess(pass_idx, block_idx, "pass rule should be before block rule")
         self.assertLess(pass_idx, reject_idx, "pass rule should be before reject rule")
+
+    ##############
+    # state tracking options
+    #
+    def test_rule_create_max_src_conn(self):
+        """ test creation of a new rule with max_src_conn """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp', max_src_conn=3)
+        command = "create rule 'one_rule' on 'lan', source='any', destination='any', protocol='tcp', max_src_conn=3"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_max_src_states(self):
+        """ test creation of a new rule with max_src_states """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp', max_src_states=3)
+        command = "create rule 'one_rule' on 'lan', source='any', destination='any', protocol='tcp', max_src_states=3"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_max_src_nodes(self):
+        """ test creation of a new rule with max_src_nodes """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp', max_src_nodes=100)
+        command = "create rule 'one_rule' on 'lan', source='any', destination='any', protocol='tcp', max_src_nodes=100"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_max_src_conn_rate(self):
+        """ test creation of a new rule with max_src_conn_rate """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp', max_src_conn_rate=3, max_src_conn_rates=60)
+        command = ("create rule 'one_rule' on 'lan', source='any', destination='any', protocol='tcp', "
+                   "max_src_conn_rate=3, max_src_conn_rates=60")
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_max_src_conn_rate_without_rates(self):
+        """ test creation of a new rule with max_src_conn_rate but without max_src_conn_rates """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp', max_src_conn_rate=3)
+        msg = "max_src_conn_rate and max_src_conn_rates must both be set"
+        self.do_module_test(obj, failed=True, msg=msg)
+
+    def test_rule_create_statetimeout(self):
+        """ test creation of a new rule with statetimeout """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp', statetimeout=60)
+        command = "create rule 'one_rule' on 'lan', source='any', destination='any', protocol='tcp', statetimeout=60"
+        self.do_module_test(obj, command=command)
+
+    def test_rule_create_state_tracking_block(self):
+        """ test creation of a block rule with state tracking options fails """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', action='block', protocol='tcp', max_src_conn=3)
+        msg = "State tracking options (max_src_conn, max_src_states, etc.) can only be used on pass rules"
+        self.do_module_test(obj, failed=True, msg=msg)
+
+    def test_rule_create_all_state_tracking(self):
+        """ test creation of a new rule with all state tracking options """
+        obj = dict(name='one_rule', source='any', destination='any', interface='lan', protocol='tcp',
+                   max_src_conn=3, max_src_states=3, max_src_nodes=100, max_src_conn_rate=3, max_src_conn_rates=60, statetimeout=60)
+        command = ("create rule 'one_rule' on 'lan', source='any', destination='any', protocol='tcp', "
+                   "max_src_conn=3, max_src_states=3, max_src_nodes=100, max_src_conn_rate=3, max_src_conn_rates=60, statetimeout=60")
+        self.do_module_test(obj, command=command)

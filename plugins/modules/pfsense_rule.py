@@ -142,6 +142,29 @@ options:
     description: Set this option to apply this action to traffic that matches this rule immediately
     type: bool
     default: False
+  max_src_conn:
+    description: Maximum number of established connections per source host. Only valid for TCP pass rules.
+    type: int
+  max_src_states:
+    description: Maximum number of state entries per source host. Only valid for pass rules.
+    type: int
+  max_src_nodes:
+    description: Maximum number of unique source hosts.
+    type: int
+  max_src_conn_rate:
+    description:
+      - Maximum number of new connections per time interval from a single host.
+      - Must be used together with C(max_src_conn_rates).
+      - Only valid for TCP pass rules.
+    type: int
+  max_src_conn_rates:
+    description:
+      - Time interval in seconds for C(max_src_conn_rate).
+      - Must be used together with C(max_src_conn_rate).
+    type: int
+  statetimeout:
+    description: State timeout in seconds.
+    type: int
 """
 
 EXAMPLES = """
@@ -168,6 +191,25 @@ EXAMPLES = """
     destination: NET:lan
     destination_port: 4000-5000
     after: 'Allow Internal DNS traffic out'
+    state: present
+- name: "Rate-limit inbound connections"
+  pfsense_rule:
+    name: 'Rate-limited Qubic inbound'
+    action: pass
+    interface: wan
+    floating: true
+    direction: in
+    quick: true
+    ipprotocol: inet
+    protocol: tcp
+    source: any
+    destination: qubic_nodes
+    destination_port: 21841
+    log: true
+    max_src_conn: 3
+    max_src_states: 3
+    max_src_conn_rate: 3
+    max_src_conn_rates: 60
     state: present
 """
 
