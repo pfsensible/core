@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_dns_resolver -  Add ability to set Strict Outgoing Network Interface Binding (https://github.com/pfsensible/core/pull/254).
