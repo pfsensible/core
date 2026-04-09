@@ -63,6 +63,14 @@ options:
     default: [ "all" ]
     type: list
     elements: str
+  strictout:
+    description: 
+      - Strict Outgoing Network Interface Binding.
+      - Do not send recursive queries if none of the Outgoing Network Interfaces are available.
+    required: false
+    default: false
+    type: bool
+    version_added: 0.7.2
   system_domain_local_zone_type:
     description: The local-zone type used for the pfSense system domain.
     required: false
@@ -338,7 +346,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     tlsport=dict(default=None, type='int'),
     active_interface=dict(default=["all"], type='list', elements='str'),
     outgoing_interface=dict(default=["all"], type='list', elements='str'),
-    # TODO: Strict Outgoing Network interface Binding: check box option
+    strictout=dict(default=False, type='bool'),
     system_domain_local_zone_type=dict(default='transparent', choices=['deny', 'refuse', 'static', 'transparent', 'typetransparent', 'redirect', 'inform',
                                                                        'inform_deny', 'nodefault']),
     dnssec=dict(default=True, type='bool'),
@@ -455,6 +463,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, "forward_tls_upstream", value="")
             self._get_ansible_param_bool(obj, "prefetch", value="")
             self._get_ansible_param_bool(obj, "prefetchkey", value="")
+            self._get_ansible_param_bool(obj, "strictout", value="")
             self._get_ansible_param(obj, "msgcachesize")
             self._get_ansible_param(obj, "outgoing_num_tcp")
             self._get_ansible_param(obj, "incoming_num_tcp")
@@ -524,7 +533,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             return ["enable"]
         else:
             return ["hideidentity", "hideversion", "dnssecstripped", "forwarding", "regdhcp", "regdhcpstatic", "regovpnclients", "enablessl", "dnssec",
-                    "forward_tls_upstream", "prefetch", "prefetchkey"]
+                    "forward_tls_upstream", "prefetch", "prefetchkey", "strictout"]
 
     ##############################
     # run
@@ -564,6 +573,7 @@ clear_subsystem_dirty("unbound");
         values += self.format_updated_cli_field(self.obj, before, 'tlsport', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, before, 'sslcertref', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, before, 'forwarding', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, 'strictout', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, before, 'system_domain_local_zone_type', add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, before, 'regdhcp', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, before, 'regdhcpstatic', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)

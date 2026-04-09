@@ -39,6 +39,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         # self.check_param_equal(obj, target_elt, 'active_interface')
         # self.check_param_equal(obj, target_elt, 'outgoing_interface')
         # self.check_param_equal(obj, target_elt, 'system_domain_local_zone_type')
+        self.check_param_bool(obj, target_elt, 'strictout', default=False)
         self.check_param_bool(obj, target_elt, 'dnssec', default=True)
         self.check_param_bool(obj, target_elt, 'forwarding')
         self.check_param_bool(obj, target_elt, 'forward_tls_upstream')

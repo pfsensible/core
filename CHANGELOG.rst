@@ -4,6 +4,14 @@ pfSensible.Core Release Notes
 
 .. contents:: Topics
 
+v0.7.2
+======
+
+Minor Changes
+-------------
+
+- pfsense_dns_resolver - Add ability to set Strict Outgoing Network Interface Binding (https://github.com/pfsensible/core/issues/254).
+
 v0.7.1
 ======
 
