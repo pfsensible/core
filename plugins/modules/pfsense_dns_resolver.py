@@ -70,6 +70,7 @@ options:
     required: false
     default: false
     type: bool
+    version_added: 0.7.2
   system_domain_local_zone_type:
     description: The local-zone type used for the pfSense system domain.
     required: false
