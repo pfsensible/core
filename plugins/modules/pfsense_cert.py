@@ -340,17 +340,21 @@ class PFSenseCertModule(PFSenseModuleBase):
     def _update(self):
         if self.params['state'] == 'present':
             if self.params['method'] == 'import':
+                prv_node = self.target_elt.find('prv')
+                raw_key = base64.b64decode(prv_node.text.encode()).decode() if (prv_node is not None and prv_node.text) else ""
                 # import certificate
                 return self.pfsense.phpshell("""
                     require_once('certs.inc');
-                    $cert =& lookup_cert('{refid}');
+                    $certent = lookup_cert('{refid}');
+                    $cert = $certent['item'];
                     cert_import($cert, '{cert}', '{key}');
+                    config_set_path("cert/{{$certent['idx']}}", $cert);
                     $savemsg = sprintf(gettext("Imported certificate %s"), $cert['descr']);
                     write_config($savemsg);
                     cert_restart_services(cert_get_all_services('{refid}'));
                     """.format(refid=self.target_elt.find('refid').text,
                                cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode(),
-                               key=base64.b64decode(self.target_elt.find('prv').text.encode()).decode()))
+                               key=raw_key))
             else:
                 # generate internal certificate
                 return self.pfsense.phpshell("""
