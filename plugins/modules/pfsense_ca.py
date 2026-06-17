@@ -422,17 +422,18 @@ class PFSenseCAModule(PFSenseModuleBase):
         (dummy, stdout, stderr) = ('', '', '')
         if self.params['state'] == 'present':
             if self.params['method'] == 'existing':
-                # ca_import will base64 encode the cert + key  and will fix 'caref' for CAs that reference each other
+                # ca_import will base64 encode the cert + key and will fix 'caref' for CAs that reference each other
                 # $ca needs to be an existing reference (particularly 'refid' must be set) before calling ca_import
-                # key and serial are optional arguments.  TODO - handle key and serial
+                # key and serial are optional arguments. TODO - handle key and serial
                 (dummy, stdout, stderr) = self.pfsense.phpshell("""
-                    $ca =& lookup_ca('{refid}')['item'];
+                    $caent =& lookup_ca('{refid}');
+                    $ca =& $caent['item'];
                     ca_import($ca, '{cert}');
+                    config_set_path("ca/{{$caent['idx']}}", $ca);
                     write_config('Update CA reference');
                     ca_setup_trust_store();
                     cert_restart_services(ca_get_all_services('{refid}'));""".format(refid=self.target_elt.find('refid').text,
                                                                                      cert=base64.b64decode(self.target_elt.find('crt').text.encode()).decode()))
-
                 if self.refresh_crls:
                     (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
                         require_once("openvpn.inc");
