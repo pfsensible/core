@@ -195,7 +195,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             else:
                 obj['lifetime'] = ''
 
-            if obj.get('pinghost'):
+            if params.get('pinghost'):
                 obj['pinghost'] = params['pinghost']
             else:
                 obj['pinghost'] = ''
