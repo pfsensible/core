@@ -11,7 +11,6 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
     # ubuntu-latest fails: https://github.com/actions/runner/issues/2364
@@ -67,3 +66,40 @@ jobs:
           cd core
           ansible-test sanity --requirements --python ${{ matrix.python-version }}
           ansible-test units --requirements --python ${{ matrix.python-version }}
+
+  native-config:
+    name: Native pfSense configuration tests
+    runs-on: ubuntu-latest
+    env:
+      # Pin the upstream parser so serializer changes are reviewed explicitly.
+      PFSENSE_XMLPARSE_REVISION: 480a1c0626c474eaa9ced5d668701a0d1d4408ac
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+
+      - name: Install native XML serializer
+        env:
+          PFSENSE_XMLPARSE_INC: ${{ runner.temp }}/xmlparse.inc
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes php-cli php-xml curl
+          curl --fail --show-error --silent --location --retry 3 \
+            "https://raw.githubusercontent.com/pfsense/pfsense/${PFSENSE_XMLPARSE_REVISION}/src/etc/inc/xmlparse.inc" \
+            --output "$PFSENSE_XMLPARSE_INC"
+          php -r '
+            require getenv("PFSENSE_XMLPARSE_INC");
+            exit(function_exists("xml_parser_create") &&
+                 function_exists("parse_xml_config") &&
+                 function_exists("dump_xml_config") ? 0 : 1);
+          '
+
+      # Run directly: ansible-test filters the PFSENSE_* environment variables.
+      - name: Run native configuration regression tests
+        env:
+          PFSENSE_XMLPARSE_INC: ${{ runner.temp }}/xmlparse.inc
+        run: python -m unittest discover -s tests/unit/plugins/module_utils -p test_config_write.py -v
