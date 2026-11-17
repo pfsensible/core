@@ -478,15 +478,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
 
             if params.get("preserve"):
                 for host_elt in self.root_elt.findall("hosts"):
-                    host_entry = {}
-                    for child in host_elt:
-                        if child.tag == "aliases" and child.text is not None:
-                            # Handle aliases as a string if it's not an XML element
-                            host_entry["aliases"] = child.text
-                        else:
-                            host_entry[child.tag] = child.text
-                    existing_hosts.append(host_entry)
-                existing_hosts.extend(params.get("hosts"))
+                    existing_hosts.append(self.pfsense.element_to_dict(host_elt))
 
             # Preserve existing domain overrides
             existing_overrides = []
@@ -554,12 +546,14 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                     obj["hosts"] = []
 
                 # Process new hosts
-                for new_host in params["hosts"]:
-                    # Format aliases for the new host
+                for host_params in params["hosts"]:
+                    new_host = host_params.copy()
+                    # Format aliases exactly once, keeping an empty list scalar
+                    # so the XML copier removes any stale alias children.
                     if new_host.get("aliases"):
                         new_host["aliases"] = {"item": new_host["aliases"]}
                     else:
-                        new_host["aliases"] = "\n\t\t\t"
+                        new_host["aliases"] = ""
 
                     existing_host_index = self._find_host_index(obj, new_host)
 
@@ -568,7 +562,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                     else:
                         obj["hosts"].append(new_host)
             # Append new domain overrides if provided
-            if params.get("domainoverrides"):
+            if params.get("preserve") and params.get("domainoverrides"):
                 if "domainoverrides" not in obj:
                     obj["domainoverrides"] = []
                 obj["domainoverrides"].extend(params["domainoverrides"])
@@ -578,15 +572,6 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 self.module.fail_json(msg="This system is configured to use the DNS Resolver as its DNS server, so Localhost or All must be selected in"
                                           " active_interface.")
 
-            # wrap <item> to all hosts.alias
-            for host in obj.get("hosts", []):
-                if host["aliases"]:
-                    tmp_aliases = host["aliases"]
-                    host["aliases"] = {
-                        "item": tmp_aliases
-                    }
-                else:
-                    host["aliases"] = ""
         return obj
 
     def _find_host_index(self, obj, new_host):

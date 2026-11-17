@@ -129,7 +129,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         # Run the module directly and inspect XML — bypass check_target_elt
         # which cannot handle complex nested hosts/aliases structures.
         with set_module_args(self.args_from_var(obj, state='present')):
-            result = self.execute_module(changed=True)
+            self.execute_module(changed=True)
             self.assertTrue(self.load_xml_result())
 
         # Verify aliases stayed with the correct host after reorder.
@@ -150,8 +150,35 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
                 items = aliases_elt.findall('item') if aliases_elt is not None else []
                 self.assertEqual(len(items), 2,
                                  'Host "server" should have 2 alias items but got %d' % len(items))
+                self.assertEqual(
+                    [{child.tag: child.text for child in item} for item in items],
+                    obj['hosts'][1]['aliases'])
             else:
                 self.fail('Unexpected host element with hostname %r in result XML' % hostname)
+
+    def test_dns_resolver_preserve_host_aliases(self):
+        """ Preserve nested aliases when adding a host. """
+        self.config_file = 'pfsense_dns_resolver_config_hosts_aliases.xml'
+        obj = dict(preserve=True, hosts=[dict(host="new", domain="example.com", ip="10.0.0.3")])
+        with set_module_args(self.args_from_var(obj)):
+            self.execute_module(changed=True)
+            self.assertTrue(self.load_xml_result())
+        hosts = self.xml_result.find('unbound').findall('hosts')
+        self.assertEqual([host.findtext('host') for host in hosts], ['server', 'other', 'new'])
+        self.assertEqual([item.findtext('host') for item in hosts[0].findall('aliases/item')], ['alias1', 'alias2'])
+        self.assertEqual(hosts[1].findall('aliases/item'), [])
+        self.assertEqual(hosts[2].findall('aliases/item'), [])
+
+    def test_dns_resolver_clear_host_aliases(self):
+        """ Explicitly empty aliases remove existing items. """
+        self.config_file = 'pfsense_dns_resolver_config_hosts_aliases.xml'
+        obj = dict(preserve=True, hosts=[dict(host="server", domain="example.com", ip="10.0.0.1", aliases=[])])
+        with set_module_args(self.args_from_var(obj)):
+            self.execute_module(changed=True)
+            self.assertTrue(self.load_xml_result())
+        hosts = self.xml_result.find('unbound').findall('hosts')
+        self.assertEqual([host.findtext('host') for host in hosts], ['server', 'other'])
+        self.assertEqual(hosts[0].findall('aliases/item'), [])
 
     def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
         """ test initialization of the DNS Resolver """
