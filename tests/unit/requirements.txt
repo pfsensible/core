@@ -1,0 +1,6 @@
+dnspython
+parameterized
+# Work around incompatibility with pytest-forked
+# https://github.com/pytest-dev/pytest-forked/pull/112
+pytest<9.2
+pyyaml
