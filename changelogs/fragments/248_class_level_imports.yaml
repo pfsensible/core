@@ -1,2 +1,0 @@
-minor_changes:
-  - Remove class level imports in PFSenseModule to support the use of Mitogen (https://github.com/pfsensible/core/pull/248).

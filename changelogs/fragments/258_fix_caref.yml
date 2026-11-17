@@ -1,2 +1,0 @@
-bugfixes:
-  - pfsense_ca / pfsense_cert - Fix setting of caref (https://github.com/pfsensible/core/pull/258)

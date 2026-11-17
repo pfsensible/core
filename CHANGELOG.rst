@@ -4,6 +4,49 @@ pfSensible.Core Release Notes
 
 .. contents:: Topics
 
+v0.7.2
+======
+
+Minor Changes
+-------------
+
+- Add note to README about using pfsense_write_config to trigger XMLRPC configuration syncs (https://github.com/pfsensible/core/issues/239).
+- Remove class level imports in PFSenseModule to support the use of Mitogen (https://github.com/pfsensible/core/pull/248).
+- improve pfsense.is_ce_version to better support CE and Plus comparison
+- pfsense_dns_resolver -  Add ability to set Strict Outgoing Network Interface Binding (https://github.com/pfsensible/core/pull/254).
+- pfsense_dns_resolver - Add preserve option to allow keeping current host definitions (https://github.com/pfsensible/core/issues/153)
+- pfsense_gateway - Add losshigh/losslow parameters (https://github.com/pfsensible/core/pull/242).
+- pfsense_interface - support ``--diff`` (https://github.com/pfsensible/core/pull/228).
+- pfsense_openvpn_client - Return the vpnid (https://github.com/pfsensible/core/pull/243).
+- pfsense_openvpn_server - Drop `ncp_enable` parameter no longer used (https://github.com/pfsensible/core/pull/238).
+- pfsense_openvpn_server - No longer remove `strictusercn` option if not specified to match web interface (https://github.com/pfsensible/core/pull/238).
+- pfsense_openvpn_server - add ``dco`` parameter (https://github.com/pfsensible/core/pull/224).
+- pfsense_openvpn_server - add call to ``alias_make_table()`` to allow alias expansion (https://github.com/pfsensible/core/pull/223).
+- pfsense_setup - add ``webguicert`` parameter (https://github.com/pfsensible/core/pull/217).
+- pfsense_setup - add crypto_hardware and thermal_hardware parameters (https://github.com/pfsensible/core/pull/251).
+- pfsense_setup - added sshguard_whitelist option (https://github.com/pfsensible/core/issues/129).
+
+Bugfixes
+--------
+
+- Fix initialization of arg_route (https://github.com/pfsensible/core/pull/245).
+- pfsense_ca / pfsense_cert - Fix setting of caref (https://github.com/pfsensible/core/pull/258)
+- pfsense_dns_resolver - Allow IPv6 addresses for hosts and domainoverrides (https://github.com/pfsensible/core/pull/245).
+- pfsense_dns_resolver - fix host aliases being misassigned when host list is reordered (https://github.com/pfsensible/core/pull/237).
+- pfsense_ipsec_p2 - Fix pinghost not being set (https://github.com/pfsensible/core/issues/259).
+- pfsense_openvpn_client - Fix index calculation so that it actually updates the running client configuration (https://github.com/pfsensible/core/pull/243).
+- pfsense_openvpn_server - Normalize `tls` text to CRLF line endings to match web interface (https://github.com/pfsensible/core/issues/163).
+- pfsense_rewrite_config - Drop obsolete and unneeded call to parse_config() (https://github.com/pfsensible/core/issues/239).
+- pfsense_rule - Allow IPv6 addresses in source and destination (https://github.com/pfsensible/core/issues/219).
+- pfsense_rule - Allow protocol ``any`` with destination/source ports, matching pfSense UI behaviour.
+- pfsense_rule - New pass/match rules without explicit ``after`` or ``before`` are now inserted before the first block/reject rule on the same interface, preserving correct allow-before-deny ordering.
+- pfsense_rule - Prevent duplicate tracker IDs from being generated or added (https://github.com/pfsensible/core/issues/222).
+
+New Modules
+-----------
+
+- pfsensible.core.pfsense_gateway_group - Manage pfSense gateway groups
+
 v0.7.1
 ======
 

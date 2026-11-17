@@ -1,10 +1,12 @@
-objects: {}
+objects:
+  role: {}
 plugins:
   become: {}
   cache: {}
   callback: {}
   cliconf: {}
   connection: {}
+  filter: {}
   httpapi: {}
   inventory: {}
   lookup:
@@ -69,6 +71,11 @@ plugins:
       name: pfsense_gateway
       namespace: ''
       version_added: 0.1.0
+    pfsense_gateway_group:
+      description: Manage pfSense gateway groups
+      name: pfsense_gateway_group
+      namespace: ''
+      version_added: 0.7.2
     pfsense_group:
       description: Manage pfSense user groups
       name: pfsense_group
@@ -192,5 +199,6 @@ plugins:
   netconf: {}
   shell: {}
   strategy: {}
+  test: {}
   vars: {}
-version: 0.7.1
+version: 0.7.2

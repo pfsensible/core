@@ -1,2 +1,0 @@
-minor_changes:
-  - pfsense_setup - added sshguard_whitelist option (https://github.com/pfsensible/core/issues/129).

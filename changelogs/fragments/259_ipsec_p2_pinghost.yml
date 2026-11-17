@@ -1,2 +1,0 @@
-bugfixes:
-  - pfsense_ipsec_p2 - Fix pinghost not being set (https://github.com/pfsensible/core/issues/259).

@@ -1,2 +1,0 @@
-bugfixes:
-  - pfsense_dns_resolver - fix host aliases being misassigned when host list is reordered (https://github.com/pfsensible/core/pull/237).
