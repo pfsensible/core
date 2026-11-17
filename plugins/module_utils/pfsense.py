@@ -17,15 +17,29 @@ except ImportError:
         ip_network, IPv4Network, IPv6Network
     )
 import json
-import shutil
+import errno
+import fcntl
+import hashlib
 import os
 import pwd
 import random
 import re
 import socket
+import stat
 import time
 import xml.etree.ElementTree as ET
+from contextlib import contextmanager
 from tempfile import mkstemp
+from xml.dom import minidom, Node
+from xml.parsers.expat import ExpatError
+
+
+class PFSenseConfigError(Exception):
+    """A configuration transaction cannot safely be committed."""
+
+    def __init__(self, message, mismatch=None):
+        super(PFSenseConfigError, self).__init__(message)
+        self.mismatch = mismatch
 
 
 # Return an element in node, but return an empty element instead of None if not found
@@ -40,10 +54,28 @@ def xml_find(node, elt):
 class PFSenseModule(object):
     """ class managing pfsense base configuration """
 
-    def __init__(self, module, config='/cf/conf/config.xml'):
+    def __init__(self, module, config='/cf/conf/config.xml',
+                 config_lock='/tmp/config.lock', config_cache='/tmp/config.cache'):
         self.module = module
         self.config = config
-        self.tree = ET.parse(config)
+        self.config_lock = config_lock
+        self.config_cache = config_cache
+        try:
+            # Read bytes once, so the tree and conflict-detection hash describe
+            # exactly the same snapshot. Never hold this lock across PHP hooks.
+            with self._locked_config():
+                with open(config, 'rb') as source:
+                    original = source.read()
+            self.tree = self._parse_config(original)
+            self._validate_config(self.tree)
+            self._config_digest = hashlib.sha256(original).digest()
+            self._required_sections = {
+                tag: len(self.tree.getroot().find(tag)) > 0
+                for tag in ('system', 'interfaces')
+                if self.tree.getroot().find(tag) is not None
+            }
+        except (OSError, ValueError, ET.ParseError, ExpatError, PFSenseConfigError) as error:
+            self.module.fail_json(msg='Unable to read pfSense configuration safely: {0}'.format(error))
         self.root = self.tree.getroot()
         self.config_version = float(self.get_element('version').text)
         self.aliases = self.get_element('aliases', create_node=True)
@@ -58,17 +90,218 @@ class PFSenseModule(object):
         self.openvpn = self.get_element('openvpn')
         self.virtualip = self.get_element('virtualip')
         self.debug = open('/tmp/pfsense.debug', 'w')
-        if sys.version_info >= (3, 4):
-            self._scrub()
-
         self.pfsense_version = None
 
-    # Work around pfSense CDATA xml formatting issue
-    # https://github.com/opoplawski/ansible-pfsense/issues/61
-    def _scrub(self):
-        for elt in self.root.iter():
-            if elt.text is not None:
-                elt.text = html.unescape(elt.text)
+    @staticmethod
+    def _decode_xml_entities(value):
+        """Decode one XML entity layer, without HTML5 entity substitutions."""
+        entities = {'amp': '&', 'lt': '<', 'gt': '>', 'quot': '"', 'apos': "'"}
+
+        def decode(match):
+            entity = match.group(1)
+            if entity in entities:
+                return entities[entity]
+            codepoint = int(entity[2:], 16) if entity.startswith('#x') else int(entity[1:])
+            if (codepoint in (9, 10, 13) or 0x20 <= codepoint <= 0xD7FF
+                    or 0xE000 <= codepoint <= 0xFFFD or 0x10000 <= codepoint <= 0x10FFFF):
+                return chr(codepoint)
+            return match.group(0)
+
+        return re.sub(r'&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);', decode, value)
+
+    @classmethod
+    def _parse_config(cls, data):
+        # Ordinary XML text is already entity-decoded by the XML parser.
+        # Only pfSense's escaped CDATA needs another XML-only decoding pass.
+        # Decoding concatenated ordinary text again corrupts literal '&amp;'
+        # read from '&amp;amp;'. Native PHP emits the '&' and 'amp;' separately.
+        document = minidom.parseString(data)
+        try:
+            for element in document.getElementsByTagName('*'):
+                for child in list(element.childNodes):
+                    if child.nodeType == Node.CDATA_SECTION_NODE:
+                        element.replaceChild(document.createTextNode(
+                            cls._decode_xml_entities(child.data)), child)
+            xml = document.toxml(encoding='utf-8').replace(b'\r', b'&#13;')
+            return ET.ElementTree(ET.fromstring(xml))
+        finally:
+            document.unlink()
+
+    @classmethod
+    def _config_values(cls, element):
+        """Match native named fields and ordered lists, ignoring formatting."""
+        text = element.text or ''
+        text = text.strip('\t\n\r') if text.strip() else ''
+        groups = cls._group_config_children(element)
+        # Native PHP stores named children in an associative array and repeated
+        # tags in ordered lists. A newly appended server can follow a client in
+        # Python XML, but PHP emits it beside the other servers. Preserve order
+        # *within* each tag's list, particularly filter/rule and NAT rule lists.
+        return (element.tag, element.attrib, text,
+                tuple((tag, tuple(cls._config_values(child) for child in groups[tag]))
+                      for tag in sorted(groups)))
+
+    @staticmethod
+    def _group_config_children(element):
+        groups = {}
+        for child in element:
+            groups.setdefault(child.tag, []).append(child)
+        return groups
+
+    @classmethod
+    def _config_difference(cls, expected, actual, path=None):
+        """Return the first differing field path and reason, never its value."""
+        path = path or '/{0}[1]'.format(expected.tag)
+        left, right = cls._config_values(expected), cls._config_values(actual)
+        if left == right:
+            return None
+        for index, reason in ((0, 'element name differs'), (1, 'attributes differ'), (2, 'text differs')):
+            if left[index] != right[index]:
+                return {'path': path, 'reason': reason}
+        expected_groups = cls._group_config_children(expected)
+        actual_groups = cls._group_config_children(actual)
+        for tag in sorted(set(expected_groups) | set(actual_groups)):
+            expected_children = expected_groups.get(tag, [])
+            actual_children = actual_groups.get(tag, [])
+            if len(expected_children) != len(actual_children):
+                return {'path': '{0}/{1}[{2}]'.format(
+                    path, tag, min(len(expected_children), len(actual_children)) + 1),
+                    'reason': 'element count differs'}
+            for index, (expected_child, actual_child) in enumerate(zip(expected_children, actual_children), 1):
+                difference = cls._config_difference(
+                    expected_child, actual_child, '{0}/{1}[{2}]'.format(path, tag, index))
+                if difference is not None:
+                    return difference
+        return None
+
+    def _serialize_config(self):
+        # This is a private transport document, not the final on-disk format.
+        # Encode values in escaped CDATA so the native parser receives their
+        # literal contents. dump_xml_config() chooses the final CDATA fields,
+        # XML entity spelling, indentation, declaration, and end tags.
+        # ElementTree leaves carriage returns literal in text. Protect them
+        # from XML newline normalization in this intermediate DOM parse.
+        document = minidom.parseString(ET.tostring(self.root, encoding='utf-8').replace(b'\r', b'&#13;'))
+        try:
+            for element in document.getElementsByTagName('*'):
+                # minidom otherwise collapses empty elements to <enable/>.
+                # An empty text child preserves pfSense's explicit end tags.
+                if not element.childNodes:
+                    element.appendChild(document.createTextNode(''))
+                for child in list(element.childNodes):
+                    if child.nodeType == Node.TEXT_NODE:
+                        escaped = html.escape(child.data, quote=True).replace('\r', '&#13;')
+                        if child.data:
+                            element.replaceChild(document.createCDATASection(escaped), child)
+            return document.toxml(encoding='utf-8')
+        finally:
+            document.unlink()
+
+    def _validate_config(self, tree):
+        root = tree.getroot()
+        versions = root.findall('version')
+        if root.tag != 'pfsense' or len(versions) != 1:
+            raise PFSenseConfigError('Expected a pfsense root and exactly one configuration version')
+        if not re.match(r'^\d+(?:\.\d+)?$', versions[0].text or ''):
+            raise PFSenseConfigError('Invalid configuration version')
+        for tag, had_children in getattr(self, '_required_sections', {}).items():
+            sections = root.findall(tag)
+            if len(sections) != 1 or (had_children and len(sections[0]) == 0):
+                raise PFSenseConfigError('Refusing to remove required configuration section: {0}'.format(tag))
+
+    @contextmanager
+    def _locked_config(self):
+        # Match lock('config', LOCK_EX) in pfSense's util.inc. The lock file
+        # must remain in place: unlinking it would allow locks on two inodes.
+        flags = os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0)
+        descriptor = os.open(self.config_lock, flags, 0o666)
+        try:
+            deadline = time.monotonic() + 30
+            while True:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except OSError as error:
+                    if error.errno not in (errno.EACCES, errno.EAGAIN):
+                        raise
+                    if time.monotonic() >= deadline:
+                        raise PFSenseConfigError('Timed out waiting for the native config lock')
+                    time.sleep(0.1)
+            yield
+        finally:
+            os.close(descriptor)
+
+    @staticmethod
+    def _atomic_replace(path, data, metadata, mode, validate=None):
+        descriptor, temporary = mkstemp(prefix='.' + os.path.basename(path) + '.',
+                                        dir=os.path.dirname(os.path.abspath(path)))
+        try:
+            with os.fdopen(descriptor, 'wb') as output:
+                current = os.fstat(output.fileno())
+                if (current.st_uid, current.st_gid) != (metadata.st_uid, metadata.st_gid):
+                    os.fchown(output.fileno(), metadata.st_uid, metadata.st_gid)
+                os.fchmod(output.fileno(), mode)
+                output.write(data)
+                output.flush()
+                os.fsync(output.fileno())
+            if validate is not None:
+                validate(temporary)
+                # The native formatter rewrites only this temporary file.
+                # Sync and hash those final bytes, not the transport document.
+                with open(temporary, 'r+b') as candidate:
+                    data = candidate.read()
+                    os.fsync(candidate.fileno())
+            # No cross-filesystem copy fallback: this must be an atomic rename.
+            os.replace(temporary, path)
+            return data
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+
+    def _sync_config_directory(self):
+        descriptor = os.open(os.path.dirname(os.path.abspath(self.config)), os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+    def _validate_native_config(self, path):
+        # Only load the standalone XML parser, not config.inc or pfSsh.php:
+        # those can read/recover the live config or run hooks while locked.
+        # Use the deployed firewall's serializer as the formatting authority,
+        # including packages. Never expose configuration values or PHP errors.
+        command = r'''
+ini_set('display_errors', '0');
+try {
+    require_once('/etc/inc/xmlparse.inc');
+    $parsed = parse_xml_config($argv[1], array('pfsense'));
+    if (!is_array($parsed) || empty($parsed)) {
+        exit(1);
+    }
+    $xml = dump_xml_config($parsed, 'pfsense');
+    if (file_put_contents($argv[1], $xml) !== strlen($xml)) {
+        exit(1);
+    }
+    // Reject a native formatting round trip that changes values or structure.
+    $roundtrip = parse_xml_config($argv[1], array('pfsense'));
+    exit($parsed === $roundtrip ? 0 : 1);
+} catch (\Throwable $error) {
+    exit(1);
+}
+'''
+        result, unused_stdout, unused_stderr = self.module.run_command(
+            ['/usr/local/bin/php', '-r', command, path])
+        if result != 0:
+            raise PFSenseConfigError('Native pfSense XML validation/formatting failed; live configuration was not replaced')
+        with open(path, 'rb') as candidate:
+            formatted = self._parse_config(candidate.read())
+        self._validate_config(formatted)
+        mismatch = self._config_difference(self.root, formatted.getroot())
+        if mismatch is not None:
+            raise PFSenseConfigError(
+                'Native XML formatting changed configuration values at {0} ({1}); '
+                'live configuration was not replaced'.format(mismatch['path'], mismatch['reason']),
+                mismatch=mismatch)
 
     def get_interface_by_display_name(self, name):
         """ return interface_id by name """
@@ -1040,32 +1273,65 @@ class PFSenseModule(object):
         return result
 
     def write_config(self, descr='Updated by ansible pfsense module'):
-        """ Generate config file """
-        revision = self.get_element('revision')
-        xml_find(revision, 'time').text = '%d' % time.time()
+        """Validate and atomically commit a configuration snapshot."""
+        revision = self.get_element('revision', create_node=True)
+        self.get_element('time', revision, create_node=True).text = '%d' % time.time()
         revdescr = revision.find('description')
         if revdescr is None:
             revdescr = ET.Element('description')
             revision.append(revdescr)
         revdescr.text = descr
         username = self.get_username()
-        xml_find(revision, 'username').text = username
-        (tmp_handle, tmp_name) = mkstemp()
-        os.close(tmp_handle)
-        if sys.version_info >= (3, 4):
-            self.tree.write(tmp_name, xml_declaration=True, method='xml', short_empty_elements=False)
-        else:
-            self.tree.write(tmp_name, xml_declaration=True, method='xml')
-        shutil.move(tmp_name, self.config)
-        os.chmod(self.config, 0o644)
+        self.get_element('username', revision, create_node=True).text = username
+        committed = False
         try:
-            os.remove('/tmp/config.cache')
-        except OSError as exception:
-            if exception.errno == 2:
-                # suppress "No such file or directory error
-                pass
-            else:
-                raise
+            self._validate_config(self.tree)
+            serialized = self._serialize_config()
+            validated = self._parse_config(serialized)
+            self._validate_config(validated)
+            mismatch = self._config_difference(self.root, validated.getroot())
+            if mismatch is not None:
+                raise PFSenseConfigError(
+                    'Configuration text changed during XML serialization at {0} ({1})'.format(
+                        mismatch['path'], mismatch['reason']), mismatch=mismatch)
+
+            with self._locked_config():
+                with open(self.config, 'rb') as source:
+                    current = source.read()
+                    metadata = os.fstat(source.fileno())
+                if hashlib.sha256(current).digest() != self._config_digest:
+                    raise PFSenseConfigError(
+                        'Configuration changed since this module read it; '
+                        'no config or backup was written. Rerun the task from a fresh read')
+
+                # Keep one protected, byte-for-byte pre-change configuration.
+                # Failure to persist the backup aborts before replacing config.
+                self._atomic_replace(self.config + '.ansible.bak', current, metadata, 0o600)
+                self._sync_config_directory()
+                serialized = self._atomic_replace(self.config, serialized, metadata, stat.S_IMODE(metadata.st_mode),
+                                                  validate=self._validate_native_config)
+                committed = True
+                self._config_digest = hashlib.sha256(serialized).digest()
+                try:
+                    try:
+                        os.unlink(self.config_cache)
+                    except OSError as error:
+                        if error.errno != errno.ENOENT:
+                            raise
+                finally:
+                    # Keep cache invalidation and durability inside the lock,
+                    # even when reporting a failure after the atomic rename.
+                    self._sync_config_directory()
+        except (OSError, ValueError, UnicodeError, ET.ParseError, ExpatError, PFSenseConfigError) as error:
+            details = {}
+            if isinstance(error, PFSenseConfigError) and error.mismatch is not None:
+                details['config_mismatch'] = error.mismatch
+            self.module.fail_json(
+                msg='{0}: {1}'.format(
+                    'Configuration was replaced, but finalization failed' if committed
+                    else 'Refusing to write pfSense configuration', error),
+                changed=committed,
+                backup_file=self.config + '.ansible.bak', **details)
 
     @staticmethod
     def get_version():

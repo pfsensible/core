@@ -70,7 +70,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
                 continue
 
             elt = encalg_elt.find('keylen')
-            if (elt is None or elt.text == '') and obj.get('key_length') is None:
+            if (elt is None or elt.text in (None, '')) and obj.get('key_length') is None:
                 return item_elt
             if elt is not None and elt.text == str(obj.get('key_length')):
                 return item_elt

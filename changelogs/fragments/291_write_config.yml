@@ -1,0 +1,11 @@
+major_changes:
+  - |
+    Config file protections
+
+    * Atomic replacement using temporary files in the config directory.
+    * Native config locking and stale-snapshot rejection.
+    * XML, structural, and native PHP validation before replacement.
+    * Protected rotating ``config.xml.ansible.bak``.
+    * Ownership/permission preservation and synced writes.
+    * Correct XML entity handling.
+    * Lock release before PHP apply hooks.
