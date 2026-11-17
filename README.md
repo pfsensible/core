@@ -130,6 +130,12 @@ Set `PFSENSE_PHP_BINARY` to use a specific PHP executable or wrapper. Without a
 configured PHP runtime, formatting-specific tests are skipped; the other tests
 exercise filesystem safety with a stubbed native command.
 
+GitHub Actions runs this suite with PHP and its XML extension in the
+`Native pfSense configuration tests` job. It downloads `xmlparse.inc` from a
+pinned upstream pfSense revision, checks that the required PHP functions are
+available, and enables all native serializer tests. Update
+`PFSENSE_XMLPARSE_REVISION` in `.github/workflows/main.yml` to test a newer parser.
+
 Test a full apply on a lab firewall running the deployed pfSense/package versions
 before production rollout. The suite uses synthetic configuration and does not
 connect to a firewall.
