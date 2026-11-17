@@ -49,6 +49,91 @@ Modules must run as root in order to make changes to the system.  By default pfS
       state: present
 ```
 and then configure sudo so that your user has permission to use sudo.
+
+## Configuration write protection
+
+The shared Python writer validates XML, the configuration root/version, and the
+continued presence of existing system and interface sections before committing.
+It also validates and formats the candidate with the firewall's standalone PHP
+XML parser and `dump_xml_config()` serializer, which check pfSense-specific list
+tags and duplicate entries. It does not load `config.inc`, recover the live
+configuration, or run package hooks during validation and formatting.
+
+Each write acquires pfSense's native `/tmp/config.lock`, checks that the file
+still matches the bytes read by the module, and rejects a stale snapshot. A
+conflict fails the task without replacing either the configuration or its backup;
+rerun the task/play from a fresh read after resolving overlapping writers.
+There is a 30-second lock timeout. Do not delete the lock file to release a lock.
+
+Before replacing `/cf/conf/config.xml`, the writer atomically saves the exact
+pre-change bytes in `/cf/conf/config.xml.ansible.bak` with mode `0600`. This is one
+rotating pre-change copy, not a configuration history or an independently verified
+operational backup. Keep a separate known-good backup before a full playbook run.
+The config and backup temporary files are created in the config directory,
+flushed, synced, and renamed without a cross-filesystem copy fallback. The live
+configuration retains its existing owner, group, and permissions. The directory
+is synced, and `/tmp/config.cache` is invalidated while the native lock is held.
+Failure to persist the backup aborts the write. A failure after config replacement
+is reported with `changed: true` and the backup path, so inspect the firewall
+before retrying; automatic rollback could overwrite another writer's changes.
+
+The lock is released before PHP apply hooks run, including hooks that write
+configuration themselves. This prevents nested-lock deadlocks. Native or external
+writers that read an old snapshot and later write it without conflict detection
+can still overwrite newer changes; the Python writer cannot make those scripts
+transactional. Avoid overlapping playbooks, GUI saves, HA configuration syncs,
+and package update jobs during a full apply. This protection does not invoke
+native `write_config()` backup history, AutoConfigBackup, or HA synchronization.
+
+The deployed firewall's native serializer determines the final XML declaration,
+indentation, newline, entity spelling, CDATA fields, and explicit empty end tags.
+There are no copied CDATA field lists, inferred package rules, or preserved
+non-native CDATA markers. For example, native `descr`/`description` and
+`ldap_basedn` use escaped CDATA, while `shellcmd`, package `cmd`, URLs, and
+`custom_options` use ordinary escaped text on versions with those native rules.
+The Python reader decodes XML-escaped CDATA once and does not decode ordinary
+XML text a second time, preserving literal entity strings and multiline values.
+
+The temporary transport document is parsed and reformatted by PHP before it can
+replace the live file. The formatted document must parse back to the same native
+configuration array and match the intended Python values and structure. Comparison
+ignores formatting whitespace and order between different named fields, matching
+PHP associative arrays. Entries sharing a tag retain their order: firewall/NAT
+rules and lists of VPN servers or clients cannot be silently reordered. For
+example, appending a new OpenVPN server after existing clients is accepted when
+PHP groups it with the other server entries without changing either list's order.
+A mismatch aborts the write and reports `config_mismatch` with the first field's
+indexed XML path and a reason, without including configuration values. The final
+native bytes are
+synced before replacement and used for subsequent conflict detection. Formatting
+does not run interface assignment, gateway creation, CARP changes, or apply hooks.
+
+Run the standalone regression suite from the collection directory:
+
+```sh
+python3 -m unittest discover -s tests/unit/plugins/module_utils -v
+```
+
+The tests cover stale snapshots, native lock contention, failed backup/sync/rename,
+invalid XML, metadata preservation, cache failures, and package/text round trips.
+Native formatting and integration tests run when PHP with its XML extension is
+installed and `PFSENSE_XMLPARSE_INC` points to a matching pfSense
+`src/etc/inc/xmlparse.inc` (or `/etc/inc/xmlparse.inc` on a test firewall). With
+these variables set, filesystem safety tests also run the real native serializer:
+
+```sh
+PFSENSE_XMLPARSE_INC=/path/to/pfsense/src/etc/inc/xmlparse.inc \
+  python3 -m unittest discover -s tests/unit/plugins/module_utils -v
+```
+
+Set `PFSENSE_PHP_BINARY` to use a specific PHP executable or wrapper. Without a
+configured PHP runtime, formatting-specific tests are skipped; the other tests
+exercise filesystem safety with a stubbed native command.
+
+Test a full apply on a lab firewall running the deployed pfSense/package versions
+before production rollout. The suite uses synthetic configuration and does not
+connect to a firewall.
+
 ## Modules
 The following modules are currently available:
 

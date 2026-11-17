@@ -7,16 +7,15 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 import os
-import errno
 import json
 import re
 
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import AnsibleExitJson, AnsibleFailJson, ModuleTestCase
 from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
-from tempfile import mkstemp
+from tempfile import TemporaryDirectory
 import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import fromstring, ElementTree
+from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 
 
 fixture_path = os.path.join(os.path.dirname(__file__), 'fixtures')
@@ -56,11 +55,35 @@ class TestPFSenseModule(ModuleTestCase):
         """ mocking up """
         super(TestPFSenseModule, self).setUp()
 
-        self.mock_parse = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.ET.parse')
-        self.parse = self.mock_parse.start()
+        directory = TemporaryDirectory(prefix='pfsense-module-tests-')
+        self.addCleanup(directory.cleanup)
+        self.tmp_file = os.path.join(directory.name, 'config.xml')
+        self.backup_file = self.tmp_file + '.ansible.bak'
+        # Some module-utils tests construct the helper without loading fixtures.
+        with open(self.tmp_file, 'w') as config:
+            config.write('<pfsense><version>24.0</version></pfsense>')
 
-        self.mock_shutil_move = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.shutil.move')
-        self.shutil_move = self.mock_shutil_move.start()
+        original_init = PFSenseModule.__init__
+
+        def init_config(helper, module, *args, **kwargs):
+            original_init(helper, module, config=self.tmp_file,
+                          config_lock=os.path.join(directory.name, 'config.lock'),
+                          config_cache=os.path.join(directory.name, 'config.cache'))
+
+        mock_init = patch.object(PFSenseModule, '__init__', autospec=True, side_effect=init_config)
+        mock_init.start()
+        self.addCleanup(mock_init.stop)
+
+        # PHP is unavailable in module tests. Decode the transport XML as the
+        # native formatter would, while retaining the real atomic write path.
+        def format_config(path):
+            with open(path, 'rb') as config:
+                tree = PFSenseModule._parse_config(config.read())
+            tree.write(path, encoding='utf-8', short_empty_elements=False)
+
+        mock_native = patch.object(PFSenseModule, '_validate_native_config', side_effect=format_config)
+        mock_native.start()
+        self.addCleanup(mock_native.stop)
 
         self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
         self.php = self.mock_php.start()
@@ -69,14 +92,6 @@ class TestPFSenseModule(ModuleTestCase):
         self.mock_phpshell = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.phpshell')
         self.phpshell = self.mock_phpshell.start()
         self.phpshell.return_value = (0, '', '')
-
-        self.mock_mkstemp = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.mkstemp')
-        self.mkstemp = self.mock_mkstemp.start()
-        self.mkstemp.return_value = mkstemp()
-        self.tmp_file = self.mkstemp.return_value[1]
-
-        self.mock_chmod = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.os.chmod')
-        self.chmod = self.mock_chmod.start()
 
         self.mock_get_version = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.get_version')
         self.get_version = self.mock_get_version.start()
@@ -88,20 +103,9 @@ class TestPFSenseModule(ModuleTestCase):
         """ mocking down """
         super(TestPFSenseModule, self).tearDown()
 
-        self.mock_parse.stop()
-        self.mock_shutil_move.stop()
         self.mock_php.stop()
         self.mock_phpshell.stop()
-        self.mock_mkstemp.stop()
-        self.mock_chmod.stop()
         self.mock_get_version.stop()
-
-        try:
-            if self.tmp_file is not None:
-                os.remove(self.tmp_file)
-        except OSError as exception:
-            if exception.errno != errno.ENOENT:
-                raise
 
     def get_args_fields(self):
         """ return params fields """
@@ -244,11 +248,12 @@ class TestPFSenseModule(ModuleTestCase):
 
     def load_fixtures(self):
         """ loading data """
-        self.parse.return_value = ElementTree(fromstring(load_fixture(self.get_config_file())))
+        with open(self.tmp_file, 'w') as config:
+            config.write(load_fixture(self.get_config_file()))
 
     def load_xml_result(self):
         """ load the resulting xml if not already loaded """
-        if self.xml_result is None and os.path.getsize(self.tmp_file) > 0:
+        if self.xml_result is None and os.path.exists(self.backup_file):
             self.xml_result = ET.parse(self.tmp_file)
         return self.xml_result is not None
 
@@ -332,6 +337,10 @@ class TestPFSenseModule(ModuleTestCase):
             value = str(elt_value)
         else:
             value = elt_value
+
+        # XML parsing represents an existing empty element with text=None.
+        if value == '' and elt.text is None:
+            return elt
 
         if elt.text != value:
             if elt.text is None:
