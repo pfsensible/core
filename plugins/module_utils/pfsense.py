@@ -958,15 +958,16 @@ try {
                     # Note: ET.Element.clear() is not used here because it also
                     # resets .tail, which would corrupt pretty-print whitespace.
                     if len(this_elt) > 0:
+                        self.debug.write('changed=%s this_elt=%s != value=%s\n' % (changed, repr(this_elt), repr(value)))
                         for child in list(this_elt):
                             this_elt.remove(child)
                         changed = True
                     if this_elt.text is None and value == '':
                         pass
                     elif this_elt.text != value:
+                        self.debug.write('changed=%s this_elt.text=%s != value=%s\n' % (changed, repr(this_elt.text), repr(value)))
                         this_elt.text = value
                         changed = True
-                    self.debug.write('changed=%s this_elt.text=%s value=%s\n' % (changed, this_elt.text, value))
                 prev_elt = this_elt
 
         # Sub-elements must be completely described, so remove any missing elements
