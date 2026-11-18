@@ -225,7 +225,7 @@ class PFSenseModuleBase(object):
                     elif self.bool_style == 'absent/present':
                         self._get_ansible_param_bool(obj, param, value='', force=force)
                     elif self.bool_style == 'on':
-                        self._get_ansible_param_bool(obj, param, value='on', force=force)
+                        self._get_ansible_param_bool(obj, param, value='on', value_false='off', force=force)
                     else:
                         self._get_ansible_param_bool(obj, param, force=force)
                 else:
