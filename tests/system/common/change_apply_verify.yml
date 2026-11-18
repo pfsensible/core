@@ -1,0 +1,26 @@
+---
+- name: "{{ system_case.name }} | Snapshot configuration before a no-write check"
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+  when: system_case.unchanged_config | default(false) or system_case.check_mode | default(false)
+
+- name: "{{ system_case.name }} | Save the configuration digest"
+  ansible.builtin.set_fact:
+    system_before_digest: "{{ appliance.config_sha256 }}"
+  when: system_case.unchanged_config | default(false) or system_case.check_mode | default(false)
+
+- name: "{{ system_case.name }} | Apply"
+  ansible.builtin.include_tasks: "{{ system_apply_tasks }}"
+
+- name: "{{ system_case.name }} | Check the reported change"
+  ansible.builtin.assert:
+    that:
+      - system_change_result.changed == system_case.changed
+
+- name: "{{ system_case.name }} | Verify saved and runtime state"
+  ansible.builtin.include_tasks: "{{ system_verify_tasks }}"
+
+- name: "{{ system_case.name }} | Require unchanged configuration bytes"
+  ansible.builtin.assert:
+    that:
+      - appliance.config_sha256 == system_before_digest
+  when: system_case.unchanged_config | default(false) or system_case.check_mode | default(false)

@@ -1,0 +1,34 @@
+---
+- name: Install deterministic local download fixtures
+  ansible.builtin.copy:
+    content: "{{ item.address }}\n"
+    dest: "/tmp/pfsensible-system/{{ item.file }}"
+    mode: '0600'
+  loop:
+    - {file: first.txt, address: 192.0.2.10}
+    - {file: second.txt, address: 198.51.100.20}
+
+- name: Start the appliance-local fixture HTTP server
+  ansible.builtin.command:
+    argv:
+      - /usr/sbin/daemon
+      - -f
+      - -o
+      - /tmp/pfsensible-system/http.log
+      - -p
+      - /tmp/pfsensible-system/http.pid
+      - "{{ ansible_python_interpreter }}"
+      - -m
+      - http.server
+      - '18080'
+      - --bind
+      - 127.0.0.1
+      - --directory
+      - /tmp/pfsensible-system
+    creates: /tmp/pfsensible-system/http.pid
+
+- name: Wait for the fixture server
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 18080
+    timeout: 30

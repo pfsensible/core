@@ -1,0 +1,37 @@
+---
+- name: Exercise the rule module using the prepared URL-table alias
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/rule/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/rule/verify.yml"
+    rule_args:
+      name: CI URL table test
+      interface: lan
+      action: pass
+      protocol: icmp
+      source: ci_urltable
+      destination: any
+  block:
+    - name: Check rule idempotence
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Reapply unchanged rule after alias updates
+          args: "{{ rule_args }}"
+          changed: false
+          unchanged_config: true
+
+    - name: Check a rule action change
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Change rule action to block
+          args: "{{ rule_args | combine({'action': 'block'}) }}"
+          changed: true
+
+    - name: Restore the pass rule
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Restore rule action to pass
+          args: "{{ rule_args }}"
+          changed: true

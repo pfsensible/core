@@ -1,0 +1,25 @@
+---
+- name: Require the disposable appliance marker
+  ansible.builtin.command: test -f /root/pfsensible-ci-appliance
+  changed_when: false
+
+- name: Wait for the initial appliance boot to finish
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/common/wait_ready.yml"
+
+- name: Confirm this is pfSense with PF enabled
+  ansible.builtin.command: /sbin/pfctl -si
+  register: pf_status
+  changed_when: false
+  failed_when: "pf_status.rc != 0 or 'Status: Enabled' not in pf_status.stdout"
+
+- name: Prepare the observation tools
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/install_observer.yml"
+
+- name: Observe the pristine appliance
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+
+- name: Require a clean test namespace
+  ansible.builtin.assert:
+    that:
+      - appliance.aliases | length == 0
+      - appliance.rules | length == 0

@@ -1,0 +1,31 @@
+---
+- name: Observe the appliance
+  ansible.builtin.include_tasks: observe.yml
+  vars:
+    pf_expect_action: "{{ expected_rule_action | default('pass') }}"
+    pf_expect_entry: "{{ expected_address }}"
+
+- name: Verify persisted configuration and actual loaded firewall state
+  ansible.builtin.assert:
+    that:
+      - appliance.aliases | length == 1
+      - appliance.aliases[0].type == 'urltable'
+      - appliance.aliases[0].url == fixture_url
+      - appliance.aliases[0].address == fixture_url
+      - appliance.rules | length == 1
+      - appliance.rules[0].type == (expected_rule_action | default('pass'))
+      - appliance.rules[0].interface == 'lan'
+      - appliance.rules[0]['source/address'] == 'ci_urltable'
+      - appliance.loaded_rules | length > 0
+      - appliance.loaded_rules | select('match', '^' ~ (expected_rule_action | default('pass')) ~ ' ') | list | length > 0
+      - appliance.loaded_rules | select('search', '<ci_urltable>') | list | length > 0
+      - appliance.table_exists
+      - appliance.table_entries == [expected_address]
+      - appliance.cache_entries == [expected_address]
+
+- name: Verify the table visible to each matching rule
+  ansible.builtin.assert:
+    that:
+      - item.value == [expected_address]
+    fail_msg: "Unexpected effective table contents in PF anchor {{ item.key }}"
+  loop: "{{ appliance.rule_tables | dict2items }}"

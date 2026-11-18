@@ -1,0 +1,5 @@
+---
+- name: Apply the rule using the collection under test
+  pfsensible.core.pfsense_rule: "{{ system_case.args }}"
+  check_mode: "{{ system_case.check_mode | default(false) }}"
+  register: system_change_result

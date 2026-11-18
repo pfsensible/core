@@ -84,13 +84,17 @@ jobs:
 
       - name: Install native XML serializer
         env:
-          PFSENSE_XMLPARSE_INC: ${{ runner.temp }}/xmlparse.inc
+          PFSENSE_XMLPARSE_INC: ${{ runner.temp }}/pfsense-native/xmlparse.inc
+          PFSENSE_NATIVE_DIR: ${{ runner.temp }}/pfsense-native
         run: |
           sudo apt-get update
           sudo apt-get install --yes php-cli php-xml curl
-          curl --fail --show-error --silent --location --retry 3 \
-            "https://raw.githubusercontent.com/pfsense/pfsense/${PFSENSE_XMLPARSE_REVISION}/src/etc/inc/xmlparse.inc" \
-            --output "$PFSENSE_XMLPARSE_INC"
+          mkdir -p "$PFSENSE_NATIVE_DIR"
+          for source in xmlparse.inc pfsense-utils.inc util.inc; do
+            curl --fail --show-error --silent --location --retry 3 \
+              "https://raw.githubusercontent.com/pfsense/pfsense/${PFSENSE_XMLPARSE_REVISION}/src/etc/inc/$source" \
+              --output "$PFSENSE_NATIVE_DIR/$source"
+          done
           php -r '
             require getenv("PFSENSE_XMLPARSE_INC");
             exit(function_exists("xml_parser_create") &&
@@ -101,5 +105,7 @@ jobs:
       # Run directly: ansible-test filters the PFSENSE_* environment variables.
       - name: Run native configuration regression tests
         env:
-          PFSENSE_XMLPARSE_INC: ${{ runner.temp }}/xmlparse.inc
-        run: python -m unittest discover -s tests/unit/plugins/module_utils -p test_config_write.py -v
+          PFSENSE_XMLPARSE_INC: ${{ runner.temp }}/pfsense-native/xmlparse.inc
+        run: |
+          python -m unittest discover -s tests/unit/plugins/module_utils -p test_config_write.py -v
+          python -m unittest discover -s tests/unit/plugins/module_utils -p test_alias.py -v

@@ -1,0 +1,84 @@
+---
+- name: Prepare alias download fixtures
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/common/http_fixture.yml"
+
+- name: Exercise the alias module
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/alias/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/alias/verify.yml"
+    alias_args:
+      name: ci_urltable
+      type: urltable
+      url: "{{ fixture_url }}"
+      updatefreq: 1
+      descr: CI URL table
+  block:
+    - name: Create the URL-table alias
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Create URL-table alias
+          args: "{{ alias_args }}"
+          changed: true
+          verify_live: false
+
+    # A real rule reference is needed for verifying the alias in live PF.
+    - name: Create the referencing firewall rule
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_apply_tasks: "{{ playbook_dir }}/modules/rule/apply.yml"
+        system_verify_tasks: "{{ playbook_dir }}/modules/rule/verify.yml"
+        system_case:
+          name: Create referencing rule
+          args:
+            name: CI URL table test
+            interface: lan
+            action: pass
+            protocol: icmp
+            source: ci_urltable
+            destination: any
+          changed: true
+
+    - name: Check alias idempotence
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Reapply unchanged alias
+          args: "{{ alias_args }}"
+          changed: false
+          unchanged_config: true
+
+    - name: Check alias check mode
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Preview alias description change
+          args: "{{ alias_args | combine({'descr': 'This must never be saved'}) }}"
+          changed: true
+          check_mode: true
+
+    - name: Select a different URL and table entry
+      ansible.builtin.set_fact:
+        fixture_url: http://127.0.0.1:18080/second.txt
+        expected_address: 198.51.100.20
+
+    - name: Check URL-table refresh
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Refresh URL-table contents
+          args: "{{ alias_args }}"
+          changed: true
+
+    - name: Remove the runtime cache to simulate a missing table file
+      ansible.builtin.file:
+        path: /var/db/aliastables/ci_urltable.txt
+        state: absent
+
+    - name: Check runtime cache repair
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Repair missing URL-table cache
+          args: "{{ alias_args }}"
+          changed: true

@@ -1,0 +1,21 @@
+---
+- name: Read configuration, runtime cache, and live PF state
+  ansible.builtin.command:
+    argv: >-
+      {{ [ansible_python_interpreter, '/tmp/pfsensible-system/observe.py']
+         + (['--expect-action', pf_expect_action] if pf_expect_action is defined else [])
+         + (['--expect-entry', pf_expect_entry] if pf_expect_entry is defined else []) }}
+  register: observed
+  changed_when: false
+  # Only rc=1 with an observation means PF has not converged. Stop on tool errors.
+  until: observed.rc != 1 or (observed.stdout | trim | length == 0)
+  retries: "{{ (pf_wait_retries | default(60)) if pf_expect_action is defined else 0 }}"
+  delay: "{{ pf_wait_delay | default(1) }}"
+
+- name: Decode observed appliance state
+  ansible.builtin.set_fact:
+    appliance: "{{ observed.stdout | from_json }}"
+
+- name: Record the observed test state in CI evidence
+  ansible.builtin.debug:
+    var: appliance

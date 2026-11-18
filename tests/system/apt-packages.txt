@@ -1,0 +1,5 @@
+qemu-system-x86
+qemu-utils
+xorriso
+openssh-client
+acl

@@ -1,0 +1,14 @@
+---
+- name: Reboot to exercise native configuration loading and filter generation
+  ansible.builtin.reboot:
+    reboot_command: /sbin/shutdown -r now
+    reboot_timeout: 600
+
+- name: Wait for native startup to finish after reboot
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/common/wait_ready.yml"
+
+- name: Restore observation tools cleared from /tmp by reboot
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/install_observer.yml"
+
+- name: Verify persisted configuration and live PF tables after reboot
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/verify.yml"

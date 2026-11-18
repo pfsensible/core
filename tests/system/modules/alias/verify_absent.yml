@@ -1,0 +1,10 @@
+---
+- name: Observe the removed alias
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+
+- name: Verify the alias is absent from persisted configuration
+  ansible.builtin.assert:
+    that:
+      - appliance.aliases | length == 0
+      - appliance.rules | length == 0
+      - appliance.loaded_rules | length == 0

@@ -1,0 +1,26 @@
+---
+- name: Check alias deletion
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/alias/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/alias/verify_absent.yml"
+  block:
+    - name: Delete the URL-table alias
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Delete URL-table alias
+          args:
+            name: ci_urltable
+            state: absent
+          changed: true
+
+    - name: Delete the already absent alias
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      vars:
+        system_case:
+          name: Delete already absent alias
+          args:
+            name: ci_urltable
+            state: absent
+          changed: false
+          unchanged_config: true
