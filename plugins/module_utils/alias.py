@@ -6,6 +6,9 @@
 
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
+import errno
+import json
+import os
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 ALIAS_ARGUMENT_SPEC = dict(
@@ -47,6 +50,7 @@ ALIAS_CREATE_DEFAULT = dict(
 
 ALIAS_PHP_COMMAND_SET = """
 require_once("filter.inc");
+alias_make_table();
 if (filter_configure() == 0) { clear_subsystem_dirty('aliases'); }
 """
 
@@ -71,10 +75,25 @@ class PFSenseAliasModule(PFSenseModuleBase):
                                                  map_param_if=ALIAS_MAP_PARAM_IF, create_default=ALIAS_CREATE_DEFAULT)
         # Override for use with aggregate
         self.argument_spec = ALIAS_ARGUMENT_SPEC
+        self._urltable_updates = {}
 
     ##############################
     # params processing
     #
+    def _params_to_obj(self, obj=None):
+        obj = super(PFSenseAliasModule, self)._params_to_obj(obj)
+        name = self.params['name']
+        if self.params['state'] == 'absent':
+            self._urltable_updates.pop(name, None)
+        elif self.params['type'] in ('urltable', 'urltable_ports'):
+            # saveAlias() stores the URL in BOTH fields. alias_make_table()
+            # registers aliases from 'address', even for URL-table aliases.
+            obj['address'] = obj['url']
+            previous = self.pfsense.find_alias(name)
+            force = previous is None or previous.findtext('url') != obj['url']
+            self._urltable_updates[name] = self._urltable_updates.get(name, False) or force
+        return obj
+
     def _validate_params(self):
         """ do some extra checks on input parameters """
         params = self.params
@@ -83,6 +102,8 @@ class PFSenseAliasModule(PFSenseModuleBase):
         self.pfsense.check_name(params['name'], 'alias')
 
         if params['state'] == 'present':
+            if params['type'] in ('urltable', 'urltable_ports') and not (params['url'] or params['address']):
+                self.module.fail_json(msg='url (or deprecated address) is required for URL table aliases')
             # the GUI does not allow to create 2 aliases with same name and differents types
             alias_elt = self.pfsense.find_alias(params['name'])
             if alias_elt is not None:
@@ -113,3 +134,57 @@ class PFSenseAliasModule(PFSenseModuleBase):
             for detail in details:
                 if detail.startswith('|') or detail.endswith('|'):
                     self.module.fail_json(msg='Vertical bars (|) at start or end of descriptions not allowed')
+
+    def _run_post(self):
+        if self.params['state'] == 'absent' or self.params['type'] not in ('urltable', 'urltable_ports'):
+            return
+        # Repair runtime state even when the XML already matches. An empty file
+        # is not resolvable by alias_expand(), so merely touching it is unsafe.
+        path = '/var/db/aliastables/{0}.txt'.format(self.params['name'])
+        try:
+            missing = os.path.getsize(path) == 0
+        except OSError as error:
+            if error.errno != errno.ENOENT:
+                raise
+            missing = True
+        if missing:
+            self.result['changed'] = True
+            if not self.change_descr:
+                self.change_descr = 'ansible alias initialized URL table {0}'.format(self.params['name'])
+
+    def initialize_url_tables(self):
+        """Download selected URL tables synchronously, before filter reload."""
+        if not self._urltable_updates:
+            return
+        # Names are validated alias names; URLs are read from committed config
+        # rather than embedded in PHP or returned in failure output.
+        requests = json.dumps(self._urltable_updates)
+        command = '''require_once("pfsense-utils.inc");
+$requests = json_decode('%s', true);
+$failed = array();
+foreach (config_get_path('aliases/alias', array()) as $alias) {
+    $name = $alias['name'];
+    if (!array_key_exists($name, $requests)) {
+        continue;
+    }
+    $status = process_alias_urltable($name, $alias['type'], $alias['url'],
+        $alias['updatefreq'], $requests[$name]);
+    $path = '/var/db/aliastables/' . $name . '.txt';
+    clearstatcache(true, $path);
+    if ($status === false || !is_readable($path) || trim(file_get_contents($path)) === '') {
+        $failed[] = $name;
+    }
+    unset($requests[$name]);
+}
+$failed = array_merge($failed, array_keys($requests));
+echo json_encode(array('failed_aliases' => $failed));
+''' % requests
+        result = self.pfsense.php(command)
+        if result['failed_aliases']:
+            self.module.fail_json(
+                msg='URL table initialization failed or returned no usable entries; filter reload was not attempted',
+                failed_aliases=result['failed_aliases'], changed=True)
+
+    def _update(self):
+        self.initialize_url_tables()
+        return super(PFSenseAliasModule, self)._update()

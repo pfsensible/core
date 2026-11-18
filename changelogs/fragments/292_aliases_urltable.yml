@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_alias - Fix initialization of urltable aliases (https://github.com/pfsensible/core/pull/292)

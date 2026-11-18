@@ -27,6 +27,15 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         self.config_file = 'pfsense_alias_config.xml'
         self.pfmodule = PFSenseAliasModule
 
+    @staticmethod
+    def alias_config(alias):
+        """URL tables store the URL in both configuration fields."""
+        config = copy(alias)
+        if config.get('type') in ('urltable', 'urltable_ports'):
+            config['address'] = config.get('url', config.get('address'))
+            config['url'] = config['address']
+        return config
+
     ########################################################
     # Generic set of funcs used for testing aliases
     # First we run the module
@@ -44,6 +53,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
                 if unset_after is not None:
                     for n in unset_after:
                         del diff['after'][n]
+                diff['after'] = self.alias_config(diff['after'])
                 self.assertEqual(result['diff'], diff)
                 self.assert_xml_elt_dict('aliases', dict(name=alias['name'], type=alias['type']), diff['after'])
                 self.assertEqual(result['commands'], [command])
@@ -55,7 +65,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         with set_module_args(self.args_from_var(alias, 'absent')):
             result = self.execute_module(changed=True)
 
-            diff = dict(before=alias, after={})
+            diff = dict(before=self.alias_config(alias), after={})
             self.assertEqual(result['diff'], diff)
             self.assert_has_xml_tag('aliases', dict(name=alias['name'], type=alias['type']), absent=True)
             self.assertEqual(result['commands'], [command])
@@ -65,7 +75,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         with set_module_args(self.args_from_var(alias)):
             result = self.execute_module(changed=False)
 
-            diff = dict(before=alias, after=alias)
+            diff = dict(before=self.alias_config(alias), after=self.alias_config(alias))
             self.assertEqual(result['diff'], diff)
             self.assertFalse(self.load_xml_result())
             self.assertEqual(result['commands'], [])
@@ -77,7 +87,7 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         with set_module_args(self.args_from_var(target)):
             result = self.execute_module(changed=True)
 
-            diff = dict(before=alias, after=copy(target))
+            diff = dict(before=self.alias_config(alias), after=self.alias_config(target))
             if set_after is not None:
                 diff['after'].update(set_after)
             self.assertEqual(result['diff'], diff)
@@ -189,13 +199,15 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_urltable_create(self):
         """ test creation of a new urltable alias """
         alias = dict(name='acme_table', address='http://www.acme.com', descr='', type='urltable', updatefreq='10', detail='')
-        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', descr='', detail='', updatefreq='10'"
-        self.do_alias_creation_test(alias, command=command, set_after=dict(url='http://www.acme.com'), unset_after=['address'])
+        command = ("create alias 'acme_table', type='urltable', address='http://www.acme.com', "
+                   "url='http://www.acme.com', descr='', detail='', updatefreq='10'")
+        self.do_alias_creation_test(alias, command=command, set_after=dict(url='http://www.acme.com'))
 
     def test_urltable_create_url(self):
         """ test creation of a new urltable alias """
         alias = dict(name='acme_table', url='http://www.acme.com', descr='', type='urltable', updatefreq='10', detail='')
-        command = "create alias 'acme_table', type='urltable', url='http://www.acme.com', descr='', detail='', updatefreq='10'"
+        command = ("create alias 'acme_table', type='urltable', address='http://www.acme.com', "
+                   "url='http://www.acme.com', descr='', detail='', updatefreq='10'")
         self.do_alias_creation_test(alias, command=command)
 
     def test_urltable_create_exclusive(self):
@@ -221,7 +233,8 @@ class TestPFSenseAliasModule(TestPFSenseModule):
         """ test updating url of a urltable alias """
         alias = dict(
             name='acme_corp', url='http://www.acme-corp.com', descr='', type='urltable', updatefreq='10', detail='')
-        command = "update alias 'acme_corp' set url='http://www.new-acme-corp.com'"
+        command = ("update alias 'acme_corp' set address='http://www.new-acme-corp.com', "
+                   "url='http://www.new-acme-corp.com'")
         self.do_alias_update_field(alias, url='http://www.new-acme-corp.com', set_after=dict(url='http://www.new-acme-corp.com'), command=command)
 
     def test_urltable_update_descr(self):
@@ -241,7 +254,8 @@ class TestPFSenseAliasModule(TestPFSenseModule):
     def test_urltable_ports_create(self):
         """ test creation of a new urltable_ports alias """
         alias = dict(name='acme_table', url='http://www.acme.com', descr='', type='urltable_ports', updatefreq='10', detail='')
-        command = "create alias 'acme_table', type='urltable_ports', url='http://www.acme.com', descr='', detail='', updatefreq='10'"
+        command = ("create alias 'acme_table', type='urltable_ports', address='http://www.acme.com', "
+                   "url='http://www.acme.com', descr='', detail='', updatefreq='10'")
         self.do_alias_creation_test(alias, command=command)
 
     ##############

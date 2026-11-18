@@ -666,6 +666,9 @@ class PFSenseModuleAggregate(object):
         self.defined_rules = dict()
 
     def _update(self):
+        # URL tables must exist and contain usable entries before any interface
+        # or filter update can install rules referencing them.
+        self.pfsense_aliases.initialize_url_tables()
         run = False
         cmd = 'require_once("filter.inc");\n'
         # TODO: manage one global list of commands as ordering can be important between modules
