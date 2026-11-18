@@ -15,15 +15,33 @@ def p2o_cert(self, name, params, obj):
 
 
 def p2o_interface(self, name, params, obj):
-    obj[name] = self.pfsense.parse_interface(params[name], with_virtual=True)
+    if self.argument_spec[name]["type"] == "list":
+        interfaces = []
+        for item in params[name]:
+            interfaces.append(self.pfsense.parse_interface(item, with_virtual=True))
+        obj[name] = ",".join(sorted(interfaces))
+    else:
+        obj[name] = self.pfsense.parse_interface(params[name], with_virtual=True)
 
 
 def p2o_interface_with_gwgroup(self, name, params, obj):
-    obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False, with_gwgroup=True)
+    if self.argument_spec[name]["type"] == "list":
+        interfaces = []
+        for item in params[name]:
+            interfaces.append(self.pfsense.parse_interface(item, with_virtual=False, with_gwgroup=True))
+        obj[name] = ",".join(sorted(interfaces))
+    else:
+        obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False, with_gwgroup=True)
 
 
 def p2o_interface_without_virtual(self, name, params, obj):
-    obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False)
+    if self.argument_spec[name]["type"] == "list":
+        interfaces = []
+        for item in params[name]:
+            interfaces.append(self.pfsense.parse_interface(item, with_virtual=False))
+        obj[name] = ",".join(sorted(interfaces))
+    else:
+        obj[name] = self.pfsense.parse_interface(params[name], with_virtual=False)
 
 
 def p2o_port(self, name, params, obj):

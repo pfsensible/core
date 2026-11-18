@@ -1,0 +1,2 @@
+minor_changes:
+  - Allow passings lists to interface parameters (https://github.com/pfsensible/core/pull/294)
