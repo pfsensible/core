@@ -2,16 +2,9 @@
 
 This is a set of modules to allow you to configure pfSense firewalls with ansible.
 
-### NOTE: Changes with pfsensible.core 0.4.0
-
-With pfsensible.core 0.4.0 we have stopped stripping the pfsense_ prefix from the module names.  This caused conflicts with other
-modules (like the ansible core 'setup' module).  You can use the ['collections'](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#simplifying-module-names-with-the-collections-keyword)
-keyword in your playbooks and roles to simplify the module names instead.
-
 ## Installation using ansible galaxy
 
-Ansible Galaxy (as of version 2.9) now has an option for collections.  A collection is a distribution
-format for delivering all type of Ansible content (not just roles as it was before).  To install:
+To install:
 
 ```
 ansible-galaxy collection install pfsensible.core
@@ -42,7 +35,7 @@ ansible_python_interpreter: /usr/local/bin/python3.11
 
 Modules must run as root in order to make changes to the system.  By default pfSense does not have sudo capability so `become` will not work.  You can install it with:
 ```
-  - name: "Install packages"
+  - name: Install packages
     package:
       name:
         - pfSense-pkg-sudo
@@ -66,7 +59,7 @@ rerun the task/play from a fresh read after resolving overlapping writers.
 There is a 30-second lock timeout. Do not delete the lock file to release a lock.
 
 Before replacing `/cf/conf/config.xml`, the writer atomically saves the exact
-pre-change bytes in `/cf/conf/config.xml.ansible.bak` with mode `0600`. This is one
+pre-change bytes in `/cf/conf/config.xml.ansible.bak` with mode `0600`. This is a single
 rotating pre-change copy, not a configuration history or an independently verified
 operational backup. Keep a separate known-good backup before a full playbook run.
 The config and backup temporary files are created in the config directory,
@@ -98,11 +91,10 @@ uses the HTML4 entity names expected by that parser for CDATA (for example,
 `&copy;` and `&eacute;`). Modern `ENT_XML1` parsers retain XML-only decoding.
 This capability check reads the parser source and does not invoke PHP for no-op
 rule checks.
+
 Reading uses a single-pass ElementTree builder rather than constructing a DOM,
 serializing it, and parsing the XML again. This avoids repeated full-document
-conversion for every rule task. Unchanged rule checks do not serialize config,
-run native PHP validation/formatting, write backups, or reload the filter; those
-operations remain conditional on a configuration change.
+conversion for every task.
 
 The temporary transport document is parsed and reformatted by PHP before it can
 replace the live file. The formatted document must parse back to the same native
@@ -122,38 +114,6 @@ native bytes are
 synced before replacement and used for subsequent conflict detection. Formatting
 does not run interface assignment, gateway creation, CARP changes, or apply hooks.
 
-Run the standalone regression suite from the collection directory:
-
-```sh
-python3 -m unittest discover -s tests/unit/plugins/module_utils -v
-```
-
-The tests cover stale snapshots, native lock contention, failed backup/sync/rename,
-invalid XML, metadata preservation, cache failures, and package/text round trips.
-Native formatting and integration tests run when PHP with its XML extension is
-installed and `PFSENSE_XMLPARSE_INC` points to a matching pfSense
-`src/etc/inc/xmlparse.inc` (or `/etc/inc/xmlparse.inc` on a test firewall). With
-these variables set, filesystem safety tests also run the real native serializer:
-
-```sh
-PFSENSE_XMLPARSE_INC=/path/to/pfsense/src/etc/inc/xmlparse.inc \
-  python3 -m unittest discover -s tests/unit/plugins/module_utils -v
-```
-
-Set `PFSENSE_PHP_BINARY` to use a specific PHP executable or wrapper. Without a
-configured PHP runtime, formatting-specific tests are skipped; the other tests
-exercise filesystem safety with a stubbed native command.
-
-GitHub Actions runs this suite with PHP and its XML extension in the
-`Native pfSense configuration tests` job. It downloads `xmlparse.inc` from a
-pinned upstream pfSense revision, checks that the required PHP functions are
-available, and enables all native serializer tests. Update
-`PFSENSE_XMLPARSE_REVISION` in `.github/workflows/main.yml` to test a newer parser.
-
-Test a full apply on a lab firewall running the deployed pfSense/package versions
-before production rollout. The suite uses synthetic configuration and does not
-connect to a firewall.
-
 ## Modules
 The following modules are currently available:
 
@@ -163,9 +123,11 @@ The following modules are currently available:
 * [pfsense_ca](https://github.com/pfsensible/core/wiki/pfsense_ca) for Certificate Authorities
 * [pfsense_cert](https://github.com/pfsensible/core/wiki/pfsense_cert) for Certificates
 * [pfsense_default_gateway](https://github.com/pfsensible/core/wiki/pfsense_default_gateway) for setting the default gateways
+* [pfsense_dhcp_server](https://github.com/pfsensible/core/wiki/pfsense_dhcp_server) for configuring DHCP server
 * [pfsense_dhcp_static](https://github.com/pfsensible/core/wiki/pfsense_dhcp_static) for static DHCP entries
 * [pfsense_dns_resolver](https://github.com/pfsensible/core/wiki/pfsense_dns_resolver) for DNS resolver (unbound) settings
 * [pfsense_gateway](https://github.com/pfsensible/core/wiki/pfsense_gateway) for routing gateways
+* [pfsense_gateway_group](https://github.com/pfsensible/core/wiki/pfsense_gateway_group) for gateway groups
 * [pfsense_group](https://github.com/pfsensible/core/wiki/pfsense_group) for user groups
 * [pfsense_interface](https://github.com/pfsensible/core/wiki/pfsense_interface) for interfaces
 * [pfsense_interface_group](https://github.com/pfsensible/core/wiki/pfsense_interface_group) for interface groups
@@ -173,16 +135,18 @@ The following modules are currently available:
 * [pfsense_ipsec_proposal](https://github.com/pfsensible/core/wiki/pfsense_ipsec_proposal) for IPsec proposals
 * [pfsense_ipsec_p2](https://github.com/pfsensible/core/wiki/pfsense_ipsec_p2) for IPsec tunnels phase 2 options
 * [pfsense_log_settings](https://github.com/pfsensible/core/wiki/pfsense_log_settings) for logging settings
+* [pfsense_nat_outbound](https://github.com/pfsensible/core/wiki/pfsense_nat_outbound) for outbound NAT (SNAT) rules
+* [pfsense_nat_port_forward](https://github.com/pfsensible/core/wiki/pfsense_nat_port_forward) for port forwarding NAT (DNAT) rules
 * [pfsense_openvpn_client](https://github.com/pfsensible/core/wiki/pfsense_openvpn_client) for OpenVPN client configuration
 * [pfsense_openvpn_override](https://github.com/pfsensible/core/wiki/pfsense_openvpn_override) for OpenVPN override configuration
 * [pfsense_openvpn_server](https://github.com/pfsensible/core/wiki/pfsense_openvpn_server) for OpenVPN server configuration
-* [pfsense_nat_outbound](https://github.com/pfsensible/core/wiki/pfsense_nat_outbound) for outbound NAT (SNAT) rules
-* [pfsense_nat_port_forward](https://github.com/pfsensible/core/wiki/pfsense_nat_port_forward) for port forwarding NAT (DNAT) rules
+* [pfsense_phpshell](https://github.com/pfsensible/core/wiki/pfsense_phpshell) run commands with php-shell
 * [pfsense_rewrite_config](https://github.com/pfsensible/core/wiki/pfsense_rewrite_config) to rewrite config.xml
 * [pfsense_route](https://github.com/pfsensible/core/wiki/pfsense_route) for routes
 * [pfsense_rule](https://github.com/pfsensible/core/wiki/pfsense_rule) for firewall rules
 * [pfsense_rule_separator](https://github.com/pfsensible/core/wiki/pfsense_rule_separator) for firewall rule separators
 * [pfsense_setup](https://github.com/pfsensible/core/wiki/pfsense_setup) for general setup
+* [pfsense_shellcmd](https://github.com/pfsensible/core/wiki/pfsense_shellcmd) for shellcmd package
 * [pfsense_user](https://github.com/pfsensible/core/wiki/pfsense_user) for users
 * [pfsense_vlan](https://github.com/pfsensible/core/wiki/pfsense_vlan) for VLANs
 
@@ -220,14 +184,6 @@ handlers:
 
 See [GENERATING_MODULES](https://github.com/pfsensible/core/blob/master/GENERATING_MODULES.md) for instructions on how to use the
 pfensible-generate-module script to automate the task writing basic pfsensible modules.
-
-## Operation
-
-Modules in the collection work by editing `/cf/conf/config.xml` using xml.etree.ElementTree, then
-calling the appropriate PHP update function via the pfSense PHP developer shell.
-
-Some formatting is lost, and CDATA items are converted to normal entries,
-but so far no problems with that have been noted.
 
 ## License
 
