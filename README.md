@@ -93,6 +93,11 @@ non-native CDATA markers. For example, native `descr`/`description` and
 `custom_options` use ordinary escaped text on versions with those native rules.
 The Python reader decodes XML-escaped CDATA once and does not decode ordinary
 XML text a second time, preserving literal entity strings and multiline values.
+It detects the installed parser's legacy `html_entity_decode($data)` form and
+uses the HTML4 entity names expected by that parser for CDATA (for example,
+`&copy;` and `&eacute;`). Modern `ENT_XML1` parsers retain XML-only decoding.
+This capability check reads the parser source and does not invoke PHP for no-op
+rule checks.
 Reading uses a single-pass ElementTree builder rather than constructing a DOM,
 serializing it, and parsing the XML again. This avoids repeated full-document
 conversion for every rule task. Unchanged rule checks do not serialize config,
@@ -101,8 +106,12 @@ operations remain conditional on a configuration change.
 
 The temporary transport document is parsed and reformatted by PHP before it can
 replace the live file. The formatted document must parse back to the same native
-configuration array and match the intended Python values and structure. Comparison
-ignores formatting whitespace and order between different named fields, matching
+configuration array. Quotes remain literal inside the transport's CDATA because
+older native HTML-entity decoder defaults may not decode apostrophe entities;
+this preserves quoted OpenVPN options when an unrelated task saves configuration.
+The native serializer still controls quote escaping in the final XML. The result
+must also match the intended Python values and structure. Comparison ignores
+formatting whitespace and order between different named fields, matching
 PHP associative arrays. Entries sharing a tag retain their order: firewall/NAT
 rules and lists of VPN servers or clients cannot be silently reordered. For
 example, appending a new OpenVPN server after existing clients is accepted when
