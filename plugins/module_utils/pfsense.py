@@ -9,6 +9,7 @@ __metaclass__ = type
 import sys
 if sys.version_info >= (3, 4):
     import html
+    from html.entities import name2codepoint
 try:
     from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
 except ImportError:
@@ -32,6 +33,9 @@ from contextlib import contextmanager
 from tempfile import mkstemp
 from xml.dom import minidom, Node
 from xml.parsers.expat import ExpatError, ParserCreate
+
+XML_ENTITIES = {'amp': '&', 'lt': '<', 'gt': '>', 'quot': '"', 'apos': "'"}
+HTML4_ENTITIES = {name: chr(codepoint) for name, codepoint in name2codepoint.items()}
 
 
 class PFSenseConfigError(Exception):
@@ -61,12 +65,13 @@ class PFSenseModule(object):
         self.config_lock = config_lock
         self.config_cache = config_cache
         try:
+            self._legacy_html_entities = self._uses_legacy_html_entities()
             # Read bytes once, so the tree and conflict-detection hash describe
             # exactly the same snapshot. Never hold this lock across PHP hooks.
             with self._locked_config():
                 with open(config, 'rb') as source:
                     original = source.read()
-            self.tree = self._parse_config(original)
+            self.tree = self._parse_config(original, self._legacy_html_entities)
             self._validate_config(self.tree)
             self._config_digest = hashlib.sha256(original).digest()
             self._required_sections = {
@@ -93,26 +98,38 @@ class PFSenseModule(object):
         self.pfsense_version = None
 
     @staticmethod
-    def _decode_xml_entities(value):
-        """Decode one XML entity layer, without HTML5 entity substitutions."""
+    def _uses_legacy_html_entities():
+        # Inspect the installed parser rather than invoking PHP on every
+        # read-only rule check or relying on product/config version numbers.
+        try:
+            with open('/etc/inc/xmlparse.inc', 'rb') as source:
+                return re.search(rb'html_entity_decode\s*\(\s*\$data\s*\)', source.read()) is not None
+        except OSError as error:
+            if error.errno != errno.ENOENT:
+                raise
+            return False
+
+    @staticmethod
+    def _decode_xml_entities(value, legacy_html_entities=False):
+        """Decode one native entity layer, without HTML5 substitutions."""
         if '&' not in value:
             return value
-        entities = {'amp': '&', 'lt': '<', 'gt': '>', 'quot': '"', 'apos': "'"}
+        entities = HTML4_ENTITIES if legacy_html_entities else XML_ENTITIES
 
         def decode(match):
             entity = match.group(1)
-            if entity in entities:
-                return entities[entity]
+            if not entity.startswith('#'):
+                return entities.get(entity, match.group(0))
             codepoint = int(entity[2:], 16) if entity.startswith('#x') else int(entity[1:])
             if (codepoint in (9, 10, 13) or 0x20 <= codepoint <= 0xD7FF
                     or 0xE000 <= codepoint <= 0xFFFD or 0x10000 <= codepoint <= 0x10FFFF):
                 return chr(codepoint)
             return match.group(0)
 
-        return re.sub(r'&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);', decode, value)
+        return re.sub(r'&([A-Za-z][A-Za-z0-9]*|#[0-9]+|#x[0-9a-fA-F]+);', decode, value)
 
     @classmethod
-    def _parse_config(cls, data):
+    def _parse_config(cls, data, legacy_html_entities=False):
         # Ordinary XML text is already entity-decoded by the XML parser.
         # Only pfSense's escaped CDATA needs another XML-only decoding pass.
         # Decoding concatenated ordinary text again corrupts literal '&amp;'
@@ -146,7 +163,7 @@ class PFSenseModule(object):
             # Expat can split character data at newlines or other boundaries.
             # Decode a complete CDATA section once, preserving multiline text
             # and entity references split across callbacks.
-            builder.data(cls._decode_xml_entities(''.join(cdata)))
+            builder.data(cls._decode_xml_entities(''.join(cdata), legacy_html_entities))
             cdata = None
 
         parser.StartElementHandler = start
@@ -220,7 +237,10 @@ class PFSenseModule(object):
                     element.appendChild(document.createTextNode(''))
                 for child in list(element.childNodes):
                     if child.nodeType == Node.TEXT_NODE:
-                        escaped = html.escape(child.data, quote=True).replace('\r', '&#13;')
+                        # Quotes need no escaping inside CDATA. Legacy PHP
+                        # html_entity_decode() defaults may leave apostrophe
+                        # entities untouched, changing e.g. OpenVPN 'nopool'.
+                        escaped = html.escape(child.data, quote=False).replace('\r', '&#13;')
                         if child.data:
                             element.replaceChild(document.createCDATASection(escaped), child)
             return document.toxml(encoding='utf-8')
@@ -324,7 +344,7 @@ try {
         if result != 0:
             raise PFSenseConfigError('Native pfSense XML validation/formatting failed; live configuration was not replaced')
         with open(path, 'rb') as candidate:
-            formatted = self._parse_config(candidate.read())
+            formatted = self._parse_config(candidate.read(), self._legacy_html_entities)
         self._validate_config(formatted)
         mismatch = self._config_difference(self.root, formatted.getroot())
         if mismatch is not None:
@@ -1317,7 +1337,7 @@ try {
         try:
             self._validate_config(self.tree)
             serialized = self._serialize_config()
-            validated = self._parse_config(serialized)
+            validated = self._parse_config(serialized, self._legacy_html_entities)
             self._validate_config(validated)
             mismatch = self._config_difference(self.root, validated.getroot())
             if mismatch is not None:
