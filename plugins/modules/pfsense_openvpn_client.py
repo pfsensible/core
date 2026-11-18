@@ -32,6 +32,14 @@ options:
     default: []
     type: list
     elements: str
+  auth_pass:
+    description: Authentication password.
+    required: false
+    type: str
+  auth_user:
+    description: Authentication user.
+    required: false
+    type: str  
   state:
     description: State in which to leave the OpenVPN config.
     default: present
