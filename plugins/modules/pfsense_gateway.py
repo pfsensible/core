@@ -70,6 +70,14 @@ options:
     default: 1
     type: int
     version_added: 0.7.2
+  latencylow:
+    description: Low threshold for packet latency in ms.  Default is 200.
+    type: int
+    version_added: 0.7.2
+  latencyhigh:
+    description: High threshold for packet latency in ms.  Default is 500.
+    type: int
+    version_added: 0.7.2
   losslow:
     description: Low threshold for packet loss in %.  Default is 10.
     type: int

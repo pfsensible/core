@@ -21,6 +21,8 @@ GATEWAY_ARGUMENT_SPEC = dict(
     action_disable=dict(default=False, type='bool'),
     force_down=dict(default=False, type='bool'),
     weight=dict(default=1, required=False, type='int'),
+    latencylow=dict(required=False, type='int'),
+    latencyhigh=dict(required=False, type='int'),
     losslow=dict(required=False, type='int'),
     losshigh=dict(required=False, type='int'),
     nonlocalgateway=dict(default=False, type='bool'),
@@ -135,6 +137,8 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             self._get_ansible_param(obj, 'descr')
             self._get_ansible_param(obj, 'monitor')
             self._get_ansible_param(obj, 'weight')
+            self._get_ansible_param(obj, 'latencylow')
+            self._get_ansible_param(obj, 'latencyhigh')
             self._get_ansible_param(obj, 'losslow')
             self._get_ansible_param(obj, 'losshigh')
 
@@ -236,6 +240,8 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
             values += self.format_cli_field(self.params, 'action_disable', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, 'force_down', fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.obj, 'weight', default='1')
+            values += self.format_cli_field(self.obj, 'latencylow')
+            values += self.format_cli_field(self.obj, 'latencyhigh')
             values += self.format_cli_field(self.obj, 'losslow')
             values += self.format_cli_field(self.obj, 'losshigh')
             values += self.format_cli_field(self.params, 'nonlocalgateway', fvalue=self.fvalue_bool, default=False)
@@ -253,6 +259,8 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
             values += self.format_updated_cli_field(self.obj, before, 'action_disable', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'force_down', fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'weight', default='1', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'latencylow', add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'latencyhigh', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'losslow', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'losshigh', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'nonlocalgateway', fvalue=self.fvalue_bool)

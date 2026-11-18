@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_gateway - add latencylow and latencyhigh parameters (https://github.com/pfsensible/core/pull/295)
