@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_nat_port_forward - update associated filter rule when updating a NAT port forward rule (https://github.com/pfsensible/core/issues/287).

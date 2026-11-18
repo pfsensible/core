@@ -156,6 +156,21 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
+    def _build_associated_rule_params(self):
+        params = dict()
+        params['name'] = 'NAT ' + self.params['descr']
+        params['state'] = 'present'
+        params['action'] = 'pass'
+        if self.pfsense.is_at_least_2_5_0():
+            params['ipprotocol'] = 'inet'
+        params['statetype'] = 'keep state'
+        params['interface'] = self.params['interface']
+        params['source'] = self.params['source']
+        params['destination'] = self.params['target']
+        params['disabled'] = self.params['disabled']
+        params['protocol'] = self.params['protocol']
+        return params
+
     def _copy_and_add_target(self):
         """ create the XML target_elt """
         self._set_associated_rule()
@@ -184,22 +199,12 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     def _create_associated_rule(self):
         if self.pfsense_rule_module is None:
             self.pfsense_rule_module = PFSenseRuleModule(self.module, self.pfsense)
-        params = dict()
-        params['name'] = 'NAT ' + self.params['descr']
-        params['state'] = 'present'
-        params['action'] = 'pass'
-        if self.pfsense.is_at_least_2_5_0():
-            params['ipprotocol'] = 'inet'
-        params['statetype'] = 'keep state'
-        params['interface'] = self.params['interface']
-        params['source'] = self.params['source']
-        params['destination'] = self.params['target']
-        params['disabled'] = self.params['disabled']
-        params['protocol'] = self.params['protocol']
+        params = self._build_associated_rule_params()
         if self.params['associated_rule'] == 'associated':
             params['associated-rule-id'] = self.pfsense.uniqid('nat_', True)
             self.obj['associated-rule-id'] = params['associated-rule-id']
-        self.result['commands'] = list()
+        self.pfsense_rule_module.result['changed'] = False
+        self.pfsense_rule_module.result['commands'] = list()
         self.pfsense_rule_module.run(params)
         self.result['commands'] += self.pfsense_rule_module.result['commands']
 
@@ -323,16 +328,32 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
             if self.params['associated_rule'] == 'associated' or self.params['associated_rule'] == 'unassociated':
                 self._create_associated_rule()
         else:
+            before_rule_id = before.get('associated-rule-id') or ''
             if self.params['associated_rule'] == 'associated':
-                if before['associated-rule-id'].startswith('nat_'):
+                if before_rule_id.startswith('nat_'):
                     if self.obj['interface'] != before['interface']:
-                        self._delete_associated_rule(before['associated-rule-id'], before['interface'])
+                        self._delete_associated_rule(before_rule_id, before['interface'])
                     else:
-                        self.obj['associated-rule-id'] = before['associated-rule-id']
-                        return
+                        self.obj['associated-rule-id'] = before_rule_id
+                        self._update_associated_rule(before_rule_id)
+                        return False
                 self._create_associated_rule()
-            elif before['associated-rule-id'].startswith('nat_'):
-                self._delete_associated_rule(before['associated-rule-id'])
+            elif before_rule_id.startswith('nat_'):
+                self._delete_associated_rule(before_rule_id, before['interface'])
+        return False
+
+    def _update_associated_rule(self, ruleid):
+        if self.pfsense_rule_module is None:
+            self.pfsense_rule_module = PFSenseRuleModule(self.module, self.pfsense)
+        params = self._build_associated_rule_params()
+        params['associated-rule-id'] = ruleid
+        self.pfsense_rule_module.result['changed'] = False
+        self.pfsense_rule_module.result['commands'] = list()
+        self.pfsense_rule_module.run(params)
+        self.result['commands'] += self.pfsense_rule_module.result['commands']
+        if self.pfsense_rule_module.result['changed']:
+            self.result['changed'] = True
+            self.change_descr = 'ansible {0} updated {1}'.format(self._get_module_name(), self._get_obj_name())
 
     def _update_rule_position(self, rule_elt):
         """ move rule in xml if required """

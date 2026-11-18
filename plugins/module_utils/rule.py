@@ -336,8 +336,9 @@ class PFSenseRuleModule(PFSenseModuleBase):
         timestamp = '%d' % int(time.time())
         before = self._rule_element_to_dict()
         if 'tracker' not in self.obj:
-            self.obj['tracker'] = before['tracker']
-        elif self.obj['tracker'] != before['tracker']:
+            if 'tracker' in before:
+                self.obj['tracker'] = before['tracker']
+        elif self.obj['tracker'] != before.get('tracker'):
             # When updating the tracker of a rule, it must be unique
             self._check_tracker(self.obj['tracker'], fail=True)
 
