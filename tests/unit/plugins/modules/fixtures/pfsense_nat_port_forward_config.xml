@@ -335,15 +335,18 @@
 	</nat>
 	<filter>
     <rule>
+			<type>pass</type>
 			<source>
 				<any></any>
 			</source>
 			<destination>
-				<network>wanip</network>
-				<port>22022</port>
+				<address>10.255.1.20</address>
+				<port>22</port>
 			</destination>
 			<ipprotocol>inet</ipprotocol>
+			<statetype>keep state</statetype>
 			<protocol>tcp</protocol>
+			<tracker>1544085353</tracker>
 			<interface>wan</interface>
 			<descr>NAT last</descr>
 			<associated-rule-id>nat_5e03858acc6b82.92150982</associated-rule-id>

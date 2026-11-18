@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import pytest
 import sys
+import xml.etree.ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
@@ -24,12 +25,26 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         super(TestPFSenseNatPortForwardModule, self).__init__(*args, **kwargs)
         self.config_file = 'pfsense_nat_port_forward_config.xml'
         self.pfmodule = PFSenseNatPortForwardModule
+        self._drift_associated_rule = False
+
+    def load_fixtures(self):
+        """ loading data """
+        super(TestPFSenseNatPortForwardModule, self).load_fixtures()
+        if self._drift_associated_rule:
+            tree = ET.parse(self.tmp_file)
+            rule_elt = self.find_xml_tag(tree.find('filter'), dict(descr='NAT last'))
+            rule_elt.find('destination/address').text = '10.255.1.99'
+            rule_elt.remove(rule_elt.find('tracker'))
+            tree.write(self.tmp_file, encoding='utf-8', short_empty_elements=False)
 
     def check_target_addr(self, params, target_elt):
         """ test the addresses definition """
-        if params['target'] == '2.3.4.5:443':
-            self.assert_xml_elt_equal(target_elt, 'target', '2.3.4.5')
-            self.assert_xml_elt_equal(target_elt, 'local-port', '443')
+        parts = params['target'].split(':')
+        self.assert_xml_elt_equal(target_elt, 'target', parts[0])
+        if len(parts) > 1:
+            self.assert_xml_elt_equal(target_elt, 'local-port', parts[1])
+        else:
+            self.assert_xml_elt_is_none_or_empty(target_elt, 'local-port')
 
     def get_associated_rule_elt(self, params, ruleid):
         """ check the associated rule """
@@ -70,6 +85,10 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
 
             rule_elt = self.get_associated_rule_elt(obj, ruleid_elt.text)
             self.assertEqual(rule_elt.find('descr').text, 'NAT ' + obj['descr'])
+            rules_tester.check_rule_elt_addr(dict(destination=obj['target']), rule_elt, 'destination')
+            rules_tester.check_rule_elt_addr(obj, rule_elt, 'source')
+            self.check_param_equal(obj, rule_elt, 'protocol', 'tcp')
+            self.check_param_bool(obj, rule_elt, 'disabled')
 
     def check_rule_idx(self, params, target_idx):
         """ test the xml position """
@@ -189,6 +208,11 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         obj = dict(descr='one', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.20:22', associated_rule='none')
         self.do_module_test(obj, target_idx=0, changed=False)
 
+    def test_nat_port_forward_update_associated_noop(self):
+        """ test """
+        obj = dict(descr='last', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.20:22', associated_rule='associated')
+        self.do_module_test(obj, target_idx=2, changed=False)
+
     def test_nat_port_forward_update_bottom(self):
         """ test """
         obj = dict(descr='one', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.20:22', associated_rule='none', before='bottom')
@@ -212,6 +236,41 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         obj = dict(descr='one', interface='wan', source='any', destination='1.2.3.4:22022', target='10.255.1.20:22', associated_rule='none')
         command = "update nat_port_forward 'one' set destination='1.2.3.4:22022'"
         self.do_module_test(obj, command=command, target_idx=0)
+
+    def test_nat_port_forward_update_target(self):
+        """ test """
+        obj = dict(descr='last', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.21:22', associated_rule='associated')
+        cmd1 = "update rule 'NAT last' on 'wan' set destination='10.255.1.21'"
+        cmd2 = "update nat_port_forward 'last' set target='10.255.1.21:22'"
+        self.do_module_test(obj, command=[cmd1, cmd2], target_idx=2)
+        self.assert_xml_elt_equal(self.get_target_elt(obj), 'associated-rule-id', 'nat_5e03858acc6b82.92150982')
+
+    def test_nat_port_forward_update_target_port(self):
+        """ test """
+        obj = dict(descr='last', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.20:2222', associated_rule='associated')
+        cmd1 = "update rule 'NAT last' on 'wan' set destination_port='2222'"
+        cmd2 = "update nat_port_forward 'last' set target='10.255.1.20:2222'"
+        self.do_module_test(obj, command=[cmd1, cmd2], target_idx=2)
+        self.assert_xml_elt_equal(self.get_target_elt(obj), 'associated-rule-id', 'nat_5e03858acc6b82.92150982')
+
+    def test_nat_port_forward_update_target_ip_and_port(self):
+        """ test """
+        obj = dict(descr='last', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.21:2222', associated_rule='associated')
+        cmd1 = "update rule 'NAT last' on 'wan' set destination='10.255.1.21', destination_port='2222'"
+        cmd2 = "update nat_port_forward 'last' set target='10.255.1.21:2222'"
+        self.do_module_test(obj, command=[cmd1, cmd2], target_idx=2)
+        self.assert_xml_elt_equal(self.get_target_elt(obj), 'associated-rule-id', 'nat_5e03858acc6b82.92150982')
+
+    def test_nat_port_forward_repair_drifted_associated_rule(self):
+        """ test """
+        self._drift_associated_rule = True
+        try:
+            obj = dict(descr='last', interface='wan', source='any', destination='IP:wan:22022', target='10.255.1.20:22', associated_rule='associated')
+            command = "update rule 'NAT last' on 'wan' set destination='10.255.1.20'"
+            self.do_module_test(obj, command=command, target_idx=2)
+            self.assert_xml_elt_equal(self.get_target_elt(obj), 'associated-rule-id', 'nat_5e03858acc6b82.92150982')
+        finally:
+            self._drift_associated_rule = False
 
     def test_nat_port_forward_update_interface(self):
         """ test """
