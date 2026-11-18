@@ -31,7 +31,7 @@ import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 from tempfile import mkstemp
 from xml.dom import minidom, Node
-from xml.parsers.expat import ExpatError
+from xml.parsers.expat import ExpatError, ParserCreate
 
 
 class PFSenseConfigError(Exception):
@@ -95,6 +95,8 @@ class PFSenseModule(object):
     @staticmethod
     def _decode_xml_entities(value):
         """Decode one XML entity layer, without HTML5 entity substitutions."""
+        if '&' not in value:
+            return value
         entities = {'amp': '&', 'lt': '<', 'gt': '>', 'quot': '"', 'apos': "'"}
 
         def decode(match):
@@ -115,17 +117,45 @@ class PFSenseModule(object):
         # Only pfSense's escaped CDATA needs another XML-only decoding pass.
         # Decoding concatenated ordinary text again corrupts literal '&amp;'
         # read from '&amp;amp;'. Native PHP emits the '&' and 'amp;' separately.
-        document = minidom.parseString(data)
-        try:
-            for element in document.getElementsByTagName('*'):
-                for child in list(element.childNodes):
-                    if child.nodeType == Node.CDATA_SECTION_NODE:
-                        element.replaceChild(document.createTextNode(
-                            cls._decode_xml_entities(child.data)), child)
-            xml = document.toxml(encoding='utf-8').replace(b'\r', b'&#13;')
-            return ET.ElementTree(ET.fromstring(xml))
-        finally:
-            document.unlink()
+        # Build the ElementTree directly. A DOM -> XML -> ElementTree round
+        # trip is expensive on every rule invocation, including no-op runs.
+        builder = ET.TreeBuilder()
+        parser = ParserCreate(namespace_separator='}')
+        cdata = None
+
+        def qualified(name):
+            return '{' + name if '}' in name else name
+
+        def start(name, attributes):
+            if attributes:
+                attributes = {qualified(key): value for key, value in attributes.items()}
+            builder.start(qualified(name), attributes)
+
+        def text(value):
+            if cdata is None:
+                builder.data(value)
+            else:
+                cdata.append(value)
+
+        def start_cdata():
+            nonlocal cdata
+            cdata = []
+
+        def end_cdata():
+            nonlocal cdata
+            # Expat can split character data at newlines or other boundaries.
+            # Decode a complete CDATA section once, preserving multiline text
+            # and entity references split across callbacks.
+            builder.data(cls._decode_xml_entities(''.join(cdata)))
+            cdata = None
+
+        parser.StartElementHandler = start
+        parser.EndElementHandler = lambda name: builder.end(qualified(name))
+        parser.CharacterDataHandler = text
+        parser.StartCdataSectionHandler = start_cdata
+        parser.EndCdataSectionHandler = end_cdata
+        parser.Parse(data, True)
+        return ET.ElementTree(builder.close())
 
     @classmethod
     def _config_values(cls, element):

@@ -93,6 +93,11 @@ non-native CDATA markers. For example, native `descr`/`description` and
 `custom_options` use ordinary escaped text on versions with those native rules.
 The Python reader decodes XML-escaped CDATA once and does not decode ordinary
 XML text a second time, preserving literal entity strings and multiline values.
+Reading uses a single-pass ElementTree builder rather than constructing a DOM,
+serializing it, and parsing the XML again. This avoids repeated full-document
+conversion for every rule task. Unchanged rule checks do not serialize config,
+run native PHP validation/formatting, write backups, or reload the filter; those
+operations remain conditional on a configuration change.
 
 The temporary transport document is parsed and reformatted by PHP before it can
 replace the live file. The formatted document must parse back to the same native
