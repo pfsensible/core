@@ -148,7 +148,10 @@ class PFSenseModuleBase(object):
             self.bool_values = bool_values    # boolean values for specific arguments
         else:
             self.bool_values = dict()
-        self.create_default = create_default  # default values for a created target
+        if create_default is not None:
+            self.create_default = create_default  # default values for a created target
+        else:
+            self.create_default = dict()
         self.have_refid = have_refid      # if the element has a refid item
         self.target_elt = None  # xml object holding target pfsense parameters
 
