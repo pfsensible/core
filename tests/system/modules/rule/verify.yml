@@ -1,0 +1,5 @@
+---
+- name: Verify persisted configuration and live rule/table state
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/verify.yml"
+  vars:
+    expected_rule_action: "{{ system_case.args.action | default('pass') }}"

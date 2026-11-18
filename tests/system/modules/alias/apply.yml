@@ -1,0 +1,21 @@
+---
+- name: Verify the local HTTP fixture before applying the alias
+  ansible.builtin.uri:
+    url: "{{ system_case.args.url }}"
+    use_proxy: false
+    return_content: true
+    status_code: 200
+    timeout: 10
+  register: fixture_response
+  when: system_case.args.state | default('present') == 'present'
+
+- name: Require the expected fixture contents
+  ansible.builtin.assert:
+    that:
+      - fixture_response.content | trim == expected_address
+  when: system_case.args.state | default('present') == 'present'
+
+- name: Apply the alias using the collection under test
+  pfsensible.core.pfsense_alias: "{{ system_case.args }}"
+  check_mode: "{{ system_case.check_mode | default(false) }}"
+  register: system_change_result

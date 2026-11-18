@@ -1,0 +1,6 @@
+---
+- name: Delete the referencing rule before its alias
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/modules/rule/cleanup.yml"
+
+- name: Delete the alias and verify repeated deletion
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/modules/alias/cleanup.yml"

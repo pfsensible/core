@@ -1,0 +1,12 @@
+---
+- name: Create the isolated fixture directory
+  ansible.builtin.file:
+    path: /tmp/pfsensible-system
+    state: directory
+    mode: '0700'
+
+- name: Install the independent state observer
+  ansible.builtin.copy:
+    src: files/observe.py
+    dest: /tmp/pfsensible-system/observe.py
+    mode: '0600'

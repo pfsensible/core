@@ -118,6 +118,15 @@ native bytes are
 synced before replacement and used for subsequent conflict detection. Formatting
 does not run interface assignment, gateway creation, CARP changes, or apply hooks.
 
+## Appliance integration tests
+
+The [system-test framework](tests/system/README.md) runs actual Ansible modules
+against a disposable pfSense VM in QEMU. It checks saved configuration, downloaded
+alias caches, and live PF rules and tables, including idempotence, check mode,
+runtime repair, and reboot persistence. Configure a prepared appliance image URL
+and SHA-256 to enable the GitHub system-test workflow. See the framework guide for
+image preparation, virtual NIC configuration, local execution, and current coverage.
+
 ## Modules
 
 The following modules are currently available:

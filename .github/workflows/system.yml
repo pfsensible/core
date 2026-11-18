@@ -1,0 +1,114 @@
+name: pfSense system tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  appliance:
+    # A downloadable, prepared appliance is needed; see tests/system/README.md.
+    if: vars.PFSENSE_VM_IMAGE_URL != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PFSENSE_VM_IMAGE_URL: ${{ vars.PFSENSE_VM_IMAGE_URL }}
+      PFSENSE_VM_IMAGE_SHA256: ${{ vars.PFSENSE_VM_IMAGE_SHA256 }}
+    steps:
+      - name: Checkout collection under test
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Select the weekly package cache
+        id: package-cache-week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore package downloads
+        id: package-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            ${{ runner.temp }}/pfsensible-apt
+            ~/.cache/pip
+          key: pfsense-packages-${{ runner.os }}-${{ runner.arch }}-ubuntu24-py312-v1-${{ hashFiles('tests/system/apt-packages.txt', 'tests/system/requirements.txt') }}-${{ steps.package-cache-week.outputs.week }}
+          restore-keys: |
+            pfsense-packages-${{ runner.os }}-${{ runner.arch }}-ubuntu24-py312-v1-${{ hashFiles('tests/system/apt-packages.txt', 'tests/system/requirements.txt') }}-
+            pfsense-packages-${{ runner.os }}-${{ runner.arch }}-ubuntu24-py312-v1-
+
+      - name: Install QEMU and Ansible
+        env:
+          APT_ARCHIVE_DIR: ${{ runner.temp }}/pfsensible-apt
+        run: |
+          mkdir -p "$APT_ARCHIVE_DIR"
+          mapfile -t packages < tests/system/apt-packages.txt
+          sudo apt-get update
+          sudo apt-get -o "Dir::Cache::archives=$APT_ARCHIVE_DIR" \
+            -o APT::Keep-Downloaded-Packages=true \
+            install --yes --no-install-recommends "${packages[@]}"
+          sudo chmod -R a+rX "$APT_ARCHIVE_DIR"
+          python -m pip install -r tests/system/requirements.txt
+
+      # Save now so an appliance failure later in the job does not lose the cache.
+      - name: Save package downloads
+        if: steps.package-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ${{ runner.temp }}/pfsensible-apt
+            ~/.cache/pip
+          key: ${{ steps.package-cache.outputs.cache-primary-key }}
+
+      - name: Allow KVM acceleration when the runner provides it
+        run: |
+          if [[ -e /dev/kvm ]]; then
+            sudo setfacl -m "u:$(id -un):rw" /dev/kvm
+          fi
+
+      - name: Download and verify the prepared appliance
+        env:
+          APPLIANCE_IMAGE: ${{ runner.temp }}/pfsense-base.qcow2
+          APPLIANCE_DOWNLOAD: ${{ runner.temp }}/pfsense-download
+        run: |
+          [[ "$PFSENSE_VM_IMAGE_URL" == https://* ]]
+          [[ "$PFSENSE_VM_IMAGE_SHA256" =~ ^[0-9a-fA-F]{64}$ ]]
+          curl --fail --show-error --silent --location --retry 3 \
+            --proto '=https' --proto-redir '=https' \
+            "$PFSENSE_VM_IMAGE_URL" --output "$APPLIANCE_DOWNLOAD"
+          python tests/system/prepare_image.py \
+            --source "$APPLIANCE_DOWNLOAD" --destination "$APPLIANCE_IMAGE" \
+            --sha256 "$PFSENSE_VM_IMAGE_SHA256"
+
+      - name: Run tests against the disposable pfSense VM
+        env:
+          APPLIANCE_IMAGE: ${{ runner.temp }}/pfsense-base.qcow2
+        run: python tests/system/run.py --image "$APPLIANCE_IMAGE"
+
+      - name: Upload appliance test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pfsense-system-evidence
+          if-no-files-found: ignore
+          path: |
+            tests/output/system/ansible.log
+            tests/output/system/qemu.log
+            tests/output/system/serial.log
+            tests/output/system/version.txt
+            tests/output/system/vm.json
+            tests/output/system/pf-state.txt
+            tests/output/system/fixture-http.log
+            tests/output/system/ssh.log
+            tests/output/system/preflight.log
+            tests/output/system/monitor.json
+            tests/output/system/screen.png
+            tests/output/system/screen.ppm

@@ -1,0 +1,11 @@
+---
+- name: Wait for the rule to disappear from live PF
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+  vars:
+    pf_expect_action: absent
+
+- name: Verify the rule is absent from persisted configuration and PF
+  ansible.builtin.assert:
+    that:
+      - appliance.rules | length == 0
+      - appliance.loaded_rules | length == 0

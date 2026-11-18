@@ -1,0 +1,13 @@
+---
+- name: Check referencing rule deletion
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/rule/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/rule/verify_absent.yml"
+    system_case:
+      name: Delete referencing rule
+      args:
+        name: CI URL table test
+        interface: lan
+        state: absent
+      changed: true

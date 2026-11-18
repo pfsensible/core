@@ -1,0 +1,8 @@
+---
+# filter_configure() does not queue reloads while pfSense is marked as booting.
+- name: Wait for pfSense to finish native startup before changing configuration
+  ansible.builtin.wait_for:
+    path: /var/run/booting
+    state: absent
+    timeout: "{{ system_boot_timeout | default(600) }}"
+    sleep: 2

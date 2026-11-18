@@ -1,0 +1,22 @@
+---
+- name: Exercise a disposable pfSense appliance
+  hosts: pfsense
+  gather_facts: false
+  vars:
+    fixture_url: http://127.0.0.1:18080/first.txt
+    expected_address: 192.0.2.10
+  tasks:
+    - name: Prepare the disposable appliance
+      ansible.builtin.import_tasks: common/setup.yml
+
+    - name: Test aliases and prepare a referencing rule
+      ansible.builtin.include_tasks: modules/alias/main.yml
+
+    - name: Test firewall rule updates
+      ansible.builtin.include_tasks: modules/rule/main.yml
+
+    - name: Test reboot persistence
+      ansible.builtin.include_tasks: scenarios/persistence.yml
+
+    - name: Test deletion and clean up the scenario
+      ansible.builtin.include_tasks: scenarios/cleanup.yml
