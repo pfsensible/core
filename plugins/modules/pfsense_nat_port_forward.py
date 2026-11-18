@@ -53,10 +53,26 @@ options:
     description: The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
     default: null
     type: str
+  source_port:
+    description:
+      - Source port or port range specification.
+      - This can either be a alias or a port number.
+      - An inclusive range can also be specified, using the format C(first-last).
+    default: null
+    type: str
+    version_added: 0.7.1
   destination:
     description: The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
     default: null
     type: str
+  destination_port:
+    description:
+      - Destination port or port range specification.
+      - This can either be a alias or a port number.
+      - An inclusive range can also be specified, using the format C(first-last).
+    default: null
+    type: str
+    version_added: 0.7.1
   target:
     description: The translated to address, in {ALIAS,IP}[:port] format.
     required: false
