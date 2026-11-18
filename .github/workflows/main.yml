@@ -65,7 +65,7 @@ jobs:
           cp -al $dir core
           cd core
           ansible-test sanity --requirements --python ${{ matrix.python-version }}
-          ansible-test units --requirements --python ${{ matrix.python-version }}
+          ansible-test units --requirements --python ${{ matrix.python-version }} -v
 
   native-config:
     name: Native pfSense configuration tests

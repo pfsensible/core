@@ -1379,6 +1379,7 @@
 			<type>urltable</type>
 			<updatefreq>10</updatefreq>
 			<url>http://www.acme-corp.com</url>
+			<address>http://www.acme-corp.com</address>
 			<descr></descr>
 			<name>acme_corp</name>
 			<detail></detail>

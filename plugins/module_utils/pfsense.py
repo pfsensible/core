@@ -41,9 +41,10 @@ HTML4_ENTITIES = {name: chr(codepoint) for name, codepoint in name2codepoint.ite
 class PFSenseConfigError(Exception):
     """A configuration transaction cannot safely be committed."""
 
-    def __init__(self, message, mismatch=None):
+    def __init__(self, message, mismatch=None, native_validation=None):
         super(PFSenseConfigError, self).__init__(message)
         self.mismatch = mismatch
+        self.native_validation = native_validation
 
 
 # Return an element in node, but return an empty element instead of None if not found
@@ -322,27 +323,50 @@ class PFSenseModule(object):
         # including packages. Never expose configuration values or PHP errors.
         command = r'''
 ini_set('display_errors', '0');
+$stage = 10;
 try {
     require_once('/etc/inc/xmlparse.inc');
+    $stage = 11;
     $parsed = parse_xml_config($argv[1], array('pfsense'));
     if (!is_array($parsed) || empty($parsed)) {
-        exit(1);
+        exit($stage);
     }
+    $stage = 12;
     $xml = dump_xml_config($parsed, 'pfsense');
+    $stage = 13;
     if (file_put_contents($argv[1], $xml) !== strlen($xml)) {
-        exit(1);
+        exit($stage);
     }
     // Reject a native formatting round trip that changes values or structure.
+    $stage = 14;
     $roundtrip = parse_xml_config($argv[1], array('pfsense'));
-    exit($parsed === $roundtrip ? 0 : 1);
+    if (!is_array($roundtrip) || empty($roundtrip)) {
+        exit($stage);
+    }
+    exit($parsed === $roundtrip ? 0 : 15);
 } catch (\Throwable $error) {
-    exit(1);
+    exit($stage);
 }
 '''
         result, unused_stdout, unused_stderr = self.module.run_command(
             ['/usr/local/bin/php', '-r', command, path])
         if result != 0:
-            raise PFSenseConfigError('Native pfSense XML validation/formatting failed; live configuration was not replaced')
+            stage = {
+                10: 'load_parser', 11: 'parse_candidate', 12: 'serialize_candidate',
+                13: 'write_formatted_candidate', 14: 'parse_formatted_candidate',
+                15: 'compare_native_roundtrip',
+            }.get(result, 'php_command')
+            mismatch = None
+            if result == 15:
+                # The formatted candidate exists, so locate any changed field
+                # without disclosing either its intended or formatted value.
+                with open(path, 'rb') as candidate:
+                    formatted = self._parse_config(candidate.read())
+                mismatch = self._config_difference(self.root, formatted.getroot())
+            raise PFSenseConfigError(
+                'Native pfSense XML validation/formatting failed at {0} (PHP exit {1}); '
+                'live configuration was not replaced'.format(stage, result),
+                mismatch=mismatch, native_validation={'stage': stage, 'exit_code': result})
         with open(path, 'rb') as candidate:
             formatted = self._parse_config(candidate.read(), self._legacy_html_entities)
         self._validate_config(formatted)
@@ -1376,6 +1400,8 @@ try {
             details = {}
             if isinstance(error, PFSenseConfigError) and error.mismatch is not None:
                 details['config_mismatch'] = error.mismatch
+            if isinstance(error, PFSenseConfigError) and error.native_validation is not None:
+                details['native_validation'] = error.native_validation
             self.module.fail_json(
                 msg='{0}: {1}'.format(
                     'Configuration was replaced, but finalization failed' if committed

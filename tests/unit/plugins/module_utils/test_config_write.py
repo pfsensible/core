@@ -83,9 +83,15 @@ class ConfigWriteTests(unittest.TestCase):
         self.open_patch = patch.object(pfsense, 'open', side_effect=local_open, create=True)
         self.open_patch.start()
         self.addCleanup(self.open_patch.stop)
+        # The test runner may use a UID without a local passwd entry.
+        username_patch = patch.object(pfsense.PFSenseModule, 'get_username', return_value='test')
+        username_patch.start()
+        self.addCleanup(username_patch.stop)
 
     def helper(self):
-        return pfsense.PFSenseModule(Module(), str(self.path), str(self.lock), str(self.cache))
+        helper = pfsense.PFSenseModule(Module(), str(self.path), str(self.lock), str(self.cache))
+        helper.get_username = lambda: 'synthetic-test'
+        return helper
 
     def assert_original(self):
         self.assertEqual(self.path.read_bytes(), CONFIG)
@@ -107,6 +113,45 @@ class ConfigWriteTests(unittest.TestCase):
         self.assertEqual(self.helper().root.findtext('system/hostname'), 'changed')
         self.assertFalse(self.cache.exists())
         self.assertTrue(self.lock.exists())
+        self.assert_no_temporary_files()
+
+    def test_native_failure_reports_only_stage_and_exit_code(self):
+        stages = {
+            10: 'load_parser', 11: 'parse_candidate', 12: 'serialize_candidate',
+            13: 'write_formatted_candidate', 14: 'parse_formatted_candidate',
+            15: 'compare_native_roundtrip', 255: 'php_command', -9: 'php_command',
+        }
+        for exit_code, stage in stages.items():
+            with self.subTest(exit_code=exit_code):
+                helper = self.helper()
+                with patch.object(helper.module, 'run_command',
+                                  return_value=(exit_code, 'private stdout', 'private stderr')):
+                    with self.assertRaises(ModuleFailure) as failure:
+                        helper.write_config()
+                self.assertEqual(failure.exception.result['native_validation'],
+                                 {'stage': stage, 'exit_code': exit_code})
+                self.assertIn(stage, failure.exception.result['msg'])
+                self.assertNotIn('private', str(failure.exception.result))
+                self.assertFalse(failure.exception.result['changed'])
+                self.assert_original()
+                self.assert_no_temporary_files()
+
+    def test_native_roundtrip_failure_locates_changed_field(self):
+        helper = self.helper()
+
+        def change_candidate(command):
+            candidate = Path(command[-1])
+            candidate.write_bytes(candidate.read_bytes().replace(b'firewall', b'private changed value'))
+            return 15, 'private stdout', 'private stderr'
+
+        with patch.object(helper.module, 'run_command', side_effect=change_candidate):
+            with self.assertRaises(ModuleFailure) as failure:
+                helper.write_config()
+        self.assertEqual(failure.exception.result['config_mismatch'],
+                         {'path': '/pfsense[1]/system[1]/hostname[1]', 'reason': 'text differs'})
+        self.assertEqual(failure.exception.result['native_validation']['stage'], 'compare_native_roundtrip')
+        self.assertNotIn('private', str(failure.exception.result))
+        self.assert_original()
         self.assert_no_temporary_files()
 
     def test_temporary_files_always_share_config_directory(self):
@@ -513,8 +558,9 @@ class ConfigWriteTests(unittest.TestCase):
     def test_native_parser_rejects_duplicate_scalar_field(self):
         helper = self.helper()
         ET.SubElement(helper.root.find('system'), 'hostname').text = 'duplicate'
-        with self.assertRaisesRegex(ModuleFailure, 'Native pfSense XML validation/formatting failed'):
+        with self.assertRaisesRegex(ModuleFailure, 'Native pfSense XML validation/formatting failed') as failure:
             helper.write_config()
+        self.assertEqual(failure.exception.result['native_validation']['stage'], 'parse_candidate')
         self.assert_original()
         self.assert_no_temporary_files()
 
@@ -522,8 +568,10 @@ class ConfigWriteTests(unittest.TestCase):
     def test_unstable_native_round_trip_is_rejected(self):
         helper = self.helper()
         helper.root.find('system/password').text = 'line\rvalue'
-        with self.assertRaisesRegex(ModuleFailure, 'live configuration was not replaced'):
+        with self.assertRaisesRegex(ModuleFailure, 'live configuration was not replaced') as failure:
             helper.write_config()
+        self.assertEqual(failure.exception.result['config_mismatch'],
+                         {'path': '/pfsense[1]/system[1]/password[1]', 'reason': 'text differs'})
         self.assert_original()
         self.assert_no_temporary_files()
 

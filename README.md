@@ -109,12 +109,17 @@ rules and lists of VPN servers or clients cannot be silently reordered. For
 example, appending a new OpenVPN server after existing clients is accepted when
 PHP groups it with the other server entries without changing either list's order.
 A mismatch aborts the write and reports `config_mismatch` with the first field's
-indexed XML path and a reason, without including configuration values. The final
+indexed XML path and a reason, without including configuration values. Native
+PHP failures also report `native_validation` with a fixed stage name and exit
+code (parser loading, candidate parsing, serialization, temporary-file writing,
+formatted parsing, or native round-trip comparison). Raw PHP output is never
+returned because it may contain configuration secrets. The final
 native bytes are
 synced before replacement and used for subsequent conflict detection. Formatting
 does not run interface assignment, gateway creation, CARP changes, or apply hooks.
 
 ## Modules
+
 The following modules are currently available:
 
 * [pfsense_alias](https://github.com/pfsensible/core/wiki/pfsense_alias) for aliases

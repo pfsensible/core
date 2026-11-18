@@ -21,6 +21,8 @@ short_description: Manage pfSense aliases
 description:
   - Manage pfSense aliases
 notes:
+  - URL tables are initialized before filter reload. Missing or empty runtime table files are repaired on a rerun.
+  - A failed download or a table with no usable entries fails the task before filter reload.
 options:
   name:
     description: The name of the alias
@@ -40,7 +42,7 @@ options:
     default: null
     type: str
   url:
-    description: The URL of the alias for `urltable` or `urltable_ports` types. Use a space separator for multiple values
+    description: A single URL for `urltable` or `urltable_ports` types; required for these types unless deprecated address is supplied
     default: null
     type: str
   descr:

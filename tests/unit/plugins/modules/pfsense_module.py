@@ -89,6 +89,26 @@ class TestPFSenseModule(ModuleTestCase):
         self.php = self.mock_php.start()
         self.php.return_value = ['vmx0', 'vmx1', 'vmx2', 'vmx3']
 
+        def php_response(command):
+            if 'process_alias_urltable(' in command:
+                return {'failed_aliases': []}
+            return self.php.return_value
+
+        self.php.side_effect = php_response
+
+        # Legacy module fixtures describe aliases whose runtime tables are ready.
+        # Missing/empty table behavior is covered by module-utils/test_alias.py.
+        original_getsize = os.path.getsize
+
+        def getsize(path):
+            if str(path).startswith('/var/db/aliastables/'):
+                return 12
+            return original_getsize(path)
+
+        mock_getsize = patch('ansible_collections.pfsensible.core.plugins.module_utils.alias.os.path.getsize', side_effect=getsize)
+        mock_getsize.start()
+        self.addCleanup(mock_getsize.stop)
+
         self.mock_phpshell = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.phpshell')
         self.phpshell = self.mock_phpshell.start()
         self.phpshell.return_value = (0, '', '')
