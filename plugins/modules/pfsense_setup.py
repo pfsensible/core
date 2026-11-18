@@ -153,6 +153,21 @@ options:
     description: Show hostname on login banner
     required: false
     type: bool
+  nodnsrebindcheck:
+    description: >
+        Disable DNS Rebinding Checks. When this is not set, the system is protected against DNS Rebinding attacks. This blocks private IP responses from the
+        configured DNS servers. Disable this protection if it interferes with webConfigurator access or name resolution in the environment.
+    required: false
+    type: bool
+    version_added: 0.8.0
+  nohttpreferercheck:
+    description: >
+      Disable HTTP_REFERER enforcement check. When this is not set, access to the webConfigurator is protected against HTTP_REFERER redirection attempts.
+      Disable this protection if it interferes with webConfigurator access in certain corner cases such as using external scripts to interact with this system.
+      More information on HTTP_REFERER is available from Wikipedia.
+    required: false
+    type: bool
+    version_added: 0.8.0
   sshguard_whitelist:
     description: Addresses (in CIDR notation) listed will bypass login protection.
     required: false
@@ -253,6 +268,8 @@ SETUP_ARGUMENT_SPEC = dict(
     roworderdragging=dict(required=False, type='bool'),
     logincss=dict(required=False, type='str'),
     loginshowhost=dict(required=False, type='bool'),
+    nodnsrebindcheck=dict(required=False, type='bool'),
+    nohttpreferercheck=dict(required=False, type='bool'),
     sshguard_whitelist=dict(required=False, type='list', elements='str'),
     crypto_hardware=dict(required=False, type='str', choices=['', 'aesni', 'aesni_cryptodev', 'qat']),
     thermal_hardware=dict(required=False, type='str', choices=['', 'coretemp', 'amdtemp']),
@@ -316,6 +333,8 @@ SETUP_MAP_PARAM = [
     ('interfacessort', 'webgui/interfacessort'),
     ('logincss', 'webgui/logincss'),
     ('loginshowhost', 'webgui/loginshowhost'),
+    ('nodnsrebindcheck', 'webgui/nodnsrebindcheck'),
+    ('nohttpreferercheck', 'webgui/nohttpreferercheck'),
     ('requirestatefilter', 'webgui/requirestatefilter'),
     ('roworderdragging', 'webgui/roworderdragging'),
     ('session_timeout', 'webgui/session_timeout'),
@@ -631,6 +650,8 @@ load_thermal_hardware();'''
         values += self.format_updated_cli_field(webgui, bwebgui, 'roworderdragging', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, 'logincss', add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, 'loginshowhost', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, 'nodnsrebindcheck', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, 'nohttpreferercheck', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
 
         return values
 
