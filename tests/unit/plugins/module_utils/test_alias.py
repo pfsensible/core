@@ -61,6 +61,7 @@ class Module:
 class AliasTests(unittest.TestCase):
     def setUp(self):
         self.module = Module()
+        self.module.run_command = Mock(return_value=(0, '', ''))
         self.helper = pfsense.PFSenseModule.__new__(pfsense.PFSenseModule)
         self.helper.module = self.module
         self.helper.debug = io.StringIO()
@@ -148,11 +149,66 @@ class AliasTests(unittest.TestCase):
         self.assertEqual(failure.exception.result['failed_aliases'], ['fail2ban'])
         self.helper.phpshell.assert_not_called()
 
+    def test_url_change_replaces_existing_kernel_entries_before_filter_reload(self):
+        self.alias.run(self.params())
+        self.alias = alias.PFSenseAliasModule(self.module, self.helper)
+        self.alias.run(self.params(url='https://127.0.0.1/aliastables/new'))
+        kernel_entries = ['192.0.2.10']
+        downloaded_entries = ['198.51.100.20']
+        self.helper.php.side_effect = lambda command: {'failed_aliases': [], 'updated_aliases': ['fail2ban']}
+
+        def kernel(command):
+            if command == ['/sbin/pfctl', '-s', 'Tables']:
+                return 0, 'fail2ban\n', ''
+            if command == ['/sbin/pfctl', '-t', 'fail2ban', '-T', 'replace', '-f', '/var/db/aliastables/fail2ban.txt']:
+                kernel_entries[:] = downloaded_entries
+                return 0, '', ''
+            raise AssertionError('Unexpected kernel operation: ' + str(command))
+
+        def reload(command):
+            # Model a modern filter reload that does nothing when rules did not
+            # change. The table must already be updated before this point.
+            self.assertEqual(kernel_entries, downloaded_entries)
+            return 0, '', ''
+
+        self.module.run_command.side_effect = kernel
+        self.helper.phpshell.side_effect = reload
+        self.commit()
+        self.assertEqual(kernel_entries, ['198.51.100.20'])
+
+    def test_new_table_is_left_for_normal_filter_creation(self):
+        self.alias.run(self.params())
+        self.helper.php.side_effect = lambda command: {'failed_aliases': [], 'updated_aliases': ['fail2ban']}
+        self.commit()
+        self.module.run_command.assert_called_once_with(['/sbin/pfctl', '-s', 'Tables'])
+        self.helper.phpshell.assert_called_once()
+
+    def test_kernel_replacement_failure_stops_filter_reload(self):
+        self.alias.run(self.params())
+        self.helper.php.side_effect = lambda command: {'failed_aliases': [], 'updated_aliases': ['fail2ban']}
+        self.module.run_command.side_effect = [(0, 'fail2ban\n', ''), (1, 'private output', 'private error')]
+        with self.assertRaises(ModuleFailure) as failure:
+            self.commit()
+        self.assertTrue(failure.exception.result['changed'])
+        self.assertEqual(failure.exception.result['failed_aliases'], ['fail2ban'])
+        self.assertNotIn('private', str(failure.exception.result))
+        self.helper.phpshell.assert_not_called()
+
+    def test_kernel_table_inspection_failure_stops_filter_reload(self):
+        self.alias.run(self.params())
+        self.helper.php.side_effect = lambda command: {'failed_aliases': [], 'updated_aliases': ['fail2ban']}
+        self.module.run_command.return_value = (1, '', '')
+        with self.assertRaises(ModuleFailure) as failure:
+            self.commit()
+        self.assertTrue(failure.exception.result['changed'])
+        self.helper.phpshell.assert_not_called()
+
     def test_check_mode_performs_no_runtime_writes(self):
         self.module.check_mode = True
         self.alias.run(self.params())
         self.assertTrue(self.commit()['changed'])
         self.assertEqual(self.events, [])
+        self.module.run_command.assert_not_called()
 
     def test_host_alias_does_not_initialize_url_tables(self):
         self.alias.run(self.params(type='host', url=None, address='192.0.2.10', updatefreq=None))
@@ -224,10 +280,10 @@ function group_ports($ports, $group) { return $ports; }
             def native(command):
                 command = command.replace('require_once("pfsense-utils.inc");', stubs + functions)
                 command = command.replace('/var/db/aliastables/', directory + '/cache/')
-                command = command.replace("echo json_encode(array('failed_aliases' => $failed));",
+                command = command.replace("echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated));",
                                           "alias_make_table(); $resolved = alias_expand('fail2ban'); "
                                           "unset($config_aliases[0]['address']); alias_make_table(); "
-                                          "echo json_encode(array('failed_aliases' => $failed, 'resolved' => $resolved, "
+                                          "echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated, 'resolved' => $resolved, "
                                           "'without_address' => alias_expand('fail2ban')));")
                 result = subprocess.run([PHP_BINARY, '-r', command], capture_output=True, text=True, check=False)
                 self.assertEqual(result.returncode, 0, result.stderr + result.stdout)

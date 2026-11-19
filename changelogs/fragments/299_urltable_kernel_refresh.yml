@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_alias - explicitly refresh existing PF address tables after downloading URL table changes, including when pfSense skips reloading unchanged filter rules.
