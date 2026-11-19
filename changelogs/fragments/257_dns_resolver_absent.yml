@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_dns_resolver fixes ``state: absent`` failing because ElementTree cannot
+    remove the ``unbound`` root element. The resolver is disabled by removing its
+    ``enable`` flag instead. (https://github.com/pfsensible/core/issues/257)

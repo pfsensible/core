@@ -618,6 +618,11 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             return ["hideidentity", "hideversion", "dnssecstripped", "forwarding", "regdhcp", "regdhcpstatic", "regovpnclients", "enablessl", "dnssec",
                     "forward_tls_upstream", "prefetch", "prefetchkey", "strictout"]
 
+    def _remove_target_elt(self):
+        """ disable the resolver: target_elt is the unbound root, so only clear its enable flag """
+        if self.pfsense.remove_deleted_param_from_elt(self.target_elt, "enable", {}):
+            self.result['changed'] = True
+
     ##############################
     # run
     #

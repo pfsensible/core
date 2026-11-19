@@ -180,6 +180,16 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual([host.findtext('host') for host in hosts], ['server', 'other'])
         self.assertEqual(hosts[0].findall('aliases/item'), [])
 
+    def test_dns_resolver_absent_disables_resolver(self):
+        """ state=absent removes the enable flag instead of the unbound root element """
+        obj = dict()
+        with set_module_args(self.args_from_var(obj, state='absent')):
+            self.execute_module(changed=True)
+            self.assertTrue(self.load_xml_result())
+        unbound = self.xml_result.find('unbound')
+        self.assertIsNotNone(unbound)
+        self.assertIsNone(unbound.find('enable'))
+
     def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
         """ test initialization of the DNS Resolver """
         obj = dict(
