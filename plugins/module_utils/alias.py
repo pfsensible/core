@@ -153,7 +153,7 @@ class PFSenseAliasModule(PFSenseModuleBase):
                 self.change_descr = 'ansible alias initialized URL table {0}'.format(self.params['name'])
 
     def initialize_url_tables(self):
-        """Download selected URL tables synchronously, before filter reload."""
+        """Download selected URL tables and refresh existing PF address tables."""
         if not self._urltable_updates:
             return
         # Names are validated alias names; URLs are read from committed config
@@ -162,6 +162,7 @@ class PFSenseAliasModule(PFSenseModuleBase):
         command = '''require_once("pfsense-utils.inc");
 $requests = json_decode('%s', true);
 $failed = array();
+$updated = array();
 foreach (config_get_path('aliases/alias', array()) as $alias) {
     $name = $alias['name'];
     if (!array_key_exists($name, $requests)) {
@@ -173,17 +174,45 @@ foreach (config_get_path('aliases/alias', array()) as $alias) {
     clearstatcache(true, $path);
     if ($status === false || !is_readable($path) || trim(file_get_contents($path)) === '') {
         $failed[] = $name;
+    } elseif ($alias['type'] === 'urltable' && ($status === true || $status === 1)) {
+        $updated[] = $name;
     }
     unset($requests[$name]);
 }
 $failed = array_merge($failed, array_keys($requests));
-echo json_encode(array('failed_aliases' => $failed));
+echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated));
 ''' % requests
         result = self.pfsense.php(command)
         if result['failed_aliases']:
             self.module.fail_json(
                 msg='URL table initialization failed or returned no usable entries; filter reload was not attempted',
                 failed_aliases=result['failed_aliases'], changed=True)
+        self._refresh_url_tables(result.get('updated_aliases', []))
+
+    def _refresh_url_tables(self, names):
+        """Mirror rc.update_urltables: refresh existing address tables explicitly."""
+        # A filter reload can be skipped when only a referenced table file changed.
+        if not names:
+            return
+        code, stdout, unused_stderr = self.module.run_command(['/sbin/pfctl', '-s', 'Tables'])
+        if code != 0:
+            self.module.fail_json(msg='Unable to inspect PF tables after URL table download; filter reload was not attempted',
+                                  failed_aliases=names, changed=True)
+        existing = set(line.strip() for line in stdout.splitlines())
+        failed = []
+        for name in names:
+            # A new/unreferenced alias may not have a PF table yet. The normal
+            # filter reload creates it. Port aliases use macros, not PF tables.
+            if name not in existing:
+                continue
+            path = '/var/db/aliastables/{0}.txt'.format(name)
+            code, unused_stdout, unused_stderr = self.module.run_command(
+                ['/sbin/pfctl', '-t', name, '-T', 'replace', '-f', path])
+            if code != 0:
+                failed.append(name)
+        if failed:
+            self.module.fail_json(msg='URL table download succeeded, but PF table replacement failed; filter reload was not attempted',
+                                  failed_aliases=failed, changed=True)
 
     def _update(self):
         self.initialize_url_tables()
