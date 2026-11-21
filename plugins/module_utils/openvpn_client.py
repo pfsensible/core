@@ -16,6 +16,8 @@ OPENVPN_CLIENT_ARGUMENT_SPEC = dict(
     name=dict(required=True, type='str'),
     mode=dict(default='p2p_tls', required=False, choices=['p2p_tls', 'p2p_shared_key']),
     authmode=dict(default=list(), required=False, type='list', elements='str'),
+    auth_user=dict(required=False, type='str'),
+    auth_pass=dict(required=False, type='str'),
     state=dict(default='present', choices=['present', 'absent']),
     custom_options=dict(default=None, required=False, type='str'),
     disable=dict(default=False, required=False, type='bool'),
@@ -144,6 +146,8 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
             obj['compression'] = self.params['compression']
             obj['topology'] = self.params['topology']
             obj['create_gw'] = self.params['create_gw']
+            obj['auth_user'] = self.params['auth_user']
+            obj['auth_pass'] = self.params['auth_pass']
 
             if 'user' in self.params['mode']:
                 obj['authmode'] = ",".join(self.params['authmode'])
