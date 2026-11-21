@@ -96,6 +96,13 @@ options:
   tcpflags_any:
     description: Allow TCP packets with any flags set.
     type: bool
+  statepolicy:
+    description: >
+        State policy. Optionally overrides the default state policy behavior to force a specific policy for connections matching this rule. Only effective when
+        rules keep state. The global default policy option is located at System > Advanced, Firewall & NAT tab.
+    choices: ["", "if-bound", "floating"]
+    type: str
+    version_added: 0.8.0
   statetype:
     description: State type
     default: keep state

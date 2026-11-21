@@ -29,6 +29,7 @@ RULE_ARGUMENT_SPEC = dict(
     after=dict(required=False, type='str'),
     before=dict(required=False, type='str'),
     tcpflags_any=dict(required=False, type='bool'),
+    statepolicy=dict(choices=['', 'if-bound', 'floating']),
     statetype=dict(default='keep state', choices=['keep state', 'sloppy state', 'synproxy state', 'none']),
     queue=dict(required=False, type='str'),
     ackqueue=dict(required=False, type='str'),
@@ -140,6 +141,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
             self._get_ansible_param(obj, 'tracker', exclude='')
             self._get_ansible_param(obj, 'gateway', exclude='default')
             self._get_ansible_param(obj, 'sched')
+            self._get_ansible_param(obj, 'statepolicy')
 
             self._get_ansible_param_bool(obj, 'disabled', value='')
             self._get_ansible_param_bool(obj, 'log', value='')
@@ -600,6 +602,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }''')
             values += self.format_cli_field(self.params, 'ipprotocol', default='inet')
             values += self.format_cli_field(self.params, 'icmptype', default='any')
             values += self.format_cli_field(self.params, 'tcpflags_any', fvalue=self.fvalue_bool)
+            values += self.format_cli_field(self.params, 'statepolicy')
             values += self.format_cli_field(self.params, 'statetype', default='keep state')
             values += self.format_cli_field(self.params, 'action', default='pass')
             values += self.format_cli_field(self.params, 'disabled', fvalue=self.fvalue_bool, default=False)
@@ -631,6 +634,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }''')
             values += self.format_updated_cli_field(self.obj, before, 'direction', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'ipprotocol', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'tcpflags_any', fvalue=self.fvalue_bool, add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, 'statepolicy', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'statetype', add_comma=(values))
             values += self.format_updated_cli_field(self.params, before, 'action', add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, 'disabled', fvalue=self.fvalue_bool, add_comma=(values))

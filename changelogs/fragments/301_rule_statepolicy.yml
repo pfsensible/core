@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_rule - add statepolicy parameter (https://github.com/pfsensible/core/pull/301)
