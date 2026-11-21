@@ -361,7 +361,7 @@ try {
                 # The formatted candidate exists, so locate any changed field
                 # without disclosing either its intended or formatted value.
                 with open(path, 'rb') as candidate:
-                    formatted = self._parse_config(candidate.read())
+                    formatted = self._parse_config(candidate.read(), self._legacy_html_entities)
                 mismatch = self._config_difference(self.root, formatted.getroot())
             raise PFSenseConfigError(
                 'Native pfSense XML validation/formatting failed at {0} (PHP exit {1}); '
