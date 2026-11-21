@@ -18,7 +18,7 @@ import xml.etree.ElementTree as ET
 from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 
 
-fixture_path = os.path.join(os.path.dirname(__file__), 'fixtures')
+fixture_path = os.path.join(os.path.dirname(__file__), "fixtures")
 fixture_data = {}
 
 
@@ -55,43 +55,43 @@ class TestPFSenseModule(ModuleTestCase):
         """ mocking up """
         super(TestPFSenseModule, self).setUp()
 
-        directory = TemporaryDirectory(prefix='pfsense-module-tests-')
+        directory = TemporaryDirectory(prefix="pfsense-module-tests-")
         self.addCleanup(directory.cleanup)
-        self.tmp_file = os.path.join(directory.name, 'config.xml')
-        self.backup_file = self.tmp_file + '.ansible.bak'
+        self.tmp_file = os.path.join(directory.name, "config.xml")
+        self.backup_file = self.tmp_file + ".ansible.bak"
         # Some module-utils tests construct the helper without loading fixtures.
-        with open(self.tmp_file, 'w') as config:
-            config.write('<pfsense><version>24.0</version></pfsense>')
+        with open(self.tmp_file, "w") as config:
+            config.write("<pfsense><version>24.0</version></pfsense>")
 
         original_init = PFSenseModule.__init__
 
         def init_config(helper, module, *args, **kwargs):
             original_init(helper, module, config=self.tmp_file,
-                          config_lock=os.path.join(directory.name, 'config.lock'),
-                          config_cache=os.path.join(directory.name, 'config.cache'))
+                          config_lock=os.path.join(directory.name, "config.lock"),
+                          config_cache=os.path.join(directory.name, "config.cache"))
 
-        mock_init = patch.object(PFSenseModule, '__init__', autospec=True, side_effect=init_config)
+        mock_init = patch.object(PFSenseModule, "__init__", autospec=True, side_effect=init_config)
         mock_init.start()
         self.addCleanup(mock_init.stop)
 
         # PHP is unavailable in module tests. Decode the transport XML as the
         # native formatter would, while retaining the real atomic write path.
         def format_config(path):
-            with open(path, 'rb') as config:
+            with open(path, "rb") as config:
                 tree = PFSenseModule._parse_config(config.read())
-            tree.write(path, encoding='utf-8', short_empty_elements=False)
+            tree.write(path, encoding="utf-8", short_empty_elements=False)
 
-        mock_native = patch.object(PFSenseModule, '_validate_native_config', side_effect=format_config)
+        mock_native = patch.object(PFSenseModule, "_validate_native_config", side_effect=format_config)
         mock_native.start()
         self.addCleanup(mock_native.stop)
 
-        self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
+        self.mock_php = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php")
         self.php = self.mock_php.start()
-        self.php.return_value = ['vmx0', 'vmx1', 'vmx2', 'vmx3']
+        self.php.return_value = ["vmx0", "vmx1", "vmx2", "vmx3"]
 
         def php_response(command):
-            if 'process_alias_urltable(' in command:
-                return {'failed_aliases': []}
+            if "process_alias_urltable(" in command:
+                return {"failed_aliases": []}
             return self.php.return_value
 
         self.php.side_effect = php_response
@@ -101,19 +101,19 @@ class TestPFSenseModule(ModuleTestCase):
         original_getsize = os.path.getsize
 
         def getsize(path):
-            if str(path).startswith('/var/db/aliastables/'):
+            if str(path).startswith("/var/db/aliastables/"):
                 return 12
             return original_getsize(path)
 
-        mock_getsize = patch('ansible_collections.pfsensible.core.plugins.module_utils.alias.os.path.getsize', side_effect=getsize)
+        mock_getsize = patch("ansible_collections.pfsensible.core.plugins.module_utils.alias.os.path.getsize", side_effect=getsize)
         mock_getsize.start()
         self.addCleanup(mock_getsize.stop)
 
-        self.mock_phpshell = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.phpshell')
+        self.mock_phpshell = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.phpshell")
         self.phpshell = self.mock_phpshell.start()
-        self.phpshell.return_value = (0, '', '')
+        self.phpshell.return_value = (0, "", "")
 
-        self.mock_get_version = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.get_version')
+        self.mock_get_version = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.get_version")
         self.get_version = self.mock_get_version.start()
         self.get_version.return_value = "2.5.2"
 
@@ -147,7 +147,7 @@ class TestPFSenseModule(ModuleTestCase):
         target_elt_string = ET.tostring(target_elt, encoding="unicode", short_empty_elements=False)
         self.assertEqual(target_elt_string, expected_elt_string)
 
-    def args_from_var(self, var, state='present', **kwargs):
+    def args_from_var(self, var, state="present", **kwargs):
         """ return arguments for module from var """
         args = {}
 
@@ -157,35 +157,35 @@ class TestPFSenseModule(ModuleTestCase):
                 args[field] = var[field]
 
         if state is not None:
-            args['state'] = state
+            args["state"] = state
         for key, value in kwargs.items():
             args[key] = value
 
         return args
 
-    def execute_module(self, failed=False, changed=False, commands=None, sort=True, defaults=False, msg=''):
+    def execute_module(self, failed=False, changed=False, commands=None, sort=True, defaults=False, msg=""):
         self.load_fixtures()
 
         if failed:
             result = self.failed()
-            self.assertTrue(result['failed'], result)
+            self.assertTrue(result["failed"], result)
         else:
             result = self.changed(changed)
 
         if not failed:
-            self.assertEqual(result['changed'], changed, result)
+            self.assertEqual(result["changed"], changed, result)
         else:
-            self.assertEqual(result['msg'], msg)
+            self.assertEqual(result["msg"], msg)
 
         if commands is not None:
             if sort:
-                self.assertEqual(sorted(commands), sorted(result['commands']), result['commands'])
+                self.assertEqual(sorted(commands), sorted(result["commands"]), result["commands"])
             else:
-                self.assertEqual(commands, result['commands'], result['commands'])
+                self.assertEqual(commands, result["commands"], result["commands"])
 
         return result
 
-    def do_module_test(self, obj, command=None, changed=True, failed=False, msg=None, delete=False, state='present', expected_elt_string=None, **kwargs):
+    def do_module_test(self, obj, command=None, changed=True, failed=False, msg=None, delete=False, state="present", expected_elt_string=None, **kwargs):
         """ run test """
         if command is not None:
             command = self.strip_commands(command)
@@ -193,7 +193,7 @@ class TestPFSenseModule(ModuleTestCase):
         obj = self.strip_params(obj)
 
         if delete:
-            state = 'absent'
+            state = "absent"
 
         with set_module_args(self.args_from_var(obj, state=state)):
             result = self.execute_module(changed=changed, failed=failed, msg=msg)
@@ -205,17 +205,17 @@ class TestPFSenseModule(ModuleTestCase):
                 self.assertFalse(self.load_xml_result())
             elif not changed:
                 self.assertFalse(self.load_xml_result())
-                self.assertEqual(result['commands'], [], result)
+                self.assertEqual(result["commands"], [], result)
             elif delete:
                 self.assertTrue(self.load_xml_result())
                 target_elt = self.get_target_elt(obj, absent=True, module_result=result)
                 self.assertIsNone(target_elt)
-                self.assertEqual(result['commands'], command, result)
+                self.assertEqual(result["commands"], command, result)
             else:
                 self.assertTrue(self.load_xml_result())
                 target_elt = self.get_target_elt(obj, module_result=result)
                 self.assertIsNotNone(target_elt)
-                self.assertEqual(result['commands'], command, result)
+                self.assertEqual(result["commands"], command, result)
                 if expected_elt_string is not None:
                     self.check_target_elt_direct(target_elt, expected_elt_string)
                 else:
@@ -226,7 +226,7 @@ class TestPFSenseModule(ModuleTestCase):
             self.module.main()
 
         result = exc.exception.args[0]
-        self.assertTrue(result['failed'], result)
+        self.assertTrue(result["failed"], result)
         return result
 
     def changed(self, changed=False):
@@ -235,23 +235,23 @@ class TestPFSenseModule(ModuleTestCase):
 
         result = exc.exception.args[0]
 
-        if 'diff' in result:
+        if "diff" in result:
             changes = dict()
-            after = dict(result['diff']['after'])
-            before = dict(result['diff']['before'])
+            after = dict(result["diff"]["after"])
+            before = dict(result["diff"]["before"])
             for item in after:
                 if item in before:
                     if after[item] != before[item]:
-                        changes[item] = str(before[item]) + ' -> ' + str(after[item])
+                        changes[item] = str(before[item]) + " -> " + str(after[item])
                     del before[item]
                 else:
-                    changes[item] = 'None -> ' + str(after[item])
+                    changes[item] = "None -> " + str(after[item])
             for item in before:
-                changes[item] = str(before[item]) + ' -> None'
+                changes[item] = str(before[item]) + " -> None"
             if changes:
-                result['changes'] = changes
+                result["changes"] = changes
 
-        self.assertEqual(result['changed'], changed, result)
+        self.assertEqual(result["changed"], changed, result)
         return result
 
     def strip_commands(self, commands):
@@ -268,7 +268,7 @@ class TestPFSenseModule(ModuleTestCase):
 
     def load_fixtures(self):
         """ loading data """
-        with open(self.tmp_file, 'w') as config:
+        with open(self.tmp_file, "w") as config:
             config.write(load_fixture(self.get_config_file()))
 
     def load_xml_result(self):
@@ -300,11 +300,11 @@ class TestPFSenseModule(ModuleTestCase):
         self.load_xml_result()
         parent_tag = self.xml_result.find(parent_tag_name)
         if parent_tag is None:
-            self.fail('Unable to find tag ' + parent_tag_name)
+            self.fail("Unable to find tag " + parent_tag_name)
 
         tag = self.find_xml_tag(parent_tag, elt_filter)
         if tag is None:
-            self.fail('Tag not found: ' + json.dumps(elt_filter))
+            self.fail("Tag not found: " + json.dumps(elt_filter))
 
         self.assert_xml_elt_equal(tag, elt_name, elt_value)
 
@@ -313,11 +313,11 @@ class TestPFSenseModule(ModuleTestCase):
         self.load_xml_result()
         parent_tag = self.xml_result.find(parent_tag_name)
         if parent_tag is None:
-            self.fail('Unable to find tag ' + parent_tag_name)
+            self.fail("Unable to find tag " + parent_tag_name)
 
         tag = self.find_xml_tag(parent_tag, elt_filter)
         if tag is None:
-            self.fail('Tag not found: ' + json.dumps(elt_filter))
+            self.fail("Tag not found: " + json.dumps(elt_filter))
 
         for elt_name, elt_value in elts.items():
             self.assert_xml_elt_equal(tag, elt_name, elt_value)
@@ -327,31 +327,31 @@ class TestPFSenseModule(ModuleTestCase):
         self.load_xml_result()
         parent_tag = self.xml_result.find(parent_tag_name)
         if parent_tag is None:
-            self.fail('Unable to find tag ' + parent_tag_name)
+            self.fail("Unable to find tag " + parent_tag_name)
 
         tag = self.find_xml_tag(parent_tag, elt_filter)
         if absent and tag is not None:
-            self.fail('Tag found: ' + json.dumps(elt_filter))
+            self.fail("Tag found: " + json.dumps(elt_filter))
         elif not absent and tag is None:
-            self.fail('Tag not found: ' + json.dumps(elt_filter))
+            self.fail("Tag not found: " + json.dumps(elt_filter))
         return tag
 
     def assert_find_xml_elt(self, tag, elt_name):
         elt = tag.find(elt_name)
         if elt is None:
-            self.fail('Element not found: ' + elt_name)
+            self.fail("Element not found: " + elt_name)
         return elt
 
     def assert_not_find_xml_elt(self, tag, elt_name):
         elt = tag.find(elt_name)
         if elt is not None:
-            self.fail('Element found: ' + elt_name)
+            self.fail("Element found: " + elt_name)
         return elt
 
     def assert_xml_elt_equal(self, tag, elt_name, elt_value):
         elt = tag.find(elt_name)
         if elt is None:
-            self.fail('Element not found: ' + elt_name + ' in tag:' + tag)
+            self.fail("Element not found: " + elt_name + " in tag:" + tag)
 
         if isinstance(elt_value, int):
             value = str(elt_value)
@@ -359,26 +359,26 @@ class TestPFSenseModule(ModuleTestCase):
             value = elt_value
 
         # XML parsing represents an existing empty element with text=None.
-        if value == '' and elt.text is None:
+        if value == "" and elt.text is None:
             return elt
 
         if elt.text != value:
             if elt.text is None:
-                self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(value) + '\' result: None')
+                self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(value) + "\' result: None")
             else:
-                self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(value) + '\' result: \'' + elt.text + '\'')
+                self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(value) + "\' result: \'" + elt.text + "\'")
         return elt
 
     def assert_xml_elt_match(self, tag, elt_name, elt_regex):
         elt = tag.find(elt_name)
         if elt is None:
-            self.fail('Element not found: ' + elt_name)
+            self.fail("Element not found: " + elt_name)
 
         if re.fullmatch(elt_regex, elt.text) is None:
             if elt.text is None:
-                self.fail('Element <' + elt_name + '> does not match \'' + elt_regex + '\' result: None')
+                self.fail("Element <" + elt_name + "> does not match \'" + elt_regex + "\' result: None")
             else:
-                self.fail('Element <' + elt_name + '> does not match \'' + elt_regex + '\' result: \'' + elt.text + '\'')
+                self.fail("Element <" + elt_name + "> does not match \'" + elt_regex + "\' result: \'" + elt.text + "\'")
         return elt
 
     def assert_xml_elt_is_none_or_empty(self, tag, elt_name):
@@ -386,25 +386,25 @@ class TestPFSenseModule(ModuleTestCase):
         if elt is None:
             return elt
         if elt.text is not None and elt.text:
-            self.fail('Element <' + elt_name + '> differs. Expected: NoneType result: \'' + elt.text + '\'')
+            self.fail("Element <" + elt_name + "> differs. Expected: NoneType result: \'" + elt.text + "\'")
         return elt
 
     def assert_list_xml_elt_equal(self, tag, elt_name, elt_value):
         elts = tag.findall(elt_name)
         if elts is None:
-            self.fail('Element not found: ' + elt_name)
+            self.fail("Element not found: " + elt_name)
         elt_value_copy = list(elt_value)
         elt_texts = []
         for elt in elts:
             if elt.text not in elt_value_copy:
                 if elt.text is None:
-                    self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(elt_value) + '\' result: None')
+                    self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(elt_value) + "\' result: None")
                 else:
-                    self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(elt_value) + '\' result: \'' + elt.text + '\'')
+                    self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(elt_value) + "\' result: \'" + elt.text + "\'")
             elt_value_copy.remove(elt.text)
             elt_texts.append(elt.text)
         if len(elt_value_copy):
-            self.fail('Element <' + elt_name + '> differs. Expected: \'' + str(elt_value) + '\' result: \'' + str(elt_texts) + '\'')
+            self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(elt_value) + "\' result: \'" + str(elt_texts) + "\'")
         return elts
 
     @staticmethod
@@ -412,17 +412,17 @@ class TestPFSenseModule(ModuleTestCase):
         """ return real alias name if required """
         res = []
         if physical:
-            interfaces = dict(lan='vmx1', wan='vmx0', opt1='vmx2', vpn='vmx2', opt2='vmx3', vt1='vmx3', opt3='vmx3.100', lan_100='vmx3.100')
+            interfaces = dict(lan="vmx1", wan="vmx0", opt1="vmx2", vpn="vmx2", opt2="vmx3", vt1="vmx3", opt3="vmx3.100", lan_100="vmx3.100")
         else:
-            interfaces = dict(lan='lan', wan='wan', vpn='opt1', vt1='opt2', lan_100='opt3')
-        if interface.startswith('vip:'):
-            return '_vip602874de0ff00'
-        for iface in interface.split(','):
+            interfaces = dict(lan="lan", wan="wan", vpn="opt1", vt1="opt2", lan_100="opt3")
+        if interface.startswith("vip:"):
+            return "_vip602874de0ff00"
+        for iface in interface.split(","):
             if interface in interfaces:
                 res.append(interfaces[iface])
             else:
                 res.append(iface)
-        return ','.join(res)
+        return ",".join(res)
 
     def check_param_equal(self, params, target_elt, param, default=None, xml_field=None, not_find_val=None):
         """ if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML """

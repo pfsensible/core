@@ -1,0 +1,8 @@
+[tool.ruff.lint]
+select = ["Q000", "Q001", "Q002"]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+multiline-quotes = "double"
+docstring-quotes = "double"
+avoid-escape = false

@@ -8,9 +8,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -320,76 +320,76 @@ import re
 # TODO: alias for DNS record
 
 DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC = dict(
-    domain=dict(required=True, type='str'),
-    ip=dict(required=True, type='str'),
-    descr=dict(type='str'),
-    tls_hostname=dict(default='', type='str'),
-    forward_tls_upstream=dict(default=False, type='bool'),
+    domain=dict(required=True, type="str"),
+    ip=dict(required=True, type="str"),
+    descr=dict(type="str"),
+    tls_hostname=dict(default="", type="str"),
+    forward_tls_upstream=dict(default=False, type="bool"),
 )
 
 DNS_RESOLVER_HOST_ALIAS_SPEC = dict(
-    host=dict(required=True, type='str'),
-    domain=dict(required=True, type='str'),
-    description=dict(required=True, type='str'),
+    host=dict(required=True, type="str"),
+    domain=dict(required=True, type="str"),
+    description=dict(required=True, type="str"),
 )
 
 DNS_RESOLVER_HOST_SPEC = dict(
-    host=dict(required=True, type='str'),
-    domain=dict(required=True, type='str'),
-    ip=dict(required=True, type='str'),
-    descr=dict(default="", type='str'),
-    aliases=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_ALIAS_SPEC),
+    host=dict(required=True, type="str"),
+    domain=dict(required=True, type="str"),
+    ip=dict(required=True, type="str"),
+    descr=dict(default="", type="str"),
+    aliases=dict(default=[], type="list", elements="dict", options=DNS_RESOLVER_HOST_ALIAS_SPEC),
 )
 
 DNS_RESOLVER_ARGUMENT_SPEC = dict(
-    state=dict(default='present', choices=['present', 'absent']),
+    state=dict(default="present", choices=["present", "absent"]),
 
     # General Settings
-    port=dict(default=None, type='int'),
-    enablessl=dict(default=False, type='bool'),
-    sslcert=dict(default="", type='str'),  # need transform
-    tlsport=dict(default=None, type='int'),
-    active_interface=dict(default=["all"], type='list', elements='str'),
-    outgoing_interface=dict(default=["all"], type='list', elements='str'),
-    strictout=dict(type='bool'),
-    system_domain_local_zone_type=dict(default='transparent', choices=['deny', 'refuse', 'static', 'transparent', 'typetransparent', 'redirect', 'inform',
-                                                                       'inform_deny', 'nodefault']),
-    dnssec=dict(default=True, type='bool'),
+    port=dict(default=None, type="int"),
+    enablessl=dict(default=False, type="bool"),
+    sslcert=dict(default="", type="str"),  # need transform
+    tlsport=dict(default=None, type="int"),
+    active_interface=dict(default=["all"], type="list", elements="str"),
+    outgoing_interface=dict(default=["all"], type="list", elements="str"),
+    strictout=dict(type="bool"),
+    system_domain_local_zone_type=dict(default="transparent", choices=["deny", "refuse", "static", "transparent", "typetransparent", "redirect", "inform",
+                                                                       "inform_deny", "nodefault"]),
+    dnssec=dict(default=True, type="bool"),
     # TODO: Python Module: Enable the Python Module. These 3 options omited when disabled
     # python=dict(default=False, type='bool'),
     # python_order=dict(default="pre_validator", type='str', choices=["pre_validator", "post_validator"]),
     # python_script=dict(default="", type='str'), #Not sure what this is or how to handle it.
-    forwarding=dict(default=False, type='bool'),
-    forward_tls_upstream=dict(default=False, type='bool'),
-    regdhcp=dict(default=False, type='bool'),
-    regdhcpstatic=dict(default=False, type='bool'),
-    regovpnclients=dict(default=False, type='bool'),
-    custom_options=dict(default="", type='str'),
-    hosts=dict(default=[], type='list', elements='dict', options=DNS_RESOLVER_HOST_SPEC),
-    domainoverrides=dict(type='list', elements='dict', options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
+    forwarding=dict(default=False, type="bool"),
+    forward_tls_upstream=dict(default=False, type="bool"),
+    regdhcp=dict(default=False, type="bool"),
+    regdhcpstatic=dict(default=False, type="bool"),
+    regovpnclients=dict(default=False, type="bool"),
+    custom_options=dict(default="", type="str"),
+    hosts=dict(default=[], type="list", elements="dict", options=DNS_RESOLVER_HOST_SPEC),
+    domainoverrides=dict(type="list", elements="dict", options=DNS_RESOLVER_DOMAIN_OVERRIDE_SPEC),
     # Advanced Settings
-    hideidentity=dict(default=True, type='bool'),
-    hideversion=dict(default=True, type='bool'),
+    hideidentity=dict(default=True, type="bool"),
+    hideversion=dict(default=True, type="bool"),
     # TODO: Query Name Minimization
     # TODO: Strict Query Name Minimization
-    prefetch=dict(default=False, type='bool'),
-    prefetchkey=dict(default=False, type='bool'),
-    dnssecstripped=dict(default=True, type='bool'),
+    prefetch=dict(default=False, type="bool"),
+    prefetchkey=dict(default=False, type="bool"),
+    dnssecstripped=dict(default=True, type="bool"),
     # TODO: Serve Expired
     # TODO: Aggressive NSEC
-    msgcachesize=dict(default=4, type='int', choices=[4, 10, 20, 50, 100, 250, 512]),
-    outgoing_num_tcp=dict(default=10, type='int', choices=[0, 10, 20, 30, 50]),
-    incoming_num_tcp=dict(default=10, type='int', choices=[0, 10, 20, 30, 50]),
-    edns_buffer_size=dict(default="auto", type='str', choices=["auto", "512", "1220", "1232", "1432", "1480", "4096"]),
-    num_queries_per_thread=dict(default=512, type='int', choices=[512, 1024, 2048]),
-    jostle_timeout=dict(default=200, type='int', choices=[100, 200, 500, 1000]),
-    cache_max_ttl=dict(default=86400, type='int'),
-    cache_min_ttl=dict(default=0, type='int'),
-    infra_host_ttl=dict(default=900, type='int', choices=[60, 120, 300, 600, 900]),
-    infra_cache_numhosts=dict(default=10000, type='int', choices=[1000, 5000, 10000, 20000, 50000, 100000, 200000]),
-    unwanted_reply_threshold=dict(default="disabled", type='str', choices=["disabled", "5000000", "10000000", "20000000", "40000000", "50000000"]),
-    log_verbosity=dict(default=1, type='int', choices=[0, 1, 2, 3, 4, 5]),
-    preserve=dict(default=False, type='bool'),
+    msgcachesize=dict(default=4, type="int", choices=[4, 10, 20, 50, 100, 250, 512]),
+    outgoing_num_tcp=dict(default=10, type="int", choices=[0, 10, 20, 30, 50]),
+    incoming_num_tcp=dict(default=10, type="int", choices=[0, 10, 20, 30, 50]),
+    edns_buffer_size=dict(default="auto", type="str", choices=["auto", "512", "1220", "1232", "1432", "1480", "4096"]),
+    num_queries_per_thread=dict(default=512, type="int", choices=[512, 1024, 2048]),
+    jostle_timeout=dict(default=200, type="int", choices=[100, 200, 500, 1000]),
+    cache_max_ttl=dict(default=86400, type="int"),
+    cache_min_ttl=dict(default=0, type="int"),
+    infra_host_ttl=dict(default=900, type="int", choices=[60, 120, 300, 600, 900]),
+    infra_cache_numhosts=dict(default=10000, type="int", choices=[1000, 5000, 10000, 20000, 50000, 100000, 200000]),
+    unwanted_reply_threshold=dict(default="disabled", type="str", choices=["disabled", "5000000", "10000000", "20000000", "40000000", "50000000"]),
+    log_verbosity=dict(default=1, type="int", choices=[0, 1, 2, 3, 4, 5]),
+    preserve=dict(default=False, type="bool"),
     # TODO: Disable Auto-added Access Control
     # TODO: Disable Auto-added Host Entries
     # TODO: Experimental Bit 0x20 Support
@@ -413,13 +413,13 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseDNSResolverModule, self).__init__(module, pfsense)
         self.name = "pfsense_dns_resolver"
-        self.root_elt = self.pfsense.get_element('unbound')
+        self.root_elt = self.pfsense.get_element("unbound")
         self.obj = dict()
         self.interface_elt = None
         self.dynamic = False
 
         if self.root_elt is None:
-            self.root_elt = self.pfsense.new_element('unbound')
+            self.root_elt = self.pfsense.new_element("unbound")
             self.pfsense.root.append(self.root_elt)
 
         cmd = ('require_once("interfaces.inc");;'
@@ -455,7 +455,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
 
             if custom_options_elt is not None and custom_options_elt.text:
                 # Decode the base64-encoded custom options
-                decoded_custom_options = base64.b64decode(custom_options_elt.text).decode('utf-8')
+                decoded_custom_options = base64.b64decode(custom_options_elt.text).decode("utf-8")
                 # Split into lines for comparison
                 existing_custom_options = [line.strip() for line in decoded_custom_options.strip().split("\n")]
 
@@ -498,7 +498,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             obj["enable"] = ""
             obj["active_interface"] = ",".join(self._get_interface_name(x) for x in params["active_interface"])
             obj["outgoing_interface"] = ",".join(self._get_interface_name(x) for x in params["outgoing_interface"])
-            obj["custom_options"] = base64.b64encode(bytes(params['custom_options'], 'utf-8')).decode()
+            obj["custom_options"] = base64.b64encode(bytes(params["custom_options"], "utf-8")).decode()
             self._get_ansible_param_bool(obj, "hideidentity", value="")
             self._get_ansible_param_bool(obj, "hideversion", value="")
             self._get_ansible_param_bool(obj, "dnssecstripped", value="")
@@ -532,7 +532,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self._get_ansible_param(obj, "domainoverrides")
             for domainoverride in obj.get("domainoverrides", []):
                 self._get_ansible_param_bool(domainoverride, "forward_tls_upstream", value="", params=domainoverride)
-            obj["custom_options"] = base64.b64encode(bytes(params['custom_options'], 'utf-8')).decode()
+            obj["custom_options"] = base64.b64encode(bytes(params["custom_options"], "utf-8")).decode()
             if params.get("preserve"):
                 obj["hosts"] = existing_hosts
                 if existing_overrides:
@@ -567,8 +567,8 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                     obj["domainoverrides"] = []
                 obj["domainoverrides"].extend(params["domainoverrides"])
 
-            if ((self.pfsense.config_get_path('system/dnslocalhost') != 'remote') and ("lo0" not in obj['active_interface']) and
-                    ("all" not in obj['active_interface'])):
+            if ((self.pfsense.config_get_path("system/dnslocalhost") != "remote") and ("lo0" not in obj["active_interface"]) and
+                    ("all" not in obj["active_interface"])):
                 self.module.fail_json(msg="This system is configured to use the DNS Resolver as its DNS server, so Localhost or All must be selected in"
                                           " active_interface.")
 
@@ -592,7 +592,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         for host in params["hosts"]:
             for ipaddr in host["ip"].split(","):
                 if not self.pfsense.is_ipv4_address(ipaddr) and not self.pfsense.is_ipv6_address(ipaddr):
-                    self.module.fail_json(msg=f'ip, {ipaddr} is not a ipv4/ipv6 address')
+                    self.module.fail_json(msg=f"ip, {ipaddr} is not a ipv4/ipv6 address")
 
         if params["domainoverrides"] is not None:
             for domain in params["domainoverrides"]:
@@ -621,14 +621,14 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
     def _remove_target_elt(self):
         """ disable the resolver: target_elt is the unbound root, so only clear its enable flag """
         if self.pfsense.remove_deleted_param_from_elt(self.target_elt, "enable", {}):
-            self.result['changed'] = True
+            self.result["changed"] = True
 
     ##############################
     # run
     #
     def _update(self):
         """ make the target pfsense reload """
-        return self.pfsense.phpshell('''
+        return self.pfsense.phpshell("""
 require_once("unbound.inc");
 require_once("pfsense-utils.inc");
 require_once("system.inc");
@@ -637,7 +637,7 @@ services_unbound_configure();
 system_resolvconf_generate();
 system_dhcpleases_configure();
 clear_subsystem_dirty("unbound");
-''')
+""")
 
     ##############################
     # Logging
@@ -648,37 +648,37 @@ clear_subsystem_dirty("unbound");
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
+        values = ""
 
-        values += self.format_updated_cli_field(self.obj, before, 'enable', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'active_interface', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'outgoing_interface', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'custom_options', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'hideidentity', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'hideversion', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'dnssecstripped', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'port', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'tlsport', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'sslcertref', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'forwarding', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'strictout', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'system_domain_local_zone_type', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'regdhcp', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'regdhcpstatic', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'prefetch', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'prefetchkey', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'msgcachesize', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'outgoing_num_tcp', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'incoming_num_tcp', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'edns_buffer_size', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'num_queries_per_thread', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'jostle_timeout', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'cache_max_ttl', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'cache_min_ttl', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'infra_host_ttl', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'infra_cache_numhosts', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'unwanted_reply_threshold', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, before, 'log_verbosity', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "enable", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "active_interface", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "outgoing_interface", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "custom_options", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "hideidentity", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "hideversion", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "dnssecstripped", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "port", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "tlsport", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "sslcertref", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "forwarding", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "strictout", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "system_domain_local_zone_type", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "regdhcp", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "regdhcpstatic", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "prefetch", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "prefetchkey", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "msgcachesize", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "outgoing_num_tcp", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "incoming_num_tcp", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "edns_buffer_size", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "num_queries_per_thread", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "jostle_timeout", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "cache_max_ttl", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "cache_min_ttl", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "infra_host_ttl", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "infra_cache_numhosts", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "unwanted_reply_threshold", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, before, "log_verbosity", add_comma=(values), log_none=False)
 
         # todo: hosts and domainoverrides is not logged
         return values
@@ -695,5 +695,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

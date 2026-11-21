@@ -8,9 +8,9 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -197,5 +197,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

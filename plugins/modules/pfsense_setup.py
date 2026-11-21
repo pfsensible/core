@@ -8,9 +8,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -228,62 +228,62 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_config_base
 
 
 SETUP_ARGUMENT_SPEC = dict(
-    hostname=dict(required=False, type='str'),
-    domain=dict(required=False, type='str'),
-    dns_addresses=dict(required=False, type='str'),
-    dns_hostnames=dict(required=False, type='str'),
-    dns_gateways=dict(required=False, type='str'),
-    dnsallowoverride=dict(required=False, type='bool'),
-    dnslocalhost=dict(required=False, type='str', choices=[
-        '',
-        'local',
-        'remote',
-        'true',
-        'false',
+    hostname=dict(required=False, type="str"),
+    domain=dict(required=False, type="str"),
+    dns_addresses=dict(required=False, type="str"),
+    dns_hostnames=dict(required=False, type="str"),
+    dns_gateways=dict(required=False, type="str"),
+    dnsallowoverride=dict(required=False, type="bool"),
+    dnslocalhost=dict(required=False, type="str", choices=[
+        "",
+        "local",
+        "remote",
+        "true",
+        "false",
     ]),
-    timezone=dict(required=False, type='str'),
-    timeservers=dict(required=False, type='str'),
+    timezone=dict(required=False, type="str"),
+    timeservers=dict(required=False, type="str"),
     language=dict(
         required=False,
-        type='str',
-        choices=['bs', 'de_DE', 'en_US', 'es_AR', 'es_ES', 'fr_FR', 'it_IT', 'ko_FR', 'nb_NO', 'nl_NL', 'pl_PL', 'pt_BR', 'pt_PT', 'ru_RU', 'zh_CN',
-                 'zh_Hans_CN', 'zh_Hans_HK', 'zh_Hant_TW'],
+        type="str",
+        choices=["bs", "de_DE", "en_US", "es_AR", "es_ES", "fr_FR", "it_IT", "ko_FR", "nb_NO", "nl_NL", "pl_PL", "pt_BR", "pt_PT", "ru_RU", "zh_CN",
+                 "zh_Hans_CN", "zh_Hans_HK", "zh_Hant_TW"],
     ),
-    session_timeout=dict(required=False, type='int'),
-    authmode=dict(required=False, type='str'),
-    shellauth=dict(required=False, type='bool'),
-    webguicert=dict(required=False, type='str'),
-    webguicss=dict(required=False, type='str'),
-    webguifixedmenu=dict(required=False, type='bool'),
-    webguihostnamemenu=dict(required=False, type='str', choices=['nohost', 'hostonly', 'fqdn']),
-    dashboardcolumns=dict(required=False, type='int'),
-    interfacessort=dict(required=False, type='bool'),
-    dashboardavailablewidgetspanel=dict(required=False, type='bool'),
-    systemlogsfilterpanel=dict(required=False, type='bool'),
-    systemlogsmanagelogpanel=dict(required=False, type='bool'),
-    statusmonitoringsettingspanel=dict(required=False, type='bool'),
-    requirestatefilter=dict(required=False, type='bool'),
-    webguileftcolumnhyper=dict(required=False, type='bool'),
-    disablealiaspopupdetail=dict(required=False, type='bool'),
-    roworderdragging=dict(required=False, type='bool'),
-    logincss=dict(required=False, type='str'),
-    loginshowhost=dict(required=False, type='bool'),
-    nodnsrebindcheck=dict(required=False, type='bool'),
-    nohttpreferercheck=dict(required=False, type='bool'),
-    sshguard_whitelist=dict(required=False, type='list', elements='str'),
-    crypto_hardware=dict(required=False, type='str', choices=['', 'aesni', 'aesni_cryptodev', 'qat']),
-    thermal_hardware=dict(required=False, type='str', choices=['', 'coretemp', 'amdtemp']),
+    session_timeout=dict(required=False, type="int"),
+    authmode=dict(required=False, type="str"),
+    shellauth=dict(required=False, type="bool"),
+    webguicert=dict(required=False, type="str"),
+    webguicss=dict(required=False, type="str"),
+    webguifixedmenu=dict(required=False, type="bool"),
+    webguihostnamemenu=dict(required=False, type="str", choices=["nohost", "hostonly", "fqdn"]),
+    dashboardcolumns=dict(required=False, type="int"),
+    interfacessort=dict(required=False, type="bool"),
+    dashboardavailablewidgetspanel=dict(required=False, type="bool"),
+    systemlogsfilterpanel=dict(required=False, type="bool"),
+    systemlogsmanagelogpanel=dict(required=False, type="bool"),
+    statusmonitoringsettingspanel=dict(required=False, type="bool"),
+    requirestatefilter=dict(required=False, type="bool"),
+    webguileftcolumnhyper=dict(required=False, type="bool"),
+    disablealiaspopupdetail=dict(required=False, type="bool"),
+    roworderdragging=dict(required=False, type="bool"),
+    logincss=dict(required=False, type="str"),
+    loginshowhost=dict(required=False, type="bool"),
+    nodnsrebindcheck=dict(required=False, type="bool"),
+    nohttpreferercheck=dict(required=False, type="bool"),
+    sshguard_whitelist=dict(required=False, type="list", elements="str"),
+    crypto_hardware=dict(required=False, type="str", choices=["", "aesni", "aesni_cryptodev", "qat"]),
+    thermal_hardware=dict(required=False, type="str", choices=["", "coretemp", "amdtemp"]),
 )
 
 
 def p2o_dnslocalhost(self, name, params, obj):
     if params[name] is not None:
-        if str(params.get(name)).lower() in ['', 'false']:
-            obj[name] = ''
-        elif str(params.get(name)).lower() in ['remote', 'true']:
-            obj[name] = 'remote'
-        elif params.get(name).lower() == 'local':
-            obj[name] = 'local'
+        if str(params.get(name)).lower() in ["", "false"]:
+            obj[name] = ""
+        elif str(params.get(name)).lower() in ["remote", "true"]:
+            obj[name] = "remote"
+        elif params.get(name).lower() == "local":
+            obj[name] = "local"
 
 
 def p2o_network_list_to_space_separated(self, name, params, obj):
@@ -291,24 +291,24 @@ def p2o_network_list_to_space_separated(self, name, params, obj):
         for net in params[name]:
             if not (self.pfsense.is_ipv4_network(net, strict=False) or self.pfsense.is_ipv6_network(net, strict=False)):
                 self.module.fail_json(msg=f"Address {net} is not a valid network")
-        obj[name] = ' '.join(params[name])
+        obj[name] = " ".join(params[name])
 
 
 def p2o_webguicss(self, name, params, obj):
     if params[name] is not None:
         # Add .css suffix if not present
-        if params[name][-4:] != '.css':
-            obj[name] = params[name] + '.css'
+        if params[name][-4:] != ".css":
+            obj[name] = params[name] + ".css"
         else:
             obj[name] = params[name]
 
 
 def validate_webguicss(self, webguicss):
     """ check css style """
-    path = '/usr/local/www/css/'
-    themes = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith('.css') and f.find('login') == -1 and f.find('logo') == -1]
-    themes = map(lambda x: x.replace('.css', ''), themes)
-    if webguicss.rstrip('.css') not in themes:
+    path = "/usr/local/www/css/"
+    themes = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith(".css") and f.find("login") == -1 and f.find("logo") == -1]
+    themes = map(lambda x: x.replace(".css", ""), themes)
+    if webguicss.rstrip(".css") not in themes:
         raise ValueError("The submitted theme '%s' could not be found. Pick a different theme." % webguicss)
 
 
@@ -322,31 +322,31 @@ SETUP_ARG_ROUTE = dict(
 
 # Booleans that map to different values
 SETUP_BOOL_VALUES = dict(
-    webguifixedmenu=(None, 'fixed'),
+    webguifixedmenu=(None, "fixed"),
 )
 
 SETUP_MAP_PARAM = [
-    ('authmode', 'webgui/authmode'),
-    ('dashboardavailablewidgetspanel', 'webgui/dashboardavailablewidgetspanel'),
-    ('dashboardcolumns', 'webgui/dashboardcolumns'),
-    ('disablealiaspopupdetail', 'webgui/disablealiaspopupdetail'),
-    ('interfacessort', 'webgui/interfacessort'),
-    ('logincss', 'webgui/logincss'),
-    ('loginshowhost', 'webgui/loginshowhost'),
-    ('nodnsrebindcheck', 'webgui/nodnsrebindcheck'),
-    ('nohttpreferercheck', 'webgui/nohttpreferercheck'),
-    ('requirestatefilter', 'webgui/requirestatefilter'),
-    ('roworderdragging', 'webgui/roworderdragging'),
-    ('session_timeout', 'webgui/session_timeout'),
-    ('shellauth', 'webgui/shellauth'),
-    ('statusmonitoringsettingspanel', 'webgui/statusmonitoringsettingspanel'),
-    ('systemlogsfilterpanel', 'webgui/systemlogsfilterpanel'),
-    ('systemlogsmanagelogpanel', 'webgui/systemlogsmanagelogpanel'),
-    ('webguicert', 'webgui/ssl-certref'),
-    ('webguicss', 'webgui/webguicss'),
-    ('webguifixedmenu', 'webgui/webguifixedmenu'),
-    ('webguihostnamemenu', 'webgui/webguihostnamemenu'),
-    ('webguileftcolumnhyper', 'webgui/webguileftcolumnhyper'),
+    ("authmode", "webgui/authmode"),
+    ("dashboardavailablewidgetspanel", "webgui/dashboardavailablewidgetspanel"),
+    ("dashboardcolumns", "webgui/dashboardcolumns"),
+    ("disablealiaspopupdetail", "webgui/disablealiaspopupdetail"),
+    ("interfacessort", "webgui/interfacessort"),
+    ("logincss", "webgui/logincss"),
+    ("loginshowhost", "webgui/loginshowhost"),
+    ("nodnsrebindcheck", "webgui/nodnsrebindcheck"),
+    ("nohttpreferercheck", "webgui/nohttpreferercheck"),
+    ("requirestatefilter", "webgui/requirestatefilter"),
+    ("roworderdragging", "webgui/roworderdragging"),
+    ("session_timeout", "webgui/session_timeout"),
+    ("shellauth", "webgui/shellauth"),
+    ("statusmonitoringsettingspanel", "webgui/statusmonitoringsettingspanel"),
+    ("systemlogsfilterpanel", "webgui/systemlogsfilterpanel"),
+    ("systemlogsmanagelogpanel", "webgui/systemlogsmanagelogpanel"),
+    ("webguicert", "webgui/ssl-certref"),
+    ("webguicss", "webgui/webguicss"),
+    ("webguifixedmenu", "webgui/webguifixedmenu"),
+    ("webguihostnamemenu", "webgui/webguihostnamemenu"),
+    ("webguileftcolumnhyper", "webgui/webguileftcolumnhyper"),
 ]
 
 
@@ -362,8 +362,8 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseSetupModule, self).__init__(module, pfsense, name='pfsense_setup', root='pfsense', node='system', arg_route=SETUP_ARG_ROUTE,
-                                                 bool_style='absent/present', bool_values=SETUP_BOOL_VALUES, map_param=SETUP_MAP_PARAM)
+        super(PFSenseSetupModule, self).__init__(module, pfsense, name="pfsense_setup", root="pfsense", node="system", arg_route=SETUP_ARG_ROUTE,
+                                                 bool_style="absent/present", bool_values=SETUP_BOOL_VALUES, map_param=SETUP_MAP_PARAM)
         self.route_cmds = list()
         self.params_to_delete = list()
 
@@ -376,47 +376,47 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         dns_hostnames = []
         dns_gateways = []
         idx = 0
-        if params.get('dns_addresses') is not None:
-            dns_addresses = params['dns_addresses'].split()
-            del obj['dns_addresses']
-        if params.get('dns_hostnames') is not None:
-            dns_hostnames = params['dns_hostnames'].split()
-            del obj['dns_hostnames']
-        if params.get('dns_gateways') is not None:
-            dns_gateways = params['dns_gateways'].split()
-            del obj['dns_gateways']
+        if params.get("dns_addresses") is not None:
+            dns_addresses = params["dns_addresses"].split()
+            del obj["dns_addresses"]
+        if params.get("dns_hostnames") is not None:
+            dns_hostnames = params["dns_hostnames"].split()
+            del obj["dns_hostnames"]
+        if params.get("dns_gateways") is not None:
+            dns_gateways = params["dns_gateways"].split()
+            del obj["dns_gateways"]
 
         if dns_addresses is not None:
             # set the servers
-            obj['dnsserver'] = dns_addresses
+            obj["dnsserver"] = dns_addresses
 
             # set the names & gateways
             for address in dns_addresses:
-                gateway = 'none'
-                if idx < len(dns_hostnames) and dns_hostnames[idx] != 'none':
-                    obj['dns{0}host'.format(idx + 1)] = dns_hostnames[idx]
-                if idx < len(dns_gateways) and dns_gateways[idx] != 'none':
+                gateway = "none"
+                if idx < len(dns_hostnames) and dns_hostnames[idx] != "none":
+                    obj["dns{0}host".format(idx + 1)] = dns_hostnames[idx]
+                if idx < len(dns_gateways) and dns_gateways[idx] != "none":
                     gateway = dns_gateways[idx]
 
-                gw_key = 'dns{0}gw'.format(idx + 1)
+                gw_key = "dns{0}gw".format(idx + 1)
                 if gw_key not in obj or gateway != obj[gw_key]:
                     obj[gw_key] = gateway
                     if self.pfsense.is_ipv4_address(address):
-                        self.route_cmds.append('/sbin/route delete {0}'.format(address))
+                        self.route_cmds.append("/sbin/route delete {0}".format(address))
                     elif self.pfsense.is_ipv6_address(address):
-                        self.route_cmds.append('/sbin/route delete -inet6 {0}'.format(address))
+                        self.route_cmds.append("/sbin/route delete -inet6 {0}".format(address))
 
                 idx += 1
 
-        elif 'dnsserver' in obj:
+        elif "dnsserver" in obj:
             # no servers
-            del obj['dnsserver']
+            del obj["dnsserver"]
 
         idx += 1
         # delete everything required
         while True:
-            host = 'dns{0}host'.format(idx)
-            gateway = 'dns{0}gw'.format(idx)
+            host = "dns{0}host".format(idx)
+            gateway = "dns{0}gw".format(idx)
             if host not in obj and gateway not in obj:
                 break
             if host in obj:
@@ -436,93 +436,93 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     def _validate_hostname(self, hostname, name, strict=False):
         """ check hostname, if strict is true, check if domain is omitted """
         host = hostname.lower()
-        groups = re.match(r'^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$', host)
+        groups = re.match(r"^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$", host)
         if groups is None:
             self.module.fail_json(msg="The {0} can only contain the characters A-Z, 0-9 and '-'. It may not start or end with '-'".format(name))
 
         if strict:
-            groups = re.match(r'^(?:[a-z0-9_]|[a-z0-9_][a-z0-9_\-]*[a-z0-9_])$', host)
+            groups = re.match(r"^(?:[a-z0-9_]|[a-z0-9_][a-z0-9_\-]*[a-z0-9_])$", host)
             if groups is None:
-                self.module.fail_json(msg='A valid {0} is specified, but the domain name part should be omitted'.format(name))
+                self.module.fail_json(msg="A valid {0} is specified, but the domain name part should be omitted".format(name))
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
         super(PFSenseSetupModule, self)._validate_params()
         params = self.params
 
-        if params.get('dashboardcolumns') is not None and (params['dashboardcolumns'] < 1 or params['dashboardcolumns'] > 6):
-            self.module.fail_json(msg='The submitted Dashboard Columns value is invalid.')
+        if params.get("dashboardcolumns") is not None and (params["dashboardcolumns"] < 1 or params["dashboardcolumns"] > 6):
+            self.module.fail_json(msg="The submitted Dashboard Columns value is invalid.")
 
-        if params.get('domain') is not None:
-            domain = params['domain'].lower()
-            groups = re.match(r'^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$', domain)
+        if params.get("domain") is not None:
+            domain = params["domain"].lower()
+            groups = re.match(r"^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$", domain)
             if groups is None:
                 self.module.fail_json(msg="The domain may only contain the characters a-z, 0-9, '-' and '.'")
 
-        if params.get('hostname') is not None:
-            self._validate_hostname(params['hostname'], 'hostname', True)
+        if params.get("hostname") is not None:
+            self._validate_hostname(params["hostname"], "hostname", True)
 
-        if params.get('logincss') is not None:
+        if params.get("logincss") is not None:
             error = False
             try:
-                int(params['logincss'], 16)
+                int(params["logincss"], 16)
             except ValueError:
                 error = True
-            if error or len(params['logincss']) != 6:
+            if error or len(params["logincss"]) != 6:
                 self.module.fail_json(msg="logincss must be a six digits hexadecimal string.")
 
-        if params.get('timezone') is not None:
-            self._validate_timezone(params['timezone'])
+        if params.get("timezone") is not None:
+            self._validate_timezone(params["timezone"])
 
-        if params.get('timeservers') is not None:
-            for timeserver in params['timeservers'].split(' '):
-                self._validate_hostname(timeserver, 'timeserver')
+        if params.get("timeservers") is not None:
+            for timeserver in params["timeservers"].split(" "):
+                self._validate_hostname(timeserver, "timeserver")
 
-        if params.get('authmode') is not None:
-            value = params.get('authmode')
-            if value != 'Local Database':
-                authserver_elt = self.pfsense.find_elt('authserver', value, search_field='name', root_elt=self.root_elt.find(self.node))
+        if params.get("authmode") is not None:
+            value = params.get("authmode")
+            if value != "Local Database":
+                authserver_elt = self.pfsense.find_elt("authserver", value, search_field="name", root_elt=self.root_elt.find(self.node))
                 if authserver_elt is None:
                     self.module.fail_json(msg="Given authserver '{0}' could not be found.".format(value))
 
-                if params.get('shellauth') is not None and params.get('shellauth') is True:
-                    if authserver_elt.find('type').text == 'ldap':
+                if params.get("shellauth") is not None and params.get("shellauth") is True:
+                    if authserver_elt.find("type").text == "ldap":
                         # check if ldap_pam_groupdn is set
-                        if authserver_elt.find('ldap_pam_groupdn') is None or \
-                           authserver_elt.find('ldap_pam_groupdn').text is None or \
-                           authserver_elt.find('ldap_pam_groupdn').text == '':
+                        if authserver_elt.find("ldap_pam_groupdn") is None or \
+                           authserver_elt.find("ldap_pam_groupdn").text is None or \
+                           authserver_elt.find("ldap_pam_groupdn").text == "":
                             self.module.fail_json(msg="ldap_pam_groupdn not set for authserver '{0}'.".format(value))
 
         # DNS
         ip_types = []
         dns_addresses = []
-        if params.get('dns_addresses') is not None:
-            dns_addresses = params['dns_addresses'].split()
+        if params.get("dns_addresses") is not None:
+            dns_addresses = params["dns_addresses"].split()
             for address in dns_addresses:
                 if dns_addresses.count(address) > 1:
-                    self.module.fail_json(msg='Each configured DNS server must have a unique IP address. Remove the duplicated IP.')
+                    self.module.fail_json(msg="Each configured DNS server must have a unique IP address. Remove the duplicated IP.")
 
                 if self.pfsense.is_ipv4_address(address):
                     ip_types.append(4)
                 elif self.pfsense.is_ipv6_address(address):
                     ip_types.append(6)
                 else:
-                    self.module.fail_json(msg='A valid IP address must be specified for DNS server {0}.'.format(address))
+                    self.module.fail_json(msg="A valid IP address must be specified for DNS server {0}.".format(address))
 
-        if params.get('dns_hostnames') is not None:
-            for hostname in params['dns_hostnames'].split(' '):
-                if hostname != 'none':
-                    self._validate_hostname(hostname, 'DNS hostname')
+        if params.get("dns_hostnames") is not None:
+            for hostname in params["dns_hostnames"].split(" "):
+                if hostname != "none":
+                    self._validate_hostname(hostname, "DNS hostname")
 
-        if params.get('dns_gateways') is not None:
-            for idx, address in enumerate(params['dns_gateways'].split(' ')):
-                if idx >= len(dns_addresses) or address == 'none':
+        if params.get("dns_gateways") is not None:
+            for idx, address in enumerate(params["dns_gateways"].split(" ")):
+                if idx >= len(dns_addresses) or address == "none":
                     continue
 
-                if self.pfsense.find_gateway_elt(address, protocol='inet') is not None:
+                if self.pfsense.find_gateway_elt(address, protocol="inet") is not None:
                     if ip_types[idx] == 6:
                         self.module.fail_json(msg='The IPv4 gateway "{0}" can not be specified for IPv6 DNS server "{1}".'.format(address, dns_addresses[idx]))
-                elif self.pfsense.find_gateway_elt(address, protocol='inet6') is not None:
+                elif self.pfsense.find_gateway_elt(address, protocol="inet6") is not None:
                     if ip_types[idx] == 4:
                         self.module.fail_json(msg='The IPv6 gateway "{0}" can not be specified for IPv4 DNS server "{1}".'.format(address, dns_addresses[idx]))
                 else:
@@ -535,9 +535,9 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
 
     def _validate_timezone(self, timezone):
         """ check timezone """
-        path = '/usr/share/zoneinfo/'
-        if not isfile(path + timezone) or timezone[:1] < 'A' or timezone[:1] > 'Z':
-            self.module.fail_json(msg='The submitted timezone is invalid')
+        path = "/usr/share/zoneinfo/"
+        if not isfile(path + timezone) or timezone[:1] < "A" or timezone[:1] > "Z":
+            self.module.fail_json(msg="The submitted timezone is invalid")
 
     ##############################
     # XML processing
@@ -556,7 +556,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         for cmd in self.route_cmds:
             self.module.run_command(cmd)
 
-        cmd = '''
+        cmd = """
 require_once("auth.inc");
 require_once("filter.inc");
 require_once("pfsense-utils.inc");
@@ -573,33 +573,33 @@ if (config_path_enabled('dnsmasq')) {
 $retval |= system_timezone_configure();
 $retval |= system_ntp_configure();
 load_crypto();
-load_thermal_hardware();'''
+load_thermal_hardware();"""
 
-        if self.params.get('dnsallowoverride') is not None:
-            if (self.params['dnsallowoverride'] and 'dnsallowoverride' not in self.diff['before'] or
-                    not self.params['dnsallowoverride'] and 'dnsallowoverride' in self.diff['before']):
+        if self.params.get("dnsallowoverride") is not None:
+            if (self.params["dnsallowoverride"] and "dnsallowoverride" not in self.diff["before"] or
+                    not self.params["dnsallowoverride"] and "dnsallowoverride" in self.diff["before"]):
                 cmd += '$retval |= send_event("service reload dns");\n'
 
-        if self.params.get('shellauth') is not None:
-            cmd += '$retval |= set_pam_auth();'
+        if self.params.get("shellauth") is not None:
+            cmd += "$retval |= set_pam_auth();"
 
-        cmd += '$retval |= filter_configure();\n'
+        cmd += "$retval |= filter_configure();\n"
 
         restart_sshguard = False
-        for param in ['sshguard_whitelist']:
-            if self.obj.get(param) != self.diff['before'].get(param):
+        for param in ["sshguard_whitelist"]:
+            if self.obj.get(param) != self.diff["before"].get(param):
                 restart_sshguard = True
         if restart_sshguard:
-            cmd += 'system_sshguard_stop();$retval |= system_syslogd_start(true);\n'
+            cmd += "system_sshguard_stop();$retval |= system_syslogd_start(true);\n"
 
         restart_webgui = False
-        for param in ['ssl-certref']:
-            if self.obj['webgui'].get(param) != self.diff['before']['webgui'].get(param):
+        for param in ["ssl-certref"]:
+            if self.obj["webgui"].get(param) != self.diff["before"]["webgui"].get(param):
                 restart_webgui = True
         if restart_webgui:
-            cmd += 'restart_GUI();\n'
+            cmd += "restart_GUI();\n"
 
-        self.result['cmd'] = cmd
+        self.result["cmd"] = cmd
         return self.pfsense.phpshell(cmd)
 
     ##############################
@@ -612,46 +612,46 @@ load_thermal_hardware();'''
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        bwebgui = self.diff['before']['webgui']
-        webgui = self.obj['webgui']
+        bwebgui = self.diff["before"]["webgui"]
+        webgui = self.obj["webgui"]
 
-        obj_before = self._prepare_dns_log(self.diff['before'])
+        obj_before = self._prepare_dns_log(self.diff["before"])
         obj_after = self._prepare_dns_log(self.obj)
 
-        values = ''
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'hostname', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'domain', add_comma=(values), log_none=False)
+        values = ""
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "hostname", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "domain", add_comma=(values), log_none=False)
 
-        values += self.format_updated_cli_field(obj_after, obj_before, 'dns_addresses', add_comma=(values), log_none=True)
-        values += self.format_updated_cli_field(obj_after, obj_before, 'dns_hostnames', add_comma=(values), log_none=True)
-        values += self.format_updated_cli_field(obj_after, obj_before, 'dns_gateways', add_comma=(values), log_none=True)
+        values += self.format_updated_cli_field(obj_after, obj_before, "dns_addresses", add_comma=(values), log_none=True)
+        values += self.format_updated_cli_field(obj_after, obj_before, "dns_hostnames", add_comma=(values), log_none=True)
+        values += self.format_updated_cli_field(obj_after, obj_before, "dns_gateways", add_comma=(values), log_none=True)
 
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'timezone', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'timeservers', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'language', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "timezone", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "timeservers", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "language", add_comma=(values), log_none=False)
 
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'dnsallowoverride', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(self.obj, self.diff['before'], 'dnslocalhost', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "dnsallowoverride", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "dnslocalhost", add_comma=(values), log_none=False)
 
-        values += self.format_updated_cli_field(obj_after, obj_before, 'webguicert', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(obj_after, obj_before, 'webguicss', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'webguifixedmenu', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'webguihostnamemenu', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'dashboardcolumns', add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(obj_after, obj_before, "webguicert", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(obj_after, obj_before, "webguicss", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "webguifixedmenu", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "webguihostnamemenu", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "dashboardcolumns", add_comma=(values), log_none=False)
 
-        values += self.format_updated_cli_field(webgui, bwebgui, 'interfacessort', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'dashboardavailablewidgetspanel', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'systemlogsfilterpanel', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'systemlogsmanagelogpanel', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'statusmonitoringsettingspanel', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'requirestatefilter', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'webguileftcolumnhyper', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'disablealiaspopupdetail', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'roworderdragging', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'logincss', add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'loginshowhost', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'nodnsrebindcheck', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(webgui, bwebgui, 'nohttpreferercheck', fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "interfacessort", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "dashboardavailablewidgetspanel", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "systemlogsfilterpanel", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "systemlogsmanagelogpanel", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "statusmonitoringsettingspanel", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "requirestatefilter", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "webguileftcolumnhyper", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "disablealiaspopupdetail", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "roworderdragging", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "logincss", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "loginshowhost", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "nodnsrebindcheck", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "nohttpreferercheck", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
 
         return values
 
@@ -659,45 +659,45 @@ load_thermal_hardware();'''
     def _prepare_dns_log(obj):
         """ construct dict for logging """
         ret = dict()
-        webgui = obj['webgui']
+        webgui = obj["webgui"]
 
-        ret['webguicss'] = webgui['webguicss'].replace('.css', '') if 'webguicss' in webgui else None
+        ret["webguicss"] = webgui["webguicss"].replace(".css", "") if "webguicss" in webgui else None
 
-        if 'dnsserver' in obj:
-            ret['dns_addresses'] = ' '.join(obj['dnsserver'])
+        if "dnsserver" in obj:
+            ret["dns_addresses"] = " ".join(obj["dnsserver"])
         else:
-            ret['dns_addresses'] = None
+            ret["dns_addresses"] = None
 
-        ret['dns_hostnames'] = None
-        ret['dns_gateways'] = None
+        ret["dns_hostnames"] = None
+        ret["dns_gateways"] = None
         idx = 1
         hosts = list()
         gateways = list()
         while True:
-            host = 'dns{0}host'.format(idx)
-            gateway = 'dns{0}gw'.format(idx)
+            host = "dns{0}host".format(idx)
+            gateway = "dns{0}gw".format(idx)
             if host not in obj or gateway not in obj:
                 break
 
-            hosts.append(obj[host] if obj[host] != '' else 'none')
-            gateways.append(obj[gateway] if obj[gateway] != '' else 'none')
+            hosts.append(obj[host] if obj[host] != "" else "none")
+            gateways.append(obj[gateway] if obj[gateway] != "" else "none")
 
             idx += 1
 
         # we have multiple string that can give the same configuration
         # we remove the ending nones (assuming the user won't specify them for nothing)
         while True:
-            if len(hosts) and hosts[-1] == 'none':
+            if len(hosts) and hosts[-1] == "none":
                 hosts.pop()
                 continue
-            if len(gateways) and gateways[-1] == 'none':
+            if len(gateways) and gateways[-1] == "none":
                 gateways.pop()
                 continue
             break
         if len(hosts):
-            ret['dns_hostnames'] = ' '.join(hosts)
+            ret["dns_hostnames"] = " ".join(hosts)
         if len(gateways):
-            ret['dns_gateways'] = ' '.join(gateways)
+            ret["dns_gateways"] = " ".join(gateways)
         return ret
 
 
@@ -711,5 +711,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

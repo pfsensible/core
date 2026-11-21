@@ -24,7 +24,7 @@ class TestPFSenseAliasNullModule(TestPFSenseModule):
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseAliasNullModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_alias_null_config.xml'
+        self.config_file = "pfsense_alias_null_config.xml"
         self.pfmodule = PFSenseAliasModule
 
     ########################################################
@@ -32,16 +32,16 @@ class TestPFSenseAliasNullModule(TestPFSenseModule):
     # First we run the module
     # Then, we check return values
     # Finally, we check the xml
-    def do_alias_creation_test(self, alias, failed=False, msg='', command=None):
+    def do_alias_creation_test(self, alias, failed=False, msg="", command=None):
         """ test creation of a new alias """
         with set_module_args(self.args_from_var(alias)):
             result = self.execute_module(changed=True, failed=failed, msg=msg)
 
             if not failed:
                 diff = dict(before={}, after=alias)
-                self.assertEqual(result['diff'], diff)
-                self.assert_xml_elt_dict('aliases', dict(name=alias['name'], type=alias['type']), diff['after'])
-                self.assertEqual(result['commands'], [command])
+                self.assertEqual(result["diff"], diff)
+                self.assert_xml_elt_dict("aliases", dict(name=alias["name"], type=alias["type"]), diff["after"])
+                self.assertEqual(result["commands"], [command])
             else:
                 self.assertFalse(self.load_xml_result())
 
@@ -50,6 +50,6 @@ class TestPFSenseAliasNullModule(TestPFSenseModule):
     #
     def test_host_create(self):
         """ test creation of a new host alias """
-        alias = dict(name='adservers', address='10.0.0.1 10.0.0.2', descr='', type='host', detail='')
+        alias = dict(name="adservers", address="10.0.0.1 10.0.0.2", descr="", type="host", detail="")
         command = "create alias 'adservers', type='host', address='10.0.0.1 10.0.0.2', descr='', detail=''"
         self.do_alias_creation_test(alias, command=command)

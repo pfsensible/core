@@ -22,7 +22,7 @@ class TestPFSenseRouteModule(TestPFSenseModule):
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseRouteModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_route_config.xml'
+        self.config_file = "pfsense_route_config.xml"
         self.pfmodule = PFSenseRouteModule
 
     def setUp(self):
@@ -30,9 +30,9 @@ class TestPFSenseRouteModule(TestPFSenseModule):
 
         super(TestPFSenseRouteModule, self).setUp()
 
-        self.mock_run_command = patch('ansible.module_utils.basic.AnsibleModule.run_command')
+        self.mock_run_command = patch("ansible.module_utils.basic.AnsibleModule.run_command")
         self.run_command = self.mock_run_command.start()
-        self.run_command.return_value = (0, '', '')
+        self.run_command.return_value = (0, "", "")
 
     def tearDown(self):
         """ mocking down """
@@ -43,17 +43,17 @@ class TestPFSenseRouteModule(TestPFSenseModule):
     def check_target_elt(self, obj, target_elt):
         """ test the xml definition """
 
-        self.check_param_equal_or_not_find(obj, target_elt, 'disabled')
-        self.check_param_equal(obj, target_elt, 'gateway')
-        self.check_param_equal(obj, target_elt, 'network')
+        self.check_param_equal_or_not_find(obj, target_elt, "disabled")
+        self.check_param_equal(obj, target_elt, "gateway")
+        self.check_param_equal(obj, target_elt, "network")
 
     def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated xml definition """
-        root_elt = self.assert_find_xml_elt(self.xml_result, 'staticroutes')
+        root_elt = self.assert_find_xml_elt(self.xml_result, "staticroutes")
 
         for item in root_elt:
-            name_elt = item.find('descr')
-            if name_elt is not None and name_elt.text == obj['descr']:
+            name_elt = item.find("descr")
+            if name_elt is not None and name_elt.text == obj["descr"]:
                 return item
 
         return None
@@ -63,71 +63,71 @@ class TestPFSenseRouteModule(TestPFSenseModule):
     #
     def test_route_create(self):
         """ test """
-        obj = dict(descr='test_route', network='1.2.3.4/24', gateway='GW_LAN')
+        obj = dict(descr="test_route", network="1.2.3.4/24", gateway="GW_LAN")
         command = "create route 'test_route', network='1.2.3.4/24', gateway='GW_LAN'"
         self.do_module_test(obj, command=command)
 
     def test_route_create_invalid_gw(self):
         """ test """
-        obj = dict(descr='test_route', network='1.2.3.4/24', gateway='GW_INVALID')
+        obj = dict(descr="test_route", network="1.2.3.4/24", gateway="GW_INVALID")
         msg = "The gateway GW_INVALID does not exist"
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_route_create_invalid_ip(self):
         """ test """
-        obj = dict(descr='test_route', network='2001::1', gateway='GW_LAN')
-        msg = 'The gateway "192.168.1.1" is a different Address Family than network "2001::1".'
+        obj = dict(descr="test_route", network="2001::1", gateway="GW_LAN")
+        msg = "The gateway \"192.168.1.1\" is a different Address Family than network \"2001::1\"."
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_route_create_invalid_ip2(self):
         """ test """
-        obj = dict(descr='test_route', network='1.2.3.4', gateway='GW_LAN_V6')
-        msg = 'The gateway "2002::1" is a different Address Family than network "1.2.3.4".'
+        obj = dict(descr="test_route", network="1.2.3.4", gateway="GW_LAN_V6")
+        msg = "The gateway \"2002::1\" is a different Address Family than network \"1.2.3.4\"."
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_route_create_invalid_alias(self):
         """ test """
-        obj = dict(descr='test_route', network='invalid_alias', gateway='GW_LAN')
-        msg = 'A valid IPv4 or IPv6 destination network or alias must be specified.'
+        obj = dict(descr="test_route", network="invalid_alias", gateway="GW_LAN")
+        msg = "A valid IPv4 or IPv6 destination network or alias must be specified."
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_route_update_noop(self):
         """ test """
-        obj = dict(descr='GW_WAN route', network='10.3.0.0/16', gateway='GW_WAN')
+        obj = dict(descr="GW_WAN route", network="10.3.0.0/16", gateway="GW_WAN")
         self.do_module_test(obj, changed=False)
 
     def test_route_update_network(self):
         """ test """
-        obj = dict(descr='GW_WAN route', network='10.4.0.0/16', gateway='GW_WAN')
+        obj = dict(descr="GW_WAN route", network="10.4.0.0/16", gateway="GW_WAN")
         command = "update route 'GW_WAN route' set network='10.4.0.0/16'"
         self.do_module_test(obj, command=command)
 
     def test_route_update_gateway(self):
         """ test """
-        obj = dict(descr='GW_WAN route', network='10.3.0.0/16', gateway='GW_LAN')
+        obj = dict(descr="GW_WAN route", network="10.3.0.0/16", gateway="GW_LAN")
         command = "update route 'GW_WAN route' set gateway='GW_LAN'"
         self.do_module_test(obj, command=command)
 
     def test_route_delete(self):
         """ test """
-        obj = dict(descr='GW_WAN route')
+        obj = dict(descr="GW_WAN route")
         command = "delete route 'GW_WAN route'"
         self.do_module_test(obj, command=command, delete=True)
 
     def test_route_delete_alias(self):
         """ test """
-        obj = dict(descr='GW_WAN alias')
+        obj = dict(descr="GW_WAN alias")
         command = "delete route 'GW_WAN alias'"
         self.do_module_test(obj, command=command, delete=True)
 
     def test_route_create_dhcp(self):
         """ test """
-        obj = dict(descr='test_route', network='1.2.3.4/24', gateway='VPN_DHCP')
+        obj = dict(descr="test_route", network="1.2.3.4/24", gateway="VPN_DHCP")
         command = "create route 'test_route', network='1.2.3.4/24', gateway='VPN_DHCP'"
         self.do_module_test(obj, command=command)
 
     def test_route_create_dhcp6(self):
         """ test """
-        obj = dict(descr='test_route', network='2001::/56', gateway='VPN_DHCP6')
+        obj = dict(descr="test_route", network="2001::/56", gateway="VPN_DHCP6")
         command = "create route 'test_route', network='2001::/56', gateway='VPN_DHCP6'"
         self.do_module_test(obj, command=command)

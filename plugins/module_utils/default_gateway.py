@@ -12,8 +12,8 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 
 DEFAULT_GATEWAY_ARGUMENT_SPEC = dict(
-    gateway=dict(type='str'),
-    ipprotocol=dict(default='inet', choices=['inet', 'inet6']),
+    gateway=dict(type="str"),
+    ipprotocol=dict(default="inet", choices=["inet", "inet6"]),
 )
 
 
@@ -29,7 +29,7 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseDefaultGatewayModule, self).__init__(module, pfsense, root='gateways')
+        super(PFSenseDefaultGatewayModule, self).__init__(module, pfsense, root="gateways")
         self.name = "pfsense_default_gateway"
         self.target_elt = self.root_elt
         self.interface_elt = None
@@ -49,15 +49,15 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
 
         # Modification
         if params["gateway"]:
-            my_defaultgw = self._gw2machine(params['gateway'])
-            if params['ipprotocol'] == "inet":
-                obj['defaultgw4'] = my_defaultgw
+            my_defaultgw = self._gw2machine(params["gateway"])
+            if params["ipprotocol"] == "inet":
+                obj["defaultgw4"] = my_defaultgw
                 self.result["defaultgw4"] = params["gateway"]
-            elif params['ipprotocol'] == "inet6":
-                obj['defaultgw6'] = my_defaultgw
+            elif params["ipprotocol"] == "inet6":
+                obj["defaultgw6"] = my_defaultgw
                 self.result["defaultgw6"] = params["gateway"]
             else:
-                self.module.fail_json(msg='Please specify a valid ipprotocol (inet/inet6)')
+                self.module.fail_json(msg="Please specify a valid ipprotocol (inet/inet6)")
 
         return obj
 
@@ -88,9 +88,9 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
     def _create_target(self):
         """ create the XML target_elt """
         if self.params["ipprotocol"] == "inet":
-            return self.pfsense.new_element('defaultgw4')
+            return self.pfsense.new_element("defaultgw4")
         elif self.params["ipprotocol"] == "inet6":
-            return self.pfsense.new_element('defaultgw6')
+            return self.pfsense.new_element("defaultgw6")
 
     ##############################
     # Utilities
@@ -144,7 +144,7 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
 
     def _update(self):
         """ make the target pfsense reload """
-        return self.pfsense.phpshell('''
+        return self.pfsense.phpshell("""
 require_once("filter.inc");
 $retval = 0;
 
@@ -157,7 +157,7 @@ setup_gateways_monitor();
 send_event("service reload dyndnsall");
 
 if ($retval == 0) clear_subsystem_dirty('staticroutes');
-''')
+""")
 
     ##############################
     # Logging
@@ -168,10 +168,10 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
+        values = ""
         if self.params["ipprotocol"] == "inet":
-            values += self.format_updated_cli_field(self.obj, before, 'defaultgw4', add_comma=values)
+            values += self.format_updated_cli_field(self.obj, before, "defaultgw4", add_comma=values)
         elif self.params["ipprotocol"] == "inet6":
-            values += self.format_updated_cli_field(self.obj, before, 'defaultgw6', add_comma=values)
+            values += self.format_updated_cli_field(self.obj, before, "defaultgw6", add_comma=values)
 
         return values

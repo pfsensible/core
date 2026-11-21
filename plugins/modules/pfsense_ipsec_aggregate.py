@@ -7,9 +7,9 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -448,23 +448,23 @@ class PFSenseModuleIpsecAggregate(object):
         self.pfsense_ipsec_p2 = PFSenseIpsecP2Module(module, self.pfsense)
 
     def _update(self):
-        if self.pfsense_ipsec.result['changed'] or self.pfsense_ipsec_proposal.result['changed'] or self.pfsense_ipsec_p2.result['changed']:
+        if self.pfsense_ipsec.result["changed"] or self.pfsense_ipsec_proposal.result["changed"] or self.pfsense_ipsec_p2.result["changed"]:
             return self.pfsense.apply_ipsec_changes()
 
-        return ('', '', '')
+        return ("", "", "")
 
     @staticmethod
     def want_ipsec(ipsec_elt, ipsecs):
         """ return True if we want to keep ipsec_elt """
-        descr = ipsec_elt.find('descr')
+        descr = ipsec_elt.find("descr")
 
         if descr is None:
             return True
 
         for ipsec in ipsecs:
-            if ipsec['state'] == 'absent':
+            if ipsec["state"] == "absent":
                 continue
-            if ipsec['descr'] == descr.text:
+            if ipsec["descr"] == descr.text:
                 return True
         return False
 
@@ -472,40 +472,40 @@ class PFSenseModuleIpsecAggregate(object):
         """ return the pfsense_ipsec_proposal params corresponding the proposal_elt """
         params = {}
         proposal = self.pfsense.element_to_dict(proposal_elt)
-        params['encryption'] = proposal['encryption-algorithm']['name']
-        params['key_length'] = proposal['encryption-algorithm'].get('keylen')
-        if params['key_length'] is not None:
-            if params['key_length'] == '':
-                params['key_length'] = None
+        params["encryption"] = proposal["encryption-algorithm"]["name"]
+        params["key_length"] = proposal["encryption-algorithm"].get("keylen")
+        if params["key_length"] is not None:
+            if params["key_length"] == "":
+                params["key_length"] = None
             else:
-                params['key_length'] = int(params['key_length'])
-        params['hash'] = proposal['hash-algorithm']
-        params['dhgroup'] = int(proposal['dhgroup'])
-        descr_elt = ipsec_elt.find('descr')
+                params["key_length"] = int(params["key_length"])
+        params["hash"] = proposal["hash-algorithm"]
+        params["dhgroup"] = int(proposal["dhgroup"])
+        descr_elt = ipsec_elt.find("descr")
         if descr_elt is None:
-            params['descr'] = ''
+            params["descr"] = ""
         else:
-            params['descr'] = descr_elt.text
+            params["descr"] = descr_elt.text
 
         if self.pfsense.is_at_least_2_5_0():
-            params['prf'] = proposal['prf-algorithm']
+            params["prf"] = proposal["prf-algorithm"]
 
         return params
 
     def want_ipsec_proposal(self, ipsec_elt, proposal_elt, proposals):
         """ return True if we want to keep proposal_elt """
         params_from_elt = self.proposal_elt_to_params(ipsec_elt, proposal_elt)
-        params_from_elt['state'] = 'present'
+        params_from_elt["state"] = "present"
 
         if proposals is not None:
             for proposal in proposals:
                 _proposal = deepcopy(proposal)
-                _proposal.pop('apply', None)
+                _proposal.pop("apply", None)
                 if not self.pfsense.is_at_least_2_5_0():
-                    _proposal.pop('prf', None)
-                elif _proposal.get('prf') is None:
-                    _proposal.pop('prf', None)
-                    params_from_elt.pop('prf', None)
+                    _proposal.pop("prf", None)
+                elif _proposal.get("prf") is None:
+                    _proposal.pop("prf", None)
+                    params_from_elt.pop("prf", None)
 
                 if params_from_elt == _proposal:
                     return True
@@ -514,31 +514,31 @@ class PFSenseModuleIpsecAggregate(object):
 
     def want_ipsec_phase2(self, phase2_elt, phases2):
         """ return True if we want to keep proposal_elt """
-        ikeid_elt = phase2_elt.find('ikeid')
-        descr = phase2_elt.find('descr')
+        ikeid_elt = phase2_elt.find("ikeid")
+        descr = phase2_elt.find("descr")
 
         if descr is None or ikeid_elt is None:
             return True
 
-        phase1_elt = self.pfsense.find_ipsec_phase1(ikeid_elt.text, 'ikeid')
+        phase1_elt = self.pfsense.find_ipsec_phase1(ikeid_elt.text, "ikeid")
         if phase1_elt is None:
             return True
-        phase1_descr_elt = phase1_elt.find('descr')
+        phase1_descr_elt = phase1_elt.find("descr")
         if phase1_descr_elt is None:
             return True
         p1_descr = phase1_descr_elt.text
 
         if phases2 is not None:
             for phase2 in phases2:
-                if phase2['state'] == 'absent':
+                if phase2["state"] == "absent":
                     continue
-                if phase2['descr'] == descr.text and phase2['p1_descr'] == p1_descr:
+                if phase2["descr"] == descr.text and phase2["p1_descr"] == p1_descr:
                     return True
         return False
 
     def run_ipsecs(self):
         """ process input params to add/update/delete all IPsec tunnels """
-        want = self.module.params['aggregated_ipsecs']
+        want = self.module.params["aggregated_ipsecs"]
 
         # processing aggregated parameter
         if want is not None:
@@ -546,17 +546,17 @@ class PFSenseModuleIpsecAggregate(object):
                 self.pfsense_ipsec.run(param)
 
         # delete every other if required
-        if self.module.params['purge_ipsecs']:
+        if self.module.params["purge_ipsecs"]:
             todel = []
             for ipsec_elt in self.pfsense_ipsec.root_elt:
-                if ipsec_elt.tag != 'phase1':
+                if ipsec_elt.tag != "phase1":
                     continue
                 if not self.want_ipsec(ipsec_elt, want):
                     params = {}
-                    params['state'] = 'absent'
-                    params['apply'] = False
-                    params['descr'] = ipsec_elt.find('descr').text
-                    params['ikeid'] = ipsec_elt.find('ikeid').text
+                    params["state"] = "absent"
+                    params["apply"] = False
+                    params["descr"] = ipsec_elt.find("descr").text
+                    params["ikeid"] = ipsec_elt.find("ikeid").text
                     todel.append(params)
 
             for params in todel:
@@ -564,7 +564,7 @@ class PFSenseModuleIpsecAggregate(object):
 
     def run_ipsec_proposals(self):
         """ process input params to add/update/delete all IPsec tunnels """
-        want = self.module.params['aggregated_ipsec_proposals']
+        want = self.module.params["aggregated_ipsec_proposals"]
 
         # processing aggregated parameter
         if want is not None:
@@ -572,24 +572,24 @@ class PFSenseModuleIpsecAggregate(object):
                 self.pfsense_ipsec_proposal.run(param)
 
         # delete every other if required
-        if self.module.params['purge_ipsec_proposals']:
+        if self.module.params["purge_ipsec_proposals"]:
             todel = []
             for ipsec_elt in self.pfsense_ipsec_proposal.ipsec:
-                if ipsec_elt.tag != 'phase1':
+                if ipsec_elt.tag != "phase1":
                     continue
 
-                encryption_elt = ipsec_elt.find('encryption')
+                encryption_elt = ipsec_elt.find("encryption")
                 if encryption_elt is None:
                     continue
 
-                items_elt = encryption_elt.findall('item')
+                items_elt = encryption_elt.findall("item")
                 for proposal_elt in items_elt:
                     if not self.want_ipsec_proposal(ipsec_elt, proposal_elt, want):
                         params = self.proposal_elt_to_params(ipsec_elt, proposal_elt)
-                        params['state'] = 'absent'
-                        params['apply'] = False
-                        params['descr'] = ipsec_elt.find('descr').text
-                        params['ikeid'] = ipsec_elt.find('ikeid').text
+                        params["state"] = "absent"
+                        params["apply"] = False
+                        params["descr"] = ipsec_elt.find("descr").text
+                        params["ikeid"] = ipsec_elt.find("ikeid").text
                         todel.append(params)
 
             for params in todel:
@@ -597,7 +597,7 @@ class PFSenseModuleIpsecAggregate(object):
 
     def run_ipsec_p2s(self):
         """ process input params to add/update/delete all IPsec tunnels """
-        want = self.module.params['aggregated_ipsec_p2s']
+        want = self.module.params["aggregated_ipsec_p2s"]
 
         # processing aggregated parameter
         if want is not None:
@@ -605,18 +605,18 @@ class PFSenseModuleIpsecAggregate(object):
                 self.pfsense_ipsec_p2.run(param)
 
         # delete every other if required
-        if self.module.params['purge_ipsec_p2s']:
+        if self.module.params["purge_ipsec_p2s"]:
             todel = []
             for phase2_elt in self.pfsense_ipsec_p2.root_elt:
-                if phase2_elt.tag != 'phase2':
+                if phase2_elt.tag != "phase2":
                     continue
                 if not self.want_ipsec_phase2(phase2_elt, want):
                     params = {}
-                    params['state'] = 'absent'
-                    params['apply'] = False
-                    params['descr'] = phase2_elt.find('descr').text
-                    params['p1_descr'] = self.pfsense.find_ipsec_phase1(phase2_elt.find('ikeid').text, 'ikeid').find('descr').text
-                    params['ikeid'] = phase2_elt.find('ikeid').text
+                    params["state"] = "absent"
+                    params["apply"] = False
+                    params["descr"] = phase2_elt.find("descr").text
+                    params["p1_descr"] = self.pfsense.find_ipsec_phase1(phase2_elt.find("ikeid").text, "ikeid").find("descr").text
+                    params["ikeid"] = phase2_elt.find("ikeid").text
                     todel.append(params)
 
             for params in todel:
@@ -624,37 +624,37 @@ class PFSenseModuleIpsecAggregate(object):
 
     def commit_changes(self):
         """ apply changes and exit module """
-        stdout = ''
-        stderr = ''
-        changed = self.pfsense_ipsec.result['changed'] or self.pfsense_ipsec_proposal.result['changed'] or self.pfsense_ipsec_p2.result['changed']
+        stdout = ""
+        stderr = ""
+        changed = self.pfsense_ipsec.result["changed"] or self.pfsense_ipsec_proposal.result["changed"] or self.pfsense_ipsec_p2.result["changed"]
 
         if changed and not self.module.check_mode:
-            self.pfsense.write_config(descr='aggregated change')
-            if self.module.params['apply']:
+            self.pfsense.write_config(descr="aggregated change")
+            if self.module.params["apply"]:
                 (dummy, stdout, stderr) = self._update()
 
         result = {}
-        result['result_ipsecs'] = self.pfsense_ipsec.result['commands']
-        result['result_ipsec_proposals'] = self.pfsense_ipsec_proposal.result['commands']
-        result['result_ipsec_p2s'] = self.pfsense_ipsec_p2.result['commands']
-        result['changed'] = changed
-        result['stdout'] = stdout
-        result['stderr'] = stderr
+        result["result_ipsecs"] = self.pfsense_ipsec.result["commands"]
+        result["result_ipsec_proposals"] = self.pfsense_ipsec_proposal.result["commands"]
+        result["result_ipsec_p2s"] = self.pfsense_ipsec_p2.result["commands"]
+        result["changed"] = changed
+        result["stdout"] = stdout
+        result["stderr"] = stderr
         self.module.exit_json(**result)
 
 
 def main():
     argument_spec = dict(
-        aggregated_ipsecs=dict(type='list', elements='dict', options=IPSEC_ARGUMENT_SPEC, required_if=IPSEC_REQUIRED_IF),
-        aggregated_ipsec_proposals=dict(type='list', elements='dict', options=IPSEC_PROPOSAL_ARGUMENT_SPEC, required_if=IPSEC_PROPOSAL_REQUIRED_IF),
-        aggregated_ipsec_p2s=dict(type='list', elements='dict', options=IPSEC_P2_ARGUMENT_SPEC, required_if=IPSEC_P2_REQUIRED_IF),
-        purge_ipsecs=dict(default=False, type='bool'),
-        purge_ipsec_proposals=dict(default=False, type='bool'),
-        purge_ipsec_p2s=dict(default=False, type='bool'),
-        apply=dict(default=True, type='bool'),
+        aggregated_ipsecs=dict(type="list", elements="dict", options=IPSEC_ARGUMENT_SPEC, required_if=IPSEC_REQUIRED_IF),
+        aggregated_ipsec_proposals=dict(type="list", elements="dict", options=IPSEC_PROPOSAL_ARGUMENT_SPEC, required_if=IPSEC_PROPOSAL_REQUIRED_IF),
+        aggregated_ipsec_p2s=dict(type="list", elements="dict", options=IPSEC_P2_ARGUMENT_SPEC, required_if=IPSEC_P2_REQUIRED_IF),
+        purge_ipsecs=dict(default=False, type="bool"),
+        purge_ipsec_proposals=dict(default=False, type="bool"),
+        purge_ipsec_p2s=dict(default=False, type="bool"),
+        apply=dict(default=True, type="bool"),
     )
 
-    required_one_of = [['aggregated_ipsecs', 'aggregated_ipsec_proposals', 'aggregated_ipsec_p2s']]
+    required_one_of = [["aggregated_ipsecs", "aggregated_ipsec_proposals", "aggregated_ipsec_p2s"]]
 
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -670,5 +670,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

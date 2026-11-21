@@ -7,9 +7,9 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -328,7 +328,7 @@ EXAMPLES = """
     mode: server_user
 """
 
-RETURN = r'''
+RETURN = r"""
 shared_key:
     description: The generated shared key, base64 encoded
     returned: when `generate` is passed as the shared_key argument and a key is generated.
@@ -356,7 +356,7 @@ vpnid:
     returned: always
     type: int
     sample: 1
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.openvpn_server import (
@@ -377,5 +377,5 @@ def main():
     pfopenvpn.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -46,7 +46,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseOpenVPNServerModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_openvpn_config.xml'
+        self.config_file = "pfsense_openvpn_config.xml"
         self.pfmodule = pfsense_openvpn_server.PFSenseOpenVPNServerModule
 
     def setUp(self):
@@ -54,13 +54,13 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
 
         super(TestPFSenseOpenVPNServerModule, self).setUp()
 
-        self.mock_run_command = patch('ansible.module_utils.basic.AnsibleModule.run_command')
+        self.mock_run_command = patch("ansible.module_utils.basic.AnsibleModule.run_command")
         self.run_command = self.mock_run_command.start()
-        self.run_command.return_value = (0, base64.b64decode(TLSKEY.encode()).decode(), '')
+        self.run_command.return_value = (0, base64.b64decode(TLSKEY.encode()).decode(), "")
 
-        self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
+        self.mock_php = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php")
         self.php = self.mock_php.start()
-        self.php.return_value = {'SHA256': 'SHA256 (256-bit)'}
+        self.php.return_value = {"SHA256": "SHA256 (256-bit)"}
 
     def tearDown(self):
         """ mocking down """
@@ -75,118 +75,118 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
 
     def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
-        root_elt = self.xml_result.getroot().find('openvpn')
-        result = root_elt.findall("openvpn-server[description='{0}']".format(obj['name']))
+        root_elt = self.xml_result.getroot().find("openvpn")
+        result = root_elt.findall("openvpn-server[description='{0}']".format(obj["name"]))
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
-            self.fail('Found multiple OpenVPN servers for name {0}.'.format(obj['name']))
+            self.fail("Found multiple OpenVPN servers for name {0}.".format(obj["name"]))
         else:
             return None
 
     @staticmethod
     def caref(descr):
         """ return refid for ca """
-        if descr == 'OpenVPN CA':
-            return '6209e3cef1e81'
-        return ''
+        if descr == "OpenVPN CA":
+            return "6209e3cef1e81"
+        return ""
 
     @staticmethod
     def crlref(descr):
         """ return refid for crl """
-        if descr == 'OpenVPN CRL':
-            return '6209e3cef1e81'
+        if descr == "OpenVPN CRL":
+            return "6209e3cef1e81"
         return None
 
     @staticmethod
     def certref(descr):
         """ return refid for cert """
-        if descr == 'OpenVPN CERT':
-            return '6209e3cef1e81'
+        if descr == "OpenVPN CERT":
+            return "6209e3cef1e81"
         return None
 
     def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
         # Use "generated" key
-        if 'shared_key' in obj and obj['shared_key'] == 'generate':
-            obj['shared_key'] = TLSKEY
-        if 'tls' in obj and obj['tls'] == 'generate':
-            obj['tls'] = TLSKEY
-            obj['tls_type'] = 'auth'
+        if "shared_key" in obj and obj["shared_key"] == "generate":
+            obj["shared_key"] = TLSKEY
+        if "tls" in obj and obj["tls"] == "generate":
+            obj["tls"] = TLSKEY
+            obj["tls_type"] = "auth"
 
-        self.check_param_equal(obj, target_elt, 'name', xml_field='description')
-        self.check_param_equal(obj, target_elt, 'custom_options')
-        self.check_param_equal(obj, target_elt, 'mode', default='ptp_tls')
-        if obj['mode'] == 'server_tls_user':
-            self.check_list_param_equal(obj, target_elt, 'authmode')
-        if obj['mode'] == 'p2p_shared_key':
-            self.check_param_equal(obj, target_elt, 'shared_key')
-        self.check_param_equal(obj, target_elt, 'dev_mode', default='tun')
-        self.check_param_bool(obj, target_elt, 'disabled')
-        self.check_param_equal(obj, target_elt, 'interface', default='wan')
-        self.check_param_equal(obj, target_elt, 'local_port', default=1194)
-        self.check_param_equal(obj, target_elt, 'protocol', default='UDP4')
-        if 'tls' in obj['mode']:
-            self.check_param_equal(obj, target_elt, 'tls')
-            self.check_param_equal(obj, target_elt, 'tls')
-            self.check_param_equal(obj, target_elt, 'tls_type')
-            self.assert_xml_elt_equal(target_elt, 'caref', self.caref(obj['ca']))
-            if 'crl' in obj:
-                self.assert_xml_elt_equal(target_elt, 'crlref', self.crlref(obj['crl']))
-            if 'cert' in obj:
-                self.assert_xml_elt_equal(target_elt, 'certref', self.certref(obj['cert']))
-            self.check_param_equal(obj, target_elt, 'cert_depth', default=1)
+        self.check_param_equal(obj, target_elt, "name", xml_field="description")
+        self.check_param_equal(obj, target_elt, "custom_options")
+        self.check_param_equal(obj, target_elt, "mode", default="ptp_tls")
+        if obj["mode"] == "server_tls_user":
+            self.check_list_param_equal(obj, target_elt, "authmode")
+        if obj["mode"] == "p2p_shared_key":
+            self.check_param_equal(obj, target_elt, "shared_key")
+        self.check_param_equal(obj, target_elt, "dev_mode", default="tun")
+        self.check_param_bool(obj, target_elt, "disabled")
+        self.check_param_equal(obj, target_elt, "interface", default="wan")
+        self.check_param_equal(obj, target_elt, "local_port", default=1194)
+        self.check_param_equal(obj, target_elt, "protocol", default="UDP4")
+        if "tls" in obj["mode"]:
+            self.check_param_equal(obj, target_elt, "tls")
+            self.check_param_equal(obj, target_elt, "tls")
+            self.check_param_equal(obj, target_elt, "tls_type")
+            self.assert_xml_elt_equal(target_elt, "caref", self.caref(obj["ca"]))
+            if "crl" in obj:
+                self.assert_xml_elt_equal(target_elt, "crlref", self.crlref(obj["crl"]))
+            if "cert" in obj:
+                self.assert_xml_elt_equal(target_elt, "certref", self.certref(obj["cert"]))
+            self.check_param_equal(obj, target_elt, "cert_depth", default=1)
         else:
-            self.assert_not_find_xml_elt('tls')
-            self.assert_not_find_xml_elt('tls_type')
-        self.check_param_bool(obj, target_elt, 'strictusercn')
-        self.check_param_equal(obj, target_elt, 'dh_length', default=2048)
-        self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
-        self.check_param_equal(obj, target_elt, 'data_ciphers_fallback', default='AES-256-CBC')
-        self.check_param_equal(obj, target_elt, 'data_ciphers', default='AES-256-GCM,AES-128-GCM,CHACHA20-POLY1305')
-        self.check_param_equal(obj, target_elt, 'digest', default='SHA256')
-        self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
-        self.check_param_equal(obj, target_elt, 'allow_compression', default='no')
-        self.check_param_equal(obj, target_elt, 'compression', default=None)
-        self.check_param_bool(obj, target_elt, 'compression_push', default=False, value_true='yes')
-        self.check_param_equal(obj, target_elt, 'ecdh_curve', default='none')
-        self.check_param_equal(obj, target_elt, 'tunnel_network')
-        self.check_param_equal(obj, target_elt, 'tunnel_networkv6')
-        self.check_param_equal(obj, target_elt, 'local_network')
-        self.check_param_equal(obj, target_elt, 'local_networkv6')
-        self.check_param_equal(obj, target_elt, 'remote_network')
-        self.check_param_equal(obj, target_elt, 'remote_networkv6')
-        self.check_param_bool(obj, target_elt, 'gwredir', default=False, value_true='yes')
-        self.check_param_bool(obj, target_elt, 'gwredir6', default=False, value_true='yes')
-        self.check_param_equal(obj, target_elt, 'maxclients')
+            self.assert_not_find_xml_elt("tls")
+            self.assert_not_find_xml_elt("tls_type")
+        self.check_param_bool(obj, target_elt, "strictusercn")
+        self.check_param_equal(obj, target_elt, "dh_length", default=2048)
+        self.check_param_equal(obj, target_elt, "ecdh_curve", default="none")
+        self.check_param_equal(obj, target_elt, "data_ciphers_fallback", default="AES-256-CBC")
+        self.check_param_equal(obj, target_elt, "data_ciphers", default="AES-256-GCM,AES-128-GCM,CHACHA20-POLY1305")
+        self.check_param_equal(obj, target_elt, "digest", default="SHA256")
+        self.check_param_equal(obj, target_elt, "ecdh_curve", default="none")
+        self.check_param_equal(obj, target_elt, "allow_compression", default="no")
+        self.check_param_equal(obj, target_elt, "compression", default=None)
+        self.check_param_bool(obj, target_elt, "compression_push", default=False, value_true="yes")
+        self.check_param_equal(obj, target_elt, "ecdh_curve", default="none")
+        self.check_param_equal(obj, target_elt, "tunnel_network")
+        self.check_param_equal(obj, target_elt, "tunnel_networkv6")
+        self.check_param_equal(obj, target_elt, "local_network")
+        self.check_param_equal(obj, target_elt, "local_networkv6")
+        self.check_param_equal(obj, target_elt, "remote_network")
+        self.check_param_equal(obj, target_elt, "remote_networkv6")
+        self.check_param_bool(obj, target_elt, "gwredir", default=False, value_true="yes")
+        self.check_param_bool(obj, target_elt, "gwredir6", default=False, value_true="yes")
+        self.check_param_equal(obj, target_elt, "maxclients")
 
     ##############
     # tests
     #
     def test_openvpn_server_create(self):
         """ test creation of a new OpenVPN server """
-        obj = dict(name='ovpns3', mode='p2p_tls', ca='OpenVPN CA', local_port=1196)
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196)
         self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
 
     def test_openvpn_server_create_generate(self):
         """ test creation of a new OpenVPN server """
-        obj = dict(name='ovpns3', mode='p2p_tls', ca='OpenVPN CA', local_port=1196, tls='generate')
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, tls="generate")
         self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
 
     def test_openvpn_server_delete(self):
         """ test deletion of a OpenVPN server """
-        obj = dict(name='ovpns2')
+        obj = dict(name="ovpns2")
         self.do_module_test(obj, command="delete openvpn_server 'ovpns2'", delete=True)
 
     def test_openvpn_server_update_noop(self):
         """ test not updating a OpenVPN server """
-        obj = dict(name='ovpns2', mode='p2p_tls', ca='OpenVPN CA', local_port=1195, tls=TLSKEY, tls_type='auth')
+        obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, tls=TLSKEY, tls_type="auth")
         self.do_module_test(obj, changed=False)
 
     def test_openvpn_server_update_network(self):
         """ test updating network of a OpenVPN server """
-        obj = dict(name='ovpns2', mode='p2p_tls', ca='OpenVPN CA', local_port=1195, tls=TLSKEY, tls_type='auth', tunnel_network='10.10.10.10/24')
+        obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, tls=TLSKEY, tls_type="auth", tunnel_network="10.10.10.10/24")
         self.do_module_test(obj, command="update openvpn_server 'ovpns2' set ")
 
     ##############
@@ -194,15 +194,15 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
     #
     def test_create_openvpn_server_duplicate_port(self):
         """ test creation of a new OpenVPN server with duplicate port """
-        obj = dict(name='ovpns3', mode='p2p_tls', ca='OpenVPN CA')
-        self.do_module_test(obj, failed=True, msg='The specified local_port (1194) is in use by vpn ID 1')
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA")
+        self.do_module_test(obj, failed=True, msg="The specified local_port (1194) is in use by vpn ID 1")
 
     def test_create_openvpn_server_invalid_certificate(self):
         """ test creation of a new OpenVPN server with invalid certificate """
-        obj = dict(name='ovpns2', mode='p2p_tls', ca='OpenVPN CA', cert='blah')
-        self.do_module_test(obj, failed=True, msg='blah is not a valid certificate')
+        obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", cert="blah")
+        self.do_module_test(obj, failed=True, msg="blah is not a valid certificate")
 
     def test_delete_nonexistent_openvpn_server(self):
         """ test deletion of an nonexistent OpenVPN server """
-        obj = dict(name='novpn')
-        self.do_module_test(obj, commmand=None, state='absent', changed=False)
+        obj = dict(name="novpn")
+        self.do_module_test(obj, commmand=None, state="absent", changed=False)

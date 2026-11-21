@@ -7,9 +7,9 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -85,21 +85,21 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 
 AUTHSERVER_RADIUS_SPEC = {
-    'name': {'required': True, 'type': 'str'},
-    'state': {
-        'default': 'present',
-        'choices': ['present', 'absent'],
+    "name": {"required": True, "type": "str"},
+    "state": {
+        "default": "present",
+        "choices": ["present", "absent"],
     },
-    'host': {'type': 'str'},
-    'auth_port': {'default': '1812', 'type': 'int'},
-    'acct_port': {'default': '1813', 'type': 'int'},
-    'protocol': {
-        'default': 'MSCHAPv2',
-        'choices': ['PAP', 'CHAP_MD5', 'MSCHAPv1', 'MSCHAPv2'],
+    "host": {"type": "str"},
+    "auth_port": {"default": "1812", "type": "int"},
+    "acct_port": {"default": "1813", "type": "int"},
+    "protocol": {
+        "default": "MSCHAPv2",
+        "choices": ["PAP", "CHAP_MD5", "MSCHAPv1", "MSCHAPv2"],
     },
-    'secret': {'type': 'str', 'no_log': True},
-    'timeout': {'default': '5', 'type': 'int'},
-    'nasip_attribute': {'default': 'lan', 'type': 'str'},
+    "secret": {"type": "str", "no_log": True},
+    "timeout": {"default": "5", "type": "int"},
+    "nasip_attribute": {"default": "lan", "type": "str"},
 }
 
 
@@ -114,8 +114,8 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseAuthserverRADIUSModule, self).__init__(module, pfsense)
         self.name = "pfsense_authserver_radius"
-        self.root_elt = self.pfsense.get_element('system')
-        self.authservers = self.root_elt.findall('authserver')
+        self.root_elt = self.pfsense.get_element("system")
+        self.authservers = self.root_elt.findall("authserver")
 
     ##############################
     # params processing
@@ -123,8 +123,8 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
     def _validate_params(self):
         """ do some extra checks on input parameters """
 
-        if int(self.params['timeout']) < 1:
-            self.module.fail_json(msg='timeout {0} must be greater than 1'.format(self.params['timeout']))
+        if int(self.params["timeout"]) < 1:
+            self.module.fail_json(msg="timeout {0} must be greater than 1".format(self.params["timeout"]))
 
     def _params_to_obj(self):
         """ return a dict from module params """
@@ -133,16 +133,16 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
         obj = dict()
         self.obj = obj
 
-        obj['name'] = params['name']
-        if params['state'] == 'present':
-            obj['type'] = 'radius'
-            self._get_ansible_param(obj, 'host')
-            self._get_ansible_param(obj, 'auth_port', fname='radius_auth_port')
-            self._get_ansible_param(obj, 'acct_port', fname='radius_acct_port')
-            self._get_ansible_param(obj, 'protocol', fname='radius_protocol')
-            self._get_ansible_param(obj, 'secret', fname='radius_secret')
-            self._get_ansible_param(obj, 'timeout', fname='radius_timeout')
-            self._get_ansible_param(obj, 'nasip_attribute', fname='radius_nasip_attribute')
+        obj["name"] = params["name"]
+        if params["state"] == "present":
+            obj["type"] = "radius"
+            self._get_ansible_param(obj, "host")
+            self._get_ansible_param(obj, "auth_port", fname="radius_auth_port")
+            self._get_ansible_param(obj, "acct_port", fname="radius_acct_port")
+            self._get_ansible_param(obj, "protocol", fname="radius_protocol")
+            self._get_ansible_param(obj, "secret", fname="radius_secret")
+            self._get_ansible_param(obj, "timeout", fname="radius_timeout")
+            self._get_ansible_param(obj, "nasip_attribute", fname="radius_nasip_attribute")
 
         return obj
 
@@ -150,11 +150,11 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
     # XML processing
     #
     def _find_target(self):
-        result = self.root_elt.findall("authserver[name='{0}'][type='radius']".format(self.obj['name']))
+        result = self.root_elt.findall("authserver[name='{0}'][type='radius']".format(self.obj["name"]))
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
-            self.module.fail_json(msg='Found multiple radius authentication servers for name {0}.'.format(self.obj['name']))
+            self.module.fail_json(msg="Found multiple radius authentication servers for name {0}.".format(self.obj["name"]))
         else:
             return None
 
@@ -163,14 +163,14 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
 
     def _create_target(self):
         """ create the XML target_elt """
-        elt = self.pfsense.new_element('authserver')
-        elt.append(self.pfsense.new_element('refid', text=self.pfsense.uniqid()))
+        elt = self.pfsense.new_element("authserver")
+        elt.append(self.pfsense.new_element("refid", text=self.pfsense.uniqid()))
         return elt
 
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.obj
+        self.diff["after"] = self.obj
         if len(self.authservers) > 0:
             self.root_elt.insert(list(self.root_elt).index(self.authservers[len(self.authservers) - 1]), self.target_elt)
         else:
@@ -181,11 +181,11 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
     #
     def _get_obj_name(self):
         """ return obj's name """
-        return "'{0}'".format(self.obj['name'])
+        return "'{0}'".format(self.obj["name"])
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
+        values = ""
         return values
 
 
@@ -202,5 +202,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

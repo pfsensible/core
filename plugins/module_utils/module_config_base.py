@@ -17,7 +17,7 @@ class PFSenseModuleConfigBase(PFSenseModuleBase):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, package=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key='descr',
+    def __init__(self, module, pfsense=None, package=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key="descr",
                  update_php=None, arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_style=None, bool_values=None, have_refid=False,
                  create_default=None):
         super(PFSenseModuleConfigBase, self).__init__(module, pfsense=pfsense, package=package, name=name, root=root, node=node, root_is_exclusive=True,
@@ -51,4 +51,4 @@ class PFSenseModuleConfigBase(PFSenseModuleBase):
     #
     def _get_obj_name(self):
         """ return obj's name """
-        return re.sub(r'pfsense_', '', self.name)
+        return re.sub(r"pfsense_", "", self.name)

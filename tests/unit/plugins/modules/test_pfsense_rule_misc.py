@@ -21,7 +21,7 @@ class TestPFSenseRuleMiscModule(TestPFSenseRuleModule):
     #
     def test_rule_delete(self):
         """ test deleting a rule """
-        obj = dict(name='test_rule_3', source='any', destination='any', interface='wan', protocol='tcp')
+        obj = dict(name="test_rule_3", source="any", destination="any", interface="wan", protocol="tcp")
         command = "delete rule 'test_rule_3' on 'wan'"
         self.do_module_test(obj, command=command, delete=True)
 
@@ -30,7 +30,7 @@ class TestPFSenseRuleMiscModule(TestPFSenseRuleModule):
     #
     def test_check_mode(self):
         """ test check mode """
-        obj = dict(name='one_rule', source='any', destination='any', interface='lan')
+        obj = dict(name="one_rule", source="any", destination="any", interface="lan")
         with set_module_args(self.args_from_var(obj, _ansible_check_mode=True)):
             self.execute_module(changed=True)
             self.assertFalse(self.load_xml_result())

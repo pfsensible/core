@@ -66,4 +66,5 @@ build_ignore:
   - changelogs
   - examples
   - misc
+  - pyproject.toml
   - setup.cfg

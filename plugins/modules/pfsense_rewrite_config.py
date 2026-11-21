@@ -8,9 +8,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -53,23 +53,23 @@ class PFSenseRewriteConfigModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseRewriteConfigModule, self).__init__(module, pfsense)
         self.name = "pfsense_rewrite_config"
-        self.result['changed'] = True
+        self.result["changed"] = True
 
     ##############################
     # run
     #
     def commit_changes(self):
         """ apply changes and exit module """
-        self.result['stdout'] = ''
-        self.result['stderr'] = ''
-        if self.result['changed'] and not self.module.check_mode:
-            (dummy, self.result['stdout'], self.result['stderr']) = self._update()
+        self.result["stdout"] = ""
+        self.result["stderr"] = ""
+        if self.result["changed"] and not self.module.check_mode:
+            (dummy, self.result["stdout"], self.result["stderr"]) = self._update()
 
         self.module.exit_json(**self.result)
 
     def _update(self):
         """ make the target pfsense rewrite the config.xml file """
-        cmd = '''write_config('pfsense_rewrite_config');'''
+        cmd = """write_config('pfsense_rewrite_config');"""
         return self.pfsense.phpshell(cmd)
 
 
@@ -82,5 +82,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

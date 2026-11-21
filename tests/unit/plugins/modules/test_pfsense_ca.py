@@ -61,7 +61,7 @@ class TestPFSenseCAModule(TestPFSenseModule):
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseCAModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_ca_config.xml'
+        self.config_file = "pfsense_ca_config.xml"
         self.pfmodule = pfsense_ca.PFSenseCAModule
 
     def setUp(self):
@@ -69,9 +69,9 @@ class TestPFSenseCAModule(TestPFSenseModule):
 
         super(TestPFSenseCAModule, self).setUp()
 
-        self.mock_php = patch('ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php')
+        self.mock_php = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php")
         self.php = self.mock_php.start()
-        self.php.return_value = '12000'
+        self.php.return_value = "12000"
 
     @staticmethod
     def runTest():
@@ -81,61 +81,61 @@ class TestPFSenseCAModule(TestPFSenseModule):
     def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
         root_elt = self.xml_result.getroot()
-        result = root_elt.findall("ca[descr='{0}']".format(obj['name']))
+        result = root_elt.findall("ca[descr='{0}']".format(obj["name"]))
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
-            self.fail('Found multiple CAs for name {0}.'.format(obj['name']))
+            self.fail("Found multiple CAs for name {0}.".format(obj["name"]))
         else:
             return None
 
     def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
-        self.check_param_equal(obj, target_elt, 'name', xml_field='descr')
-        if 'trust' in obj:
-            self.check_param_bool(obj, target_elt, 'trust', value_true='enabled', value_false='disabled')
-        if 'randomserial' in obj:
-            self.check_param_bool(obj, target_elt, 'randomserial', value_true='enabled', value_false='disabled')
-        self.check_param_equal_or_present(obj, target_elt, 'serial')
-        self.check_param_equal(obj, target_elt, 'certificate', xml_field='crt')
+        self.check_param_equal(obj, target_elt, "name", xml_field="descr")
+        if "trust" in obj:
+            self.check_param_bool(obj, target_elt, "trust", value_true="enabled", value_false="disabled")
+        if "randomserial" in obj:
+            self.check_param_bool(obj, target_elt, "randomserial", value_true="enabled", value_false="disabled")
+        self.check_param_equal_or_present(obj, target_elt, "serial")
+        self.check_param_equal(obj, target_elt, "certificate", xml_field="crt")
 
     ##############
     # tests
     #
     def test_ca_create(self):
         """ test creation of a new ca """
-        obj = dict(name='ca1', certificate=CERTIFICATE)
+        obj = dict(name="ca1", certificate=CERTIFICATE)
         self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_add_crl(self):
         """ test adding a CRL """
-        obj = dict(name='ca1', certificate=CERTIFICATE, crl=CRL1)
+        obj = dict(name="ca1", certificate=CERTIFICATE, crl=CRL1)
         self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_change_crl(self):
         """ test adding a CRL """
-        obj = dict(name='ca1', certificate=CERTIFICATE, crl=CRL2)
+        obj = dict(name="ca1", certificate=CERTIFICATE, crl=CRL2)
         self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_delete(self):
         """ test deletion of a ca """
-        obj = dict(name='testdel')
+        obj = dict(name="testdel")
         self.do_module_test(obj, command="delete ca 'testdel'", delete=True)
 
     def test_ca_update_noop(self):
         """ test not updating a ca """
-        obj = dict(name='testdel', certificate=CERTIFICATE)
+        obj = dict(name="testdel", certificate=CERTIFICATE)
         self.do_module_test(obj, changed=False)
 
     def test_ca_update_serial(self):
         """ test updating serial of a ca """
-        obj = dict(name='testdel', certificate=CERTIFICATE, serial=10)
+        obj = dict(name="testdel", certificate=CERTIFICATE, serial=10)
         self.do_module_test(obj, command="update ca 'testdel' set serial='10'")
 
     def test_ca_update_trust(self):
         """ test updating trust of a ca """
-        obj = dict(name='testdel', certificate=CERTIFICATE, trust=False)
+        obj = dict(name="testdel", certificate=CERTIFICATE, trust=False)
         self.do_module_test(obj, command="update ca 'testdel' set ")
 
     ##############
@@ -143,10 +143,10 @@ class TestPFSenseCAModule(TestPFSenseModule):
     #
     def test_create_ca_invalid_serial(self):
         """ test creation of a new ca with invalid serial """
-        obj = dict(name='ca1', certificate=CERTIFICATE, serial=-1)
-        self.do_module_test(obj, failed=True, msg='serial must be greater than 0')
+        obj = dict(name="ca1", certificate=CERTIFICATE, serial=-1)
+        self.do_module_test(obj, failed=True, msg="serial must be greater than 0")
 
     def test_delete_nonexistent_ca(self):
         """ test deletion of an nonexistent ca """
-        obj = dict(name='noca')
-        self.do_module_test(obj, commmand=None, state='absent', changed=False)
+        obj = dict(name="noca")
+        self.do_module_test(obj, commmand=None, state="absent", changed=False)

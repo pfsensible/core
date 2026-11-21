@@ -7,7 +7,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: pfsense_user
 version_added: 0.1.0
@@ -60,9 +60,9 @@ options:
     default: false
     type: bool
     version_added: 0.7.1
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Add operator user
   pfsense_user:
     name: operator
@@ -75,11 +75,11 @@ EXAMPLES = r'''
   pfsense_user:
     name: operator
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 
-'''
+"""
 
 import base64
 import re
@@ -88,24 +88,24 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 USER_ARGUMENT_SPEC = dict(
-    name=dict(required=True, type='str'),
-    state=dict(type='str', default='present', choices=['present', 'absent']),
-    descr=dict(type='str'),
-    scope=dict(type='str', choices=['user', 'system']),
-    uid=dict(type='str'),
-    password=dict(type='str', no_log=True),
-    groups=dict(type='list', elements='str'),
-    priv=dict(type='list', elements='str'),
-    authorizedkeys=dict(type='str'),
-    disabled=dict(type='bool', default=False),
+    name=dict(required=True, type="str"),
+    state=dict(type="str", default="present", choices=["present", "absent"]),
+    descr=dict(type="str"),
+    scope=dict(type="str", choices=["user", "system"]),
+    uid=dict(type="str"),
+    password=dict(type="str", no_log=True),
+    groups=dict(type="list", elements="str"),
+    priv=dict(type="list", elements="str"),
+    authorizedkeys=dict(type="str"),
+    disabled=dict(type="bool", default=False),
 )
 
 USER_CREATE_DEFAULT = dict(
-    scope='user',
+    scope="user",
 )
 
 USER_MAP_PARAM = [
-    ('password', 'bcrypt-hash'),
+    ("password", "bcrypt-hash"),
 ]
 
 
@@ -117,13 +117,13 @@ def parse_groups(self, name, params, obj):
 
 def p2o_ssh_pub_key(self, name, params, obj):
     # Allow ssh keys to be clear or base64 encoded
-    if params[name] is not None and 'ssh-' in params[name]:
+    if params[name] is not None and "ssh-" in params[name]:
         obj[name] = base64.b64encode(params[name].encode()).decode()
 
 
 def validate_password(self, password):
-    if not re.match(r'\$2[aby]\$', str(password)):
-        raise ValueError('Password (%s) does not appear to be a bcrypt hash' % (password))
+    if not re.match(r"\$2[aby]\$", str(password)):
+        raise ValueError("Password (%s) does not appear to be a bcrypt hash" % (password))
 
 
 USER_ARG_ROUTE = dict(
@@ -175,9 +175,9 @@ class PFSenseUserModule(PFSenseModuleBase):
         return USER_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseUserModule, self).__init__(module, pfsense, root='system', node='user', key='name',
+        super(PFSenseUserModule, self).__init__(module, pfsense, root="system", node="user", key="name",
                                                 arg_route=USER_ARG_ROUTE, map_param=USER_MAP_PARAM, create_default=USER_CREATE_DEFAULT)
-        self.groups = self.root_elt.findall('group')
+        self.groups = self.root_elt.findall("group")
         self.user_groups = None
         self.mod_groups = []
 
@@ -185,16 +185,16 @@ class PFSenseUserModule(PFSenseModuleBase):
     # XML processing
     #
     def _find_group_elt(self, name):
-        return self.pfsense.find_elt('group', name, search_field='name', root_elt=self.root_elt)
+        return self.pfsense.find_elt("group", name, search_field="name", root_elt=self.root_elt)
 
     def _find_group_names_for_uid(self, uid):
         groups = []
         for group_elt in self.pfsense.find_elt("group", uid, search_field="member", root_elt=self.root_elt, multiple_ok=True):
-            groups.append(group_elt.find('name').text)
+            groups.append(group_elt.find("name").text)
         return groups
 
     def _nextuid(self):
-        nextuid_elt = self.root_elt.find('nextuid')
+        nextuid_elt = self.root_elt.find("nextuid")
         nextuid = nextuid_elt.text
         nextuid_elt.text = str(int(nextuid) + 1)
         return nextuid
@@ -208,12 +208,12 @@ class PFSenseUserModule(PFSenseModuleBase):
     def _copy_and_add_target(self):
         """ populate the XML target_elt """
         obj = self.obj
-        if 'bcrypt-hash' not in obj:
-            self.module.fail_json(msg='Password is required when adding a user')
-        if 'uid' not in obj:
-            obj['uid'] = self._nextuid()
+        if "bcrypt-hash" not in obj:
+            self.module.fail_json(msg="Password is required when adding a user")
+        if "uid" not in obj:
+            obj["uid"] = self._nextuid()
 
-        self.diff['after'] = obj
+        self.diff["after"] = obj
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self._update_groups()
         self.root_elt.insert(self._find_last_element_index(), self.target_elt)
@@ -223,13 +223,13 @@ class PFSenseUserModule(PFSenseModuleBase):
     def _copy_and_update_target(self):
         """ update the XML target_elt """
         before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
-        if 'priv' in before:
-            before['priv'] = self._format_diff_priv(before['priv'])
+        self.diff["before"] = before
+        if "priv" in before:
+            before["priv"] = self._format_diff_priv(before["priv"])
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
-        if 'priv' in self.diff['after']:
-            self.diff['after']['priv'] = self._format_diff_priv(self.diff['after']['priv'])
+        self.diff["after"] = self.pfsense.element_to_dict(self.target_elt)
+        if "priv" in self.diff["after"]:
+            self.diff["after"]["priv"] = self._format_diff_priv(self.diff["after"]["priv"])
         if self._remove_deleted_disabled_param():
             changed = True
         if self._update_groups():
@@ -244,27 +244,27 @@ class PFSenseUserModule(PFSenseModuleBase):
         # Only modify group membership is groups was specified
         if self.user_groups is not None:
             # Handle group member element - need uid set or retrieved above
-            uid = self.target_elt.find('uid').text
+            uid = self.target_elt.find("uid").text
             # Get current group membership
-            self.diff['before']['groups'] = self._find_group_names_for_uid(uid)
+            self.diff["before"]["groups"] = self._find_group_names_for_uid(uid)
 
             # Add user to groups if needed
             for group in self.user_groups:
                 group_elt = self._find_group_elt(group)
                 if group_elt is None:
-                    self.module.fail_json(msg='Group (%s) does not exist' % group)
+                    self.module.fail_json(msg="Group (%s) does not exist" % group)
                 if len(group_elt.findall("[member='{0}']".format(uid))) == 0:
                     changed = True
                     self.mod_groups.append(group)
-                    group_elt.append(self.pfsense.new_element('member', uid))
+                    group_elt.append(self.pfsense.new_element("member", uid))
 
             # Remove user from groups if needed
-            for group in self.diff['before']['groups']:
+            for group in self.diff["before"]["groups"]:
                 if group not in self.user_groups:
                     group_elt = self._find_group_elt(group)
                     if group_elt is None:
-                        self.module.fail_json(msg='Group (%s) does not exist' % group)
-                    for member_elt in group_elt.findall('member'):
+                        self.module.fail_json(msg="Group (%s) does not exist" % group)
+                    for member_elt in group_elt.findall("member"):
                         if member_elt.text == uid:
                             changed = True
                             self.mod_groups.append(group)
@@ -272,12 +272,12 @@ class PFSenseUserModule(PFSenseModuleBase):
                             break
 
             # Groups are not stored in the user element
-            self.diff['after']['groups'] = self.user_groups
+            self.diff["after"]["groups"] = self.user_groups
 
         # Decode keys for diff
         for k in self.diff:
-            if 'authorizedkeys' in self.diff[k]:
-                self.diff[k]['authorizedkeys'] = base64.b64decode(self.diff[k]['authorizedkeys'])
+            if "authorizedkeys" in self.diff[k]:
+                self.diff[k]["authorizedkeys"] = base64.b64decode(self.diff[k]["authorizedkeys"])
 
         return changed
 
@@ -285,7 +285,7 @@ class PFSenseUserModule(PFSenseModuleBase):
         """ Remove disabled param if user is re-enabled """
         changed = False
 
-        if self.pfsense.remove_deleted_param_from_elt(self.target_elt, 'disabled', self.obj):
+        if self.pfsense.remove_deleted_param_from_elt(self.target_elt, "disabled", self.obj):
             changed = True
 
         return changed
@@ -294,28 +294,28 @@ class PFSenseUserModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        if self.params['state'] == 'present':
+        if self.params["state"] == "present":
             return self.pfsense.phpshell(USER_PHP_COMMAND_SET.format(idx=self._find_this_element_index(), mod_groups=self.mod_groups))
         else:
-            return self.pfsense.phpshell(USER_PHP_COMMAND_DEL.format(name=self.obj['name'], uid=self.obj['uid'], mod_groups=self.mod_groups))
+            return self.pfsense.phpshell(USER_PHP_COMMAND_DEL.format(name=self.obj["name"], uid=self.obj["uid"], mod_groups=self.mod_groups))
 
     def _pre_remove_target_elt(self):
-        self.diff['after'] = {}
+        self.diff["after"] = {}
         if self.target_elt is not None:
-            self.diff['before'] = self.pfsense.element_to_dict(self.target_elt)
+            self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
             # Store uid for _update()
-            self.obj['uid'] = self.target_elt.find('uid').text
+            self.obj["uid"] = self.target_elt.find("uid").text
 
             # Get current group membership
-            self.diff['before']['groups'] = self._find_group_names_for_uid(self.obj['uid'])
+            self.diff["before"]["groups"] = self._find_group_names_for_uid(self.obj["uid"])
 
             # Remove user from groups if needed
-            for group in self.diff['before']['groups']:
+            for group in self.diff["before"]["groups"]:
                 group_elt = self._find_group_elt(group)
                 if group_elt is None:
-                    self.module.fail_json(msg='Group (%s) does not exist' % group)
-                for member_elt in group_elt.findall('member'):
-                    if member_elt.text == self.obj['uid']:
+                    self.module.fail_json(msg="Group (%s) does not exist" % group)
+                for member_elt in group_elt.findall("member"):
+                    if member_elt.text == self.obj["uid"]:
                         self.mod_groups.append(group)
                         group_elt.remove(member_elt)
                         break
@@ -332,5 +332,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

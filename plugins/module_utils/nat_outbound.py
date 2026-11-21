@@ -13,29 +13,29 @@ import re
 import sys
 
 NAT_OUTBOUND_ARGUMENT_SPEC = dict(
-    descr=dict(required=True, type='str'),
-    state=dict(default='present', choices=['present', 'absent']),
-    disabled=dict(default=False, required=False, type='bool'),
-    nonat=dict(default=False, required=False, type='bool'),
-    interface=dict(required=False, type='str'),
-    ipprotocol=dict(required=False, default='inet46', choices=['inet', 'inet46', 'inet6']),
-    protocol=dict(default='any', required=False, choices=["any", "tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "carp", "pfsync"]),
-    source=dict(required=False, type='str'),
-    destination=dict(required=False, type='str'),
-    invert=dict(default=False, required=False, type='bool'),
-    address=dict(required=False, type='str'),
+    descr=dict(required=True, type="str"),
+    state=dict(default="present", choices=["present", "absent"]),
+    disabled=dict(default=False, required=False, type="bool"),
+    nonat=dict(default=False, required=False, type="bool"),
+    interface=dict(required=False, type="str"),
+    ipprotocol=dict(required=False, default="inet46", choices=["inet", "inet46", "inet6"]),
+    protocol=dict(default="any", required=False, choices=["any", "tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "carp", "pfsync"]),
+    source=dict(required=False, type="str"),
+    destination=dict(required=False, type="str"),
+    invert=dict(default=False, required=False, type="bool"),
+    address=dict(required=False, type="str"),
     poolopts=dict(
-        default='', required=False, choices=["", "round-robin", "round-robin sticky-address", "random", "random sticky-address", "source-hash", "bitmask"]
+        default="", required=False, choices=["", "round-robin", "round-robin sticky-address", "random", "random sticky-address", "source-hash", "bitmask"]
     ),
-    source_hash_key=dict(default='', type='str', no_log=True),
-    staticnatport=dict(default=False, required=False, type='bool'),
-    nosync=dict(default=False, required=False, type='bool'),
-    after=dict(required=False, type='str'),
-    before=dict(required=False, type='str'),
+    source_hash_key=dict(default="", type="str", no_log=True),
+    staticnatport=dict(default=False, required=False, type="bool"),
+    nosync=dict(default=False, required=False, type="bool"),
+    after=dict(required=False, type="str"),
+    before=dict(required=False, type="str"),
 )
 
 NAT_OUTBOUND_MUTUALLY_EXCLUSIVE = [
-    ('after', 'before'),
+    ("after", "before"),
 ]
 
 NAT_OUTBOUND_REQUIRED_IF = [
@@ -44,10 +44,10 @@ NAT_OUTBOUND_REQUIRED_IF = [
 
 # Booleans that map to different values
 NAT_OUTBOUND_BOOL_VALUES = dict(
-    disabled=(None, ''),
-    staticnatport=(None, ''),
-    nonat=(None, ''),
-    nosync=(None, ''),
+    disabled=(None, ""),
+    staticnatport=(None, ""),
+    nonat=(None, ""),
+    nosync=(None, ""),
 )
 
 
@@ -61,13 +61,13 @@ def p2o_before(self, name, params, obj):
 
 def p2o_ipprotocol(self, name, params, obj):
     # IPv4+6 is marked by the absense of an ipprotocol element
-    if params[name] != 'inet46':
+    if params[name] != "inet46":
         obj[name] = params[name]
 
 
 def p2o_protocol(self, name, params, obj):
     # 'any' is marked by the absense of a protocol element
-    if params[name] != 'any':
+    if params[name] != "any":
         obj[name] = params[name]
 
 
@@ -91,7 +91,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseNatOutboundModule, self).__init__(module, pfsense, root='nat/outbound', create_root=True, arg_route=NAT_OUTBOUND_ARG_ROUTE,
+        super(PFSenseNatOutboundModule, self).__init__(module, pfsense, root="nat/outbound", create_root=True, arg_route=NAT_OUTBOUND_ARG_ROUTE,
                                                        bool_values=NAT_OUTBOUND_BOOL_VALUES)
         self.name = "pfsense_nat_outbound"
         # Override for use with aggregate
@@ -109,68 +109,68 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
         obj = super(PFSenseNatOutboundModule, self)._params_to_obj()
         params = self.params
-        if params['state'] == 'present':
-            self._parse_address(obj, 'source', 'sourceport', True, 'network')
-            self._parse_address(obj, 'destination', 'dstport', False, 'network')
-            if params['invert']:
-                obj['destination']['not'] = None
+        if params["state"] == "present":
+            self._parse_address(obj, "source", "sourceport", True, "network")
+            self._parse_address(obj, "destination", "dstport", False, "network")
+            if params["invert"]:
+                obj["destination"]["not"] = None
             self._parse_translated_address(obj)
 
-            if obj['source_hash_key'] != '' and not obj['source_hash_key'].startswith('0x'):
+            if obj["source_hash_key"] != "" and not obj["source_hash_key"].startswith("0x"):
                 if sys.version_info[0] >= 3:
-                    obj['source_hash_key'] = '0x' + md5(obj['source_hash_key'].encode('utf-8')).hexdigest()
+                    obj["source_hash_key"] = "0x" + md5(obj["source_hash_key"].encode("utf-8")).hexdigest()
                 else:
-                    obj['source_hash_key'] = '0x' + md5(obj['source_hash_key']).hexdigest()
+                    obj["source_hash_key"] = "0x" + md5(obj["source_hash_key"]).hexdigest()
 
         return obj
 
     def _parse_address(self, obj, field, field_port, allow_self, target):
         """ validate param address field and returns it as a dict """
-        if self.params.get(field) is None or self.params[field] == '':
+        if self.params.get(field) is None or self.params[field] == "":
             return
 
         param = self.params[field]
-        addr = param.split(':')
+        addr = param.split(":")
         if len(addr) > 3:
-            self.module.fail_json(msg='Cannot parse address %s' % (param))
+            self.module.fail_json(msg="Cannot parse address %s" % (param))
 
         address = addr[0]
 
         ret = dict()
 
-        if address == 'NET':
+        if address == "NET":
             interface = addr[1] if len(addr) > 1 else None
             ports = addr[2] if len(addr) > 2 else None
-            if interface is None or interface == '':
-                self.module.fail_json(msg='Cannot parse address %s' % (param))
+            if interface is None or interface == "":
+                self.module.fail_json(msg="Cannot parse address %s" % (param))
 
-            ret['network'] = self.pfsense.parse_interface(interface)
+            ret["network"] = self.pfsense.parse_interface(interface)
         else:
             ports = addr[1] if len(addr) > 1 else None
-            if address == 'any':
-                if field == 'source':
-                    ret[target] = 'any'
+            if address == "any":
+                if field == "source":
+                    ret[target] = "any"
                 else:
-                    ret['any'] = ''
+                    ret["any"] = ""
             # rule with this firewall
-            elif allow_self and address == '(self)':
-                ret[target] = '(self)'
-            elif self.params['ipprotocol'] != 'inet6' and self.pfsense.is_ipv4_address(address):
-                ret[target] = address + '/32'
-                self.module.warn('Specifying an address without a CIDR prefix is depracated.  Please add /32 if you want a single host address')
-            elif self.params['ipprotocol'] != 'inet4' and self.pfsense.is_ipv6_address(address):
-                ret[target] = address + '/128'
-                self.module.warn('Specifying an address without a CIDR prefix is depracated.  Please add /128 if you want a single host address')
-            elif self.params['ipprotocol'] != 'inet6' and self.pfsense.is_ipv4_network(address, False):
+            elif allow_self and address == "(self)":
+                ret[target] = "(self)"
+            elif self.params["ipprotocol"] != "inet6" and self.pfsense.is_ipv4_address(address):
+                ret[target] = address + "/32"
+                self.module.warn("Specifying an address without a CIDR prefix is depracated.  Please add /32 if you want a single host address")
+            elif self.params["ipprotocol"] != "inet4" and self.pfsense.is_ipv6_address(address):
+                ret[target] = address + "/128"
+                self.module.warn("Specifying an address without a CIDR prefix is depracated.  Please add /128 if you want a single host address")
+            elif self.params["ipprotocol"] != "inet6" and self.pfsense.is_ipv4_network(address, False):
                 (addr, bits) = self.pfsense.parse_ip_network(address, False, False)
-                ret[target] = addr + '/' + str(bits)
-            elif self.params['ipprotocol'] != 'inet4' and self.pfsense.is_ipv6_network(address, False):
+                ret[target] = addr + "/" + str(bits)
+            elif self.params["ipprotocol"] != "inet4" and self.pfsense.is_ipv6_network(address, False):
                 (addr, bits) = self.pfsense.parse_ip_network(address, False, False)
-                ret[target] = addr + '/' + str(bits)
-            elif self.pfsense.find_alias(address, 'host') is not None or self.pfsense.find_alias(address, 'network') is not None:
+                ret[target] = addr + "/" + str(bits)
+            elif self.pfsense.find_alias(address, "host") is not None or self.pfsense.find_alias(address, "network") is not None:
                 ret[target] = address
             else:
-                self.module.fail_json(msg='Cannot parse address %s, not %s network or alias' % (address, self.params['ipprotocol']))
+                self.module.fail_json(msg="Cannot parse address %s, not %s network or alias" % (address, self.params["ipprotocol"]))
 
         if ports is not None:
             self._parse_ports(obj, ports, field_port, param)
@@ -180,69 +180,69 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _parse_ports(self, obj, ports, field_port, param):
         """ validate param address field and returns it as a dict """
         if ports is not None:
-            ports = ports.split('-')
-            if len(ports) > 2 or ports[0] is None or ports[0] == '' or len(ports) == 2 and (ports[1] is None or ports[1] == ''):
-                self.module.fail_json(msg='Cannot parse address %s' % (param))
+            ports = ports.split("-")
+            if len(ports) > 2 or ports[0] is None or ports[0] == "" or len(ports) == 2 and (ports[1] is None or ports[1] == ""):
+                self.module.fail_json(msg="Cannot parse address %s" % (param))
 
             if not self.pfsense.is_port_or_alias(ports[0]):
-                self.module.fail_json(msg='Cannot parse port %s, not port number or alias' % (ports[0]))
+                self.module.fail_json(msg="Cannot parse port %s, not port number or alias" % (ports[0]))
             obj[field_port] = ports[0]
 
             if len(ports) > 1:
                 if not self.pfsense.is_port_or_alias(ports[1]):
-                    self.module.fail_json(msg='Cannot parse port %s, not port number or alias' % (ports[1]))
-                obj[field_port] += ':' + ports[1]
+                    self.module.fail_json(msg="Cannot parse port %s, not port number or alias" % (ports[1]))
+                obj[field_port] += ":" + ports[1]
 
     def _parse_translated_address(self, obj):
         """ validate param address field and returns it as a dict """
-        obj['target'] = ''
-        obj['target_subnet'] = ''
+        obj["target"] = ""
+        obj["target_subnet"] = ""
 
-        if self.params.get('address') is None or self.params['address'] == '':
+        if self.params.get("address") is None or self.params["address"] == "":
             return
 
-        param = self.params['address']
-        addr = param.split(':')
+        param = self.params["address"]
+        addr = param.split(":")
         if len(addr) > 2:
-            self.module.fail_json(msg='Cannot parse address %s' % (param))
+            self.module.fail_json(msg="Cannot parse address %s" % (param))
 
         address = addr[0]
 
         ports = addr[1] if len(addr) > 1 else None
-        if address is not None and address != '':
+        if address is not None and address != "":
             if self.pfsense.is_virtual_ip(address):
-                obj['target'] = address
-                obj['target_subnet'] = None
-            elif self.pfsense.find_alias(address, 'host') is not None or self.pfsense.find_alias(address, 'network') is not None:
-                obj['target'] = address
-                if obj['poolopts'] != '' and not obj['poolopts'].startswith('round-robin'):
-                    self.module.fail_json(msg='Only Round Robin pool options may be chosen when selecting an alias.')
-                obj['target_subnet'] = '32'
+                obj["target"] = address
+                obj["target_subnet"] = None
+            elif self.pfsense.find_alias(address, "host") is not None or self.pfsense.find_alias(address, "network") is not None:
+                obj["target"] = address
+                if obj["poolopts"] != "" and not obj["poolopts"].startswith("round-robin"):
+                    self.module.fail_json(msg="Only Round Robin pool options may be chosen when selecting an alias.")
+                obj["target_subnet"] = "32"
             elif self.pfsense.is_ipv4_address(address):
-                obj['target'] = address
-                obj['target_subnet'] = '32'
+                obj["target"] = address
+                obj["target_subnet"] = "32"
             else:
                 (addr, part) = self.pfsense.parse_ip_network(address, False, False)
                 if addr is None:
-                    self.module.fail_json(msg='Cannot parse address %s, not IP or alias' % (address))
-                obj['target'] = addr
-                obj['target_subnet'] = str(part)
-            del obj['address']
+                    self.module.fail_json(msg="Cannot parse address %s, not IP or alias" % (address))
+                obj["target"] = addr
+                obj["target_subnet"] = str(part)
+            del obj["address"]
 
-        self._parse_ports(obj, ports, 'natport', param)
+        self._parse_ports(obj, ports, "natport", param)
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
 
-        if self.params.get('after'):
-            if self.params['after'] == self.params['descr']:
-                self.module.fail_json(msg='Cannot specify the current rule in after')
-        elif self.params.get('before'):
-            if self.params['before'] == self.params['descr']:
-                self.module.fail_json(msg='Cannot specify the current rule in before')
+        if self.params.get("after"):
+            if self.params["after"] == self.params["descr"]:
+                self.module.fail_json(msg="Cannot specify the current rule in after")
+        elif self.params.get("before"):
+            if self.params["before"] == self.params["descr"]:
+                self.module.fail_json(msg="Cannot specify the current rule in before")
 
-        if self.params.get('source_hash_key') is not None and self.params['source_hash_key'].startswith('0x'):
-            hash = self.params['source_hash_key'][2:]
+        if self.params.get("source_hash_key") is not None and self.params["source_hash_key"].startswith("0x"):
+            hash = self.params["source_hash_key"][2:]
             if len(hash) != 32 or not all(c in hexdigits for c in hash):
                 self.module.fail_json(msg='Incorrect format for source-hash key, \"0x\" must be followed by exactly 32 hexadecimal characters.')
 
@@ -252,57 +252,57 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _copy_and_add_target(self):
         """ create the XML target_elt """
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.obj
+        self.diff["after"] = self.obj
         self._insert(self.target_elt)
 
     def _copy_and_update_target(self):
         """ update the XML target_elt """
         before = self.pfsense.element_to_dict(self.target_elt)
-        self.diff['before'] = before
+        self.diff["before"] = before
 
         # Remove empty/None optional fields from obj when the XML doesn't have them to avoid false change detection
         # (copy_dict_to_element would create empty elements and report changed=True even though the semantic value is unchanged)
-        for field in ['poolopts', 'source_hash_key', 'target', 'target_subnet', 'address']:
-            if field in self.obj and (self.obj[field] == '' or self.obj[field] is None) and field not in before:
+        for field in ["poolopts", "source_hash_key", "target", "target_subnet", "address"]:
+            if field in self.obj and (self.obj[field] == "" or self.obj[field] is None) and field not in before:
                 del self.obj[field]
 
         # pfSense omits <target_subnet> for single-host IPs (implicit /32).
         # Don't create it if the target itself hasn't changed.
-        if ('target_subnet' in self.obj and 'target_subnet' not in before
-                and 'target' in self.obj and before.get('target', '') == self.obj['target']):
-            del self.obj['target_subnet']
+        if ("target_subnet" in self.obj and "target_subnet" not in before
+                and "target" in self.obj and before.get("target", "") == self.obj["target"]):
+            del self.obj["target_subnet"]
 
         # pfSense XML may use either 'network' or 'address' as the key inside <source>/<destination>.
         # Adjust to match the existing XML to avoid a phantom sub-element swap.
-        for field in ('source', 'destination'):
-            if field in self.obj and isinstance(self.obj[field], dict) and 'network' in self.obj[field]:
+        for field in ("source", "destination"):
+            if field in self.obj and isinstance(self.obj[field], dict) and "network" in self.obj[field]:
                 field_elt = self.target_elt.find(field)
-                if field_elt is not None and field_elt.find('network') is None and field_elt.find('address') is not None:
-                    self.obj[field]['address'] = self.obj[field].pop('network')
+                if field_elt is not None and field_elt.find("network") is None and field_elt.find("address") is not None:
+                    self.obj[field]["address"] = self.obj[field].pop("network")
 
         # pfSense may store a special reference (e.g. 'other-subnet') in <target> instead of the raw IP.
         # When the existing XML target is not a plain IP and the semantic value hasn't changed, preserve it.
-        if 'target' in self.obj:
-            xml_target_elt = self.target_elt.find('target')
+        if "target" in self.obj:
+            xml_target_elt = self.target_elt.find("target")
             if xml_target_elt is not None and xml_target_elt.text:
                 xml_target = xml_target_elt.text
-                if (xml_target != self.obj['target']
+                if (xml_target != self.obj["target"]
                         and not self.pfsense.is_ipv4_address(xml_target)
                         and not self.pfsense.is_ipv4_network(xml_target, False)):
-                    self.obj['target'] = xml_target
-                    if 'target_subnet' in self.obj and self.target_elt.find('target_subnet') is None:
-                        del self.obj['target_subnet']
+                    self.obj["target"] = xml_target
+                    if "target_subnet" in self.obj and self.target_elt.find("target_subnet") is None:
+                        del self.obj["target_subnet"]
 
         # For presence-based booleans (true_val=''), pfSense may store the element text as 'yes' or '' - both mean "present/true".
         # Match the existing XML text so copy_dict_to_element doesn't see a difference.
         for param, (false_val, true_val) in NAT_OUTBOUND_BOOL_VALUES.items():
-            if true_val == '' and param in self.obj and self.obj[param] == '':
+            if true_val == "" and param in self.obj and self.obj[param] == "":
                 param_elt = self.target_elt.find(param)
-                if param_elt is not None and param_elt.text is not None and param_elt.text != '':
+                if param_elt is not None and param_elt.text is not None and param_elt.text != "":
                     self.obj[param] = param_elt.text
 
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
-        self.diff['after'] = self.pfsense.element_to_dict(self.target_elt)
+        self.diff["after"] = self.pfsense.element_to_dict(self.target_elt)
         if self._remove_deleted_params():
             changed = True
 
@@ -313,13 +313,13 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
     def _create_target(self):
         """ create the XML target_elt """
-        target_elt = self.pfsense.new_element('rule')
+        target_elt = self.pfsense.new_element("rule")
         return target_elt
 
     def _find_first_rule_idx(self):
         """ find the XML first rule idx """
         for idx, rule_elt in enumerate(self.root_elt):
-            if rule_elt.tag != 'rule':
+            if rule_elt.tag != "rule":
                 continue
             return idx
 
@@ -328,28 +328,28 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     def _find_rule_by_descr(self, descr):
         """ find the XML target_elt """
         for idx, rule_elt in enumerate(self.root_elt):
-            if rule_elt.tag != 'rule':
+            if rule_elt.tag != "rule":
                 continue
 
-            if rule_elt.find('descr').text == descr:
+            if rule_elt.find("descr").text == descr:
                 return (rule_elt, idx)
         return (None, None)
 
     def _find_target(self):
         """ find the XML target_elt """
         for rule_elt in self.root_elt:
-            if rule_elt.tag != 'rule':
+            if rule_elt.tag != "rule":
                 continue
 
-            if rule_elt.find('descr').text == self.obj['descr']:
+            if rule_elt.find("descr").text == self.obj["descr"]:
                 return rule_elt
         return None
 
     def _get_expected_rule_position(self):
         """ get expected rule position in interface/floating """
-        if self.before == 'bottom':
+        if self.before == "bottom":
             return len(self.root_elt)
-        elif self.after == 'top':
+        elif self.after == "top":
             return self._find_first_rule_idx()
         elif self.after is not None:
             return self._get_rule_position(self.after) + 1
@@ -367,24 +367,24 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
     def _get_expected_rule_xml_index(self):
         """ get expected rule index in xml """
-        if self.before == 'bottom':
+        if self.before == "bottom":
             return len(self.root_elt)
-        elif self.after == 'top':
+        elif self.after == "top":
             return self._find_first_rule_idx()
         elif self.after is not None:
             found, i = self._find_rule_by_descr(self.after)
             if found is not None:
                 return i + 1
             else:
-                self.module.fail_json(msg='Failed to insert after rule=%s' % (self.after))
+                self.module.fail_json(msg="Failed to insert after rule=%s" % (self.after))
         elif self.before is not None:
             found, i = self._find_rule_by_descr(self.before)
             if found is not None:
                 return i
             else:
-                self.module.fail_json(msg='Failed to insert before rule=%s' % (self.before))
+                self.module.fail_json(msg="Failed to insert before rule=%s" % (self.before))
         else:
-            found, i = self._find_rule_by_descr(self.obj['descr'])
+            found, i = self._find_rule_by_descr(self.obj["descr"])
             if found is not None:
                 return i
             return len(self.root_elt)
@@ -393,16 +393,16 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     @staticmethod
     def _get_params_to_remove():
         """ returns the list of params to remove if they are not set """
-        return ['disabled', 'nonat', 'invert', 'staticnatport', 'nosync', 'dstport', 'natport', 'ipprotocol', 'protocol']
+        return ["disabled", "nonat", "invert", "staticnatport", "nosync", "dstport", "natport", "ipprotocol", "protocol"]
 
     def _get_rule_position(self, descr=None, fail=True):
         """ get rule position in interface/floating """
         if descr is None:
-            descr = self.obj['descr']
+            descr = self.obj["descr"]
 
         (res, idx) = self._find_rule_by_descr(descr)
         if fail and res is None:
-            self.module.fail_json(msg='Failed to find rule=%s' % (descr))
+            self.module.fail_json(msg="Failed to find rule=%s" % (descr))
         return idx
 
     def _insert(self, rule_elt):
@@ -428,8 +428,8 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     #
     def _update(self):
         """ make the target pfsense reload """
-        return self.pfsense.phpshell('''require_once("filter.inc");
-if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem_dirty('filter'); }''')
+        return self.pfsense.phpshell("""require_once("filter.inc");
+if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem_dirty('filter'); }""")
 
     ##############################
     # Logging
@@ -437,97 +437,97 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
     @staticmethod
     def fvalue_protocol(value):
         """ boolean value formatting function """
-        if value is None or value == 'none':
-            return 'any'
+        if value is None or value == "none":
+            return "any"
 
         return value
 
     @staticmethod
     def fvalue_ipprotocol(value):
         """ boolean value formatting function """
-        if value is None or value == 'none':
-            return 'inet46'
+        if value is None or value == "none":
+            return "inet46"
 
         return value
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        values = ''
+        values = ""
         fafter = self._obj_to_log_fields(self.obj)
         if before is None:
-            values += self.format_cli_field(self.params, 'disabled', fvalue=self.fvalue_bool, default=False)
-            values += self.format_cli_field(self.params, 'nonat', fvalue=self.fvalue_bool, default=False)
-            values += self.format_cli_field(self.params, 'interface')
-            values += self.format_cli_field(self.params, 'ipprotocol', fvalue=self.fvalue_ipprotocol, default='inet46')
-            values += self.format_cli_field(self.params, 'protocol', fvalue=self.fvalue_protocol, default='any')
-            values += self.format_cli_field(self.params, 'source')
-            values += self.format_cli_field(self.params, 'destination')
-            values += self.format_cli_field(self.params, 'invert', fvalue=self.fvalue_bool, default=False)
-            values += self.format_cli_field(fafter, 'address', default='')
-            values += self.format_cli_field(self.params, 'poolopts', default='')
-            values += self.format_cli_field(self.obj, 'source_hash_key', default='')
-            values += self.format_cli_field(self.params, 'staticnatport', fvalue=self.fvalue_bool, default=False)
-            values += self.format_cli_field(self.params, 'nosync', fvalue=self.fvalue_bool, default=False)
-            values += self.format_cli_field(self.params, 'after')
-            values += self.format_cli_field(self.params, 'before')
+            values += self.format_cli_field(self.params, "disabled", fvalue=self.fvalue_bool, default=False)
+            values += self.format_cli_field(self.params, "nonat", fvalue=self.fvalue_bool, default=False)
+            values += self.format_cli_field(self.params, "interface")
+            values += self.format_cli_field(self.params, "ipprotocol", fvalue=self.fvalue_ipprotocol, default="inet46")
+            values += self.format_cli_field(self.params, "protocol", fvalue=self.fvalue_protocol, default="any")
+            values += self.format_cli_field(self.params, "source")
+            values += self.format_cli_field(self.params, "destination")
+            values += self.format_cli_field(self.params, "invert", fvalue=self.fvalue_bool, default=False)
+            values += self.format_cli_field(fafter, "address", default="")
+            values += self.format_cli_field(self.params, "poolopts", default="")
+            values += self.format_cli_field(self.obj, "source_hash_key", default="")
+            values += self.format_cli_field(self.params, "staticnatport", fvalue=self.fvalue_bool, default=False)
+            values += self.format_cli_field(self.params, "nosync", fvalue=self.fvalue_bool, default=False)
+            values += self.format_cli_field(self.params, "after")
+            values += self.format_cli_field(self.params, "before")
         else:
             fbefore = self._obj_to_log_fields(before)
-            fafter['before'] = self.before
-            fafter['after'] = self.after
+            fafter["before"] = self.before
+            fafter["after"] = self.after
 
-            values += self.format_updated_cli_field(self.obj, before, 'disabled', fvalue=self.fvalue_bool, default=False, add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'nonat', fvalue=self.fvalue_bool, default=False, add_comma=(values))
-            values += self.format_updated_cli_field(fafter, fbefore, 'interface', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'ipprotocol', fvalue=self.fvalue_ipprotocol, add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'protocol', fvalue=self.fvalue_protocol, add_comma=(values))
-            values += self.format_updated_cli_field(fafter, fbefore, 'source', add_comma=(values))
-            values += self.format_updated_cli_field(fafter, fbefore, 'destination', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'invert', fvalue=self.fvalue_bool, default=False, add_comma=(values))
-            values += self.format_updated_cli_field(fafter, fbefore, 'address', default='', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'poolopts', default='', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'source_hash_key', default='', add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'staticnatport', fvalue=self.fvalue_bool, default=False, add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, 'nosync', fvalue=self.fvalue_bool, default=False, add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "disabled", fvalue=self.fvalue_bool, default=False, add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "nonat", fvalue=self.fvalue_bool, default=False, add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, "interface", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "ipprotocol", fvalue=self.fvalue_ipprotocol, add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "protocol", fvalue=self.fvalue_protocol, add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, "source", add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, "destination", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "invert", fvalue=self.fvalue_bool, default=False, add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, "address", default="", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "poolopts", default="", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "source_hash_key", default="", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "staticnatport", fvalue=self.fvalue_bool, default=False, add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "nosync", fvalue=self.fvalue_bool, default=False, add_comma=(values))
             if self.position_changed:
-                values += self.format_updated_cli_field(fafter, {}, 'after', log_none=False, add_comma=(values))
-                values += self.format_updated_cli_field(fafter, {}, 'before', log_none=False, add_comma=(values))
+                values += self.format_updated_cli_field(fafter, {}, "after", log_none=False, add_comma=(values))
+                values += self.format_updated_cli_field(fafter, {}, "before", log_none=False, add_comma=(values))
 
         return values
 
     def _obj_address_to_log_field(self, rule, addr, target, port):
         """ return formated address from dict """
-        field = ''
+        field = ""
         if addr in rule:
             # pfSense XML may use 'address' instead of 'network' as the key
             actual_target = target
-            if target not in rule[addr] and target == 'network' and 'address' in rule[addr]:
-                actual_target = 'address'
+            if target not in rule[addr] and target == "network" and "address" in rule[addr]:
+                actual_target = "address"
             if actual_target in rule[addr]:
                 if self.pfsense.interfaces.find(rule[addr][actual_target]):
-                    field = 'NET:'
+                    field = "NET:"
                 field += rule[addr][actual_target]
-            elif addr == 'destination' and 'any' in rule[addr]:
-                field = 'any'
+            elif addr == "destination" and "any" in rule[addr]:
+                field = "any"
 
-        if port in rule and rule[port] is not None and rule[port] != '':
-            field += ':'
-            field += rule[port].replace(':', '-')
+        if port in rule and rule[port] is not None and rule[port] != "":
+            field += ":"
+            field += rule[port].replace(":", "-")
 
         return field
 
     def _obj_to_log_fields(self, rule):
         """ return formated source and destination from dict """
         res = {}
-        res['source'] = self._obj_address_to_log_field(rule, 'source', 'network', 'sourceport')
-        res['destination'] = self._obj_address_to_log_field(rule, 'destination', 'network', 'dstport')
-        res['interface'] = self.pfsense.get_interface_display_name(rule['interface'])
+        res["source"] = self._obj_address_to_log_field(rule, "source", "network", "sourceport")
+        res["destination"] = self._obj_address_to_log_field(rule, "destination", "network", "dstport")
+        res["interface"] = self.pfsense.get_interface_display_name(rule["interface"])
 
-        if rule.get('target', '') != '':
-            if re.match(r'[a-zA-Z]', rule['target']) or rule.get('target_subnet') is None:
-                res['address'] = rule['target']
+        if rule.get("target", "") != "":
+            if re.match(r"[a-zA-Z]", rule["target"]) or rule.get("target_subnet") is None:
+                res["address"] = rule["target"]
             else:
-                res['address'] = rule['target'] + '/' + rule['target_subnet']
-        if rule.get('natport', '') != '':
-            res['address'] += ':'
-            res['address'] += rule['natport'].replace(':', '-')
+                res["address"] = rule["target"] + "/" + rule["target_subnet"]
+        if rule.get("natport", "") != "":
+            res["address"] += ":"
+            res["address"] += rule["natport"].replace(":", "-")
         return res

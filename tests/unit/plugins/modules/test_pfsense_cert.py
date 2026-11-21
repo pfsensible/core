@@ -90,7 +90,7 @@ class TestPFSenseCertModule(TestPFSenseModule):
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseCertModule, self).__init__(*args, **kwargs)
-        self.config_file = 'pfsense_cert_config.xml'
+        self.config_file = "pfsense_cert_config.xml"
         self.pfmodule = pfsense_cert.PFSenseCertModule
 
     @staticmethod
@@ -101,43 +101,43 @@ class TestPFSenseCertModule(TestPFSenseModule):
     def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
         root_elt = self.xml_result.getroot()
-        result = root_elt.findall("cert[descr='{0}']".format(obj['name']))
+        result = root_elt.findall("cert[descr='{0}']".format(obj["name"]))
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
-            self.fail('Found multiple certs for name {0}.'.format(obj['name']))
+            self.fail("Found multiple certs for name {0}.".format(obj["name"]))
         else:
             return None
 
     def check_target_elt(self, obj, target_elt):
         """ check XML definition of target elt """
 
-        self.check_param_equal(obj, target_elt, 'name', xml_field='descr')
-        self.check_param_equal(obj, target_elt, 'certificate', xml_field='crt')
-        if 'key' in obj:
-            self.check_param_equal_or_present(obj, target_elt, 'prv')
+        self.check_param_equal(obj, target_elt, "name", xml_field="descr")
+        self.check_param_equal(obj, target_elt, "certificate", xml_field="crt")
+        if "key" in obj:
+            self.check_param_equal_or_present(obj, target_elt, "prv")
 
     ##############
     # tests
     #
     def test_cert_create(self):
         """ test creation of a new cert """
-        obj = dict(name='cert1', ca='testdel')
+        obj = dict(name="cert1", ca="testdel")
         self.do_module_test(obj, command="create cert 'cert1'")
 
     def test_cert_import(self):
         """ test import of a new cert """
-        obj = dict(name='cert1', method='import', certificate=WEB_CRT, key=RSA_KEY)
+        obj = dict(name="cert1", method="import", certificate=WEB_CRT, key=RSA_KEY)
         self.do_module_test(obj, command="create cert 'cert1'")
 
     def test_cert_delete(self):
         """ test deletion of a cert """
-        obj = dict(name='webConfigurator default (62083679cd3d4)')
+        obj = dict(name="webConfigurator default (62083679cd3d4)")
         self.do_module_test(obj, command="delete cert 'webConfigurator default (62083679cd3d4)'", delete=True)
 
     def test_cert_update_noop(self):
         """ test not updating a cert """
-        obj = dict(name='webConfigurator default (62083679cd3d4)', method='import', certificate=WEB_CRT)
+        obj = dict(name="webConfigurator default (62083679cd3d4)", method="import", certificate=WEB_CRT)
         self.do_module_test(obj, changed=False)
 
     ##############
@@ -145,7 +145,7 @@ class TestPFSenseCertModule(TestPFSenseModule):
     #
     def test_add_invalid_key(self):
         """ test adding an invalid key """
-        key = 'blah'
-        obj = dict(name='invalid', method='import', certificate=WEB_CRT, key=key)
-        msg = 'Could not recognize key format: %s' % (key)
+        key = "blah"
+        obj = dict(name="invalid", method="import", certificate=WEB_CRT, key=key)
+        msg = "Could not recognize key format: %s" % (key)
         self.do_module_test(obj, failed=True, msg=msg)

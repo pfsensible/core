@@ -7,9 +7,9 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {"metadata_version": "1.1",
+                    "status": ["preview"],
+                    "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -679,56 +679,56 @@ class PFSenseModuleAggregate(object):
         run = False
         cmd = 'require_once("filter.inc");\n'
         # TODO: manage one global list of commands as ordering can be important between modules
-        if self.pfsense_vlans.result['changed']:
+        if self.pfsense_vlans.result["changed"]:
             run = True
             cmd += self.pfsense_vlans.get_update_cmds()
 
-        if self.pfsense_interfaces.result['changed']:
+        if self.pfsense_interfaces.result["changed"]:
             run = True
             cmd += self.pfsense_interfaces.get_update_cmds()
 
-        cmd += 'if (filter_configure() == 0) { \n'
-        if self.pfsense_aliases.result['changed']:
+        cmd += "if (filter_configure() == 0) { \n"
+        if self.pfsense_aliases.result["changed"]:
             run = True
-            cmd += 'clear_subsystem_dirty(\'aliases\');\n'
+            cmd += "clear_subsystem_dirty(\'aliases\');\n"
 
-        if self.pfsense_nat_port_forwards.result['changed'] or self.pfsense_nat_outbounds.result['changed']:
+        if self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_nat_outbounds.result["changed"]:
             run = True
-            cmd += 'clear_subsystem_dirty(\'natconf\');\n'
+            cmd += "clear_subsystem_dirty(\'natconf\');\n"
 
-        if (self.pfsense_rules.result['changed'] or self.pfsense_rule_separators.result['changed'] or
-                self.pfsense_nat_port_forwards.result['changed'] or self.pfsense_nat_outbounds.result['changed']):
+        if (self.pfsense_rules.result["changed"] or self.pfsense_rule_separators.result["changed"] or
+                self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_nat_outbounds.result["changed"]):
             run = True
-            cmd += 'clear_subsystem_dirty(\'filter\');\n'
-        cmd += '}'
+            cmd += "clear_subsystem_dirty(\'filter\');\n"
+        cmd += "}"
         if run:
             return self.pfsense.phpshell(cmd)
 
-        return ('', '', '')
+        return ("", "", "")
 
     def _parse_floating_interfaces(self, interfaces):
         """ parse interfaces """
         res = set()
-        for interface in interfaces.split(','):
+        for interface in interfaces.split(","):
             parsed = self.pfsense.parse_interface(interface, fail=False)
             if parsed is not None:
                 res.add(parsed)
         return res
 
-    def want_rule(self, rule_elt, rules, name_field='name'):
+    def want_rule(self, rule_elt, rules, name_field="name"):
         """ return True if we want to keep rule_elt """
-        descr = rule_elt.find('descr')
-        interface = rule_elt.find('interface')
-        floating = rule_elt.find('floating') is not None
+        descr = rule_elt.find("descr")
+        interface = rule_elt.find("interface")
+        floating = rule_elt.find("floating") is not None
 
         # probably not a rule
         if descr is None or interface is None:
             return True
 
-        if descr.text in self.module.params['ignored_rules']:
+        if descr.text in self.module.params["ignored_rules"]:
             return True
 
-        key = '{0}_{1}'.format(interface.text, floating)
+        key = "{0}_{1}".format(interface.text, floating)
         if key not in self.defined_rules:
             defined_rules = set()
             self.defined_rules[key] = defined_rules
@@ -739,21 +739,21 @@ class PFSenseModuleAggregate(object):
                 return False
 
         for rule in rules:
-            if rule['state'] == 'absent':
+            if rule["state"] == "absent":
                 continue
             if rule[name_field] != descr.text:
                 continue
 
-            rule_floating = (rule.get('floating') is not None and
-                             (isinstance(rule['floating'], bool) and
-                             rule['floating'] or rule['floating'].lower() in ['yes', 'true']))
+            rule_floating = (rule.get("floating") is not None and
+                             (isinstance(rule["floating"], bool) and
+                             rule["floating"] or rule["floating"].lower() in ["yes", "true"]))
             if floating != rule_floating:
                 continue
 
             if floating:
                 defined_rules.add(descr.text)
                 return True
-            parsed = self.pfsense.parse_interface(rule['interface'], fail=False)
+            parsed = self.pfsense.parse_interface(rule["interface"], fail=False)
             if parsed is not None and parsed == interface.text:
                 defined_rules.add(descr.text)
                 return True
@@ -761,68 +761,68 @@ class PFSenseModuleAggregate(object):
 
     def want_rule_separator(self, separator_elt, rule_separators):
         """ return True if we want to keep separator_elt """
-        name = separator_elt.find('text').text
-        interface = separator_elt.find('if').text
+        name = separator_elt.find("text").text
+        interface = separator_elt.find("if").text
 
         for separator in rule_separators:
-            if separator['state'] == 'absent':
+            if separator["state"] == "absent":
                 continue
-            if separator['name'] != name:
+            if separator["name"] != name:
                 continue
-            if separator.get('floating'):
-                if interface == 'floatingrules':
+            if separator.get("floating"):
+                if interface == "floatingrules":
                     return True
             else:
-                parsed = self.pfsense.parse_interface(separator['interface'], fail=False)
+                parsed = self.pfsense.parse_interface(separator["interface"], fail=False)
                 if parsed is not None and parsed == interface:
                     return True
         return False
 
     def want_alias(self, alias_elt, aliases):
         """ return True if we want to keep alias_elt """
-        name = alias_elt.find('name')
-        alias_type = alias_elt.find('type')
+        name = alias_elt.find("name")
+        alias_type = alias_elt.find("type")
 
         # probably not an alias
         if name is None or type is None:
             return True
 
-        if name.text in self.module.params['ignored_aliases']:
+        if name.text in self.module.params["ignored_aliases"]:
             return True
 
         for alias in aliases:
-            if alias['state'] == 'absent':
+            if alias["state"] == "absent":
                 continue
-            if alias['name'] == name.text and alias['type'] == alias_type.text:
+            if alias["name"] == name.text and alias["type"] == alias_type.text:
                 return True
         return False
 
     @staticmethod
     def want_interface(interface_elt, interfaces):
         """ return True if we want to keep interface_elt """
-        descr_elt = interface_elt.find('descr')
+        descr_elt = interface_elt.find("descr")
         if descr_elt is not None and descr_elt.text:
             name = descr_elt.text
         else:
             name = interface_elt.tag
 
         for interface in interfaces:
-            if interface['state'] == 'absent':
+            if interface["state"] == "absent":
                 continue
-            if interface['descr'] == name:
+            if interface["descr"] == name:
                 return True
         return False
 
     @staticmethod
     def want_vlan(vlan_elt, vlans):
         """ return True if we want to keep vlan_elt """
-        tag = int(vlan_elt.find('tag').text)
-        interface = vlan_elt.find('if')
+        tag = int(vlan_elt.find("tag").text)
+        interface = vlan_elt.find("if")
 
         for vlan in vlans:
-            if vlan['state'] == 'absent':
+            if vlan["state"] == "absent":
                 continue
-            if vlan['vlan_id'] == tag and vlan['interface'] == interface.text:
+            if vlan["vlan_id"] == tag and vlan["interface"] == interface.text:
                 return True
         return False
 
@@ -831,50 +831,50 @@ class PFSenseModuleAggregate(object):
         if interface_filter is None:
             return False
 
-        if 'floating' in params:
-            if isinstance(params['floating'], str):
-                floating = params['floating'].lower()
+        if "floating" in params:
+            if isinstance(params["floating"], str):
+                floating = params["floating"].lower()
             else:
-                floating = 'true' if params['floating'] else 'false'
+                floating = "true" if params["floating"] else "false"
 
-            if floating != 'false' and floating != 'no':
-                return 'floating' not in interface_filter
+            if floating != "false" and floating != "no":
+                return "floating" not in interface_filter
 
-        return params['interface'].lower() not in interface_filter
+        return params["interface"].lower() not in interface_filter
 
     def run_rules(self):
         """ process input params to add/update/delete all rules """
 
-        want = self.module.params['aggregated_rules']
-        interface_filter = self.module.params['interface_filter'].lower().split(' ') if self.module.params.get('interface_filter') is not None else None
+        want = self.module.params["aggregated_rules"]
+        interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
 
         if want is None:
             return
 
         # delete every other rule if required
-        if self.module.params['purge_rules']:
+        if self.module.params["purge_rules"]:
             todel = []
             for rule_elt in self.pfsense_rules.root_elt:
                 if not self.want_rule(rule_elt, want):
                     params = {}
-                    params['state'] = 'absent'
-                    params['name'] = rule_elt.find('descr').text
+                    params["state"] = "absent"
+                    params["name"] = rule_elt.find("descr").text
 
-                    if rule_elt.find('floating') is not None:
-                        params['floating'] = True
-                        interfaces = rule_elt.find('interface').text.split(',')
-                        params['interface'] = list()
+                    if rule_elt.find("floating") is not None:
+                        params["floating"] = True
+                        interfaces = rule_elt.find("interface").text.split(",")
+                        params["interface"] = list()
                         for interface in interfaces:
                             target = self.pfsense.get_interface_display_name(interface, return_none=True)
                             if target is not None:
-                                params['interface'].append(target)
-                        if not params['interface']:
+                                params["interface"].append(target)
+                        if not params["interface"]:
                             continue
-                        params['interface'] = ','.join(params['interface'])
+                        params["interface"] = ",".join(params["interface"])
                     else:
-                        params['interface'] = self.pfsense.get_interface_display_name(rule_elt.find('interface').text, return_none=True)
+                        params["interface"] = self.pfsense.get_interface_display_name(rule_elt.find("interface").text, return_none=True)
 
-                    if params['interface'] is None:
+                    if params["interface"] is None:
                         continue
 
                     todel.append(params)
@@ -885,67 +885,67 @@ class PFSenseModuleAggregate(object):
                 self.pfsense_rules.run(params)
 
         # generating order if required
-        if self.module.params.get('order_rules'):
+        if self.module.params.get("order_rules"):
             last_rules = dict()
             for params in want:
-                if params.get('before') is not None or params.get('after') is not None:
-                    self.module.fail_json(msg="You can't use after or before parameters on rules when using order_rules (see {0})".format(params['name']))
+                if params.get("before") is not None or params.get("after") is not None:
+                    self.module.fail_json(msg="You can't use after or before parameters on rules when using order_rules (see {0})".format(params["name"]))
 
-                if params.get('state') == 'absent':
+                if params.get("state") == "absent":
                     continue
 
-                if params.get('floating'):
-                    key = 'floating'
+                if params.get("floating"):
+                    key = "floating"
                 else:
-                    key = params['interface']
+                    key = params["interface"]
 
                 # first rule on interface
                 if key not in last_rules:
-                    params['after'] = 'top'
-                    last_rules[key] = params['name']
+                    params["after"] = "top"
+                    last_rules[key] = params["name"]
                     continue
 
-                params['after'] = last_rules[key]
-                last_rules[key] = params['name']
+                params["after"] = last_rules[key]
+                last_rules[key] = params["name"]
 
         # processing aggregated parameters
         for params in want:
             if self.is_filtered(interface_filter, params):
                 continue
             # Skip rules whose interface doesn't exist on this firewall
-            if params.get('state', 'present') != 'absent' and params.get('interface') is not None:
-                if params.get('floating'):
+            if params.get("state", "present") != "absent" and params.get("interface") is not None:
+                if params.get("floating"):
                     # For floating rules, filter out invalid interfaces from the list
-                    valid = [i for i in params['interface'].split(',')
-                             if i == 'any' or self.pfsense.parse_interface(i, fail=False) is not None]
+                    valid = [i for i in params["interface"].split(",")
+                             if i == "any" or self.pfsense.parse_interface(i, fail=False) is not None]
                     if not valid:
                         continue
-                    params['interface'] = ','.join(valid)
+                    params["interface"] = ",".join(valid)
                 else:
-                    if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+                    if self.pfsense.parse_interface(params["interface"], fail=False) is None:
                         continue
             self.pfsense_rules.run(params)
 
     def run_nat_outbounds_rules(self):
         """ process input params to add/update/delete all nat_outbound rules """
 
-        want = self.module.params['aggregated_nat_outbounds']
-        interface_filter = self.module.params['interface_filter'].lower().split(' ') if self.module.params.get('interface_filter') is not None else None
+        want = self.module.params["aggregated_nat_outbounds"]
+        interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
 
         if want is None:
             return
 
         # delete every other rule if required
-        if self.module.params['purge_nat_outbounds']:
+        if self.module.params["purge_nat_outbounds"]:
             todel = []
             for rule_elt in self.pfsense_nat_outbounds.root_elt:
-                if not self.want_rule(rule_elt, want, name_field='descr'):
+                if not self.want_rule(rule_elt, want, name_field="descr"):
                     params = {}
-                    params['state'] = 'absent'
-                    params['descr'] = rule_elt.find('descr').text
-                    params['interface'] = self.pfsense.get_interface_display_name(rule_elt.find('interface').text, return_none=True)
+                    params["state"] = "absent"
+                    params["descr"] = rule_elt.find("descr").text
+                    params["interface"] = self.pfsense.get_interface_display_name(rule_elt.find("interface").text, return_none=True)
 
-                    if params['interface'] is None:
+                    if params["interface"] is None:
                         continue
 
                     todel.append(params)
@@ -960,31 +960,31 @@ class PFSenseModuleAggregate(object):
             if self.is_filtered(interface_filter, params):
                 continue
             # Skip rules whose interface doesn't exist on this firewall
-            if params.get('state', 'present') != 'absent' and params.get('interface') is not None:
-                if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+            if params.get("state", "present") != "absent" and params.get("interface") is not None:
+                if self.pfsense.parse_interface(params["interface"], fail=False) is None:
                     continue
             self.pfsense_nat_outbounds.run(params)
 
     def run_nat_port_forwards_rules(self):
         """ process input params to add/update/delete all nat_port_forwards_rule rules """
 
-        want = self.module.params['aggregated_nat_port_forwards']
-        interface_filter = self.module.params['interface_filter'].lower().split(' ') if self.module.params.get('interface_filter') is not None else None
+        want = self.module.params["aggregated_nat_port_forwards"]
+        interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
 
         if want is None:
             return
 
         # delete every other rule if required
-        if self.module.params['purge_nat_port_forwards']:
+        if self.module.params["purge_nat_port_forwards"]:
             todel = []
             for rule_elt in self.pfsense_nat_port_forwards.root_elt:
-                if not self.want_rule(rule_elt, want, name_field='descr'):
+                if not self.want_rule(rule_elt, want, name_field="descr"):
                     params = {}
-                    params['state'] = 'absent'
-                    params['descr'] = rule_elt.find('descr').text
-                    params['interface'] = self.pfsense.get_interface_display_name(rule_elt.find('interface').text, return_none=True)
+                    params["state"] = "absent"
+                    params["descr"] = rule_elt.find("descr").text
+                    params["interface"] = self.pfsense.get_interface_display_name(rule_elt.find("interface").text, return_none=True)
 
-                    if params['interface'] is None:
+                    if params["interface"] is None:
                         continue
 
                     todel.append(params)
@@ -999,14 +999,14 @@ class PFSenseModuleAggregate(object):
             if self.is_filtered(interface_filter, params):
                 continue
             # Skip rules whose interface doesn't exist on this firewall
-            if params.get('state', 'present') != 'absent' and params.get('interface') is not None:
-                if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+            if params.get("state", "present") != "absent" and params.get("interface") is not None:
+                if self.pfsense.parse_interface(params["interface"], fail=False) is None:
                     continue
             self.pfsense_nat_port_forwards.run(params)
 
     def run_aliases(self):
         """ process input params to add/update/delete all aliases """
-        want = self.module.params['aggregated_aliases']
+        want = self.module.params["aggregated_aliases"]
 
         if want is None:
             return
@@ -1016,13 +1016,13 @@ class PFSenseModuleAggregate(object):
             self.pfsense_aliases.run(param)
 
         # delete every other alias if required
-        if self.module.params['purge_aliases']:
+        if self.module.params["purge_aliases"]:
             todel = []
             for alias_elt in self.pfsense_aliases.root_elt:
                 if not self.want_alias(alias_elt, want):
                     params = {}
-                    params['state'] = 'absent'
-                    params['name'] = alias_elt.find('name').text
+                    params["state"] = "absent"
+                    params["name"] = alias_elt.find("name").text
                     todel.append(params)
 
             for params in todel:
@@ -1030,7 +1030,7 @@ class PFSenseModuleAggregate(object):
 
     def run_interfaces(self):
         """ process input params to add/update/delete all interfaces """
-        want = self.module.params['aggregated_interfaces']
+        want = self.module.params["aggregated_interfaces"]
 
         if want is None:
             return
@@ -1040,15 +1040,15 @@ class PFSenseModuleAggregate(object):
             self.pfsense_interfaces.run(param)
 
         # delete every other if required
-        if self.module.params['purge_interfaces']:
+        if self.module.params["purge_interfaces"]:
             todel = []
             for interface_elt in self.pfsense_interfaces.root_elt:
                 if not self.want_interface(interface_elt, want):
                     params = {}
-                    params['state'] = 'absent'
-                    descr_elt = interface_elt.find('descr')
+                    params["state"] = "absent"
+                    descr_elt = interface_elt.find("descr")
                     if descr_elt is not None and descr_elt.text:
-                        params['descr'] = descr_elt.text
+                        params["descr"] = descr_elt.text
                         todel.append(params)
 
             for params in todel:
@@ -1056,8 +1056,8 @@ class PFSenseModuleAggregate(object):
 
     def run_rule_separators(self):
         """ process input params to add/update/delete all separators """
-        want = self.module.params['aggregated_rule_separators']
-        interface_filter = self.module.params['interface_filter'].lower().split(' ') if self.module.params.get('interface_filter') is not None else None
+        want = self.module.params["aggregated_rule_separators"]
+        interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
 
         if want is None:
             return
@@ -1067,25 +1067,25 @@ class PFSenseModuleAggregate(object):
             if self.is_filtered(interface_filter, params):
                 continue
             # Skip separators whose interface doesn't exist on this firewall
-            if params.get('state', 'present') != 'absent' and params.get('interface') is not None and not params.get('floating'):
-                if self.pfsense.parse_interface(params['interface'], fail=False) is None:
+            if params.get("state", "present") != "absent" and params.get("interface") is not None and not params.get("floating"):
+                if self.pfsense.parse_interface(params["interface"], fail=False) is None:
                     continue
             self.pfsense_rule_separators.run(params)
 
         # delete every other if required
-        if self.module.params['purge_rule_separators']:
+        if self.module.params["purge_rule_separators"]:
             todel = []
             for interface_elt in self.pfsense_rule_separators.separators:
                 for separator_elt in interface_elt:
                     if not self.want_rule_separator(separator_elt, want):
                         params = {}
-                        params['state'] = 'absent'
-                        params['name'] = separator_elt.find('text').text
-                        if interface_elt.tag == 'floatingrules':
-                            params['floating'] = True
+                        params["state"] = "absent"
+                        params["name"] = separator_elt.find("text").text
+                        if interface_elt.tag == "floatingrules":
+                            params["floating"] = True
                         else:
-                            params['interface'] = self.pfsense.get_interface_display_name(interface_elt.tag, return_none=True)
-                            if params['interface'] is None:
+                            params["interface"] = self.pfsense.get_interface_display_name(interface_elt.tag, return_none=True)
+                            if params["interface"] is None:
                                 continue
                         todel.append(params)
 
@@ -1096,7 +1096,7 @@ class PFSenseModuleAggregate(object):
 
     def run_vlans(self):
         """ process input params to add/update/delete all VLANs """
-        want = self.module.params['aggregated_vlans']
+        want = self.module.params["aggregated_vlans"]
 
         if want is None:
             return
@@ -1106,14 +1106,14 @@ class PFSenseModuleAggregate(object):
             self.pfsense_vlans.run(param)
 
         # delete every other if required
-        if self.module.params['purge_vlans']:
+        if self.module.params["purge_vlans"]:
             todel = []
             for vlan_elt in self.pfsense_vlans.root_elt:
                 if not self.want_vlan(vlan_elt, want):
                     params = {}
-                    params['state'] = 'absent'
-                    params['interface'] = vlan_elt.find('if').text
-                    params['vlan_id'] = int(vlan_elt.find('tag').text)
+                    params["state"] = "absent"
+                    params["interface"] = vlan_elt.find("if").text
+                    params["vlan_id"] = int(vlan_elt.find("tag").text)
                     todel.append(params)
 
             for params in todel:
@@ -1121,67 +1121,67 @@ class PFSenseModuleAggregate(object):
 
     def commit_changes(self):
         """ apply changes and exit module """
-        stdout = ''
-        stderr = ''
+        stdout = ""
+        stderr = ""
         changed = (
-            self.pfsense_aliases.result['changed'] or self.pfsense_interfaces.result['changed'] or self.pfsense_nat_outbounds.result['changed']
-            or self.pfsense_nat_port_forwards.result['changed'] or self.pfsense_rules.result['changed']
-            or self.pfsense_rule_separators.result['changed'] or self.pfsense_vlans.result['changed']
+            self.pfsense_aliases.result["changed"] or self.pfsense_interfaces.result["changed"] or self.pfsense_nat_outbounds.result["changed"]
+            or self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_rules.result["changed"]
+            or self.pfsense_rule_separators.result["changed"] or self.pfsense_vlans.result["changed"]
         )
 
         if changed and not self.module.check_mode:
-            self.pfsense.write_config(descr='aggregated change')
+            self.pfsense.write_config(descr="aggregated change")
             (dummy, stdout, stderr) = self._update()
 
         result = {}
-        result['result_aliases'] = self.pfsense_aliases.result['commands']
-        result['result_interfaces'] = self.pfsense_interfaces.result['commands']
-        result['result_nat_outbounds'] = self.pfsense_nat_outbounds.result['commands']
-        result['result_nat_port_forwards'] = self.pfsense_nat_port_forwards.result['commands']
-        result['result_rules'] = self.pfsense_rules.result['commands']
-        result['result_rule_separators'] = self.pfsense_rule_separators.result['commands']
-        result['result_vlans'] = self.pfsense_vlans.result['commands']
-        result['changed'] = changed
-        result['stdout'] = stdout
-        result['stderr'] = stderr
+        result["result_aliases"] = self.pfsense_aliases.result["commands"]
+        result["result_interfaces"] = self.pfsense_interfaces.result["commands"]
+        result["result_nat_outbounds"] = self.pfsense_nat_outbounds.result["commands"]
+        result["result_nat_port_forwards"] = self.pfsense_nat_port_forwards.result["commands"]
+        result["result_rules"] = self.pfsense_rules.result["commands"]
+        result["result_rule_separators"] = self.pfsense_rule_separators.result["commands"]
+        result["result_vlans"] = self.pfsense_vlans.result["commands"]
+        result["changed"] = changed
+        result["stdout"] = stdout
+        result["stderr"] = stderr
         self.module.exit_json(**result)
 
 
 def main():
     argument_spec = dict(
         aggregated_aliases=dict(
-            type='list', elements='dict', options=ALIAS_ARGUMENT_SPEC, mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE, required_if=ALIAS_REQUIRED_IF),
+            type="list", elements="dict", options=ALIAS_ARGUMENT_SPEC, mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE, required_if=ALIAS_REQUIRED_IF),
         aggregated_interfaces=dict(
-            type='list', elements='dict',
+            type="list", elements="dict",
             options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE),
-        aggregated_rules=dict(type='list', elements='dict', options=RULE_ARGUMENT_SPEC, required_if=RULE_REQUIRED_IF),
-        aggregated_nat_outbounds=dict(type='list', elements='dict', options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUND_REQUIRED_IF),
-        aggregated_nat_port_forwards=dict(type='list', elements='dict', options=NAT_PORT_FORWARD_ARGUMENT_SPEC, required_if=NAT_PORT_FORWARD_REQUIRED_IF),
+        aggregated_rules=dict(type="list", elements="dict", options=RULE_ARGUMENT_SPEC, required_if=RULE_REQUIRED_IF),
+        aggregated_nat_outbounds=dict(type="list", elements="dict", options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUND_REQUIRED_IF),
+        aggregated_nat_port_forwards=dict(type="list", elements="dict", options=NAT_PORT_FORWARD_ARGUMENT_SPEC, required_if=NAT_PORT_FORWARD_REQUIRED_IF),
         aggregated_rule_separators=dict(
-            type='list', elements='dict',
+            type="list", elements="dict",
             options=RULE_SEPARATOR_ARGUMENT_SPEC, required_one_of=RULE_SEPARATOR_REQUIRED_ONE_OF, mutually_exclusive=RULE_SEPARATOR_MUTUALLY_EXCLUSIVE),
-        aggregated_vlans=dict(type='list', elements='dict', options=VLAN_ARGUMENT_SPEC),
-        order_rules=dict(default=False, type='bool'),
-        purge_aliases=dict(default=False, type='bool'),
-        purge_interfaces=dict(default=False, type='bool'),
-        purge_nat_outbounds=dict(default=False, type='bool'),
-        purge_nat_port_forwards=dict(default=False, type='bool'),
-        purge_rules=dict(default=False, type='bool'),
-        purge_rule_separators=dict(default=False, type='bool'),
-        purge_vlans=dict(default=False, type='bool'),
-        interface_filter=dict(required=False, type='str'),
-        ignored_aliases=dict(type='list', elements='str', default=[]),
-        ignored_rules=dict(type='list', elements='str', default=[]),
+        aggregated_vlans=dict(type="list", elements="dict", options=VLAN_ARGUMENT_SPEC),
+        order_rules=dict(default=False, type="bool"),
+        purge_aliases=dict(default=False, type="bool"),
+        purge_interfaces=dict(default=False, type="bool"),
+        purge_nat_outbounds=dict(default=False, type="bool"),
+        purge_nat_port_forwards=dict(default=False, type="bool"),
+        purge_rules=dict(default=False, type="bool"),
+        purge_rule_separators=dict(default=False, type="bool"),
+        purge_vlans=dict(default=False, type="bool"),
+        interface_filter=dict(required=False, type="str"),
+        ignored_aliases=dict(type="list", elements="str", default=[]),
+        ignored_rules=dict(type="list", elements="str", default=[]),
     )
 
     required_one_of = [[
-        'aggregated_aliases',
-        'aggregated_interfaces',
-        'aggregated_nat_outbounds',
-        'aggregated_nat_port_forwards',
-        'aggregated_rules',
-        'aggregated_rule_separators',
-        'aggregated_vlans'
+        "aggregated_aliases",
+        "aggregated_interfaces",
+        "aggregated_nat_outbounds",
+        "aggregated_nat_port_forwards",
+        "aggregated_rules",
+        "aggregated_rule_separators",
+        "aggregated_vlans"
     ]]
 
     module = AnsibleModule(
@@ -1203,5 +1203,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

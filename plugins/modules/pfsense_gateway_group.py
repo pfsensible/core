@@ -7,7 +7,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: pfsense_gateway_group
 
@@ -60,9 +60,9 @@ options:
 
 
 author: Orion Poplawski (@opoplawski)
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Add WANGW_FAILOVER gateway group
   pfsensible.core.pfsense_gateway group:
     name: WANGW_FAILOVER
@@ -82,14 +82,14 @@ EXAMPLES = r'''
   pfsensible.core.pfsense_gateway group:
     name: WANGW_FAILOVER
     state: absent
-'''
-RETURN = r'''
+"""
+RETURN = r"""
 commands:
     description: the set of commands that would be pushed to the remote device (if pfSense had a CLI).
     returned: always
     type: list
     sample: ["create gateway_group 'WANGW_FAILOVER'", "update gateway_group 'WANGW_FAILOVER' set ...", "delete gateway_group 'WANGW_FAILOVER'"]
-'''
+"""
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -97,29 +97,29 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 GATEWAY_GROUP_ARGUMENT_SPEC = dict(
     # Only name should be required here - othewise you cannot remove an item with just 'name'
     # Required arguments for creation should be noted in GATEWAY_GROUP_REQUIRED_IF = ['state', 'present', ...] below
-    name=dict(required=True, type='str'),
-    state=dict(type='str', default='present', choices=['present', 'absent']),
-    keep_failover_states=dict(type='str', choices=['', 'keep', 'kill']),
-    trigger=dict(type='str', choices=['down', 'downloss', 'downlatency', 'downlosslatency'], default='down'),
-    descr=dict(type='str'),
-    members=dict(type='list', elements='dict'),
+    name=dict(required=True, type="str"),
+    state=dict(type="str", default="present", choices=["present", "absent"]),
+    keep_failover_states=dict(type="str", choices=["", "keep", "kill"]),
+    trigger=dict(type="str", choices=["down", "downloss", "downlatency", "downlosslatency"], default="down"),
+    descr=dict(type="str"),
+    members=dict(type="list", elements="dict"),
 )
 
 GATEWAY_GROUP_REQUIRED_IF = [
-    ['state', 'present', ['members']],
+    ["state", "present", ["members"]],
 ]
 
 
 def p2o_members(self, name, params, obj):
     """ parse the list of members into format required for the XML element """
-    obj['item'] = []
+    obj["item"] = []
     for member in params[name]:
         if member["virtualip"] != "address":
             if (vip := self.pfsense.get_virtual_ip_interface(member["virtualip"])) is None:
                 self.module.fail_json(msg=f"Cannot find virtual IP '{member['virtualip']}'")
         else:
-            vip = 'address'
-        obj['item'].append(f"{member['gateway']}|{member['tier']}|{vip}")
+            vip = "address"
+        obj["item"].append(f"{member['gateway']}|{member['tier']}|{vip}")
 
 
 GATEWAY_GROUP_ARG_ROUTE = dict(
@@ -127,7 +127,7 @@ GATEWAY_GROUP_ARG_ROUTE = dict(
 )
 
 GATEWAY_GROUP_CREATE_DEFAULT = dict(
-    trigger='down',
+    trigger="down",
 )
 
 
@@ -144,7 +144,7 @@ class PFSenseGatewayGroupModule(PFSenseModuleBase):
         return GATEWAY_GROUP_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseGatewayGroupModule, self).__init__(module, pfsense, root='gateways', node='gateway_group', key='name',
+        super(PFSenseGatewayGroupModule, self).__init__(module, pfsense, root="gateways", node="gateway_group", key="name",
                                                         arg_route=GATEWAY_GROUP_ARG_ROUTE, create_default=GATEWAY_GROUP_CREATE_DEFAULT)
 
 
@@ -160,5 +160,5 @@ def main():
     pfmodule.commit_changes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
