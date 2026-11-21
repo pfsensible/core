@@ -154,6 +154,31 @@ class ConfigWriteTests(unittest.TestCase):
         self.assert_original()
         self.assert_no_temporary_files()
 
+    def test_native_roundtrip_failure_decodes_legacy_entities(self):
+        with patch.object(pfsense.PFSenseModule, '_uses_legacy_html_entities', return_value=True):
+            helper = self.helper()
+
+        def format_candidate(command):
+            candidate = Path(command[-1])
+            # The legacy entity spelling preserves the passthru value.
+            serialized = candidate.read_bytes()
+            copyright_sign = '\u00a9'.encode('utf-8')
+            self.assertIn(copyright_sign, serialized)
+            formatted = serialized.replace(copyright_sign, b'&copy;')
+            candidate.write_bytes(formatted.replace(b'firewall', b'private changed value'))
+            return 15, '', ''
+
+        with patch.object(helper.module, 'run_command', side_effect=format_candidate):
+            with self.assertRaises(ModuleFailure) as failure:
+                helper.write_config()
+        self.assertEqual(failure.exception.result['native_validation'],
+                         {'stage': 'compare_native_roundtrip', 'exit_code': 15})
+        self.assertEqual(failure.exception.result['config_mismatch'],
+                         {'path': '/pfsense[1]/system[1]/hostname[1]', 'reason': 'text differs'})
+        self.assertFalse(failure.exception.result['changed'])
+        self.assert_original()
+        self.assert_no_temporary_files()
+
     def test_temporary_files_always_share_config_directory(self):
         helper = self.helper()
         with patch.object(pfsense, 'mkstemp', wraps=pfsense.mkstemp) as create:
