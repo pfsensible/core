@@ -9,6 +9,7 @@ __metaclass__ = type
 import errno
 import json
 import os
+from ansible_collections.pfsensible.core.plugins.module_utils.alias_references import ALIAS_REFERENCE_FIELDS, alias_reference_names
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 ALIAS_ARGUMENT_SPEC = dict(
@@ -53,23 +54,6 @@ require_once("filter.inc");
 alias_make_table();
 if (filter_configure() == 0) { clear_subsystem_dirty('aliases'); }
 """
-
-# The reference fields from pfSense's deleteAlias() in alias-utils.inc,
-# plus firewall source ports, outbound NAT address fields, and OpenVPN clients.
-OPENVPN_NETWORK_FIELDS = (
-    "tunnel_network", "tunnel_networkv6", "local_network", "local_networkv6", "remote_network", "remote_networkv6",
-)
-ALIAS_REFERENCE_FIELDS = {
-    "filter/rule": ("source/address", "source/port", "destination/address", "destination/port"),
-    "nat/rule": ("source/address", "source/port", "destination/address", "destination/port", "target", "local-port"),
-    "nat/onetoone": ("destination/address",),
-    "nat/outbound/rule": ("source/network", "source/address", "sourceport", "destination/network", "destination/address", "dstport", "target"),
-    "aliases/alias": ("address",),
-    "staticroutes/route": ("network",),
-    "openvpn/openvpn-server": OPENVPN_NETWORK_FIELDS,
-    "openvpn/openvpn-client": OPENVPN_NETWORK_FIELDS,
-    "openvpn/openvpn-csc": OPENVPN_NETWORK_FIELDS,
-}
 
 
 class PFSenseAliasModule(PFSenseModuleBase):
@@ -169,16 +153,7 @@ class PFSenseAliasModule(PFSenseModuleBase):
             for index, entry in enumerate(self.pfsense.root.iterfind(section), start=1):
                 for field in fields:
                     value = entry.findtext(field, "")
-                    if section == "aliases/alias":
-                        names = value.split()
-                    elif section.startswith("openvpn/"):
-                        names = value.split(",")
-                    elif field in ("source/port", "destination/port", "sourceport", "dstport", "local-port"):
-                        names = value.replace(":", "-").split("-")
-                    else:
-                        names = (value,)
-                    for name in names:
-                        name = name.strip()
+                    for name in alias_reference_names(section, field, value):
                         if name in removed:
                             label = entry.findtext("descr") or entry.findtext("description") or entry.findtext("name") or str(index)
                             self.module.fail_json(msg=f"Alias '{name}' is in use by {section} '{label}' ({field}).")
