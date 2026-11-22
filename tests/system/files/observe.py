@@ -7,18 +7,22 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
 
-def read_pf_state(alias_name, rule_name):
-    """Inspect root and anchor rulesets, retaining private table scope."""
+def pf_scopes():
     anchors = subprocess.run(["/sbin/pfctl", "-v", "-s", "Anchors"],
                              capture_output=True, text=True, check=True)
-    scopes = [""] + sorted(set(line.strip() for line in anchors.stdout.splitlines() if line.strip()))
+    return [""] + sorted(set(line.strip() for line in anchors.stdout.splitlines() if line.strip()))
+
+
+def read_pf_state(alias_name, rule_name):
+    """Inspect root and anchor rulesets, retaining private table scope."""
     loaded_rules, rule_scopes, tables, table_errors = [], [], {}, {}
-    for scope in scopes:
+    for scope in pf_scopes():
         command = ["/sbin/pfctl"] + (["-a", scope] if scope else [])
         loaded = subprocess.run(command + ["-sr"], capture_output=True, text=True, check=True)
         matches = [line.strip() for line in loaded.stdout.splitlines() if rule_name in line]
@@ -44,6 +48,46 @@ def read_pf_state(alias_name, rule_name):
         "table_exists": bool(tables),
         "table_entries": sorted(set(entry for entries in tables.values() for entry in entries)),
     }
+
+
+def observe_nat(rule_name, target):
+    """Read saved NAT and associated filter rules and their live PF entries."""
+    config = Path("/cf/conf/config.xml").read_bytes()
+    root = ET.fromstring(config)
+    filter_name = "NAT " + rule_name
+    match_fields = ("interface", "protocol", "source/address", "source/port", "destination/port", "associated-rule-id")
+    redirects = []
+    filters = []
+    for scope in pf_scopes():
+        command = ["/sbin/pfctl", "-P"] + (["-a", scope] if scope else [])
+        nat = subprocess.run(command + ["-sn"], capture_output=True, text=True, check=True)
+        rules = subprocess.run(command + ["-sr"], capture_output=True, text=True, check=True)
+        redirects.extend(line.strip() for line in nat.stdout.splitlines()
+                         if re.search(r"^\s*rdr\b.* -> " + re.escape(target) + r"(?=\s|$)", line))
+        filters.extend(line.strip() for line in rules.stdout.splitlines() if filter_name in line)
+    return {
+        "config_sha256": hashlib.sha256(config).hexdigest(),
+        "nat_rules": [{field: rule.findtext(field) for field in match_fields + ("destination/network", "target", "local-port")}
+                      for rule in root.findall("nat/rule") if rule.findtext("descr") == rule_name],
+        "filter_rules": [{field: rule.findtext(field) for field in match_fields + ("destination/address", "type")}
+                         for rule in root.findall("filter/rule") if rule.findtext("descr") == filter_name],
+        "redirects": redirects,
+        "filters": filters,
+        "filter_reload": read_reload_status(),
+    }
+
+
+def nat_converged(state, ports=None):
+    """Check source, incoming destination, and translated ports in live PF."""
+    redirects, filters = state["redirects"], state["filters"]
+    if ports is None:
+        return not redirects and not filters
+    source, destination, target = map(re.escape, ports)
+    # PF prints equality for matched ports and a plain port for translation.
+    redirect = rf"^rdr\b.*\bfrom .+ port = {source} to .+ port = {destination} -> \S+ port {target}(?=\s|$)"
+    rule = rf"^pass\b.*\bfrom .+ port = {source} to .+ port = {target}(?=\s|$)"
+    return (len(redirects) == len(filters) == 1
+            and re.search(redirect, redirects[0]) is not None and re.search(rule, filters[0]) is not None)
 
 
 def observe(alias_name, rule_name):
@@ -98,7 +142,20 @@ if __name__ == "__main__":
     parser.add_argument("--rule", default="CI URL table test")
     parser.add_argument("--expect-action", choices=("pass", "block", "absent"))
     parser.add_argument("--expect-entry")
+    parser.add_argument("--nat-rule")
+    parser.add_argument("--nat-target")
+    nat_expectation = parser.add_mutually_exclusive_group()
+    nat_expectation.add_argument("--expect-nat-ports", nargs=3, metavar=("SOURCE", "DESTINATION", "TARGET"))
+    nat_expectation.add_argument("--expect-nat-absent", action="store_true")
     arguments = parser.parse_args()
+    if arguments.nat_rule is not None:
+        if arguments.nat_target is None:
+            parser.error("--nat-target is required with --nat-rule")
+        state = observe_nat(arguments.nat_rule, arguments.nat_target)
+        print(json.dumps(state))
+        if arguments.expect_nat_ports or arguments.expect_nat_absent:
+            sys.exit(0 if nat_converged(state, arguments.expect_nat_ports) else 1)
+        sys.exit(0)
     if arguments.expect_action in ("pass", "block") and arguments.expect_entry is None:
         parser.error("--expect-entry is required when waiting for a pass/block rule")
     state = observe(arguments.alias, arguments.rule)

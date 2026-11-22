@@ -20,3 +20,6 @@
 
     - name: Test deletion and clean up the scenario
       ansible.builtin.include_tasks: scenarios/cleanup.yml
+
+    - name: Test NAT port forwarding
+      ansible.builtin.include_tasks: modules/nat_port_forward/main.yml

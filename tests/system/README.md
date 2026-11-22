@@ -20,9 +20,14 @@ The first scenario covers a URL-table alias referenced by a firewall rule:
 * Reboot and verify that the configuration and live PF rule/table survive.
 * Verify deletion and repeated deletion.
 
-These are configuration and runtime integration tests. They do not yet send packets
-through the firewall, validate NAT, or cover packages such as HAProxy. Add scenarios
-for those behaviors before treating this as comprehensive appliance coverage.
+The NAT port-forward scenario creates a rule with separate source and destination
+ports, then checks the saved NAT and associated filter rules and the live PF
+redirect and pass entries. It also verifies idempotence, check mode, a change to
+both match ports, and repeated deletion. The translated target port differs from
+the incoming destination port so the checks can distinguish them.
+
+The suite inspects appliance configuration and kernel rules. Packet delivery and
+package behavior such as HAProxy are outside its current coverage.
 
 Filter reloads run asynchronously on pfSense. After create/update, action changes,
 reboot, and deletion, the suite polls observed PF state instead of assuming a module
@@ -109,8 +114,9 @@ a prepared image rather than attempting an unattended account-based installation
    mounts the seed CD at `/dev/cd0` and installs that run's generated public key.
    Do not embed a private SSH key in the base image. On a normal boot without the
    seed CD this helper cannot authorize a CI key; prepare via console as needed.
-4. Ensure PF is enabled, the test names `ci_urltable` and `CI URL table test` do
-   not exist, and no service listens on loopback port 18080. Shut down cleanly.
+4. Ensure PF is enabled, the test names `ci_urltable`, `CI URL table test`, and
+   `CI NAT port forward test` do not exist, and no service listens on loopback port
+   18080. Leave `192.168.100.80` unused as the fixture's redirect target. Shut down cleanly.
 5. Export a self-contained qcow2 disk with no backing/data files. For example,
    flatten an existing qcow2 image on the hypervisor host:
 
@@ -201,6 +207,7 @@ cleanup. The files are organized by responsibility:
 | `common/change_apply_verify.yml` | Apply one change, check `changed`, and verify its effects |
 | `modules/alias/` | Alias creation, idempotence, check mode, URL updates, cache repair, and deletion |
 | `modules/rule/` | Rule apply/verification, idempotence, action changes, and deletion |
+| `modules/nat_port_forward/` | NAT match and translated ports, associated filter rule, idempotence, check mode, and deletion |
 | `scenarios/persistence.yml` | Reboot and verify without reapplying configuration |
 | `scenarios/cleanup.yml` | Delete dependent rules before aliases |
 | `observe.yml`, `verify.yml` | Shared state collection, bounded PF polling, and URL-table/rule assertions |

@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_nat_port_forward - support separate ``source_port` and ``destination_port`` parameters (https://github.com/pfsensible/core/issues/59)

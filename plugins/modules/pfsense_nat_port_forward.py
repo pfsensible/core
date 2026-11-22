@@ -53,10 +53,23 @@ options:
     description: The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
     default: null
     type: str
+  source_port:
+    description:
+      - Source port to match. Accepts a port number, a port alias, or an inclusive range in C(first-last) format.
+      - Overrides any port supplied with O(source). Use with C(tcp), C(udp), or C(tcp/udp).
+    type: str
+    version_added: 0.8.0
   destination:
     description: The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
     default: null
     type: str
+  destination_port:
+    description:
+      - Incoming destination port to match. Accepts a port number, a port alias, or an inclusive range in C(first-last) format.
+      - Overrides any port supplied with O(destination). Use with C(tcp), C(udp), or C(tcp/udp).
+      - Set the translated port using O(target).
+    type: str
+    version_added: 0.8.0
   target:
     description: The translated to address, in {ALIAS,IP}[:port] format.
     required: false
@@ -97,7 +110,8 @@ EXAMPLES = """
     descr: 'ssh'
     interface: wan
     source: any
-    destination: any:22
+    destination: any
+    destination_port: "2222"
     target: 1.2.3.4:22
     associated_rule: pass
     state: present
@@ -113,7 +127,7 @@ commands:
     returned: always
     type: list
     sample: [
-        "create nat_port_forward 'ssh', interface='wan', source='any', destination='any:22', target='1.2.3.4:22', associated_rule='pass'",
+        "create nat_port_forward 'ssh', interface='wan', source='any', destination='any', destination_port='2222', target='1.2.3.4:22', associated_rule='pass'",
         "delete nat_port_forward 'ssh'"
     ]
 """

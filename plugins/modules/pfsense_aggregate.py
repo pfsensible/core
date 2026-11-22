@@ -274,10 +274,23 @@ options:
         description: The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
         default: null
         type: str
+      source_port:
+        description:
+          - Source port to match. Accepts a port number, a port alias, or an inclusive range in C(first-last) format.
+          - Overrides any port supplied with the source address. Use with C(tcp), C(udp), or C(tcp/udp).
+        type: str
+        version_added: 0.8.0
       destination:
         description: The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
         default: null
         type: str
+      destination_port:
+        description:
+          - Incoming destination port to match. Accepts a port number, a port alias, or an inclusive range in C(first-last) format.
+          - Overrides any port supplied with the destination address. Use with C(tcp), C(udp), or C(tcp/udp).
+          - Set the translated port using the target address.
+        type: str
+        version_added: 0.8.0
       target:
         description: The translated to address, in {ALIAS,IP}[:port] format.
         required: false
