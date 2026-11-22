@@ -26,6 +26,12 @@ redirect and pass entries. It also verifies idempotence, check mode, a change to
 both match ports, and repeated deletion. The translated target port differs from
 the incoming destination port so the checks can distinguish them.
 
+The VIP scenario checks that IP Alias, CARP, and an IP Alias stacked on CARP
+appear on the expected interface, with the expected VHID where applicable.
+It also verifies that Proxy ARP is registered on the selected interface and
+that Proxy ARP and Other addresses are absent from interface assignments.
+It verifies saved configuration, idempotence, and deletion for each case.
+
 The suite inspects appliance configuration and kernel rules. Packet delivery and
 package behavior such as HAProxy are outside its current coverage.
 
@@ -208,6 +214,7 @@ cleanup. The files are organized by responsibility:
 | `modules/alias/` | Alias creation, idempotence, check mode, URL updates, cache repair, and deletion |
 | `modules/rule/` | Rule apply/verification, idempotence, action changes, and deletion |
 | `modules/nat_port_forward/` | NAT match and translated ports, associated filter rule, idempotence, check mode, and deletion |
+| `modules/virtual_ip/` | Saved VIP entries, interface addresses, CARP VHIDs, Proxy ARP registrations, and deletion |
 | `scenarios/persistence.yml` | Reboot and verify without reapplying configuration |
 | `scenarios/cleanup.yml` | Delete dependent rules before aliases |
 | `observe.yml`, `verify.yml` | Shared state collection, bounded PF polling, and URL-table/rule assertions |

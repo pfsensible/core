@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import argparse
 import hashlib
+from ipaddress import ip_address, ip_interface
 import json
 from pathlib import Path
 import re
@@ -77,6 +78,41 @@ def observe_nat(rule_name, target):
     }
 
 
+def observe_vip(address):
+    """Read the saved entry, interface addresses, and Proxy ARP registrations."""
+    vip = ip_interface(address)
+    config = Path("/cf/conf/config.xml").read_bytes()
+    root = ET.fromstring(config)
+    devices = []
+    device = None
+    interfaces = subprocess.run(["/sbin/ifconfig", "-a"], capture_output=True, text=True, check=True)
+    for line in interfaces.stdout.splitlines():
+        fields = line.split()
+        if not fields:
+            continue
+        if not line[0].isspace():
+            device = fields[0].rstrip(":")
+        elif fields[0] in ("inet", "inet6") and ip_address(fields[1].split("%")[0]) == vip.ip:
+            vhid = fields[fields.index("vhid") + 1] if "vhid" in fields else None
+            devices.append({"interface": device, "vhid": vhid})
+
+    proxy_interfaces = []
+    processes = subprocess.run(["/bin/ps", "-axww", "-o", "command="], capture_output=True, text=True, check=True)
+    for line in processes.stdout.splitlines():
+        fields = line.split()
+        if fields and Path(fields[0]).name == "choparp" and str(vip) in fields and "auto" in fields:
+            proxy_interfaces.append(fields[fields.index("auto") - 1])
+
+    fields = ("mode", "type", "subnet_bits", "interface", "descr", "vhid")
+    return {
+        "config_sha256": hashlib.sha256(config).hexdigest(),
+        "vips": [{field: entry.findtext(field) for field in fields} for entry in root.findall("virtualip/vip")
+                 if entry.findtext("subnet") == str(vip.ip)],
+        "devices": devices,
+        "proxy_interfaces": sorted(proxy_interfaces),
+    }
+
+
 def nat_converged(state, ports=None):
     """Check source, incoming destination, and translated ports in live PF."""
     redirects, filters = state["redirects"], state["filters"]
@@ -144,10 +180,14 @@ if __name__ == "__main__":
     parser.add_argument("--expect-entry")
     parser.add_argument("--nat-rule")
     parser.add_argument("--nat-target")
+    parser.add_argument("--vip-address")
     nat_expectation = parser.add_mutually_exclusive_group()
     nat_expectation.add_argument("--expect-nat-ports", nargs=3, metavar=("SOURCE", "DESTINATION", "TARGET"))
     nat_expectation.add_argument("--expect-nat-absent", action="store_true")
     arguments = parser.parse_args()
+    if arguments.vip_address is not None:
+        print(json.dumps(observe_vip(arguments.vip_address)))
+        sys.exit(0)
     if arguments.nat_rule is not None:
         if arguments.nat_target is None:
             parser.error("--nat-target is required with --nat-rule")

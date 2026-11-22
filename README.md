@@ -163,6 +163,10 @@ The following modules are currently available:
 * [pfsense_setup](https://github.com/pfsensible/core/wiki/pfsense_setup) for general setup
 * [pfsense_shellcmd](https://github.com/pfsensible/core/wiki/pfsense_shellcmd) for shellcmd package
 * [pfsense_user](https://github.com/pfsensible/core/wiki/pfsense_user) for users
+* [pfsense_virtual_ip_alias](https://github.com/pfsensible/core/wiki/pfsense_virtual_ip_alias) for alias Virtual IPs
+* [pfsense_virtual_ip_carp](https://github.com/pfsensible/core/wiki/pfsense_virtual_ip_carp) for CARP Virtual IPs
+* [pfsense_virtual_ip_other](https://github.com/pfsensible/core/wiki/pfsense_virtual_ip_other) for other Virtual IPs
+* [pfsense_virtual_ip_proxy_arp](https://github.com/pfsensible/core/wiki/pfsense_virtual_ip_proxy_arp) for proxy ARP Virtual IPs
 * [pfsense_vlan](https://github.com/pfsensible/core/wiki/pfsense_vlan) for VLANs
 
 ## Bulk modules

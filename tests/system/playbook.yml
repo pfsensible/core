@@ -23,3 +23,6 @@
 
     - name: Test NAT port forwarding
       ansible.builtin.include_tasks: modules/nat_port_forward/main.yml
+
+    - name: Test virtual IPs on appliance interfaces
+      ansible.builtin.include_tasks: modules/virtual_ip/main.yml
