@@ -34,9 +34,10 @@ def load_source(name, path):
 
 PREFIX = "ansible_collections.pfsensible.core.plugins.module_utils."
 route = load_source("alias_test_arg_route", CORE / "plugins/module_utils/arg_route.py")
+references = load_source("alias_test_references", CORE / "plugins/module_utils/alias_references.py")
 with patch.dict(sys.modules, {PREFIX + "pfsense": pfsense, PREFIX + "arg_route": route}):
     base = load_source("alias_test_base", CORE / "plugins/module_utils/module_base.py")
-    with patch.dict(sys.modules, {PREFIX + "module_base": base}):
+    with patch.dict(sys.modules, {PREFIX + "module_base": base, PREFIX + "alias_references": references}):
         alias = load_source("alias_test", CORE / "plugins/module_utils/alias.py")
 
 
@@ -97,6 +98,7 @@ class AliasTests(unittest.TestCase):
             ("nat/onetoone", "destination/address", "test_alias"),
             ("nat/outbound/rule", "source/address", "test_alias"),
             ("nat/outbound/rule", "dstport", "test_alias:2000"),
+            ("nat/outbound/rule", "natport", "1000:test_alias"),
             ("aliases/alias", "address", "192.0.2.10 test_alias 192.0.2.20"),
             ("staticroutes/route", "network", "test_alias"),
             ("openvpn/openvpn-client", "remote_network", "192.0.2.0/24, test_alias"),

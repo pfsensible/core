@@ -132,6 +132,7 @@ image preparation, virtual NIC configuration, local execution, and current cover
 The following modules are currently available:
 
 * [pfsense_alias](https://github.com/pfsensible/core/wiki/pfsense_alias) for aliases
+* [pfsense_alias_info](https://github.com/pfsensible/core/wiki//pfsense_alias_info) to list aliases, their configured contents, and whether they are unused
 * [pfsense_authserver_ldap](https://github.com/pfsensible/core/wiki/pfsense_authserver_ldap) for LDAP authentication servers
 * [pfsense_authserver_radius](https://github.com/pfsensible/core/wiki/pfsense_authserver_radius) for RADIUS authentication servers
 * [pfsense_ca](https://github.com/pfsensible/core/wiki/pfsense_ca) for Certificate Authorities
