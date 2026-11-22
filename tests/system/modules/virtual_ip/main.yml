@@ -1,0 +1,83 @@
+---
+- name: Exercise each virtual IP type
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/virtual_ip/apply_{{ vip_case.module }}.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/virtual_ip/verify.yml"
+    vip_cases:
+      - module: alias
+        mode: ipalias
+        device: vtnet1
+        args:
+          address: 192.168.100.70/24
+          interface: lan
+          descr: CI IP Alias VIP
+      - module: carp
+        mode: carp
+        device: vtnet1
+        vhid: "71"
+        args:
+          address: 192.168.100.71/24
+          interface: lan
+          descr: CI CARP VIP
+          vhid: 71
+          password: appliance-fixture-carp-key
+      - module: alias
+        mode: ipalias
+        device: vtnet1
+        vhid: "71"
+        args:
+          address: 192.168.100.72/24
+          interface: 192.168.100.71
+          descr: CI Stacked IP Alias VIP
+      - module: proxy_arp
+        mode: proxyarp
+        proxy_device: vtnet1
+        args:
+          address: 192.168.100.73
+          interface: lan
+          descr: CI Proxy ARP VIP
+      - module: other
+        mode: other
+        address_type: network
+        args:
+          address: 198.51.100.72/30
+          descr: CI Other VIP
+  block:
+    - name: Create virtual IPs
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      loop: "{{ vip_cases }}"
+      loop_control:
+        loop_var: vip_case
+        label: "{{ vip_case.args.descr }}"
+      vars:
+        system_case:
+          name: "Create {{ vip_case.args.descr }}"
+          args: "{{ vip_case.args }}"
+          changed: true
+
+    - name: Verify virtual IP idempotence
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      loop: "{{ vip_cases }}"
+      loop_control:
+        loop_var: vip_case
+        label: "{{ vip_case.args.descr }}"
+      vars:
+        system_case:
+          name: "Reapply {{ vip_case.args.descr }}"
+          args: "{{ vip_case.args }}"
+          changed: false
+          unchanged_config: true
+
+    - name: Delete virtual IPs in reverse dependency order
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      loop: "{{ vip_cases | reverse | list }}"
+      loop_control:
+        loop_var: vip_case
+        label: "{{ vip_case.args.descr }}"
+      vars:
+        system_case:
+          name: "Delete {{ vip_case.args.descr }}"
+          args:
+            address: "{{ vip_case.args.address }}"
+            state: absent
+          changed: true

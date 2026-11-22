@@ -1,0 +1,46 @@
+---
+- name: Read the saved VIP and live interface state
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_python_interpreter }}"
+      - /tmp/pfsensible-system/observe.py
+      - --vip-address
+      - "{{ vip_case.args.address }}"
+  register: vip_observed
+  changed_when: false
+  until: >-
+    vip_observed is failed or
+    ((vip_observed.stdout | from_json).devices == vip_expected_devices and
+     (vip_observed.stdout | from_json).proxy_interfaces == vip_expected_proxy)
+  retries: "{{ pf_wait_retries | default(60) }}"
+  delay: "{{ pf_wait_delay | default(1) }}"
+  vars:
+    vip_absent: "{{ system_case.args.state | default('present') == 'absent' }}"
+    vip_expected_devices: >-
+      {{ [{'interface': vip_case.device, 'vhid': vip_case.vhid | default(none)}]
+         if not vip_absent | bool and vip_case.device is defined else [] }}
+    vip_expected_proxy: >-
+      {{ [vip_case.proxy_device] if not vip_absent | bool and vip_case.proxy_device is defined else [] }}
+
+- name: Decode the observed VIP state
+  ansible.builtin.set_fact:
+    appliance: "{{ vip_observed.stdout | from_json }}"
+
+- name: Record the observed interface state
+  ansible.builtin.debug:
+    var: appliance
+
+- name: Verify saved VIP type and address
+  ansible.builtin.assert:
+    that:
+      - appliance.vips | length == 1
+      - appliance.vips[0].mode == vip_case.mode
+      - appliance.vips[0].type == vip_case.address_type | default('single')
+      - appliance.vips[0].descr == vip_case.args.descr
+  when: system_case.args.state | default('present') == 'present'
+
+- name: Verify deletion from saved configuration
+  ansible.builtin.assert:
+    that:
+      - not appliance.vips
+  when: system_case.args.state | default('present') == 'absent'
