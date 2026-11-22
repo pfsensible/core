@@ -176,7 +176,8 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         params["statetype"] = "keep state"
         params["interface"] = self.params["interface"]
         params["source"] = self.params["source"]
-        params["source_port"] = self.params.get("source_port")
+        # A NAT rule with no source port must also clear its associated rule's source port.
+        params["source_port"] = self.params.get("source_port") if "port" in self.obj["source"] else ""
         params["destination"] = self.params["target"]
         params["disabled"] = self.params["disabled"]
         params["protocol"] = self.params["protocol"]

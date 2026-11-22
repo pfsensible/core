@@ -10,6 +10,7 @@ import sys
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from .test_pfsense_rule import TestPFSenseRuleModule
 
 
@@ -36,11 +37,8 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
         command = "update rule 'test_lan_100_1' on 'lan_100' set disabled=False"
         self.do_module_test(obj, command=command)
 
-    def test_rule_update_enabled_default(self):
-        """ test updating disabled of a rule to default """
-        obj = dict(name="test_lan_100_1", source="any", destination="any", interface="lan_100", protocol="tcp")
-        command = "update rule 'test_lan_100_1' on 'lan_100' set disabled=False"
-        self.do_module_test(obj, command=command)
+    def test_rule_omitted_enabled(self):
+        self.do_module_test(dict(name="test_lan_100_1", interface="lan_100"), changed=False)
 
     def test_rule_update_floating_interface(self):
         """ test updating interface of a floating rule """
@@ -68,7 +66,8 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
 
     def test_rule_update_floating_remove_quick(self):
         """ test updating quick match of a floating rule """
-        obj = dict(name="test_rule_floating_quick", source="any", destination="any", interface="wan", floating="yes", direction="any", protocol="tcp")
+        obj = dict(name="test_rule_floating_quick", source="any", destination="any", interface="wan",
+                   floating="yes", direction="any", protocol="tcp", quick="no")
         command = "update rule 'test_rule_floating_quick' on 'floating(wan)' set quick=False"
         self.do_module_test(obj, command=command)
 
@@ -156,11 +155,8 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
         command = "update rule 'test_rule_4' on 'lan_100' set tcpflags_any=False"
         self.do_module_test(obj, command=command)
 
-    def test_rule_update_log_default(self):
-        """ test updating log of a rule to default """
-        obj = dict(name="test_rule_2", source="any", destination="any", interface="wan", protocol="tcp")
-        command = "update rule 'test_rule_2' on 'wan' set log=False"
-        self.do_module_test(obj, command=command)
+    def test_rule_omitted_log(self):
+        self.do_module_test(dict(name="test_rule_2", interface="wan"), changed=False)
 
     def test_rule_update_negate_add_source(self):
         """ test updating source of a rule with a not """
@@ -276,13 +272,13 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
 
     def test_rule_update_queue_unset_ack(self):
         """ test updating ackqueue of a rule """
-        obj = dict(name="test_lan_100_2", source="any", destination="any", interface="lan_100", queue="one_queue", protocol="tcp")
+        obj = dict(name="test_lan_100_2", source="any", destination="any", interface="lan_100", queue="one_queue", protocol="tcp", ackqueue="")
         command = "update rule 'test_lan_100_2' on 'lan_100' set ackqueue=none"
         self.do_module_test(obj, command=command)
 
     def test_rule_update_queue_unset(self):
         """ test updating queue of a rule """
-        obj = dict(name="test_lan_100_3", source="any", destination="any", interface="lan_100", protocol="tcp")
+        obj = dict(name="test_lan_100_3", source="any", destination="any", interface="lan_100", protocol="tcp", queue="")
         command = "update rule 'test_lan_100_3' on 'lan_100' set queue=none"
         self.do_module_test(obj, command=command)
 
@@ -300,13 +296,13 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
 
     def test_rule_update_limiter_unset_out(self):
         """ test updating limiter out of a rule """
-        obj = dict(name="test_lan_100_4", source="any", destination="any", interface="lan_100", in_queue="one_limiter", protocol="tcp")
+        obj = dict(name="test_lan_100_4", source="any", destination="any", interface="lan_100", in_queue="one_limiter", protocol="tcp", out_queue="")
         command = "update rule 'test_lan_100_4' on 'lan_100' set out_queue=none"
         self.do_module_test(obj, command=command)
 
     def test_rule_update_limiter_unset(self):
         """ test updating limiter of a rule """
-        obj = dict(name="test_lan_100_5", source="any", destination="any", interface="lan_100", protocol="tcp")
+        obj = dict(name="test_lan_100_5", source="any", destination="any", interface="lan_100", protocol="tcp", in_queue="")
         command = "update rule 'test_lan_100_5' on 'lan_100' set in_queue=none"
         self.do_module_test(obj, command=command)
 
@@ -318,7 +314,7 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
 
     def test_rule_update_gateway_unset(self):
         """ test updating gateway of a rule """
-        obj = dict(name="antilock_out_1", source="any", destination="any:port_ssh", interface="lan", protocol="tcp", log=True)
+        obj = dict(name="antilock_out_1", source="any", destination="any:port_ssh", interface="lan", protocol="tcp", log=True, gateway="default")
         command = "update rule 'antilock_out_1' on 'lan' set gateway=none"
         self.do_module_test(obj, command=command)
 
@@ -354,6 +350,44 @@ class TestPFSenseRuleUpdateModule(TestPFSenseRuleModule):
 
     def test_rule_update_remove_schedule(self):
         """ test updating scheduling of a rule """
-        obj = dict(name="test_rule_sched", source="any", destination="any", interface="lan_100", action="pass", protocol="tcp")
+        obj = dict(name="test_rule_sched", source="any", destination="any", interface="lan_100", action="pass", protocol="tcp", sched="")
         command = "update rule 'test_rule_sched' on 'lan_100' set sched=none"
         self.do_module_test(obj, command=command)
+
+    def test_rule_partial_update_preserves_omitted_settings(self):
+        obj = dict(name="antilock_out_1", interface="lan", disabled=True)
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True, commands=["update rule 'antilock_out_1' on 'lan' set disabled=True"])
+
+        before = result["diff"]["before"]
+        after = result["diff"]["after"]
+        for field in ("action", "ipprotocol", "statetype", "protocol", "gateway", "log", "source", "destination", "destination_port"):
+            self.assertEqual(after[field], before[field])
+
+    def test_rule_omitted_floating_options(self):
+        obj = dict(name="test_rule_floating_quick", interface="wan", floating=True)
+        self.do_module_test(obj, changed=False)
+
+    def test_rule_partial_create_requires_addresses(self):
+        obj = dict(name="new rule", interface="wan", disabled=True)
+        self.do_module_test(obj, failed=True, msg="The following parameters are required when creating a rule: source, destination")
+
+    def test_rule_clear_port_with_any(self):
+        obj = dict(name="test_rule_3", interface="wan", destination_port="any")
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True, commands=["update rule 'test_rule_3' on 'wan' set destination_port=''"])
+        self.assertEqual(result["diff"]["after"]["destination_port"], "")
+        self.assertEqual(result["diff"]["after"]["protocol"], "tcp")
+
+    def test_rule_partial_update_preserves_nondefault_icmp_rule(self):
+        obj = dict(name="block ipv6 ping", interface="wan", action="block", ipprotocol="inet6",
+                   protocol="icmp", icmptype="echoreq", statetype="none", source="any", destination="any")
+        with set_module_args(self.args_from_var(obj)):
+            self.execute_module(changed=True)
+
+        with set_module_args(self.args_from_var(dict(name=obj["name"], interface="wan", log=True))):
+            result = self.changed(changed=True)
+            self.assertEqual(result["commands"], ["update rule 'block ipv6 ping' on 'wan' set log=True"])
+            for field in ("action", "ipprotocol", "protocol", "icmptype", "statetype"):
+                self.assertEqual(result["diff"]["after"][field], obj[field])
+            self.changed(changed=False)

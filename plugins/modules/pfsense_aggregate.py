@@ -326,7 +326,7 @@ options:
         description: Rule to go before, or "bottom"
         type: str
   aggregated_rules:
-    description: Dict of rules to apply on the target
+    description: List of rules to apply. Omitted settings retain their values on existing rules.
     required: False
     type: list
     elements: dict
@@ -334,11 +334,9 @@ options:
       name:
         description: The name the rule
         required: true
-        default: null
         type: str
       action:
-        description: The action of the rule
-        default: pass
+        description: The action of the rule. New rules default to C(pass).
         choices: [ 'pass', 'block', 'match', 'reject' ]
         type: str
       state:
@@ -347,51 +345,46 @@ options:
         choices: [ "present", "absent" ]
         type: str
       disabled:
-        description: Is the rule disabled
-        default: false
+        description: Whether the rule is disabled. New rules are enabled by default.
         type: bool
       interface:
         description: The interface for the rule
         required: true
         type: str
       floating:
-        description: Is the rule floating
+        description: Whether the rule is floating. Omit for interface rules.
         type: bool
       direction:
-        description: Direction floating rule applies to
+        description: Direction the floating rule applies to. Required when creating a floating rule.
         choices: [ "any", "in", "out" ]
         type: str
       ipprotocol:
-        description: The IP protocol
-        default: inet
+        description: The IP protocol. New rules default to C(inet).
         choices: [ "inet", "inet46", "inet6" ]
         type: str
       protocol:
-        description: The protocol
-        default: any
+        description:
+          - The protocol. Set to C(any) to match any protocol, which is the default for new rules.
+          - Switching to a protocol that does not support ports clears existing ports.
         choices: [ 'any', 'tcp', 'udp', 'tcp/udp', 'icmp', 'igmp', 'ospf', 'esp', 'ah', 'gre', 'pim', 'sctp', 'pfsync', 'carp' ]
         type: str
       source:
-        description: The source address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format.
-        default: null
+        description: The source address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format. Required when creating a rule.
         type: str
       source_port:
         description:
           - Source port or port range specification.
           - This can either be a alias or a port number.
-          - An inclusive range can also be specified, using the format C(first-last)..
-        default: null
+          - An inclusive range can also be specified using C(first-last). Set to C(any) to clear the port.
         type: str
       destination:
-        description: The destination address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format.
-        default: null
+        description: The destination address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format. Required when creating a rule.
         type: str
       destination_port:
         description:
           - Destination port or port range specification.
           - This can either be a alias or a port number.
-          - An inclusive range can also be specified, using the format C(first-last)..
-        default: null
+          - An inclusive range can also be specified using C(first-last). Set to C(any) to clear the port.
         type: str
       log:
         description: Log packets matched by rule
@@ -413,51 +406,47 @@ options:
         type: str
         version_added: 0.8.0
       statetype:
-        description: State type
-        default: keep state
+        description: State type. New rules default to C(keep state).
         choices: ["keep state", "sloppy state", "synproxy state", "none"]
         type: str
       queue:
-        description: QOS default queue
+        description: QoS default queue. Set to an empty string to clear.
         type: str
       ackqueue:
-        description: QOS acknowledge queue
+        description: QoS acknowledge queue. Set to an empty string to clear.
         type: str
       in_queue:
-        description: Limiter queue for traffic coming into the chosen interface
+        description: Limiter queue for incoming traffic. Set to an empty string to clear.
         type: str
       out_queue:
-        description: Limiter queue for traffic leaving the chosen interface
+        description: Limiter queue for outgoing traffic. Set to an empty string to clear.
         type: str
       queue_error:
         description: Raise an error if a specified queue is missing
         type: bool
         default: True
       gateway:
-        description: Leave as C(default) to use the system routing table or choose a gateway to utilize policy based routing.
+        description: Set to C(default) to use the system routing table, the default for new rules. Choose a gateway to use policy-based routing.
         type: str
-        default: default
       tracker:
         description: Rule tracking ID. Defaults to timestamp of rule creation.
         type: str
       icmptype:
         description:
           - One or more of these ICMP subtypes may be specified, separated by comma, or C(any) for all of them.
-          - The types must match ip protocol.
+          - The types must match the IP protocol. New ICMP rules default to C(any).
           - althost, dataconv, echorep, echoreq, fqdnrep, fqdnreq, groupqry, grouprep, groupterm, inforep, inforeq, ipv6-here,
           - ipv6-where, listendone, listenrep, listqry, maskrep, maskreq, mobredir, mobregrep, mobregreq, mtrace, mtraceresp,
           - neighbradv, neighbrsol, niqry, nirep, paramprob, photuris, redir, routeradv, routersol, routrrenum, skip, squench,
           - timerep, timereq, timex, toobig, trace, unreach, wrurep, wrureq
-        default: any
         type: str
       sched:
-        description: Schedule day/time when the rule must be active
+        description: Schedule for when the rule is active. Set to an empty string to clear.
         required: False
         type: str
       quick:
-        description: Set this option to apply this action to traffic that matches this rule immediately
+        description: Apply the action of a floating rule immediately. Set to V(false) to clear. New rules default to V(false).
         type: bool
-        default: False
   aggregated_rule_separators:
     description: Dict of rule separators to apply on the target
     required: False
@@ -658,7 +647,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.nat_port_forward i
     NAT_PORT_FORWARD_ARGUMENT_SPEC,
     NAT_PORT_FORWARD_REQUIRED_IF
 )
-from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule, RULE_ARGUMENT_SPEC, RULE_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule, RULE_ARGUMENT_SPEC
 from ansible_collections.pfsensible.core.plugins.module_utils.rule_separator import (
     PFSenseRuleSeparatorModule,
     RULE_SEPARATOR_ARGUMENT_SPEC,
@@ -1168,7 +1157,7 @@ def main():
         aggregated_interfaces=dict(
             type="list", elements="dict",
             options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE),
-        aggregated_rules=dict(type="list", elements="dict", options=RULE_ARGUMENT_SPEC, required_if=RULE_REQUIRED_IF),
+        aggregated_rules=dict(type="list", elements="dict", options=RULE_ARGUMENT_SPEC),
         aggregated_nat_outbounds=dict(type="list", elements="dict", options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUND_REQUIRED_IF),
         aggregated_nat_port_forwards=dict(type="list", elements="dict", options=NAT_PORT_FORWARD_ARGUMENT_SPEC, required_if=NAT_PORT_FORWARD_REQUIRED_IF),
         aggregated_rule_separators=dict(
