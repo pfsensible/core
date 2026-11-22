@@ -1457,6 +1457,9 @@
 	<openvpn></openvpn>
 	<dnshaper></dnshaper>
 <unbound>
+	<python>on</python>
+	<python_order>post_validator</python_order>
+	<python_script>pfb_unbound.py</python_script>
 	<txtsupport></txtsupport>
 	<hideidentity></hideidentity>
 	<prefetchkey></prefetchkey>

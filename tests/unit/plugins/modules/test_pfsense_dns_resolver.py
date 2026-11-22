@@ -78,8 +78,9 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
     def test_dns_resolver_init(self):
         """ test init of the DNS Resolver """
         obj = dict()
-        command_as_list = ["update dns_resolver pfsense_dns_resolver set active_interface='all', "
-                           "outgoing_interface='all', system_domain_local_zone_type='transparent', "
+        command_as_list = ["create dns_resolver pfsense_dns_resolver set enable=True, active_interface='all', "
+                           "outgoing_interface='all', custom_options=True, hideidentity=True, hideversion=True, dnssecstripped=True, "
+                           "system_domain_local_zone_type='transparent', "
                            "msgcachesize='4', outgoing_num_tcp='10', incoming_num_tcp='10', "
                            "edns_buffer_size='auto', num_queries_per_thread='512', jostle_timeout='200', "
                            "cache_max_ttl='86400', cache_min_ttl='0', infra_host_ttl='900', "
@@ -88,6 +89,16 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         command = "".join(command_as_list)
         self.config_file = "pfsense_dns_resolver_config_init.xml"
         self.do_module_test(obj, command=command)
+
+    def test_dns_resolver_init_with_explicit_values(self):
+        """Explicit values take precedence over creation defaults."""
+        self.config_file = "pfsense_dns_resolver_config_init.xml"
+        obj = dict(dnssec=False, outgoing_num_tcp=0)
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True)
+        self.assertNotIn("dnssec", result["diff"]["after"])
+        self.assertEqual(result["diff"]["after"]["outgoing_num_tcp"], "0")
+        self.assertEqual(result["diff"]["after"]["incoming_num_tcp"], "10")
 
     def test_dns_resolver_change(self):
         """ test initialization of the DNS Resolver """
@@ -101,8 +112,34 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
 
     def test_dns_resolver_noop(self):
         """ test noop of the DNS Resolver """
-        obj = dict()
-        self.do_module_test(obj, changed=False)
+        self.config_file = "pfsense_dns_resolver_config.xml"
+        self.do_module_test({}, changed=False)
+
+    def test_dns_resolver_partial_update(self):
+        """Update a flag and a tuning value while preserving package and resolver settings."""
+        self.config_file = "pfsense_dns_resolver_config.xml"
+        obj = dict(forwarding=False, log_verbosity=2)
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True)
+        before = result["diff"]["before"]
+        self.assertEqual(before["python"], "on")
+        self.assertEqual(before["python_order"], "post_validator")
+        self.assertEqual(before["python_script"], "pfb_unbound.py")
+        self.assertTrue(before["custom_options"])
+        expected = dict(before, log_verbosity="2")
+        del expected["forwarding"]
+        self.assertEqual(result["diff"]["after"], expected)
+
+    def test_dns_resolver_explicit_empty_clears_settings(self):
+        """Explicit empty arguments clear options and overrides."""
+        self.config_file = "pfsense_dns_resolver_config.xml"
+        obj = dict(custom_options="", hosts=[], domainoverrides=[])
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True)
+        expected = dict(result["diff"]["before"], custom_options="")
+        del expected["hosts"]
+        del expected["domainoverrides"]
+        self.assertEqual(result["diff"]["after"], expected)
 
     def test_dns_resolver_hosts_reorder_aliases_stay(self):
         """ test that aliases stay with their parent host when hosts are reordered
@@ -191,41 +228,12 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertIsNone(unbound.find("enable"))
 
     def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
-        """ test initialization of the DNS Resolver """
+        """A domain override with TLS disabled omits the nested flag."""
         obj = dict(
             domainoverrides=[dict(domain="test.example.com", descr="A description", forward_tls_upstream=False, ip="10.0.0.3", tls_hostname="")]
         )
-        command_as_list = ["update dns_resolver pfsense_dns_resolver set "]
-        command = "".join(command_as_list)
-        expected_elt_string = """<unbound>
-		<enable></enable>
-		<dnssec></dnssec>
-		<active_interface>all</active_interface>
-		<outgoing_interface>all</outgoing_interface>
-		<custom_options></custom_options>
-		<hideidentity></hideidentity>
-		<hideversion></hideversion>
-		<dnssecstripped></dnssecstripped>
-		<qname-minimisation></qname-minimisation>
-		<system_domain_local_zone_type>transparent</system_domain_local_zone_type>
-		<msgcachesize>4</msgcachesize>
-		<outgoing_num_tcp>10</outgoing_num_tcp>
-		<incoming_num_tcp>10</incoming_num_tcp>
-		<edns_buffer_size>auto</edns_buffer_size>
-		<num_queries_per_thread>512</num_queries_per_thread>
-		<jostle_timeout>200</jostle_timeout>
-		<cache_max_ttl>86400</cache_max_ttl>
-		<cache_min_ttl>0</cache_min_ttl>
-		<infra_host_ttl>900</infra_host_ttl>
-		<infra_cache_numhosts>10000</infra_cache_numhosts>
-		<unwanted_reply_threshold>disabled</unwanted_reply_threshold>
-		<log_verbosity>1</log_verbosity>
-		<domainoverrides>
-			<domain>test.example.com</domain>
-			<descr>A description</descr>
-			<ip>10.0.0.3</ip>
-			<tls_hostname></tls_hostname>
-		</domainoverrides>
-	</unbound>
-	"""  # noqa: E101,W191
-        self.do_module_test(obj, command=command, expected_elt_string=expected_elt_string)
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True)
+        override = dict(obj["domainoverrides"][0])
+        del override["forward_tls_upstream"]
+        self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], domainoverrides=override))

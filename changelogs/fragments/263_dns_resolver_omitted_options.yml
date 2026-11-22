@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_dns_resolver preserves omitted settings in existing resolver configurations,
+    including custom options managed by pfBlockerNG.
+    (https://github.com/pfsensible/core/issues/263)
