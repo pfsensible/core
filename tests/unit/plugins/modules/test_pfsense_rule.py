@@ -123,18 +123,13 @@ class TestPFSenseRuleModule(TestPFSenseModule):
         # checking direction option
         self.check_param_equal_or_not_find(obj, target_elt, "direction")
 
-        # checking default queue option
-        self.check_param_equal_or_not_find(obj, target_elt, "queue", "defaultqueue")
-
-        # checking acknowledge queue option
-        self.check_param_equal_or_not_find(obj, target_elt, "ackqueue")
-
-        # limiters
-        self.check_param_equal_or_not_find(obj, target_elt, "in_queue", "dnpipe")
-        self.check_param_equal_or_not_find(obj, target_elt, "out_queue", "pdnpipe")
-
-        # schedule
-        self.check_param_equal_or_not_find(obj, target_elt, "sched")
+        # Empty values explicitly clear queue, limiter, and schedule settings.
+        for field, xml_field in (("queue", "defaultqueue"), ("ackqueue", "ackqueue"), ("in_queue", "dnpipe"),
+                                 ("out_queue", "pdnpipe"), ("sched", "sched")):
+            if obj.get(field):
+                self.assert_xml_elt_equal(target_elt, xml_field, obj[field])
+            else:
+                self.assert_not_find_xml_elt(target_elt, xml_field)
 
         # checking ipprotocol option
         if "ipprotocol" in obj:

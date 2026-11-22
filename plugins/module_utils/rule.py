@@ -13,14 +13,14 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 RULE_ARGUMENT_SPEC = dict(
     name=dict(required=True, type="str"),
-    action=dict(default="pass", choices=["pass", "block", "match", "reject"]),
+    action=dict(choices=["pass", "block", "match", "reject"]),
     state=dict(default="present", choices=["present", "absent"]),
-    disabled=dict(default=False, required=False, type="bool"),
+    disabled=dict(required=False, type="bool"),
     interface=dict(required=True, type="str"),
     floating=dict(required=False, type="bool"),
     direction=dict(required=False, choices=["any", "in", "out"]),
-    ipprotocol=dict(default="inet", choices=["inet", "inet46", "inet6"]),
-    protocol=dict(default="any", choices=["any", "tcp", "udp", "tcp/udp", "icmp", "igmp", "ospf", "esp", "ah", "gre", "pim", "sctp", "pfsync", "carp"]),
+    ipprotocol=dict(choices=["inet", "inet46", "inet6"]),
+    protocol=dict(choices=["any", "tcp", "udp", "tcp/udp", "icmp", "igmp", "ospf", "esp", "ah", "gre", "pim", "sctp", "pfsync", "carp"]),
     source=dict(required=False, type="str"),
     source_port=dict(required=False, type="str"),
     destination=dict(required=False, type="str"),
@@ -30,30 +30,34 @@ RULE_ARGUMENT_SPEC = dict(
     before=dict(required=False, type="str"),
     tcpflags_any=dict(required=False, type="bool"),
     statepolicy=dict(choices=["", "if-bound", "floating"]),
-    statetype=dict(default="keep state", choices=["keep state", "sloppy state", "synproxy state", "none"]),
+    statetype=dict(choices=["keep state", "sloppy state", "synproxy state", "none"]),
     queue=dict(required=False, type="str"),
     ackqueue=dict(required=False, type="str"),
     in_queue=dict(required=False, type="str"),
     out_queue=dict(required=False, type="str"),
     queue_error=dict(default=True, type="bool"),
-    gateway=dict(default="default", type="str"),
+    gateway=dict(type="str"),
     tracker=dict(required=False, type="str"),
-    icmptype=dict(default="any", required=False, type="str"),
+    icmptype=dict(required=False, type="str"),
     sched=dict(required=False, type="str"),
-    quick=dict(default=False, type="bool"),
+    quick=dict(type="bool"),
 )
 
-RULE_REQUIRED_IF = [
-    ["floating", True, ["direction"]],
-    ["state", "present", ["source", "destination"]],
-    ["protocol", "icmp", ["icmptype"]],
-]
+RULE_DEFAULTS = dict(type="pass", ipprotocol="inet", statetype="keep state")
 
-# These are rule elements that are (currently) unmanaged by this module
-RULE_UNMANAGED_ELEMENTS = [
-    "created", "id", "max", "max-src-conn", "max-src-nodes", "max-src-states", "os",
-    "statetimeout", "statetype", "tag", "tagged", "updated"
-]
+RULE_RESET_VALUES = {
+    "protocol": ("protocol", "any"),
+    "gateway": ("gateway", "default"),
+    "disabled": ("disabled", False),
+    "log": ("log", False),
+    "quick": ("quick", False),
+    "tcpflags_any": ("tcpflags_any", False),
+    "queue": ("defaultqueue", ""),
+    "ackqueue": ("ackqueue", ""),
+    "in_queue": ("dnpipe", ""),
+    "out_queue": ("pdnpipe", ""),
+    "sched": ("sched", ""),
+}
 
 
 class PFSenseRuleModule(PFSenseModuleBase):
@@ -106,47 +110,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         else:
             obj["interface"] = self.pfsense.parse_interface(params["interface"])
 
-        if params["state"] == "present":
-            obj["type"] = params["action"]
-            obj["ipprotocol"] = params["ipprotocol"]
-            obj["statetype"] = params["statetype"]
-
-            obj["source"] = self.pfsense.parse_address(params["source"])
-            if params.get("source_port"):
-                self.pfsense.parse_port(params["source_port"], obj["source"])
-
-            obj["destination"] = self.pfsense.parse_address(params["destination"])
-            if params.get("destination_port"):
-                self.pfsense.parse_port(params["destination_port"], obj["destination"])
-
-            if params["protocol"] not in ["tcp", "udp", "tcp/udp", "any"] and ("port" in obj["source"] or "port" in obj["destination"]):
-                self.module.fail_json(msg="{0}: you can't use ports on protocols other than tcp, udp, tcp/udp or any".format(self._get_obj_name()))
-
-            for param in ["destination", "source"]:
-                if "address" in obj[param]:
-                    self.pfsense.check_ip_address(obj[param]["address"], obj["ipprotocol"], "rule")
-                if "network" in obj[param]:
-                    self.pfsense.check_ip_address(obj[param]["network"], obj["ipprotocol"], "rule", allow_networks=True)
-
-            self._get_ansible_param(obj, "protocol", exclude="any")
-            if params["protocol"] == "icmp":
-                self._get_ansible_param(obj, "icmptype")
-            self._get_ansible_param(obj, "direction")
-            self._get_ansible_param(obj, "queue", fname="defaultqueue")
-            if params.get("ackqueue"):
-                self._get_ansible_param(obj, "ackqueue")
-            self._get_ansible_param(obj, "in_queue", fname="dnpipe")
-            self._get_ansible_param(obj, "out_queue", fname="pdnpipe")
-            self._get_ansible_param(obj, "associated-rule-id")
-            self._get_ansible_param(obj, "tracker", exclude="")
-            self._get_ansible_param(obj, "gateway", exclude="default")
-            self._get_ansible_param(obj, "sched")
-            self._get_ansible_param(obj, "statepolicy")
-
-            self._get_ansible_param_bool(obj, "disabled", value="")
-            self._get_ansible_param_bool(obj, "log", value="")
-            self._get_ansible_param_bool(obj, "quick")
-            self._get_ansible_param_bool(obj, "tcpflags_any", value="")
+        self._get_ansible_param(obj, "associated-rule-id")
 
         self._floating = "floating" in self.obj and self.obj["floating"] == "yes"
         self._after = params.get("after")
@@ -165,98 +129,157 @@ class PFSenseRuleModule(PFSenseModuleBase):
         self._floating_interfaces = interfaces
         return ",".join(res)
 
-    def _validate_params(self):
-        """ do some extra checks on input parameters """
+    def _configure_rule(self):
+        """ Build the requested changes and validate them against the resulting rule. """
         params = self.params
+        obj = self.obj
+        current = self.pfsense.element_to_dict(self.target_elt) if self.target_elt is not None else {}
+        if self.target_elt is None:
+            missing = [field for field in ("source", "destination") if params.get(field) is None]
+            if self._floating and params.get("direction") is None:
+                missing.append("direction")
+            if missing:
+                self.module.fail_json(msg="The following parameters are required when creating a rule: " + ", ".join(missing))
+            obj.update(RULE_DEFAULTS)
 
-        if params.get("ackqueue") and params["queue"] is None:
-            self.module.fail_json(msg="A default queue must be selected when an acknowledge queue is also selected")
+        for field, xml_field in (("action", "type"), ("ipprotocol", "ipprotocol"), ("statetype", "statetype"),
+                                 ("direction", "direction"), ("statepolicy", "statepolicy")):
+            self._get_ansible_param(obj, field, fname=xml_field)
+        self._get_ansible_param(obj, "tracker", exclude="")
 
-        if params.get("ackqueue") and params["ackqueue"] == params["queue"]:
-            self.module.fail_json(msg="Acknowledge queue and default queue cannot be the same")
+        for field, (xml_field, reset) in RULE_RESET_VALUES.items():
+            if params.get(field) is None or params[field] == reset:
+                continue
+            if isinstance(reset, bool):
+                self._get_ansible_param_bool(obj, field, value="yes" if field == "quick" else "")
+            else:
+                self._get_ansible_param(obj, field, fname=xml_field)
 
-        # as in pfSense 2.4, the GUI accepts any queue defined on any interface without checking, we do the same
-        if params.get("ackqueue") and self.pfsense.find_queue(params["ackqueue"], enabled=True) is None and params["queue_error"]:
-            self.module.fail_json(msg="Failed to find enabled ackqueue=%s" % params["ackqueue"])
+        effective = current.copy()
+        effective.update(obj)
+        for field in self._get_params_to_remove():
+            effective.pop(field, None)
 
-        if params.get("queue") is not None and self.pfsense.find_queue(params["queue"], enabled=True) is None and params["queue_error"]:
-            self.module.fail_json(msg="Failed to find enabled queue=%s" % params["queue"])
+        ipprotocol = effective.get("ipprotocol") or RULE_DEFAULTS["ipprotocol"]
+        protocol = effective.get("protocol") or "any"
+        allows_ports = protocol in ("tcp", "udp", "tcp/udp", "any")
+        protocol_changed = protocol != (current.get("protocol") or "any")
+        for field in ("source", "destination"):
+            address = params.get(field)
+            port = params.get(field + "_port")
+            previous = current.get(field, {})
+            parsed = self.pfsense.parse_address(address) if address is not None else previous.copy()
+            inline_port = address is not None and "port" in parsed
+            if port in ("", "any"):
+                parsed.pop("port", None)
+            elif port is not None:
+                self.pfsense.parse_port(port, parsed)
+            elif address is not None and "port" not in parsed and "port" in previous:
+                parsed["port"] = previous["port"]
 
-        if params.get("out_queue") is not None and params["in_queue"] is None:
-            self.module.fail_json(msg="A queue must be selected for the In direction before selecting one for Out too")
+            if not allows_ports and "port" in parsed:
+                if port is not None or inline_port:
+                    self.module.fail_json(msg="{0}: you can't use ports on protocols other than tcp, udp, tcp/udp or any".format(self._get_obj_name()))
+                if protocol_changed:
+                    parsed.pop("port")
+            if parsed != previous:
+                obj[field] = parsed
 
-        if params.get("out_queue") is not None and params["out_queue"] == params["in_queue"]:
-            self.module.fail_json(msg="In and Out Queue cannot be the same")
+            if address is not None or params.get("ipprotocol") is not None:
+                self.pfsense.check_ip_address(parsed.get("address"), ipprotocol, "rule")
+                self.pfsense.check_ip_address(parsed.get("network"), ipprotocol, "rule", allow_networks=True)
 
-        if params.get("out_queue") is not None and self.pfsense.find_limiter(params["out_queue"], enabled=True) is None:
-            self.module.fail_json(msg="Failed to find enabled out_queue=%s" % params["out_queue"])
+        if protocol == "icmp":
+            if params.get("icmptype") is not None:
+                obj["icmptype"] = self._parse_icmptype(params["icmptype"], ipprotocol)
+            elif current.get("protocol") != "icmp":
+                obj["icmptype"] = "any"
+            elif params.get("ipprotocol") is not None and current.get("icmptype"):
+                self._parse_icmptype(current["icmptype"], ipprotocol)
 
-        if params.get("in_queue") is not None and self.pfsense.find_limiter(params["in_queue"], enabled=True) is None:
-            self.module.fail_json(msg="Failed to find enabled in_queue=%s" % params["in_queue"])
+        self._validate_rule_options(effective, ipprotocol)
 
-        if params.get("floating") and params.get("direction") == "any" and (params["in_queue"] is not None or params["out_queue"] is not None):
-            self.module.fail_json(msg="Limiters can not be used in Floating rules without choosing a direction")
-
+    def _validate_params(self):
+        """ Check positioning arguments before looking up the rule. """
+        params = self.params
         if params.get("after") and params.get("before"):
             self.module.fail_json(msg="Cannot specify both after and before")
-        elif params.get("after"):
-            if params["after"] == params["name"]:
-                self.module.fail_json(msg="Cannot specify the current rule in after")
-        elif params.get("before"):
-            if params["before"] == params["name"]:
-                self.module.fail_json(msg="Cannot specify the current rule in before")
+        elif params.get("after") and params["after"] == params["name"]:
+            self.module.fail_json(msg="Cannot specify the current rule in after")
+        elif params.get("before") and params["before"] == params["name"]:
+            self.module.fail_json(msg="Cannot specify the current rule in before")
 
-        # gateway
-        if params.get("gateway") is not None and params["gateway"] != "default":
-            if params["ipprotocol"] == "inet46":
+    def _validate_rule_options(self, effective, ipprotocol):
+        params = self.params
+        if params.get("queue") is not None or params.get("ackqueue") is not None:
+            queue, ackqueue = effective.get("defaultqueue"), effective.get("ackqueue")
+            if ackqueue and not queue:
+                self.module.fail_json(msg="A default queue must be selected when an acknowledge queue is also selected")
+            if ackqueue and ackqueue == queue:
+                self.module.fail_json(msg="Acknowledge queue and default queue cannot be the same")
+            if params.get("queue_error", True):
+                for field in ("ackqueue", "queue"):
+                    if params.get(field) and self.pfsense.find_queue(params[field], enabled=True) is None:
+                        self.module.fail_json(msg="Failed to find enabled %s=%s" % (field, params[field]))
+
+        if any(params.get(field) is not None for field in ("in_queue", "out_queue", "direction")):
+            in_queue, out_queue = effective.get("dnpipe"), effective.get("pdnpipe")
+            if out_queue and not in_queue:
+                self.module.fail_json(msg="A queue must be selected for the In direction before selecting one for Out too")
+            if out_queue and out_queue == in_queue:
+                self.module.fail_json(msg="In and Out Queue cannot be the same")
+            for field in ("out_queue", "in_queue"):
+                if params.get(field) and self.pfsense.find_limiter(params[field], enabled=True) is None:
+                    self.module.fail_json(msg="Failed to find enabled %s=%s" % (field, params[field]))
+            if self._floating and effective.get("direction") == "any" and (in_queue or out_queue):
+                self.module.fail_json(msg="Limiters can not be used in Floating rules without choosing a direction")
+
+        if any(params.get(field) is not None for field in ("gateway", "ipprotocol", "direction")) and effective.get("gateway"):
+            gateway = effective["gateway"]
+            if ipprotocol == "inet46":
                 self.module.fail_json(msg='Gateway selection is not valid for "IPV4+IPV6" address family.')
-            elif (self.pfsense.find_gateway_group_elt(params["gateway"], params["ipprotocol"]) is None
-                  and self.pfsense.find_gateway_elt(params["gateway"], None, params["ipprotocol"]) is None):
-                self.module.fail_json(msg='Gateway "%s" does not exist or does not match target rule ip protocol.' % params["gateway"])
-
-            if params.get("floating") and params.get("direction") == "any":
+            if (self.pfsense.find_gateway_group_elt(gateway, ipprotocol) is None
+                    and self.pfsense.find_gateway_elt(gateway, None, ipprotocol) is None):
+                self.module.fail_json(msg='Gateway "%s" does not exist or does not match target rule ip protocol.' % gateway)
+            if self._floating and effective.get("direction") == "any":
                 self.module.fail_json(msg="Gateways can not be used in Floating rules without choosing a direction")
 
-        # tracker
-        if params.get("tracker") is not None and int(params["tracker"]) < 0:
+        if params.get("tracker") and int(params["tracker"]) < 0:
             self.module.fail_json(msg="tracker {0} must be a positive integer".format(params["tracker"]))
 
-        # sched
-        if params.get("sched") is not None and self.pfsense.find_schedule_elt(params["sched"]) is None:
+        if params.get("sched") and self.pfsense.find_schedule_elt(params["sched"]) is None:
             self.module.fail_json(msg="Schedule {0} does not exist".format(params["sched"]))
 
-        # quick
-        if params.get("quick") and not params.get("floating"):
+        if params.get("quick") and not self._floating:
             self.module.fail_json(msg="quick can only be used on floating rules")
 
-        # ICMP
-        if params.get("protocol") == "icmp" and params.get("icmptype") is not None:
-            both_types = ["any", "echorep", "echoreq", "paramprob", "redir", "routeradv", "routersol", "timex", "unreach"]
-            v4_types = ["althost", "dataconv", "inforep", "inforeq", "ipv6-here", "ipv6-where", "maskrep", "maskreq", "mobredir", "mobregrep", "mobregreq"]
-            v4_types += ["photuris", "skip", "squench", "timerep", "timereq", "trace"]
-            v6_types = ["fqdnrep", "fqdnreq", "groupqry", "grouprep", "groupterm", "listendone", "listenrep", "listqry", "mtrace", "mtraceresp", "neighbradv"]
-            v6_types += ["neighbrsol", "niqry", "nirep", "routrrenum", "toobig", "wrurep", "wrureq"]
+    def _parse_icmptype(self, value, ipprotocol):
+        both_types = ["any", "echorep", "echoreq", "paramprob", "redir", "routeradv", "routersol", "timex", "unreach"]
+        v4_types = ["althost", "dataconv", "inforep", "inforeq", "ipv6-here", "ipv6-where", "maskrep", "maskreq", "mobredir", "mobregrep", "mobregreq"]
+        v4_types += ["photuris", "skip", "squench", "timerep", "timereq", "trace"]
+        v6_types = ["fqdnrep", "fqdnreq", "groupqry", "grouprep", "groupterm", "listendone", "listenrep", "listqry", "mtrace", "mtraceresp", "neighbradv"]
+        v6_types += ["neighbrsol", "niqry", "nirep", "routrrenum", "toobig", "wrurep", "wrureq"]
 
-            icmptypes = list(set(map(str.strip, params["icmptype"].split(","))))
-            icmptypes.sort()
-            if "" in icmptypes:
-                icmptypes.remove("")
-            if len(icmptypes) == 0:
-                self.module.fail_json(msg="You must specify at least one icmptype or any for all of them")
+        icmptypes = list(set(map(str.strip, value.split(","))))
+        icmptypes.sort()
+        if "" in icmptypes:
+            icmptypes.remove("")
+        if len(icmptypes) == 0:
+            self.module.fail_json(msg="You must specify at least one icmptype or any for all of them")
 
-            invalids = set(icmptypes) - set(v4_types) - set(v6_types) - set(both_types)
-            if len(invalids) > 0:
-                self.module.fail_json(msg="ICMP types {0} does not exist".format(",".join(invalids)))
+        invalids = set(icmptypes) - set(v4_types) - set(v6_types) - set(both_types)
+        if len(invalids) > 0:
+            self.module.fail_json(msg="ICMP types {0} does not exist".format(",".join(invalids)))
 
-            if params["ipprotocol"] == "inet":
-                left = set(icmptypes) - set(v4_types) - set(both_types)
-            elif params["ipprotocol"] == "inet6":
-                left = set(icmptypes) - set(v6_types) - set(both_types)
-            else:   # inet46 only allow
-                left = set(icmptypes) - set(both_types)
-            if len(left) > 0:
-                self.module.fail_json(msg="ICMP types {0} are invalid with IP type {1}".format(",".join(left), params["ipprotocol"]))
-            params["icmptype"] = ",".join(icmptypes)
+        if ipprotocol == "inet":
+            left = set(icmptypes) - set(v4_types) - set(both_types)
+        elif ipprotocol == "inet6":
+            left = set(icmptypes) - set(v6_types) - set(both_types)
+        else:   # inet46 only allow
+            left = set(icmptypes) - set(both_types)
+        if len(left) > 0:
+            self.module.fail_json(msg="ICMP types {0} are invalid with IP type {1}".format(",".join(left), ipprotocol))
+        return ",".join(icmptypes)
 
     ##############################
     # XML processing
@@ -348,6 +371,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
             self.module.fail_json(msg="Target filter rule is associated with a NAT rule.")
 
         self.diff["before"] = before
+        self.diff["after"] = {}
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         if self._remove_deleted_params():
             changed = True
@@ -365,41 +389,15 @@ class PFSenseRuleModule(PFSenseModuleBase):
             else:
                 updated_elt.find("time").text = timestamp
                 updated_elt.find("username").text = self.pfsense.get_username()
-            self.diff["after"].update(self._rule_element_to_dict())
-            self.result["modified"].append(self._rule_element_to_dict())
+            after = self._rule_element_to_dict()
+            self.diff["after"].update(after)
+            self.result["modified"].append(after)
 
         return (before, changed)
 
     def _create_target(self):
         """ create the XML target_elt """
         return self.pfsense.new_element("rule")
-
-    def _find_matching_rule(self):
-        """ return rule element and index that matches by description or action """
-        # Prioritize matching my name
-        if "associated-rule-id" in self.obj:
-            found, i = self._find_rule(self.obj["associated-rule-id"], "associated-rule-id")
-            if found is not None:
-                return (found, i)
-
-        found, i = self._find_rule(self.obj["descr"])
-        if found is not None:
-            return (found, i)
-
-        # Match action without name/descr
-        match_rule = self.obj.copy()
-        del match_rule["descr"]
-        for rule_elt in self.root_elt:
-            this_rule = self.pfsense.element_to_dict(rule_elt)
-            this_rule.pop("descr", None)
-            # Remove unmanaged elements
-            for unwanted in RULE_UNMANAGED_ELEMENTS:
-                this_rule.pop(unwanted, None)
-            if this_rule == match_rule:
-                return (rule_elt, i)
-            i += 1
-
-        return (None, -1)
 
     def _find_rule(self, value, field="descr"):
         """ return rule element and index on interface/floating that matches criteria """
@@ -413,7 +411,11 @@ class PFSenseRuleModule(PFSenseModuleBase):
 
     def _find_target(self):
         """ find the XML target_elt """
-        rule_elt, dummy = self._find_matching_rule()
+        rule_elt = None
+        if "associated-rule-id" in self.obj:
+            rule_elt, dummy = self._find_rule(self.obj["associated-rule-id"], "associated-rule-id")
+        if rule_elt is None:
+            rule_elt, dummy = self._find_rule(self.obj["descr"])
         if rule_elt is not None and self._floating:
             ifs_elt = rule_elt.find("interface")
             self._floating_interfaces = ",".join([self.pfsense.get_interface_display_name(interface) for interface in ifs_elt.text.split(",")])
@@ -502,10 +504,12 @@ class PFSenseRuleModule(PFSenseModuleBase):
             i += 1
         return None
 
-    @staticmethod
-    def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
-        return ["log", "protocol", "disabled", "defaultqueue", "ackqueue", "dnpipe", "pdnpipe", "gateway", "icmptype", "sched", "quick", "tcpflags_any"]
+    def _get_params_to_remove(self):
+        """ Return XML fields explicitly reset by the caller. """
+        fields = [xml_field for field, (xml_field, reset) in RULE_RESET_VALUES.items() if self.params.get(field) == reset]
+        if self.params.get("protocol") not in (None, "icmp"):
+            fields.append("icmptype")
+        return fields
 
     def _get_rule_position(self, descr=None, fail=True, first=True):
         """ get rule position in interface/floating """
@@ -548,6 +552,10 @@ class PFSenseRuleModule(PFSenseModuleBase):
     ##############################
     # run
     #
+    def _add(self):
+        self._configure_rule()
+        super(PFSenseRuleModule, self)._add()
+
     def _pre_remove_target_elt(self):
         """ processing before removing elt """
         self._adjust_separators(self._get_rule_position(), add=False)
@@ -594,7 +602,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "source")
-            values += self.format_cli_field(self.params, "source_port")
+            values += self.format_cli_field(self.params, "source_port", default="")
             values += self.format_cli_field(self.params, "destination")
             values += self.format_cli_field(self.params, "destination_port")
             values += self.format_cli_field(self.params, "protocol", default="any")
@@ -619,7 +627,8 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
             values += self.format_cli_field(self.params, "quick", fvalue=self.fvalue_bool, default=False)
         else:
             fbefore = self._obj_to_log_fields(before)
-            fafter = self._obj_to_log_fields(self.obj)
+            after = self.diff["after"]
+            fafter = self._obj_to_log_fields(after)
             fafter["before"] = self._before
             fafter["after"] = self._after
 
@@ -627,29 +636,29 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
             values += self.format_updated_cli_field(fafter, fbefore, "source_port", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "destination", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "destination_port", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "protocol", none_value="'any'", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "icmptype", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "protocol", none_value="'any'", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "icmptype", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "interface", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "floating", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "direction", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "ipprotocol", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "tcpflags_any", fvalue=self.fvalue_bool, add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "statepolicy", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "statetype", add_comma=(values))
-            values += self.format_updated_cli_field(self.params, before, "action", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "disabled", fvalue=self.fvalue_bool, add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "log", fvalue=self.fvalue_bool, add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "floating", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "direction", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "ipprotocol", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "tcpflags_any", fvalue=self.fvalue_bool, add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "statepolicy", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "statetype", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "action", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "disabled", fvalue=self.fvalue_bool, add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "log", fvalue=self.fvalue_bool, add_comma=(values))
             if self._position_changed:
                 values += self.format_updated_cli_field(fafter, {}, "after", log_none=False, add_comma=(values))
                 values += self.format_updated_cli_field(fafter, {}, "before", log_none=False, add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "defaultqueue", fname="queue", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "ackqueue", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "dnpipe", fname="in_queue", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "pdnpipe", fname="out_queue", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "gateway", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "tracker", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "sched", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "quick", fvalue=self.fvalue_bool, add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "defaultqueue", fname="queue", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "ackqueue", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "dnpipe", fname="in_queue", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "pdnpipe", fname="out_queue", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "gateway", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "tracker", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "sched", add_comma=(values))
+            values += self.format_updated_cli_field(after, before, "quick", fvalue=self.fvalue_bool, add_comma=(values))
         return values
 
     def _obj_address_to_log_field(self, rule, addr):

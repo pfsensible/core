@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_rule - unspecified parameters do not result in items being reset to default values (https://github.com/pfsensible/core/pull/308).
