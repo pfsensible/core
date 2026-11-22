@@ -1134,6 +1134,7 @@ class PFSenseModuleAggregate(object):
 
     def commit_changes(self):
         """ apply changes and exit module """
+        self.pfsense_aliases.validate_removals()
         stdout = ""
         stderr = ""
         changed = (

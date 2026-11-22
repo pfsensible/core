@@ -1384,6 +1384,27 @@
 			<name>acme_corp</name>
 			<detail></detail>
 			</alias>
+		<alias>
+			<detail></detail>
+			<type>host</type>
+			<name>unused_host</name>
+			<descr></descr>
+			<address>192.0.2.10</address>
+			</alias>
+		<alias>
+			<detail></detail>
+			<type>port</type>
+			<name>unused_port</name>
+			<descr></descr>
+			<address>8443</address>
+			</alias>
+		<alias>
+			<detail></detail>
+			<type>network</type>
+			<name>unused_network</name>
+			<descr></descr>
+			<address>198.51.100.0/24</address>
+			</alias>
 		</aliases>
 	<proxyarp></proxyarp>
 	<cron>

@@ -89,6 +89,45 @@ class AliasTests(unittest.TestCase):
             self.alias.commit_changes()
         return result.exception.result
 
+    def test_reject_removal_from_alias_reference_fields(self):
+        """Reject alias deletion before writing when supported fields still reference it."""
+        references = (
+            ("filter/rule", "source/port", "1000-test_alias"),
+            ("nat/rule", "target", "test_alias"),
+            ("nat/onetoone", "destination/address", "test_alias"),
+            ("nat/outbound/rule", "source/address", "test_alias"),
+            ("nat/outbound/rule", "dstport", "test_alias:2000"),
+            ("aliases/alias", "address", "192.0.2.10 test_alias 192.0.2.20"),
+            ("staticroutes/route", "network", "test_alias"),
+            ("openvpn/openvpn-client", "remote_network", "192.0.2.0/24, test_alias"),
+        )
+        for section, field, value in references:
+            with self.subTest(section=section, field=field):
+                self.helper.root = ET.fromstring("<pfsense><aliases/><interfaces/></pfsense>")
+                self.helper.aliases = self.helper.root.find("aliases")
+                self.alias = alias.PFSenseAliasModule(self.module, self.helper)
+                self.alias.run(self.params(name="test_alias", type="port" if "port" in field else "host",
+                                           url=None, address="1024" if "port" in field else "192.0.2.1", updatefreq=None))
+                self.alias.run(self.params(name="test_alias", state="absent"))
+                entry = self.helper.root
+                for tag in section.split("/") + field.split("/"):
+                    existing = entry.find(tag)
+                    entry = ET.SubElement(entry, tag) if existing is None else existing
+                entry.text = value
+
+                with self.assertRaises(ModuleFailure) as failure:
+                    self.commit()
+                self.assertIn(f"Alias 'test_alias' is in use by {section}", failure.exception.result["msg"])
+                self.assertEqual(self.events, [])
+
+    def test_alias_removal_ignores_similar_names_and_descriptions(self):
+        """Allow deletion when only a similar alias name or description matches."""
+        self.alias.run(self.params(name="test_host", type="host", address="192.0.2.1", url=None, updatefreq=None))
+        self.alias.run(self.params(name="other_hosts", type="host", address="test_host_extra", descr="test_host", url=None, updatefreq=None))
+        self.alias.run(self.params(name="test_host", state="absent"))
+        self.assertTrue(self.commit()["changed"])
+        self.assertEqual(self.events, ["write", "reload"])
+
     def test_urltable_creation_stores_both_url_and_address(self):
         for kind in ("urltable", "urltable_ports"):
             with self.subTest(kind=kind):

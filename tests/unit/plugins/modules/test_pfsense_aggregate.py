@@ -148,7 +148,7 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name="another_host", type="host", address="10.9.8.6"),
                 dict(name="one_server", type="host", address="192.168.1.165", descr="", detail=""),
                 dict(name="port_ssh", type="port", address="2222"),
-                dict(name="port_http", state="absent"),
+                dict(name="port_dns", state="absent"),
             ]
         )
         with set_module_args(args):
@@ -157,15 +157,15 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
             result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
             result_aliases.append("update alias 'port_ssh' set address='2222'")
-            result_aliases.append("delete alias 'port_http'")
+            result_aliases.append("delete alias 'port_dns'")
 
             self.assertEqual(result["result_aliases"], result_aliases)
             self.assert_find_alias("one_host")
             self.assert_find_alias("another_host")
             self.assert_find_alias("one_server")
             self.assert_find_alias("port_ssh")
-            self.assert_not_find_alias("port_http")
-            self.assert_find_alias("port_dns")
+            self.assert_find_alias("port_http")
+            self.assert_not_find_alias("port_dns")
 
     def test_aggregate_aliases_checkmode(self):
         """ test creation of a some aliases with check_mode """
@@ -176,7 +176,7 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
                 dict(name="another_host", type="host", address="10.9.8.6"),
                 dict(name="one_server", type="host", address="192.168.1.165", descr="", detail=""),
                 dict(name="port_ssh", type="port", address="2222"),
-                dict(name="port_http", state="absent"),
+                dict(name="port_dns", state="absent"),
             ],
             _ansible_check_mode=True,
         )
@@ -186,7 +186,7 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
             result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
             result_aliases.append("update alias 'port_ssh' set address='2222'")
-            result_aliases.append("delete alias 'port_http'")
+            result_aliases.append("delete alias 'port_dns'")
 
             self.assertEqual(result["result_aliases"], result_aliases)
             self.assertFalse(self.load_xml_result())
@@ -196,12 +196,12 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
         args = dict(
             purge_aliases=True,
             purge_rules=False,
+            ignored_aliases=["port_http"],
             aggregated_aliases=[
                 dict(name="one_host", type="host", address="10.9.8.7"),
                 dict(name="another_host", type="host", address="10.9.8.6"),
                 dict(name="one_server", type="host", address="192.168.1.165", descr="", detail=""),
                 dict(name="port_ssh", type="port", address="2222"),
-                dict(name="port_http", state="absent"),
             ]
         )
         with set_module_args(args):
@@ -210,7 +210,6 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             result_aliases.append("create alias 'one_host', type='host', address='10.9.8.7'")
             result_aliases.append("create alias 'another_host', type='host', address='10.9.8.6'")
             result_aliases.append("update alias 'port_ssh' set address='2222'")
-            result_aliases.append("delete alias 'port_http'")
             result_aliases.append("delete alias 'port_dns'")
 
             self.assertEqual(result["result_aliases"], result_aliases)
@@ -218,8 +217,29 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             self.assert_find_alias("another_host")
             self.assert_find_alias("one_server")
             self.assert_find_alias("port_ssh")
-            self.assert_not_find_alias("port_http")
+            self.assert_find_alias("port_http")
             self.assert_not_find_alias("port_dns")
+
+    def test_aggregate_purge_rejects_alias_in_use(self):
+        """ test that an alias purge fails when a firewall rule still uses the alias """
+        with set_module_args(dict(aggregated_aliases=[], purge_aliases=True, ignored_aliases=["port_ssh"])):
+            self.execute_module(failed=True, msg="Alias 'port_http' is in use by filter/rule 'any2any_http' (destination/port).")
+            self.assertFalse(self.load_xml_result())
+
+    def test_aggregate_removes_alias_with_its_references(self):
+        """ test removal of an alias while deleting or updating the rules that use it """
+        args = dict(
+            aggregated_aliases=[dict(name="port_http", state="absent")],
+            aggregated_rules=[
+                dict(name="any2any_http", state="absent", interface="lan"),
+                dict(name="any2any_http", source="any", destination="any", destination_port="8080", interface="vpn", protocol="tcp"),
+            ],
+        )
+        with set_module_args(args):
+            self.execute_module(changed=True)
+            self.assert_not_find_alias("port_http")
+            self.assert_not_find_rule("any2any_http", "lan")
+            self.assert_find_rule("any2any_http", "opt1")
 
     def test_aggregate_rules(self):
         """ test creation of a some rules """
