@@ -19,7 +19,9 @@ NAT_PORT_FORWARD_ARGUMENT_SPEC = dict(
     ipprotocol=dict(default="inet", choices=["inet", "inet6"]),
     protocol=dict(default="tcp", required=False, choices=["tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "pim", "ospf"]),
     source=dict(required=False, type="str"),
+    source_port=dict(required=False, type="str"),
     destination=dict(required=False, type="str"),
+    destination_port=dict(required=False, type="str"),
     target=dict(required=False, type="str"),
     natreflection=dict(default="system-default", choices=["system-default", "enable", "purenat", "disable"]),
     associated_rule=dict(default="associated", required=False, choices=["associated", "unassociated", "pass", "none"]),
@@ -31,6 +33,8 @@ NAT_PORT_FORWARD_ARGUMENT_SPEC = dict(
 NAT_PORT_FORWARD_REQUIRED_IF = [
     ["state", "present", ["interface", "source", "destination", "target"]]
 ]
+
+PORT_PROTOCOLS = ("tcp", "udp", "tcp/udp")
 
 
 class PFSenseNatPortForwardModule(PFSenseModuleBase):
@@ -103,6 +107,12 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
 
             obj["source"] = self.pfsense.parse_address(self.params["source"], allow_self=False)
             obj["destination"] = self.pfsense.parse_address(self.params["destination"])
+            for address in ("source", "destination"):
+                port = self.params.get(address + "_port")
+                if port is not None:
+                    if self.params["protocol"] not in PORT_PROTOCOLS:
+                        self.module.fail_json(msg=f'Cannot specify {address}_port with protocol "{self.params["protocol"]}".')
+                    self.pfsense.parse_port(port, obj[address])
             self._parse_target_address(obj)
 
         return obj
@@ -127,14 +137,14 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
             self.module.fail_json(msg='"%s" is not a valid redirect target IP address or host alias.' % (param))
 
         if ports is None:
-            if self.params["protocol"] in ["tcp", "udp", "tcp/udp"]:
+            if self.params["protocol"] in PORT_PROTOCOLS:
                 self.module.fail_json(msg='Must specify a target port with protocol "{0}".'.format(self.params["protocol"]))
             else:
                 # pfSense seems to always add an empty local-port element
                 obj["local-port"] = ""
 
         if ports is not None:
-            if self.params["protocol"] not in ["tcp", "udp", "tcp/udp"]:
+            if self.params["protocol"] not in PORT_PROTOCOLS:
                 self.module.fail_json(msg='Cannot specify a target port with protocol "{0}".'.format(self.params["protocol"]))
             elif self.pfsense.is_port_or_alias(ports):
                 obj["local-port"] = ports
@@ -166,6 +176,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         params["statetype"] = "keep state"
         params["interface"] = self.params["interface"]
         params["source"] = self.params["source"]
+        params["source_port"] = self.params.get("source_port")
         params["destination"] = self.params["target"]
         params["disabled"] = self.params["disabled"]
         params["protocol"] = self.params["protocol"]
@@ -213,12 +224,10 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         target_elt = self.pfsense.new_element("rule")
         return target_elt
 
-    def _delete_associated_rule(self, ruleid, interface=None):
+    def _delete_associated_rule(self, ruleid, interface):
         if ruleid is None or ruleid == "" or ruleid == "pass":
             return
 
-        if interface is None:
-            interface = self.params["interface"]
         self.pfsense_rule_module = PFSenseRuleModule(self.module, self.pfsense)
         params = dict()
         if self.params["descr"] is None:
@@ -320,7 +329,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         """ processing before removing elt """
         ruleid_elt = self.target_elt.find("associated-rule-id")
         if ruleid_elt is not None:
-            self._delete_associated_rule(ruleid_elt.text)
+            self._delete_associated_rule(ruleid_elt.text, self.target_elt.findtext("interface"))
 
     def _set_associated_rule(self, before=None):
         """ manage changes to the associated rule """
@@ -415,7 +424,6 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
         values = ""
-        fafter = self._obj_to_log_fields(self.obj)
         if before is None:
             values += self.format_cli_field(self.params, "disabled", fvalue=self.fvalue_bool, default=False)
             values += self.format_cli_field(self.params, "nordr", fvalue=self.fvalue_bool, default=False)
@@ -424,7 +432,9 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
                 values += self.format_cli_field(self.params, "ipprotocol", default="inet")
             values += self.format_cli_field(self.params, "protocol", default="tcp")
             values += self.format_cli_field(self.params, "source")
+            values += self.format_cli_field(self.params, "source_port")
             values += self.format_cli_field(self.params, "destination")
+            values += self.format_cli_field(self.params, "destination_port")
             values += self.format_cli_field(self.params, "target")
             values += self.format_cli_field(self.params, "natreflection", default="system-default")
             values += self.format_cli_field(self.params, "associated_rule", default="associated")
@@ -433,6 +443,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_cli_field(self.params, "before")
         else:
             fbefore = self._obj_to_log_fields(before)
+            fafter = self._obj_to_log_fields(self.obj)
             fafter["before"] = self.before
             fafter["after"] = self.after
 
@@ -443,7 +454,9 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
                 values += self.format_updated_cli_field(self.obj, before, "ipprotocol", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "protocol", fvalue=self.fprotocol, add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "source", add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, "source_port", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "destination", add_comma=(values))
+            values += self.format_updated_cli_field(fafter, fbefore, "destination_port", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "target", add_comma=(values))
             values += self.format_updated_cli_field(
                 self.obj, before, "natreflection", fvalue=self.fnatreflection, default="system-default", add_comma=(values)
@@ -456,28 +469,36 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
 
         return values
 
-    @staticmethod
-    def _obj_address_to_log_field(rule, addr):
+    def _obj_address_to_log_field(self, address, include_port):
         """ return formated address from dict """
-        field = ""
-        if isinstance(rule[addr], dict):
-            if "any" in rule[addr]:
-                field = "any"
-            if "address" in rule[addr]:
-                field = rule[addr]["address"]
-            if "port" in rule[addr]:
-                if field:
-                    field += ":"
-                field += rule[addr]["port"]
-        else:
-            field = rule[addr]
+        if not isinstance(address, dict):
+            return address
+
+        field = "!" if "not" in address else ""
+        if "any" in address:
+            field += "any"
+        elif "address" in address:
+            field += address["address"]
+        elif "network" in address:
+            network = address["network"]
+            interface = self.pfsense.get_interface_display_name(network[:-2], return_none=True) if network.endswith("ip") else None
+            if interface is not None:
+                field += "IP:" + interface
+            else:
+                field += "NET:" + self.pfsense.get_interface_display_name(network)
+        if include_port and address.get("port"):
+            field += ":" + address["port"] if field else address["port"]
         return field
 
     def _obj_to_log_fields(self, rule):
         """ return formated source and destination from dict """
         res = {}
-        res["source"] = self._obj_address_to_log_field(rule, "source")
-        res["destination"] = self._obj_address_to_log_field(rule, "destination")
+        for address in ("source", "destination"):
+            port_arg = address + "_port"
+            separate_port = self.params.get(port_arg) is not None
+            res[address] = self._obj_address_to_log_field(rule[address], include_port=not separate_port)
+            if separate_port and isinstance(rule[address], dict):
+                res[port_arg] = rule[address].get("port")
         res["target"] = rule["target"]
         if "local-port" in rule:
             res["target"] += ":" + rule["local-port"]

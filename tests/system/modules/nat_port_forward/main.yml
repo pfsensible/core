@@ -1,0 +1,52 @@
+---
+- name: Exercise source and destination port options on a NAT port forward
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/nat_port_forward/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/nat_port_forward/verify.yml"
+    nat_target: 192.168.100.80
+    nat_target_port: "39081"
+    nat_args:
+      descr: CI NAT port forward test
+      interface: lan
+      protocol: tcp
+      source: 192.0.2.40
+      source_port: "37041"
+      destination: IP:lan
+      destination_port: "38081"
+      target: "{{ nat_target }}:{{ nat_target_port }}"
+      natreflection: disable
+      associated_rule: associated
+    nat_updated_args: "{{ nat_args | combine({'source_port': '37042', 'destination_port': '38082'}) }}"
+  block:
+    - name: Apply and verify NAT port forward cases
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      loop_control:
+        loop_var: system_case
+        label: "{{ system_case.name }}"
+      loop:
+        - name: Create a NAT rule with separate ports
+          args: "{{ nat_args }}"
+          changed: true
+        - name: Reapply the same NAT ports
+          args: "{{ nat_args }}"
+          changed: false
+          unchanged_config: true
+        - name: Preview new NAT ports
+          args: "{{ nat_updated_args }}"
+          expected: "{{ nat_args }}"
+          changed: true
+          check_mode: true
+        - name: Update both NAT match ports
+          args: "{{ nat_updated_args }}"
+          changed: true
+        - name: Delete the NAT rule and its associated filter rule
+          args:
+            descr: "{{ nat_args.descr }}"
+            state: absent
+          changed: true
+        - name: Repeat NAT deletion
+          args:
+            descr: "{{ nat_args.descr }}"
+            state: absent
+          changed: false
+          unchanged_config: true

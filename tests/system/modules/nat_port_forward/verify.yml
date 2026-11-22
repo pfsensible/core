@@ -1,0 +1,45 @@
+---
+- name: Observe saved and active NAT and associated filter rules
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+  vars:
+    nat_absent: "{{ system_case.args.state | default('present') == 'absent' }}"
+    nat_expected: "{{ system_case.expected | default(system_case.args) }}"
+    pf_nat_args: >-
+      {{ ['--nat-rule', nat_args.descr, '--nat-target', nat_target]
+         + (['--expect-nat-absent'] if nat_absent | bool else
+            ['--expect-nat-ports', nat_expected.source_port, nat_expected.destination_port, nat_target_port]) }}
+
+- name: Verify NAT and associated filter rules are removed from disk and PF
+  ansible.builtin.assert:
+    that:
+      - not appliance.nat_rules
+      - not appliance.filter_rules
+      - not appliance.redirects
+      - not appliance.filters
+  when: system_case.args.state | default('present') == 'absent'
+
+- name: Verify saved NAT and associated filter rules use the expected ports
+  ansible.builtin.assert:
+    that:
+      - appliance.nat_rules | length == 1
+      - appliance.filter_rules | length == 1
+      - appliance.nat_rules[0].interface == 'lan'
+      - appliance.nat_rules[0].protocol == 'tcp'
+      - appliance.nat_rules[0]['source/address'] == nat_expected.source
+      - appliance.nat_rules[0]['source/port'] == nat_expected.source_port
+      - appliance.nat_rules[0]['destination/network'] == 'lanip'
+      - appliance.nat_rules[0]['destination/port'] == nat_expected.destination_port
+      - appliance.nat_rules[0].target == nat_target
+      - appliance.nat_rules[0]['local-port'] == nat_target_port
+      - appliance.nat_rules[0]['associated-rule-id'] is match('^nat_')
+      - appliance.filter_rules[0]['associated-rule-id'] == appliance.nat_rules[0]['associated-rule-id']
+      - appliance.filter_rules[0].interface == 'lan'
+      - appliance.filter_rules[0].protocol == 'tcp'
+      - appliance.filter_rules[0].type == 'pass'
+      - appliance.filter_rules[0]['source/address'] == nat_expected.source
+      - appliance.filter_rules[0]['source/port'] == nat_expected.source_port
+      - appliance.filter_rules[0]['destination/address'] == nat_target
+      - appliance.filter_rules[0]['destination/port'] == nat_target_port
+  vars:
+    nat_expected: "{{ system_case.expected | default(system_case.args) }}"
+  when: system_case.args.state | default('present') == 'present'
