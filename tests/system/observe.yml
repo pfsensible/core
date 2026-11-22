@@ -5,7 +5,8 @@
       {{ [ansible_python_interpreter, '/tmp/pfsensible-system/observe.py']
          + (['--expect-action', pf_expect_action] if pf_expect_action is defined else [])
          + (['--expect-entry', pf_expect_entry] if pf_expect_entry is defined else [])
-         + (pf_nat_args | default([])) }}
+         + (pf_nat_args | default([]))
+         + (interface_observation_args | default([])) }}
   register: observed
   changed_when: false
   # Only rc=1 with an observation means PF has not converged. Stop on tool errors.

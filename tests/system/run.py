@@ -160,7 +160,9 @@ def main():
             "-device", "virtio-net-pci,netdev=wan,mac=52:54:00:12:34:01",
             "-netdev", ("user,id=lan,net=192.168.100.0/24,host=192.168.100.1,restrict=on,"
                         "hostfwd=tcp:127.0.0.1:{0}-192.168.100.2:22".format(args.ssh_port)),
-            "-device", "virtio-net-pci,netdev=lan,mac=52:54:00:12:34:02"]
+            "-device", "virtio-net-pci,netdev=lan,mac=52:54:00:12:34:02",
+            "-netdev", "user,id=gateway_test,net=198.51.100.0/24,host=198.51.100.1,restrict=on",
+            "-device", "virtio-net-pci,netdev=gateway_test,mac=52:54:00:12:34:03"]
     metadata = {"accelerator": "kvm" if accelerated else "tcg",
                 "kvm_present": os.path.exists("/dev/kvm"), "command": qemu}
     (output / "vm.json").write_text(json.dumps(metadata, indent=2))

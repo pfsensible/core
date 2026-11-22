@@ -78,9 +78,15 @@ options:
     default: 24
     type: int
   ipv4_gateway:
-    description: IPv4 gateway for this interface.
+    description: Name of the upstream IPv4 gateway for this interface.
     required: false
     type: str
+  ipv4_gateway_address:
+    description:
+      - IPv4 address to assign to the gateway named by O(ipv4_gateway).
+      - Creates the gateway if needed or updates its address. Requires O(ipv4_type=static).
+    type: str
+    version_added: 0.8.0
   ipv6_address:
     description: IPv6 Address.
     required: false
@@ -91,9 +97,15 @@ options:
     default: 128
     type: int
   ipv6_gateway:
-    description: IPv6 gateway for this interface.
+    description: Name of the upstream IPv6 gateway for this interface.
     required: false
     type: str
+  ipv6_gateway_address:
+    description:
+      - IPv6 address to assign to the gateway named by O(ipv6_gateway).
+      - Creates the gateway if needed or updates its address. Requires O(ipv6_type=static).
+    type: str
+    version_added: 0.8.0
   blockpriv:
     description: Blocks traffic from IP addresses that are reserved for private networks.
     required: false
@@ -115,6 +127,17 @@ EXAMPLES = """
     descr: voice
     interface: mvneta0.100
     enable: True
+
+- name: Configure a static WAN interface and its upstream gateway
+  pfsensible.core.pfsense_interface:
+    descr: WAN2
+    interface: igb2
+    enable: true
+    ipv4_type: static
+    ipv4_address: 192.0.2.10
+    ipv4_prefixlen: 24
+    ipv4_gateway: WAN2_GW
+    ipv4_gateway_address: 192.0.2.1
 
 - name: Remove interface
   pfsense_interface:

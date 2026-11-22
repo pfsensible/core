@@ -126,6 +126,37 @@ def nat_converged(state, ports=None):
             and re.search(redirect, redirects[0]) is not None and re.search(rule, filters[0]) is not None)
 
 
+def observe_interface(description, port, gateway_name):
+    """Read the saved assignment, native gateway inventory, and live IPv4 addresses."""
+    config = Path("/cf/conf/config.xml").read_bytes()
+    root = ET.fromstring(config)
+    # Use the native gateway inventory without synchronizing generated gateways to disk.
+    php = """
+require_once("/etc/inc/gwlb.inc");
+$gateways = return_gateways_array();
+$gateway = $gateways[$argv[1]] ?? null;
+echo json_encode($gateway === null ? null : array_intersect_key(
+    $gateway, array_flip(["name", "gateway", "friendlyiface", "interface", "ipprotocol"])
+), JSON_THROW_ON_ERROR);
+"""
+    native = subprocess.run(["/usr/local/bin/php", "-r", php, gateway_name], capture_output=True, text=True, check=True)
+    ifconfig = subprocess.run(["/sbin/ifconfig", port], capture_output=True, text=True, check=True)
+    return {
+        "config_sha256": hashlib.sha256(config).hexdigest(),
+        "interfaces": [
+            dict(id=iface.tag, **{field: iface.findtext(field) for field in ("if", "ipaddr", "subnet", "gateway")})
+            for iface in root.findall("interfaces/*")
+            if iface.findtext("descr") == description or iface.findtext("if") == port
+        ],
+        "gateways": [
+            {field: gateway.findtext(field) for field in ("name", "interface", "gateway", "ipprotocol")}
+            for gateway in root.findall("gateways/gateway_item") if gateway.findtext("name") == gateway_name
+        ],
+        "native_gateway": json.loads(native.stdout),
+        "live_ipv4_addresses": re.findall(r"^\s+inet\s+(\S+)", ifconfig.stdout, re.MULTILINE),
+    }
+
+
 def observe(alias_name, rule_name):
     config = Path("/cf/conf/config.xml").read_bytes()
     root = ET.fromstring(config)
@@ -175,11 +206,12 @@ def pf_converged(state, action, expected_entry=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--alias", default="ci_urltable")
-    parser.add_argument("--rule", default="CI URL table test")
     parser.add_argument("--expect-action", choices=("pass", "block", "absent"))
     parser.add_argument("--expect-entry")
+    parser.add_argument("--interface-gateway", nargs=3, metavar=("DESCRIPTION", "PORT", "GATEWAY"))
     parser.add_argument("--nat-rule")
     parser.add_argument("--nat-target")
+    parser.add_argument("--rule", default="CI URL table test")
     parser.add_argument("--vip-address")
     nat_expectation = parser.add_mutually_exclusive_group()
     nat_expectation.add_argument("--expect-nat-ports", nargs=3, metavar=("SOURCE", "DESTINATION", "TARGET"))
@@ -187,6 +219,9 @@ if __name__ == "__main__":
     arguments = parser.parse_args()
     if arguments.vip_address is not None:
         print(json.dumps(observe_vip(arguments.vip_address)))
+        sys.exit(0)
+    if arguments.interface_gateway is not None:
+        print(json.dumps(observe_interface(*arguments.interface_gateway)))
         sys.exit(0)
     if arguments.nat_rule is not None:
         if arguments.nat_target is None:

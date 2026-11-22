@@ -1222,10 +1222,7 @@ try {
 
     def find_gateway_elt(self, name, interface=None, protocol=None, dhcp=False, vti=False):
         """ return gateway elt if found """
-        for gw_elt in self.gateways:
-            if gw_elt.tag != "gateway_item":
-                continue
-
+        for gw_elt in self.get_elements("gateways/gateway_item"):
             if protocol is not None and xml_find(gw_elt, "ipprotocol").text != protocol:
                 continue
 

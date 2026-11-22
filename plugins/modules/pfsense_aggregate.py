@@ -239,9 +239,15 @@ options:
         default: 24
         type: int
       ipv4_gateway:
-        description: IPv4 gateway for this interface.
+        description: Name of the upstream IPv4 gateway for this interface.
         required: false
         type: str
+      ipv4_gateway_address:
+        description:
+          - IPv4 address to assign to the gateway named by O(aggregated_interfaces.ipv4_gateway).
+          - Creates the gateway if needed or updates its address. Requires O(aggregated_interfaces.ipv4_type=static).
+        type: str
+        version_added: 0.8.0
       ipv6_address:
         description: IPv6 Address.
         required: false
@@ -252,9 +258,15 @@ options:
         default: 128
         type: int
       ipv6_gateway:
-        description: IPv6 gateway for this interface.
+        description: Name of the upstream IPv6 gateway for this interface.
         required: false
         type: str
+      ipv6_gateway_address:
+        description:
+          - IPv6 address to assign to the gateway named by O(aggregated_interfaces.ipv6_gateway).
+          - Creates the gateway if needed or updates its address. Requires O(aggregated_interfaces.ipv6_type=static).
+        type: str
+        version_added: 0.8.0
       blockpriv:
         description: Blocks traffic from IP addresses that are reserved for private networks.
         required: false

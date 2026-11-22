@@ -6,13 +6,14 @@ __metaclass__ = type
 
 import pytest
 import sys
+from xml.etree import ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_gateway
 from ansible_collections.pfsensible.core.plugins.module_utils.gateway import PFSenseGatewayModule
-from .pfsense_module import TestPFSenseModule
+from .pfsense_module import TestPFSenseModule, set_module_args
 
 
 class TestPFSenseGatewayModule(TestPFSenseModule):
@@ -60,6 +61,15 @@ class TestPFSenseGatewayModule(TestPFSenseModule):
         obj = dict(name="test_gw", interface="lan", gateway="192.168.1.1")
         command = "create gateway 'test_gw', interface='lan', gateway='192.168.1.1'"
         self.do_module_test(obj, command=command)
+
+    def test_gateway_create_without_gateways_section(self):
+        self.load_fixtures()
+        config = ET.parse(self.tmp_file)
+        config.getroot().remove(config.find("gateways"))
+        config.write(self.tmp_file, encoding="utf-8")
+        with set_module_args(dict(name="test_gw", interface="lan", gateway="192.168.1.1")):
+            self.changed(True)
+        self.assert_xml_elt_dict("gateways", {"name": "test_gw"}, {"interface": "lan", "gateway": "192.168.1.1"})
 
     def test_gateway_create_with_params(self):
         """ test """

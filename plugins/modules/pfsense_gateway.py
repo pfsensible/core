@@ -27,7 +27,9 @@ options:
     required: true
     type: str
   interface:
-    description: Choose which interface this gateway applies to.
+    description:
+      - Choose which assigned interface this gateway applies to.
+      - Required when O(state=present).
     required: false
     type: str
   ipprotocol:
@@ -37,7 +39,9 @@ options:
     default: inet
     type: str
   gateway:
-    description: Gateway IP address
+    description:
+      - Gateway IP address.
+      - Required when O(state=present).
     required: false
     type: str
   descr:

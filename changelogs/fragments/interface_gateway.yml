@@ -1,0 +1,4 @@
+minor_changes:
+  - pfsense_interface and pfsense_aggregate now accept gateway addresses when configuring static interfaces, allowing the gateway and interface to be configured in the same task.
+bugfixes:
+  - pfsense_gateway can now create the first gateway when the configuration lacks a gateways section.

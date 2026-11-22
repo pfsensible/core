@@ -1,0 +1,53 @@
+---
+- name: Exercise inline IPv4 gateway configuration
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/interface/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/interface/verify.yml"
+    interface_args:
+      descr: CI_UPLINK
+      interface: vtnet2
+      enable: true
+      ipv4_type: static
+      ipv4_address: 198.51.100.20
+      ipv4_prefixlen: 24
+      ipv4_gateway: CI_UPLINK_GW
+      ipv4_gateway_address: 198.51.100.1
+    interface_observation_args: "{{ ['--interface-gateway', interface_args.descr, interface_args.interface, interface_args.ipv4_gateway] }}"
+  block:
+    - name: Apply and verify interface gateway cases
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      loop_control:
+        loop_var: system_case
+        label: "{{ system_case.name }}"
+      loop:
+        - name: Preview creation on the unused adapter
+          args: "{{ interface_args }}"
+          changed: true
+          check_mode: true
+          expect_absent: true
+        - name: Create a static interface and its gateway in one task
+          args: "{{ interface_args }}"
+          changed: true
+        - name: Repeat the interface and gateway configuration
+          args: "{{ interface_args }}"
+          changed: false
+          unchanged_config: true
+        - name: Change the gateway address on the same interface
+          args: "{{ interface_args | combine({'ipv4_gateway_address': '198.51.100.254'}) }}"
+          changed: true
+
+    - name: Remove the test interface
+      pfsensible.core.pfsense_interface:
+        descr: "{{ interface_args.descr }}"
+        state: absent
+
+    - name: Remove the test gateway
+      pfsensible.core.pfsense_gateway:
+        name: "{{ interface_args.ipv4_gateway }}"
+        state: absent
+
+    - name: Verify the test interface and gateway were removed
+      ansible.builtin.include_tasks: verify.yml
+      vars:
+        system_case:
+          expect_absent: true

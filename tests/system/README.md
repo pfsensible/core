@@ -26,6 +26,12 @@ redirect and pass entries. It also verifies idempotence, check mode, a change to
 both match ports, and repeated deletion. The translated target port differs from
 the incoming destination port so the checks can distinguish them.
 
+The interface gateway scenario configures an unused adapter with a static IPv4
+address and an upstream gateway in one task. It checks the saved interface and
+gateway, the address on the live adapter, and the gateway in pfSense's native
+gateway inventory. It also verifies check mode, an unchanged repeat apply,
+a gateway address update, and cleanup.
+
 The VIP scenario checks that IP Alias, CARP, and an IP Alias stacked on CARP
 appear on the expected interface, with the expected VHID where applicable.
 It also verifies that Proxy ARP is registered on the selected interface and
@@ -73,8 +79,9 @@ Each run writes to a new qcow2 overlay and never modifies the base disk.
 | --- | --- | --- | --- |
 | WAN | `vtnet0` | `52:54:00:12:34:01` | DHCP on QEMU user network `10.0.2.0/24` |
 | LAN | `vtnet1` | `52:54:00:12:34:02` | Static `192.168.100.2/24` |
+| Test uplink | `vtnet2` | `52:54:00:12:34:03` | Initially unassigned on QEMU user network `198.51.100.0/24` |
 
-Both QEMU user networks use `restrict=on` to disable guest-initiated connections
+All QEMU user networks use `restrict=on` to disable guest-initiated connections
 outside the isolated network. SSH is forwarded from **127.0.0.1:2222** on the
 runner to `192.168.100.2:22`. QEMU's host-side LAN address is `192.168.100.1`.
 No host bridge, TAP interface, production network,
@@ -95,7 +102,7 @@ Changing device order/subnets requires updating the prepared image as well.
 Use a **dedicated disposable appliance**, with synthetic configuration only.
 Never use a backup of a deployed firewall. Install pfSense CE from the official
 [Netgate installer](https://docs.netgate.com/pfsense/en/latest/install/download-installer-image.html)
-in QEMU with the two VirtIO adapters above and a VirtIO disk, using BIOS boot.
+in QEMU with the WAN and LAN VirtIO adapters above and a VirtIO disk, using BIOS boot.
 The installer download currently requires a Netgate account; CI therefore consumes
 a prepared image rather than attempting an unattended account-based installation.
 
@@ -120,9 +127,10 @@ a prepared image rather than attempting an unattended account-based installation
    mounts the seed CD at `/dev/cd0` and installs that run's generated public key.
    Do not embed a private SSH key in the base image. On a normal boot without the
    seed CD this helper cannot authorize a CI key; prepare via console as needed.
-4. Ensure PF is enabled, the test names `ci_urltable`, `CI URL table test`, and
-   `CI NAT port forward test` do not exist, and no service listens on loopback port
-   18080. Leave `192.168.100.80` unused as the fixture's redirect target. Shut down cleanly.
+4. Ensure PF is enabled and leave `vtnet2` unassigned if it is present. Keep the
+   names `ci_urltable`, `CI URL table test`, `CI NAT port forward test`, `CI_UPLINK`,
+   and `CI_UPLINK_GW` available. Leave loopback port 18080 and the fixture's redirect
+   target `192.168.100.80` unused. Shut down cleanly.
 5. Export a self-contained qcow2 disk with no backing/data files. For example,
    flatten an existing qcow2 image on the hypervisor host:
 
@@ -212,8 +220,9 @@ cleanup. The files are organized by responsibility:
 | `common/setup.yml`, `common/http_fixture.yml` | Appliance preflight and fixture services |
 | `common/change_apply_verify.yml` | Apply one change, check `changed`, and verify its effects |
 | `modules/alias/` | Alias creation, idempotence, check mode, URL updates, cache repair, and deletion |
-| `modules/rule/` | Rule apply/verification, idempotence, action changes, and deletion |
+| `modules/interface/` | Static interface and gateway creation, native gateway visibility, check mode, idempotence, update, and cleanup |
 | `modules/nat_port_forward/` | NAT match and translated ports, associated filter rule, idempotence, check mode, and deletion |
+| `modules/rule/` | Rule apply/verification, idempotence, action changes, and deletion |
 | `modules/virtual_ip/` | Saved VIP entries, interface addresses, CARP VHIDs, Proxy ARP registrations, and deletion |
 | `scenarios/persistence.yml` | Reboot and verify without reapplying configuration |
 | `scenarios/cleanup.yml` | Delete dependent rules before aliases |
