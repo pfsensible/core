@@ -108,9 +108,14 @@ class TestPFSenseAliasModule(TestPFSenseModule):
 
     def test_host_delete(self):
         """ test deletion of an host alias """
-        alias = dict(name="ad_poc1", address="192.168.1.3", descr="", type="host", detail="")
-        command = "delete alias 'ad_poc1'"
-        self.do_alias_deletion_test(alias, command=command)
+        alias = dict(name="unused_host", address="192.0.2.10", descr="", type="host", detail="")
+        self.do_alias_deletion_test(alias, command="delete alias 'unused_host'")
+
+    def test_host_delete_in_use(self):
+        """ test rejection when a firewall rule uses the host alias """
+        with set_module_args(dict(name="ad_poc1", state="absent")):
+            self.execute_module(failed=True, msg="Alias 'ad_poc1' is in use by filter/rule 'ads_to_ads_udp_2_1' (destination/address).")
+            self.assertFalse(self.load_xml_result())
 
     def test_host_update_noop(self):
         """ test not updating an host alias """
@@ -140,9 +145,14 @@ class TestPFSenseAliasModule(TestPFSenseModule):
 
     def test_port_delete(self):
         """ test deletion of a port alias """
-        alias = dict(name="port_ssh", address="22", descr="", type="port", detail="")
-        command = "delete alias 'port_ssh'"
-        self.do_alias_deletion_test(alias, command=command)
+        alias = dict(name="unused_port", address="8443", descr="", type="port", detail="")
+        self.do_alias_deletion_test(alias, command="delete alias 'unused_port'")
+
+    def test_port_delete_in_use_check_mode(self):
+        """ test that check mode rejects deletion of a port alias in use """
+        with set_module_args(dict(name="port_ssh", state="absent", _ansible_check_mode=True)):
+            self.execute_module(failed=True, msg="Alias 'port_ssh' is in use by filter/rule 'antilock_out_1' (destination/port).")
+            self.assertFalse(self.load_xml_result())
 
     def test_port_update_noop(self):
         """ test not updating a port alias """
@@ -172,9 +182,14 @@ class TestPFSenseAliasModule(TestPFSenseModule):
 
     def test_network_delete(self):
         """ test deletion of a network alias """
-        alias = dict(name="lan_data_poc3", address="192.168.3.0/24", descr="", type="network", detail="")
-        command = "delete alias 'lan_data_poc3'"
-        self.do_alias_deletion_test(alias, command=command)
+        alias = dict(name="unused_network", address="198.51.100.0/24", descr="", type="network", detail="")
+        self.do_alias_deletion_test(alias, command="delete alias 'unused_network'")
+
+    def test_network_delete_in_use(self):
+        """ test rejection when a firewall rule uses the network alias """
+        with set_module_args(dict(name="lan_data_poc3", state="absent")):
+            self.execute_module(failed=True, msg="Alias 'lan_data_poc3' is in use by filter/rule 'ping_from_poc3_1' (source/address).")
+            self.assertFalse(self.load_xml_result())
 
     def test_network_update_noop(self):
         """ test not updating a network alias """

@@ -1,0 +1,4 @@
+bugfixes:
+  - >-
+    pfsense_alias and pfsense_aggregate reject deletion of aliases that are still
+    referenced in the resulting configuration (https://github.com/pfsensible/core/issues/255).

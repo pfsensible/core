@@ -54,6 +54,23 @@ alias_make_table();
 if (filter_configure() == 0) { clear_subsystem_dirty('aliases'); }
 """
 
+# The reference fields from pfSense's deleteAlias() in alias-utils.inc,
+# plus firewall source ports, outbound NAT address fields, and OpenVPN clients.
+OPENVPN_NETWORK_FIELDS = (
+    "tunnel_network", "tunnel_networkv6", "local_network", "local_networkv6", "remote_network", "remote_networkv6",
+)
+ALIAS_REFERENCE_FIELDS = {
+    "filter/rule": ("source/address", "source/port", "destination/address", "destination/port"),
+    "nat/rule": ("source/address", "source/port", "destination/address", "destination/port", "target", "local-port"),
+    "nat/onetoone": ("destination/address",),
+    "nat/outbound/rule": ("source/network", "source/address", "sourceport", "destination/network", "destination/address", "dstport", "target"),
+    "aliases/alias": ("address",),
+    "staticroutes/route": ("network",),
+    "openvpn/openvpn-server": OPENVPN_NETWORK_FIELDS,
+    "openvpn/openvpn-client": OPENVPN_NETWORK_FIELDS,
+    "openvpn/openvpn-csc": OPENVPN_NETWORK_FIELDS,
+}
+
 
 class PFSenseAliasModule(PFSenseModuleBase):
     """ module managing pfsense aliases """
@@ -76,6 +93,7 @@ class PFSenseAliasModule(PFSenseModuleBase):
         # Override for use with aggregate
         self.argument_spec = ALIAS_ARGUMENT_SPEC
         self._urltable_updates = {}
+        self._removed_aliases = set()
 
     ##############################
     # params processing
@@ -134,6 +152,40 @@ class PFSenseAliasModule(PFSenseModuleBase):
             for detail in details:
                 if detail.startswith("|") or detail.endswith("|"):
                     self.module.fail_json(msg="Vertical bars (|) at start or end of descriptions not allowed")
+
+    def _remove_target_elt(self):
+        super(PFSenseAliasModule, self)._remove_target_elt()
+        self._removed_aliases.add(self.params["name"])
+
+    def validate_removals(self):
+        """Reject removals that would leave references in the staged config."""
+        if not self._removed_aliases:
+            return
+        removed = self._removed_aliases.difference(alias.findtext("name") for alias in self.root_elt)
+        if not removed:
+            return
+
+        for section, fields in ALIAS_REFERENCE_FIELDS.items():
+            for index, entry in enumerate(self.pfsense.root.iterfind(section), start=1):
+                for field in fields:
+                    value = entry.findtext(field, "")
+                    if section == "aliases/alias":
+                        names = value.split()
+                    elif section.startswith("openvpn/"):
+                        names = value.split(",")
+                    elif field in ("source/port", "destination/port", "sourceport", "dstport", "local-port"):
+                        names = value.replace(":", "-").split("-")
+                    else:
+                        names = (value,)
+                    for name in names:
+                        name = name.strip()
+                        if name in removed:
+                            label = entry.findtext("descr") or entry.findtext("description") or entry.findtext("name") or str(index)
+                            self.module.fail_json(msg=f"Alias '{name}' is in use by {section} '{label}' ({field}).")
+
+    def commit_changes(self):
+        self.validate_removals()
+        super(PFSenseAliasModule, self).commit_changes()
 
     def _run_post(self):
         if self.params["state"] == "absent" or self.params["type"] not in ("urltable", "urltable_ports"):
