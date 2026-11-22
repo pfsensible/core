@@ -6,13 +6,14 @@ __metaclass__ = type
 
 import pytest
 import sys
+from xml.etree import ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_interface
 from ansible_collections.pfsensible.core.plugins.module_utils.interface import PFSenseInterfaceModule
-from .pfsense_module import TestPFSenseModule
+from .pfsense_module import TestPFSenseModule, set_module_args
 
 
 class TestPFSenseInterfaceModule(TestPFSenseModule):
@@ -154,6 +155,79 @@ class TestPFSenseInterfaceModule(TestPFSenseModule):
         interface = dict(descr="VOICE", interface="vmx0.100", ipv6_type="static", ipv6_address="3001::2001:22", ipv6_prefixlen=56)
         command = "create interface 'VOICE', port='vmx0.100', ipv6_type='static', ipv6_address='3001::2001:22', ipv6_prefixlen='56'"
         self.do_module_test(interface, command=command)
+
+    def test_interface_create_with_gateways(self):
+        interface = dict(
+            descr="WAN2", interface="vmx0.100", enable=True,
+            ipv4_type="static", ipv4_address="192.0.2.10", ipv4_gateway="WAN2_GW", ipv4_gateway_address="192.0.2.1",
+            ipv6_type="static", ipv6_address="2001:db8::10", ipv6_prefixlen=64, ipv6_gateway="WAN2_GW6", ipv6_gateway_address="fe80::1",
+        )
+        self.load_fixtures()
+
+        with set_module_args(dict(interface, _ansible_check_mode=True)):
+            check_result = self.changed(True)
+        self.assertFalse(self.load_xml_result())
+        self.phpshell.assert_not_called()
+
+        with set_module_args(interface):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], check_result["commands"])
+        self.assertTrue(self.load_xml_result())
+        ifname = result["ifname"]
+        self.check_target_elt(interface, self.xml_result.find("interfaces/" + ifname))
+        self.assert_xml_elt_dict("gateways", {"name": "WAN2_GW"}, {"interface": ifname, "ipprotocol": "inet", "gateway": "192.0.2.1"})
+        self.assert_xml_elt_dict("gateways", {"name": "WAN2_GW6"}, {"interface": ifname, "ipprotocol": "inet6", "gateway": "fe80::1"})
+        php = self.phpshell.call_args[0][0]
+        self.assertLess(php.index("interface_configure("), php.index("system_routing_configure()"))
+
+        self.phpshell.reset_mock()
+        with set_module_args(interface):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+
+    def test_interface_update_gateway_address(self):
+        self.load_fixtures()
+        config = ET.parse(self.tmp_file)
+        gateway = config.find("gateways/gateway_item[name='GW_WAN']")
+        ET.SubElement(gateway, "monitor").text = "192.168.240.254"
+        config.write(self.tmp_file, encoding="utf-8")
+        interface = dict(
+            descr="WAN", interface="vmx0", enable=True, ipv4_type="static", ipv4_address="192.168.240.137",
+            ipv4_gateway="GW_WAN", ipv4_gateway_address="192.168.240.1",
+        )
+        with set_module_args(interface):
+            self.changed(True)
+
+        with set_module_args(dict(interface, ipv4_gateway_address="192.168.240.2")):
+            self.assertEqual(self.changed(True)["commands"], ["update gateway 'GW_WAN' set gateway='192.168.240.2'"])
+        self.assertTrue(self.load_xml_result())
+        self.assert_xml_elt_dict(
+            "gateways", {"name": "GW_WAN"}, {"gateway": "192.168.240.2", "descr": "Interface wan Gateway", "monitor": "192.168.240.254"})
+        self.assertEqual(self.xml_result.findtext("gateways/defaultgw4"), "GW_WAN")
+
+        del interface["ipv4_gateway_address"]
+        with set_module_args(interface):
+            self.changed(False)
+
+    def test_interface_invalid_gateway_leaves_configuration_unchanged(self):
+        interface = dict(
+            descr="WAN2", interface="vmx0.100", ipv4_type="static", ipv4_address="192.0.2.10",
+            ipv4_gateway="WAN2_GW", ipv4_gateway_address="192.0.2.1",
+            ipv6_type="static", ipv6_address="2001:db8::10", ipv6_prefixlen=64,
+            ipv6_gateway="WAN2_GW6", ipv6_gateway_address="2001:db8:1::1",
+        )
+        self.do_module_test(interface, failed=True, msg="The gateway address 2001:db8:1::1 does not lie within one of the chosen interface's subnets.")
+        self.assertIsNone(ET.parse(self.tmp_file).find("gateways/gateway_item[name='WAN2_GW']"))
+        self.phpshell.assert_not_called()
+
+    def test_interface_gateway_name_owned_by_another_interface(self):
+        interface = dict(descr="WAN2", interface="vmx0.100", ipv4_type="static", ipv4_address="192.0.2.10",
+                         ipv4_gateway="GW_LAN", ipv4_gateway_address="192.0.2.1")
+        self.do_module_test(interface, failed=True, msg="Gateway GW_LAN already belongs to another interface or address family.")
+
+    def test_new_interface_gateway_requires_existing_name_or_address(self):
+        interface = dict(descr="WAN2", interface="vmx0.100", ipv4_type="static", ipv4_address="192.0.2.10", ipv4_gateway="WAN2_GW")
+        self.do_module_test(interface, failed=True, msg="Gateway WAN2_GW does not exist on WAN2")
 
     def test_interface_create_slaac(self):
         """ test creation of a new interface with slaac """

@@ -44,10 +44,12 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None):
+    def __init__(self, module, pfsense=None, interface_elt=None):
         super(PFSenseGatewayModule, self).__init__(module, pfsense, root="gateways", create_root=True, node="gateway_item", key="name")
         self.name = "pfsense_gateway"
-        self.interface_elt = None
+        self.pfsense.gateways = self.root_elt
+        # An interface task manages the gateway address and leaves other settings to this module.
+        self.interface_elt = interface_elt
         self.dynamic = False
 
     ##############################
@@ -82,15 +84,19 @@ class PFSenseGatewayModule(PFSenseModuleBase):
 
         return True
 
-    def _check_subnet(self):
+    def _check_subnet(self, interface_elt):
         """ check if addr lies into interface subnets """
+        addr = ip_address(u"{0}".format(self.params["gateway"]))
+        if addr.version == 6 and addr.is_link_local:
+            return
+
         def _check_vips():
             virtualips = self.pfsense.get_element("virtualip")
             if virtualips is None:
                 return False
 
             for vip_elt in virtualips:
-                if vip_elt.find("interface").text != self.interface_elt.tag or vip_elt.find("mode").text != "other" or vip_elt.find("type").text != "network":
+                if vip_elt.findtext("interface") != interface_elt.tag or vip_elt.findtext("mode") != "other" or vip_elt.findtext("type") != "network":
                     continue
 
                 subnet = ip_network(u"{0}/{1}".format(vip_elt.find("subnet").text, vip_elt.find("subnet_bits").text), strict=False)
@@ -100,12 +106,12 @@ class PFSenseGatewayModule(PFSenseModuleBase):
 
         if self.params["ipprotocol"] == "inet":
             inet_type = "IPv4"
-            f1_elt = self.interface_elt.find("ipaddr")
-            f2_elt = self.interface_elt.find("subnet")
+            f1_elt = interface_elt.find("ipaddr")
+            f2_elt = interface_elt.find("subnet")
         else:
             inet_type = "IPv6"
-            f1_elt = self.interface_elt.find("ipaddrv6")
-            f2_elt = self.interface_elt.find("subnetv6")
+            f1_elt = interface_elt.find("ipaddrv6")
+            f2_elt = interface_elt.find("subnetv6")
         if f1_elt is None or f1_elt.text is None or f2_elt is None or f2_elt.text is None:
             self.module.fail_json(msg="Cannot add {0} Gateway Address because no {0} address could be found on the interface.".format(inet_type))
 
@@ -113,7 +119,6 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             if self.params["nonlocalgateway"]:
                 return
 
-            addr = ip_address(u"{0}".format(self.params["gateway"]))
             subnet = ip_network(u"{0}/{1}".format(f1_elt.text, f2_elt.text), strict=False)
             if addr in subnet or _check_vips():
                 return
@@ -130,10 +135,27 @@ class PFSenseGatewayModule(PFSenseModuleBase):
 
         obj["name"] = params["name"]
         if params["state"] == "present":
-            obj["interface"] = self.pfsense.parse_interface(params["interface"])
-            self.interface_elt = self.pfsense.get_interface_elt(obj["interface"])
+            interface_elt = self.interface_elt
+            if interface_elt is None:
+                obj["interface"] = self.pfsense.parse_interface(params["interface"])
+                interface_elt = self.pfsense.get_interface_elt(obj["interface"])
+            else:
+                obj["interface"] = interface_elt.tag
             self._get_ansible_param(obj, "ipprotocol")
             self._get_ansible_param(obj, "gateway")
+
+            if not self.dynamic:
+                if interface_elt is None:
+                    self.module.fail_json(msg="A gateway requires an assigned interface.")
+                self._check_subnet(interface_elt)
+            elif self.target_elt.findtext("interface") != obj["interface"]:
+                self.module.fail_json(msg="The gateway use 'dynamic' as a target. You can not change the interface")
+            elif self.target_elt.findtext("ipprotocol") != params["ipprotocol"]:
+                self.module.fail_json(msg="The gateway use 'dynamic' as a target. You can not change ipprotocol")
+
+            if self.interface_elt is not None and self.target_elt is not None:
+                return obj
+
             self._get_ansible_param(obj, "descr")
             self._get_ansible_param(obj, "monitor")
             self._get_ansible_param(obj, "weight")
@@ -148,13 +170,6 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, "force_down", value=None)
             self._get_ansible_param_bool(obj, "nonlocalgateway", value=None)
 
-            if not self.dynamic:
-                self._check_subnet()
-            elif self.target_elt.find("interface").text != obj["interface"]:
-                self.module.fail_json(msg="The gateway use 'dynamic' as a target. You can not change the interface")
-            elif self.target_elt.find("ipprotocol").text != params["ipprotocol"]:
-                self.module.fail_json(msg="The gateway use 'dynamic' as a target. You can not change ipprotocol")
-
         return obj
 
     def _validate_params(self):
@@ -162,8 +177,11 @@ class PFSenseGatewayModule(PFSenseModuleBase):
         params = self.params
 
         self.target_elt = self.pfsense.find_gateway_elt(params["name"], dhcp=True, vti=True)
-        if self.target_elt is not None and self.target_elt.find("gateway").text == "dynamic":
-            self.dynamic = True
+        self.dynamic = self.target_elt is not None and self.target_elt.findtext("gateway") == "dynamic"
+        if self.interface_elt is not None and self.target_elt is not None:
+            if (self.target_elt.findtext("interface") != self.interface_elt.tag or
+                    self.target_elt.findtext("ipprotocol") != params["ipprotocol"]):
+                self.module.fail_json(msg="Gateway {0} already belongs to another interface or address family.".format(params["name"]))
 
         if params["state"] == "present":
             # check weight
@@ -194,17 +212,19 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    @staticmethod
-    def _get_params_to_remove():
+    def _get_params_to_remove(self):
         """ returns the list of params to remove if they are not set """
+        if self.interface_elt is not None:
+            return []
         return ["disabled", "monitor", "monitor_disable", "action_disable", "force_down", "nonlocalgateway"]
 
     ##############################
     # run
     #
-    def _update(self):
-        """ make the target pfsense reload """
-        return self.pfsense.phpshell("""
+    @staticmethod
+    def get_update_cmds():
+        """ build PHP commands to reload gateway settings """
+        return """
 require_once("filter.inc");
 $retval = 0;
 
@@ -217,7 +237,11 @@ setup_gateways_monitor();
 send_event("service reload dyndnsall");
 
 if ($retval == 0) clear_subsystem_dirty('staticroutes');
-""")
+"""
+
+    def _update(self):
+        """ make the target pfsense reload """
+        return self.pfsense.phpshell(self.get_update_cmds())
 
     ##############################
     # Logging
@@ -228,6 +252,9 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
+        if before is not None and self.interface_elt is not None:
+            return self.format_updated_cli_field(self.obj, before, "gateway", add_comma=False)
+
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "interface")

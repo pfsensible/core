@@ -7,6 +7,7 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import re
+from ansible_collections.pfsensible.core.plugins.module_utils.gateway import GATEWAY_ARGUMENT_SPEC, PFSenseGatewayModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule
 try:
@@ -30,9 +31,11 @@ INTERFACE_ARGUMENT_SPEC = dict(
     ipv4_address=dict(required=False, type="str"),
     ipv4_prefixlen=dict(default=24, required=False, type="int"),
     ipv4_gateway=dict(required=False, type="str"),
+    ipv4_gateway_address=dict(type="str"),
     ipv6_address=dict(required=False, type="str"),
     ipv6_prefixlen=dict(default=128, required=False, type="int"),
     ipv6_gateway=dict(required=False, type="str"),
+    ipv6_gateway_address=dict(type="str"),
     blockpriv=dict(required=False, type="bool"),
     blockbogons=dict(required=False, type="bool"),
     slaacusev4iface=dict(required=False, type="bool"),
@@ -68,6 +71,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         self.root_elt = self.pfsense.interfaces
         self.setup_interface_cmds = ""
         self.setup_interface_pre_cmds = ""
+        self.gateways_changed = False
 
     ##############################
     # params processing
@@ -144,13 +148,6 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             self._check_overlaps("ipaddrv6", "subnetv6")
             self._check_overlaps("ipaddr", "subnet")
 
-            # check gateways
-            if self.obj.get("gateway") and not self.pfsense.find_gateway_elt(self.obj["gateway"], self.target_elt.tag, "inet"):
-                self.module.fail_json(msg="Gateway {0} does not exist on {1}".format(self.obj["gateway"], self.obj["descr"]))
-
-            if self.obj.get("gatewayv6") and not self.pfsense.find_gateway_elt(self.obj["gatewayv6"], self.target_elt.tag, "inet6"):
-                self.module.fail_json(msg="Gateway {0} does not exist on {1}".format(self.obj["gatewayv6"], self.obj["descr"]))
-
         else:
             self.target_elt = self._get_interface_elt_by_display_name(self.obj["descr"])
 
@@ -166,6 +163,11 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             self.module.fail_json(msg='The name of the interface may only consist of the characters "a-z, A-Z, 0-9 and _"')
 
         if params["state"] == "present":
+            for family in ("ipv4", "ipv6"):
+                if params.get(family + "_gateway_address") is not None:
+                    if not params.get(family + "_gateway") or params[family + "_type"] != "static":
+                        self.module.fail_json(msg="{0}_gateway_address requires {0}_gateway and {0}_type=static.".format(family))
+
             if params.get("mac") and re.match("^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$", params["mac"]) is None:
                 self.module.fail_json(msg="MAC address must be in the following format: xx:xx:xx:xx:xx:xx (or blank).")
 
@@ -401,6 +403,33 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     ##############################
     # run
     #
+    def _run_post(self):
+        """ Resolve gateways against the interface configuration staged for this task. """
+        if self.params["state"] != "present":
+            return
+
+        for field, family, protocol in (("gateway", "ipv4", "inet"), ("gatewayv6", "ipv6", "inet6")):
+            name = self.obj.get(field)
+            if not name:
+                continue
+
+            address = self.params.get(family + "_gateway_address")
+            if address is None:
+                if self.pfsense.find_gateway_elt(name, self.target_elt.tag, protocol) is None:
+                    self.module.fail_json(msg="Gateway {0} does not exist on {1}".format(name, self.obj["descr"]))
+                continue
+
+            gateway = PFSenseGatewayModule(self.module, self.pfsense, interface_elt=self.target_elt)
+            params = {key: spec.get("default") for key, spec in GATEWAY_ARGUMENT_SPEC.items()}
+            params.update(name=name, interface=self.obj["descr"], ipprotocol=protocol, gateway=address)
+            gateway.run(params)
+            if gateway.result["changed"]:
+                self.gateways_changed = True
+                self.result["changed"] = True
+                self.result["commands"].extend(gateway.result["commands"])
+                if not self.change_descr:
+                    self.change_descr = gateway.change_descr
+
     def _get_interface_list(self):
         return self.pfsense.php(
             "require_once('/etc/inc/interfaces.inc');"
@@ -501,11 +530,16 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             cmd += self.setup_interface_cmds
 
         cmd += "services_snmpd_configure();\n"
-        cmd += "setup_gateways_monitor();\n"
+        if not self.gateways_changed:
+            cmd += "setup_gateways_monitor();\n"
         cmd += "clear_subsystem_dirty('interfaces');\n"
-        cmd += "filter_configure();\n"
+        if self.gateways_changed:
+            cmd += PFSenseGatewayModule.get_update_cmds()
+        else:
+            cmd += "filter_configure();\n"
         cmd += "enable_rrd_graphing();\n"
-        cmd += "if (is_subsystem_dirty('staticroutes') && (system_routing_configure() == 0)) clear_subsystem_dirty('staticroutes');"
+        if not self.gateways_changed:
+            cmd += "if (is_subsystem_dirty('staticroutes') && (system_routing_configure() == 0)) clear_subsystem_dirty('staticroutes');\n"
         return cmd
 
     def _pre_update(self):

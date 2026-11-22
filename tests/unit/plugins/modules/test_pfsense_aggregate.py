@@ -191,6 +191,20 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             self.assertEqual(result["result_aliases"], result_aliases)
             self.assertFalse(self.load_xml_result())
 
+    def test_aggregate_interface_gateway(self):
+        self.php.return_value = {"vmx0": {}}
+        args = dict(
+            aggregated_interfaces=[
+                dict(descr="WAN", interface="vmx0", enable=True, ipv4_type="static", ipv4_address="192.0.2.10",
+                     ipv4_gateway="UPSTREAM_GW", ipv4_gateway_address="192.0.2.1"),
+            ],
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+        self.assertIn("create gateway 'UPSTREAM_GW', interface='WAN', gateway='192.0.2.1'", result["result_interfaces"])
+        self.assert_xml_elt_dict("gateways", {"name": "UPSTREAM_GW"}, {"interface": "wan", "gateway": "192.0.2.1"})
+        self.assertEqual(self.xml_result.findtext("interfaces/wan/gateway"), "UPSTREAM_GW")
+
     def test_aggregate_aliases_purge(self):
         """ test creation of a some aliases with purge """
         args = dict(

@@ -1,0 +1,33 @@
+---
+- name: Observe the saved interface and gateway and their live appliance state
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+
+- name: Verify the interface and gateway are absent
+  ansible.builtin.assert:
+    that:
+      - not appliance.interfaces
+      - not appliance.gateways
+      - appliance.native_gateway is none
+      - interface_args.ipv4_address not in appliance.live_ipv4_addresses
+  when: system_case.expect_absent | default(false)
+
+- name: Verify the gateway is saved and listed by pfSense for the configured interface
+  ansible.builtin.assert:
+    that:
+      - appliance.interfaces | length == 1
+      - appliance.interfaces[0]['if'] == system_case.args.interface
+      - appliance.interfaces[0].ipaddr == system_case.args.ipv4_address
+      - appliance.interfaces[0].subnet == (system_case.args.ipv4_prefixlen | string)
+      - appliance.interfaces[0].gateway == system_case.args.ipv4_gateway
+      - appliance.gateways | length == 1
+      - appliance.gateways[0].interface == appliance.interfaces[0].id
+      - appliance.gateways[0].ipprotocol == 'inet'
+      - appliance.gateways[0].gateway == system_case.args.ipv4_gateway_address
+      - appliance.native_gateway is mapping
+      - appliance.native_gateway.name == system_case.args.ipv4_gateway
+      - appliance.native_gateway.gateway == system_case.args.ipv4_gateway_address
+      - appliance.native_gateway.ipprotocol == 'inet'
+      - appliance.native_gateway.friendlyiface == appliance.interfaces[0].id
+      - appliance.native_gateway.interface == system_case.args.interface
+      - system_case.args.ipv4_address in appliance.live_ipv4_addresses
+  when: not (system_case.expect_absent | default(false))
