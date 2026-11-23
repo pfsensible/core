@@ -102,7 +102,7 @@ options:
     required: false
     type: bool
   sourceip:
-    description: Source Address
+    description: Source address, interface description, or virtual IP description.
     required: false
     type: str
   ipproto:
@@ -319,23 +319,6 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
 
         return obj
 
-    def _is_interface_ip_or_descr(self, address):
-        result = False
-
-        if address in ["127.0.0.1", "Localhost"]:
-            return True
-
-        for interface_elt in self.pfsense.interfaces:
-            descr = interface_elt.find("descr")
-            ipaddr = interface_elt.find("ipaddr")
-
-            if descr is not None and descr.text == address:
-                return True
-            elif ipaddr is not None and ipaddr.text == address:
-                return True
-
-        return result
-
     def _get_interface_by_ip_or_display_name(self, address):
         """ return interface_id by ip address or name """
 
@@ -354,15 +337,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         return None
 
     def _get_source_ip_interface(self, address):
-        result = None
-
-        if self._is_interface_ip_or_descr(address):
-            result = self._get_interface_by_ip_or_display_name(address)
-
-        elif self.pfsense.is_virtual_ip(address):
-            result = self.pfsense.get_virtual_ip_interface(address)
-
-        return result
+        return self._get_interface_by_ip_or_display_name(address) or self.pfsense.get_virtual_ip_interface(address)
 
     def _validate_syslog_server(self, hostname, name):
         """ check hostname / ip address combinations with optional port """
@@ -399,7 +374,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
             if address == "":
                 return
 
-            if not self.pfsense.is_virtual_ip(address) and not self._is_interface_ip_or_descr(address):
+            if self._get_source_ip_interface(address) is None:
                 self.module.fail_json(msg="sourceip: Invalid address {address}!".format(address=params.get("sourceip")))
 
         if params.get("logall") is True:

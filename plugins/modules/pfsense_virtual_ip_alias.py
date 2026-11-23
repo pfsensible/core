@@ -22,7 +22,7 @@ options:
     required: true
   interface:
     description:
-      - Assigned pfSense interface name or description, C(lo0) for localhost, or the address of a CARP VIP.
+      - Assigned pfSense interface name or description, C(lo0) for localhost, or the address or description of a CARP VIP.
       - Required when O(state=present).
     type: str
   descr:
@@ -40,6 +40,11 @@ EXAMPLES = """
   pfsensible.core.pfsense_virtual_ip_alias:
     address: 192.0.2.10/24
     interface: lan
+- name: Stack an IP Alias on an existing CARP VIP
+  pfsensible.core.pfsense_virtual_ip_alias:
+    address: 198.51.100.11/24
+    descr: Enclave WAN IP
+    interface: Backup WAN IP
 """
 
 RETURN = """

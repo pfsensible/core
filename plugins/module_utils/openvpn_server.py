@@ -140,7 +140,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, "remote_cert_tls")
             obj["mode"] = self.params["mode"]
             obj["dev_mode"] = self.params["dev_mode"]
-            obj["interface"] = self.params["interface"]
+            obj["interface"] = self.pfsense.resolve_openvpn_interface(self.params["interface"])
             obj["protocol"] = self.params["protocol"]
             obj["local_port"] = str(self.params["local_port"])
             self._get_ansible_param(obj, "maxclients")
@@ -335,7 +335,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         (before, changed) = super(PFSenseOpenVPNServerModule, self)._copy_and_update_target()
 
         # Check if local port is used
-        self._openvpn_port_used(self.params["protocol"], self.params["interface"], self.params["local_port"], before["vpnid"])
+        self._openvpn_port_used(self.params["protocol"], self.obj["interface"], self.params["local_port"], before["vpnid"])
 
         if not changed:
             self.diff["after"] = self.obj
@@ -346,7 +346,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     def _create_target(self):
         """ create the XML target_elt """
         # Check if local port is used
-        self._openvpn_port_used(self.params["protocol"], self.params["interface"], self.params["local_port"])
+        self._openvpn_port_used(self.params["protocol"], self.obj["interface"], self.params["local_port"])
         target_elt = self.pfsense.new_element("openvpn-server")
         self.obj["vpnid"] = self._nextvpnid()
         self.result["vpnid"] = int(self.obj["vpnid"])

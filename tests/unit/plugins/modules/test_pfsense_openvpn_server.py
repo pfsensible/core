@@ -14,6 +14,7 @@ if sys.version_info < (2, 7):
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_openvpn_server
 from .pfsense_module import TestPFSenseModule
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 
 CERTIFICATE = (
     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlFQ0RDQ0F2Q2dBd0lCQWdJSUZqRk9oczFuTXpRd0RRWUpLb1pJaHZjTkFRRUxCUUF3WERFVE1CRUdBMVVFDQpBeE1LYjNCbGJuWndiaTFqWVRF"
@@ -173,6 +174,12 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         """ test creation of a new OpenVPN server """
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, tls="generate")
         self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
+
+    def test_openvpn_server_bind_to_vip_description(self):
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="Backup WAN IP")
+        with set_module_args(obj):
+            result = self.execute_module(changed=True)
+        self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp|192.0.2.10")
 
     def test_openvpn_server_delete(self):
         """ test deletion of a OpenVPN server """

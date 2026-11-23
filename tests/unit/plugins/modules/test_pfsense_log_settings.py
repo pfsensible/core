@@ -53,6 +53,7 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
                         "wan": "wan",
                         "192.168.1.242": "lan",
                         "10.255.2.254": "_vip5c0a4b6139b05",
+                        "Backup's LAN IP": "_vip5c0a4b6139b05",
                         "127.0.0.1": "lo0",
                         "Localhost": "lo0",
                     }
@@ -442,6 +443,11 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
     def test_syslog_sourceip_valid_vip_ip(self):
         """ test log_settings sourceip=_vip5c0a4b6139b05 """
         syslog = dict(enable=True, remoteserver="1.2.3.4", logall=True, sourceip="10.255.2.254")
+        command = "update log_settings syslog set enable=True, sourceip='_vip5c0a4b6139b05', remoteserver='1.2.3.4', logall=True"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_sourceip_valid_vip_description(self):
+        syslog = dict(enable=True, remoteserver="1.2.3.4", logall=True, sourceip="Backup's LAN IP")
         command = "update log_settings syslog set enable=True, sourceip='_vip5c0a4b6139b05', remoteserver='1.2.3.4', logall=True"
         self.do_module_test(syslog, command=command, state=None)
 

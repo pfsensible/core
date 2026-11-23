@@ -61,7 +61,9 @@ options:
     choices: [ "any", "tcp", "udp", "tcp/udp", "icmp", "igmp", "ospf", "esp", "ah", "gre", "pim", "sctp", "pfsync", "carp" ]
     type: str
   source:
-    description: The source address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format. Required when creating a rule.
+    description:
+      - The source address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format. Required when creating a rule.
+      - You can use a virtual IP description in place of its address.
     type: str
   source_port:
     description:
@@ -70,7 +72,9 @@ options:
       - An inclusive range can also be specified using C(first-last). Set to C(any) to clear the port.
     type: str
   destination:
-    description: The destination address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format. Required when creating a rule.
+    description:
+      - The destination address, in [!]{IP,HOST,ALIAS,any,(self),IP:INTERFACE,NET:INTERFACE} format. Required when creating a rule.
+      - You can use a virtual IP description in place of its address.
     type: str
   destination_port:
     description:

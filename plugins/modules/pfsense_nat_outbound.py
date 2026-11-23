@@ -49,12 +49,16 @@ options:
     choices: [ "any", "tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "carp", "pfsync" ]
     type: str
   source:
-    description: The matching source address, in {any,(self),ALIAS,NETWORK,NET:INTERFACE}[:port] format.
+    description:
+      - The matching source address, in {any,(self),ALIAS,NETWORK,NET:INTERFACE}[:port] format.
+      - You can use a virtual IP description to match its address.
     required: false
     default: null
     type: str
   destination:
-    description: The matching destination address, in {any,ALIAS,NETWORK,NET:INTERFACE}[:port] format.
+    description:
+      - The matching destination address, in {any,ALIAS,NETWORK,NET:INTERFACE}[:port] format.
+      - You can use a virtual IP description to match its address.
     required: false
     default: null
     type: str
@@ -63,7 +67,9 @@ options:
     default: false
     type: bool
   address:
-    description: The translated to address, in {ALIAS,NETWORK}[:port] format. Leave address part empty to use interface address.
+    description:
+      - The translated to address, in {ALIAS,NETWORK}[:port] format. Leave address part empty to use interface address.
+      - You can use a virtual IP description in place of its address.
     required: false
     default: null
     type: str

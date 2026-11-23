@@ -132,19 +132,25 @@ class PFSenseVirtualIPModule(PFSenseModuleBase):
         return obj
 
     def _interface(self, name, address):
+        interface = self.pfsense.parse_interface(name, fail=False, with_virtual=False)
         if self.mode == "ipalias":
             if name.lower() in ("lo0", "localhost"):
                 if str(address) in ("127.0.0.1", "::1"):
                     self.module.fail_json(msg="address is already assigned as a primary loopback address")
                 return "lo0"
-            for entry in self.elements:
-                uid = entry.findtext("uniqid")
-                if uid and entry.findtext("mode") == "carp" and name in ("_vip" + uid, entry.findtext("subnet")):
-                    parent = ip_interface(entry.findtext("subnet") + "/" + entry.findtext("subnet_bits"))
-                    if address not in parent.network:
-                        self.module.fail_json(msg="A stacked IP Alias must be in its CARP VIP's subnet")
-                    return "_vip" + uid
-        interface = self.pfsense.parse_interface(name, with_virtual=False)
+            entry = None
+            if name.startswith("_vip"):
+                entry = self.pfsense.find_virtual_ip(name[4:], fields=("uniqid",), modes=("carp",))
+            if entry is None:
+                fields = ("subnet", "descr") if interface is None else ("subnet",)
+                entry = self.pfsense.find_virtual_ip(name, fields=fields, modes=("carp",))
+            if entry is not None and entry.findtext("uniqid"):
+                parent = ip_interface("{0}/{1}".format(entry.findtext("subnet"), entry.findtext("subnet_bits")))
+                if address not in parent.network:
+                    self.module.fail_json(msg="A stacked IP Alias must be in its CARP VIP's subnet")
+                return "_vip" + entry.findtext("uniqid")
+        if interface is None:
+            self.module.fail_json(msg=f"{name} is not a valid interface")
         if not self.pfsense.is_interface_port(interface):
             self.module.fail_json(msg="interface must be an assigned pfSense interface")
         for entry in self.pfsense.interfaces:

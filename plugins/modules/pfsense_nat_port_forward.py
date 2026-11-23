@@ -50,7 +50,9 @@ options:
     choices: [ "tcp", "udp", "tcp/udp", "icmp", "esp", "ah", "gre", "ipv6", "igmp", "pim", "ospf" ]
     type: str
   source:
-    description: The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
+    description:
+      - The source address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
+      - You can use a virtual IP description in place of its address.
     default: null
     type: str
   source_port:
@@ -60,7 +62,9 @@ options:
     type: str
     version_added: 0.8.0
   destination:
-    description: The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
+    description:
+      - The destination address, in [!]{IP,HOST,ALIAS,any,IP:INTERFACE,NET:INTERFACE}[:port] format.
+      - You can use a virtual IP description in place of its address.
     default: null
     type: str
   destination_port:
@@ -73,6 +77,7 @@ options:
   target:
     description:
       - The redirect target address or host alias, optionally followed by a colon and a port number or port alias.
+      - You can use a virtual IP description in place of its address.
       - For a numeric incoming port range, specify the first translated port or an inclusive C(first-last) range of the same size.
       - The incoming ports can be set with C(destination_port) or in the destination address.
     required: false

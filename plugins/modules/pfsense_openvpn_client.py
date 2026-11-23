@@ -42,7 +42,7 @@ options:
     default: false
     type: bool
   interface:
-    description: The interface for OpenVPN to listen on.
+    description: The local interface used by the OpenVPN client. Accepts an IP Alias or CARP virtual IP description.
     required: false
     default: wan
     type: str

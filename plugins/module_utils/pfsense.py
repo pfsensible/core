@@ -622,7 +622,10 @@ try {
                 ret["network"] = self.get_interface_by_display_name(address)
             else:
                 if not self.is_ip_or_alias(address):
-                    self.module.fail_json(msg="Cannot parse address %s, not IP or alias" % (address))
+                    vip_address = self.get_virtual_ip_address(address)
+                    if vip_address is None:
+                        self.module.fail_json(msg="Cannot parse address %s, not IP or alias" % (address))
+                    address = vip_address
                 ret["address"] = address
 
         if ports is not None:
@@ -1088,7 +1091,7 @@ try {
 
     def is_gateway_group(self, gwgroup):
         """ return True if gwgroup is a gateway group """
-        return self.find_elt_xpath(f"./gateways/gateway_group[name='{gwgroup}']") is not None
+        return any(group.findtext("name") == gwgroup for group in self.root.findall("./gateways/gateway_group"))
 
     def is_port_or_alias(self, port):
         """ return True if port is a valid port number or an alias """
@@ -1102,33 +1105,49 @@ try {
             pass
         return False
 
-    def is_virtual_ip(self, addr):
-        """ return True if addr is a virtual ip """
-        if self.virtualip is None:
-            return False
-
-        if self.find_elt("vip", addr, "subnet", root_elt=self.virtualip) is None:
-            return False
-
-        return True
-
-    def get_virtual_ip_interface(self, vip):
-        """ return interface name for virtual IP name or network """
-        if self.virtualip is None:
+    def find_virtual_ip(self, value, fields=("descr", "subnet"), modes=None):
+        """Find a VIP by the first matching field in lookup order."""
+        if not value or self.virtualip is None:
             return None
 
-        vip_elt = self.find_elt("vip", vip, "descr", root_elt=self.virtualip)
-        if vip_elt is None:
-            vip_elt = self.find_elt("vip", vip, "subnet", root_elt=self.virtualip)
+        candidates = self.virtualip.findall("vip")
+        if modes is not None:
+            candidates = [vip for vip in candidates if vip.findtext("mode") in modes]
+        for field in fields:
+            matches = [vip for vip in candidates if vip.findtext(field) == value]
+            if len(matches) > 1:
+                self.module.fail_json(msg=f"Found multiple virtual IPs matching '{value}'. Use a unique description or address.")
+            if matches:
+                return matches[0]
+        return None
 
-        if vip_elt is None:
+    def get_virtual_ip_address(self, description):
+        """Return the configured address for a VIP description."""
+        vip = self.find_virtual_ip(description, fields=("descr",))
+        if vip is None:
             return None
+        address = vip.findtext("subnet")
+        if address and (self.is_ipv4_address(address) or self.is_ipv6_address(address)):
+            return address
+        return None
 
-        uniqid_elt = vip_elt.find("uniqid")
-        if uniqid_elt is None:
-            return None
+    def get_virtual_ip_interface(self, value):
+        """Return the pfSense interface ID for a VIP description or address."""
+        vip = self.find_virtual_ip(value)
+        uid = vip.findtext("uniqid") if vip is not None else None
+        return "_vip" + uid if uid else None
 
-        return "_vip" + xml_find(vip_elt, "uniqid").text
+    def resolve_openvpn_interface(self, value):
+        """Resolve a VIP description to the interface and address OpenVPN stores."""
+        if not value or value in ("any", "lo0") or self.is_interface_port(value):
+            return value
+        if value.startswith("_vip") and "|" in value:
+            return value
+
+        vip = self.find_virtual_ip(value, fields=("descr",), modes=("carp", "ipalias"))
+        if vip is not None and vip.findtext("uniqid") and vip.findtext("subnet") and not self.is_gateway_group(value):
+            return "_vip{0}|{1}".format(vip.findtext("uniqid"), vip.findtext("subnet"))
+        return value
 
     def find_queue(self, name, interface=None, enabled=False):
         """ return QOS queue if found """
