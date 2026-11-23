@@ -145,9 +145,9 @@ class PFSenseVirtualIPModule(PFSenseModuleBase):
                 fields = ("subnet", "descr") if interface is None else ("subnet",)
                 entry = self.pfsense.find_virtual_ip(name, fields=fields, modes=("carp",))
             if entry is not None and entry.findtext("uniqid"):
-                parent = ip_interface("{0}/{1}".format(entry.findtext("subnet"), entry.findtext("subnet_bits")))
-                if address not in parent.network:
-                    self.module.fail_json(msg="A stacked IP Alias must be in its CARP VIP's subnet")
+                parent = ip_address(entry.findtext("subnet"))
+                if address.version != parent.version:
+                    self.module.fail_json(msg="A stacked IP Alias must use the same IP address family as its CARP VIP")
                 return "_vip" + entry.findtext("uniqid")
         if interface is None:
             self.module.fail_json(msg=f"{name} is not a valid interface")

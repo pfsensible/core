@@ -32,7 +32,7 @@ class TestVirtualIP(TestPFSenseModule):
             ET.SubElement(vip, key).text = value
         if self.stacked:
             child = ET.SubElement(vips, "vip")
-            for key, value in dict(mode="ipalias", type="single", subnet="192.0.2.11", subnet_bits="24",
+            for key, value in dict(mode="ipalias", type="single", subnet="198.51.100.12", subnet_bits="29",
                                    interface="_viptestcarp", uniqid="testalias").items():
                 ET.SubElement(child, key).text = value
         tree.write(self.tmp_file, encoding="utf-8", short_empty_elements=False)
@@ -56,21 +56,22 @@ class TestVirtualIP(TestPFSenseModule):
             self.execute_module(changed=False)
         self.phpshell.assert_not_called()
 
-    def test_stack_alias_by_carp_description(self):
+    def test_stack_alias_from_different_subnet_by_carp_description(self):
         self.module = pfsense_virtual_ip_alias
-        with set_module_args(dict(address="192.0.2.11/24", interface="Backup WAN IP")):
+        with set_module_args(dict(address="198.51.100.12/29", interface="Backup WAN IP")):
             result = self.execute_module(changed=True)
         self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp")
+        self.assertEqual(result["diff"]["after"]["subnet_bits"], "29")
 
         self.stacked = True
         for interface in ("Backup WAN IP", "192.0.2.10", "_viptestcarp"):
-            with self.subTest(interface=interface), set_module_args(dict(address="192.0.2.11/24", interface=interface)):
+            with self.subTest(interface=interface), set_module_args(dict(address="198.51.100.12/29", interface=interface)):
                 self.execute_module(changed=False)
 
-    def test_stack_alias_by_description_outside_carp_subnet(self):
+    def test_stack_alias_rejects_different_ip_address_family(self):
         self.module = pfsense_virtual_ip_alias
-        with set_module_args(dict(address="192.0.3.11/24", interface="Backup WAN IP")):
-            self.execute_module(failed=True, msg="A stacked IP Alias must be in its CARP VIP's subnet")
+        with set_module_args(dict(address="2001:db8::11/64", interface="Backup WAN IP")):
+            self.execute_module(failed=True, msg="A stacked IP Alias must use the same IP address family as its CARP VIP")
 
     def test_stack_alias_by_description_requires_carp(self):
         self.module = pfsense_virtual_ip_alias

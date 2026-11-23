@@ -16,13 +16,14 @@ description:
 options:
   address:
     description:
-      - IPv4 or IPv6 address with the interface prefix length, such as C(192.0.2.10/24).
+      - IPv4 or IPv6 address with the prefix length of the alias subnet, such as C(192.0.2.10/24).
       - The address identifies the VIP. For deletion the prefix is optional.
     type: str
     required: true
   interface:
     description:
       - Assigned pfSense interface name or description, C(lo0) for localhost, or the address or description of a CARP VIP.
+      - An IP Alias stacked on a CARP VIP must use the same IP address family and can use a different subnet.
       - Required when O(state=present).
     type: str
   descr:
