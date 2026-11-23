@@ -105,6 +105,12 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
         )
         self.do_module_test(obj, command=command)
 
+    def test_dhcp_static_update_hostname(self):
+        """ test that a hostname update is logged """
+        obj = dict(name="dhcphostid", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="10.0.0.100", hostname="newhostname", netif="opt1")
+        command = "update dhcp_static 'dhcphostid' set hostname='newhostname'"
+        self.do_module_test(obj, command=command)
+
     def test_dhcp_static_create_wrong_subnet(self):
         """ test create with IP address in the wrong subnet """
         obj = dict(name="test_entry", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="1.2.3.4", netif="opt1")
@@ -131,7 +137,8 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
     def test_dhcp_static_delete_macaddr(self):
         """ test """
         obj = dict(macaddr="ab:ab:ab:ab:ab:ab", netif="opt1", state="absent")
-        command = "delete dhcp_static ''"
+        command = "delete dhcp_static 'ab:ab:ab:ab:ab:ab'"
+        self.do_module_test(obj, command=command, delete=True)
 
     def test_dhcp_static_delete_name(self):
         """ test """

@@ -46,10 +46,10 @@ options:
     description: The filename
     type: str
   rootpath:
-    description: The roothpath
+    description: The root path
     type: str
   defaultleasetime:
-    description: the default lease time
+    description: The default lease time
     type: str
   maxleasetime:
     description: The max lease time

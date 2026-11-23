@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_dhcp_static - name static mappings that have no client identifier by their MAC address in ``commands``, and report ``hostname`` and ``descr`` changes (https://github.com/pfsensible/core/pull/311).

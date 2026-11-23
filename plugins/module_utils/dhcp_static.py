@@ -31,7 +31,7 @@ DHCP_STATIC_ARGUMENT_SPEC = dict(
     ddnsdomain=dict(type="str"),
     ddnsdomainprimary=dict(type="str"),
     ddnsdomainsecondary=dict(type="str"),
-    ddnsdomainkeyname=dict(type="str"),
+    ddnsdomainkeyname=dict(type="str", no_log=False),
     ddnsdomainkeyalgorithm=dict(type="str", choices=["hmac-md5", "hmac-sha1", "hmac-sha224", "hmac-sha256", "hmac-sha384", "hmac-sha512"]),
     ddnsdomainkey=dict(type="str", no_log=True),
     tftp=dict(type="str"),
@@ -109,10 +109,10 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         self.obj = obj
         # client identifier
         self._get_ansible_param(obj, "name", fname="cid", force=True)
+        self._get_ansible_param(obj, "macaddr", fname="mac", force=True)
 
         if params["state"] == "present":
 
-            self._get_ansible_param(obj, "macaddr", fname="mac", force=True)
             # Forced options
             for option in ["ipaddr", "hostname", "descr", "filename",
                            "rootpath", "defaultleasetime", "maxleasetime",
@@ -140,7 +140,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
                 if nic.find("ipaddr") is not None:
                     ipaddr = nic.find("ipaddr").text
                     if ipaddr is not None:
-                        if nic.find("subnet") is not None:
+                        if nic.findtext("subnet"):
                             subnet = int(nic.find("subnet").text)
                             if subnet < 31:
                                 self.network = ip_network(u"{0}/{1}".format(ipaddr, subnet), strict=False)
@@ -203,7 +203,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
     #
     def _get_obj_name(self):
         """ return obj's name """
-        return "'" + self.obj["cid"] + "'"
+        return "'{0}'".format(self.obj["cid"] or self.obj["mac"])
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
@@ -211,10 +211,14 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         if before is None:
             values += self.format_cli_field(self.params, "macaddr")
             values += self.format_cli_field(self.params, "ipaddr")
+            values += self.format_cli_field(self.params, "hostname")
+            values += self.format_cli_field(self.params, "descr")
             values += self.format_cli_field(self.params, "arp_table_static_entry", fvalue=self.fvalue_bool, default=False)
         else:
             values += self.format_updated_cli_field(self.obj, before, "macaddr", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "ipaddr", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "hostname", add_comma=(values))
+            values += self.format_updated_cli_field(self.obj, before, "descr", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "arp_table_static_entry", fvalue=self.fvalue_bool, add_comma=(values))
         return values
 
