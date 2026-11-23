@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import pytest
 import sys
+import xml.etree.ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
@@ -404,3 +405,234 @@ class TestPFSenseAggregateModule(TestPFSenseModule):
             self.assert_find_vlan("vmx1", "101")
             self.assert_find_vlan("vmx2", "102")
             self.assert_not_find_vlan("vmx0", "100")
+
+
+class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
+
+    module = pfsense_aggregate
+
+    def __init__(self, *args, **kwargs):
+        super(TestPFSenseAggregateDHCPStaticModule, self).__init__(*args, **kwargs)
+        self.config_file = "pfsense_dhcp_static_config.xml"
+        self.edit_fixture = None
+
+    def load_fixtures(self):
+        """ loading data, then applying the test's edit_fixture(root) if any """
+        super(TestPFSenseAggregateDHCPStaticModule, self).load_fixtures()
+        if self.edit_fixture is not None:
+            tree = ET.parse(self.tmp_file)
+            self.edit_fixture(tree.getroot())
+            tree.write(self.tmp_file, encoding="utf-8", short_empty_elements=False)
+
+    @staticmethod
+    def add_staticmap(root, netif, **fields):
+        """ add a static map with fields to the DHCP server of netif, creating the server if needed """
+        dhcp_elt = root.find("dhcpd").find(netif)
+        if dhcp_elt is None:
+            dhcp_elt = ET.SubElement(root.find("dhcpd"), netif)
+            ET.SubElement(dhcp_elt, "enable")
+        staticmap_elt = ET.SubElement(dhcp_elt, "staticmap")
+        for key, value in fields.items():
+            ET.SubElement(staticmap_elt, key).text = value
+
+    def find_staticmap(self, netif, name=None, mac=None):
+        """ return the static map on netif with cid name (and mac if given), or None """
+        self.load_xml_result()
+        elt_filter = dict(cid=name) if mac is None else dict(mac=mac) if name is None else dict(cid=name, mac=mac)
+        return self.find_xml_tag(self.assert_find_xml_elt(self.xml_result, "dhcpd").find(netif), elt_filter)
+
+    def assert_dhcpd_reloaded(self):
+        """ test that the DHCP server was reloaded in the single update command """
+        self.phpshell.assert_called_once()
+        self.assertIn("services_dhcpd_configure()", self.phpshell.call_args[0][0])
+
+    def test_aggregate_dhcp_statics(self):
+        """ test creation of static maps on several interfaces in one call """
+        args = dict(
+            aggregated_dhcp_statics=[
+                dict(name="test_entry", macaddr="ab:ab:ab:ab:ab:ac", ipaddr="10.0.0.101", netif="pub"),
+                dict(name="other_entry", macaddr="ab:ab:ab:ab:ab:ad", ipaddr="10.10.0.101", netif="opt2"),
+            ]
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], [
+                "create dhcp_static 'test_entry', macaddr='ab:ab:ab:ab:ab:ac', ipaddr='10.0.0.101'",
+                "create dhcp_static 'other_entry', macaddr='ab:ab:ab:ab:ab:ad', ipaddr='10.10.0.101'",
+            ])
+            self.assertIsNotNone(self.find_staticmap("opt1", "test_entry"))
+            self.assertIsNotNone(self.find_staticmap("opt2", "other_entry"))
+            self.assertIsNotNone(self.find_staticmap("opt1", "dhcphostid"))
+            self.assert_dhcpd_reloaded()
+
+    def test_aggregate_dhcp_statics_update(self):
+        """ test update of an existing static map """
+        args = dict(
+            aggregated_dhcp_statics=[
+                dict(name="dhcphostid", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="10.0.0.110", hostname="dhcphostname", netif="opt1"),
+            ]
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], ["update dhcp_static 'dhcphostid' set ipaddr='10.0.0.110'"])
+            self.assertEqual(self.find_staticmap("opt1", "dhcphostid").findtext("ipaddr"), "10.0.0.110")
+            self.assert_dhcpd_reloaded()
+
+    def test_aggregate_dhcp_statics_delete(self):
+        """ test deletion of a static map """
+        args = dict(aggregated_dhcp_statics=[dict(name="dhcphostid", netif="opt1", state="absent")])
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid'"])
+            self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
+            self.assert_dhcpd_reloaded()
+
+    def test_aggregate_dhcp_statics_unchanged(self):
+        """ test that an existing static map declared as is reports no change """
+        args = dict(
+            aggregated_dhcp_statics=[
+                dict(name="dhcphostid", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="10.0.0.100", hostname="dhcphostname", netif="opt1"),
+            ]
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=False)
+            self.assertEqual(result["result_dhcp_statics"], [])
+            self.assertFalse(self.load_xml_result())
+            self.phpshell.assert_not_called()
+
+    def test_aggregate_dhcp_statics_checkmode(self):
+        """ test creation of a static map with check_mode """
+        args = dict(
+            aggregated_dhcp_statics=[dict(name="test_entry", macaddr="ab:ab:ab:ab:ab:ac", ipaddr="10.0.0.101", netif="opt1")],
+            _ansible_check_mode=True,
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], ["create dhcp_static 'test_entry', macaddr='ab:ab:ab:ab:ab:ac', ipaddr='10.0.0.101'"])
+            self.assertFalse(self.load_xml_result())
+            self.phpshell.assert_not_called()
+
+    def test_aggregate_dhcp_statics_purge(self):
+        """ test that purge deletes the static maps not declared """
+        args = dict(
+            purge_dhcp_statics=True,
+            aggregated_dhcp_statics=[dict(name="other_entry", macaddr="ab:ab:ab:ab:ab:ad", ipaddr="10.10.0.101", netif="opt2")],
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], [
+                "create dhcp_static 'other_entry', macaddr='ab:ab:ab:ab:ab:ad', ipaddr='10.10.0.101'",
+                "delete dhcp_static 'dhcphostid'",
+            ])
+            self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
+            self.assertIsNotNone(self.find_staticmap("opt2", "other_entry"))
+
+    def test_aggregate_dhcp_statics_purge_two_on_same_netif(self):
+        """ test that purge keeps every declared static map of an interface """
+        args = dict(
+            purge_dhcp_statics=True,
+            aggregated_dhcp_statics=[
+                dict(name="first", macaddr="ab:ab:ab:ab:ab:01", ipaddr="10.0.0.101", netif="opt1"),
+                dict(name="second", macaddr="ab:ab:ab:ab:ab:02", ipaddr="10.0.0.102", netif="opt1"),
+            ],
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], [
+                "create dhcp_static 'first', macaddr='ab:ab:ab:ab:ab:01', ipaddr='10.0.0.101'",
+                "create dhcp_static 'second', macaddr='ab:ab:ab:ab:ab:02', ipaddr='10.0.0.102'",
+                "delete dhcp_static 'dhcphostid'",
+            ])
+            self.assertIsNotNone(self.find_staticmap("opt1", "first"))
+            self.assertIsNotNone(self.find_staticmap("opt1", "second"))
+
+    def test_aggregate_dhcp_statics_purge_converged(self):
+        """ test that purge over an already converged list reports no change """
+        args = dict(
+            purge_dhcp_statics=True,
+            aggregated_dhcp_statics=[
+                dict(name="dhcphostid", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="10.0.0.100", hostname="dhcphostname", netif="opt1"),
+            ],
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=False)
+            self.assertEqual(result["result_dhcp_statics"], [])
+            self.phpshell.assert_not_called()
+
+    def test_aggregate_dhcp_statics_purge_absent(self):
+        """ test that an absent item combined with purge is deleted once """
+        args = dict(
+            purge_dhcp_statics=True,
+            aggregated_dhcp_statics=[
+                dict(name="dhcphostid", netif="opt1", state="absent"),
+                dict(name="other_entry", macaddr="ab:ab:ab:ab:ab:ad", ipaddr="10.10.0.101", netif="opt2"),
+            ],
+        )
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], [
+                "delete dhcp_static 'dhcphostid'",
+                "create dhcp_static 'other_entry', macaddr='ab:ab:ab:ab:ab:ad', ipaddr='10.10.0.101'",
+            ])
+            self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
+
+    def test_aggregate_dhcp_statics_purge_mac_only(self):
+        """ test that purge deletes a static map without client identifier, naming it by its MAC """
+        self.edit_fixture = lambda root: self.add_staticmap(root, "opt2", mac="ab:ab:ab:ab:ab:ae", ipaddr="10.10.0.102")
+        args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[
+            dict(name="dhcphostid", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="10.0.0.100", hostname="dhcphostname", netif="opt1"),
+        ])
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'ab:ab:ab:ab:ab:ae'"])
+            self.assertIsNone(self.find_staticmap("opt2", mac="ab:ab:ab:ab:ab:ae"))
+            self.assert_dhcpd_reloaded()
+
+    def test_aggregate_dhcp_statics_purge_disabled_server(self):
+        """ test that purge leaves the static maps of a disabled DHCP server alone """
+        self.edit_fixture = lambda root: self.add_staticmap(root, "lan", cid="lan_entry", mac="ab:ab:ab:ab:ab:af", ipaddr="192.168.1.10")
+        args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[])
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid'"])
+            self.assertIsNotNone(self.find_staticmap("lan", "lan_entry"))
+
+    def test_aggregate_dhcp_statics_purge_unmanaged_server(self):
+        """ test that purge skips enabled DHCP servers on missing or unaddressed interfaces """
+        def edit(root):
+            self.add_staticmap(root, "opt9", cid="stale_entry", mac="ab:ab:ab:ab:ab:b0")
+            self.add_staticmap(root, "opt5", cid="dhcp_wan_entry", mac="ab:ab:ab:ab:ab:b1")
+
+        self.edit_fixture = edit
+        args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[])
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid'"])
+            self.assertIsNotNone(self.find_staticmap("opt9", "stale_entry"))
+            self.assertIsNotNone(self.find_staticmap("opt5", "dhcp_wan_entry"))
+
+    def test_aggregate_dhcp_statics_purge_no_dhcpd(self):
+        """ test that purge without any DHCP server configuration does nothing """
+        self.edit_fixture = lambda root: root.remove(root.find("dhcpd"))
+        args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[])
+        with set_module_args(args):
+            result = self.execute_module(changed=False)
+            self.assertEqual(result["result_dhcp_statics"], [])
+
+    def test_aggregate_dhcp_statics_purge_display_name_collision(self):
+        """ test that purge deletes the undeclared static map when an interface description matches another interface name """
+        def edit(root):
+            root.find("interfaces/opt2/descr").text = "OPT1"
+            self.add_staticmap(root, "opt1", cid="dup", mac="ab:ab:ab:ab:ab:b2", ipaddr="10.0.0.102")
+            self.add_staticmap(root, "opt2", cid="dup", mac="ab:ab:ab:ab:ab:b2", ipaddr="10.10.0.102")
+
+        self.edit_fixture = edit
+        args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[
+            dict(name="dup", macaddr="ab:ab:ab:ab:ab:b2", ipaddr="10.10.0.102", netif="opt2"),
+        ])
+        with set_module_args(args):
+            result = self.execute_module(changed=True)
+            self.assertIn("delete dhcp_static 'dup'", result["result_dhcp_statics"])
+            self.assertIsNone(self.find_staticmap("opt1", "dup"))
+            self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
+            self.assertIsNotNone(self.find_staticmap("opt2", "dup"))
