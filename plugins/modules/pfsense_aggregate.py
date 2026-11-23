@@ -737,7 +737,7 @@ result_dhcp_statics:
     description: the set of DHCP static mappings commands that would be pushed to the remote device (if pfSense had a CLI)
     returned: success
     type: list
-    sample: ["create dhcp_static 'printer', macaddr='aa:bb:cc:dd:ee:01', ipaddr='192.168.1.10'", "delete dhcp_static 'old_laptop'"]
+    sample: ["create dhcp_static 'printer', macaddr='aa:bb:cc:dd:ee:01', ipaddr='192.168.1.10'", "delete dhcp_static 'old_laptop' on 'lan'"]
 result_interfaces:
     description: the set of interfaces commands that would be pushed to the remote device (if pfSense had a CLI)
     returned: success

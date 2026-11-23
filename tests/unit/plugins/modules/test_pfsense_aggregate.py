@@ -483,7 +483,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
         args = dict(aggregated_dhcp_statics=[dict(name="dhcphostid", netif="opt1", state="absent")])
         with set_module_args(args):
             result = self.execute_module(changed=True)
-            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid'"])
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid' on 'opt1'"])
             self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
             self.assert_dhcpd_reloaded()
 
@@ -522,7 +522,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
             result = self.execute_module(changed=True)
             self.assertEqual(result["result_dhcp_statics"], [
                 "create dhcp_static 'other_entry', macaddr='ab:ab:ab:ab:ab:ad', ipaddr='10.10.0.101'",
-                "delete dhcp_static 'dhcphostid'",
+                "delete dhcp_static 'dhcphostid' on 'opt1'",
             ])
             self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
             self.assertIsNotNone(self.find_staticmap("opt2", "other_entry"))
@@ -541,7 +541,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
             self.assertEqual(result["result_dhcp_statics"], [
                 "create dhcp_static 'first', macaddr='ab:ab:ab:ab:ab:01', ipaddr='10.0.0.101'",
                 "create dhcp_static 'second', macaddr='ab:ab:ab:ab:ab:02', ipaddr='10.0.0.102'",
-                "delete dhcp_static 'dhcphostid'",
+                "delete dhcp_static 'dhcphostid' on 'opt1'",
             ])
             self.assertIsNotNone(self.find_staticmap("opt1", "first"))
             self.assertIsNotNone(self.find_staticmap("opt1", "second"))
@@ -571,7 +571,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
         with set_module_args(args):
             result = self.execute_module(changed=True)
             self.assertEqual(result["result_dhcp_statics"], [
-                "delete dhcp_static 'dhcphostid'",
+                "delete dhcp_static 'dhcphostid' on 'opt1'",
                 "create dhcp_static 'other_entry', macaddr='ab:ab:ab:ab:ab:ad', ipaddr='10.10.0.101'",
             ])
             self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
@@ -584,7 +584,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
         ])
         with set_module_args(args):
             result = self.execute_module(changed=True)
-            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'ab:ab:ab:ab:ab:ae'"])
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'ab:ab:ab:ab:ab:ae' on 'opt2'"])
             self.assertIsNone(self.find_staticmap("opt2", mac="ab:ab:ab:ab:ab:ae"))
             self.assert_dhcpd_reloaded()
 
@@ -594,7 +594,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
         args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[])
         with set_module_args(args):
             result = self.execute_module(changed=True)
-            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid'"])
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid' on 'opt1'"])
             self.assertIsNotNone(self.find_staticmap("lan", "lan_entry"))
 
     def test_aggregate_dhcp_statics_purge_unmanaged_server(self):
@@ -607,7 +607,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
         args = dict(purge_dhcp_statics=True, aggregated_dhcp_statics=[])
         with set_module_args(args):
             result = self.execute_module(changed=True)
-            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid'"])
+            self.assertEqual(result["result_dhcp_statics"], ["delete dhcp_static 'dhcphostid' on 'opt1'"])
             self.assertIsNotNone(self.find_staticmap("opt9", "stale_entry"))
             self.assertIsNotNone(self.find_staticmap("opt5", "dhcp_wan_entry"))
 
@@ -632,7 +632,7 @@ class TestPFSenseAggregateDHCPStaticModule(TestPFSenseModule):
         ])
         with set_module_args(args):
             result = self.execute_module(changed=True)
-            self.assertIn("delete dhcp_static 'dup'", result["result_dhcp_statics"])
+            self.assertIn("delete dhcp_static 'dup' on 'opt1'", result["result_dhcp_statics"])
             self.assertIsNone(self.find_staticmap("opt1", "dup"))
             self.assertIsNone(self.find_staticmap("opt1", "dhcphostid"))
             self.assertIsNotNone(self.find_staticmap("opt2", "dup"))
