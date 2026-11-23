@@ -137,11 +137,11 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
     def test_dhcp_static_delete_macaddr(self):
         """ test """
         obj = dict(macaddr="ab:ab:ab:ab:ab:ab", netif="opt1", state="absent")
-        command = "delete dhcp_static 'ab:ab:ab:ab:ab:ab'"
+        command = "delete dhcp_static 'ab:ab:ab:ab:ab:ab' on 'opt1'"
         self.do_module_test(obj, command=command, delete=True)
 
     def test_dhcp_static_delete_name(self):
         """ test """
         obj = dict(name="dhcphostid", netif="opt1", state="absent")
-        command = "delete dhcp_static 'dhcphostid'"
+        command = "delete dhcp_static 'dhcphostid' on 'opt1'"
         self.do_module_test(obj, command=command, delete=True)

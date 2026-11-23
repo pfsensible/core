@@ -196,6 +196,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
     def remove_staticmap(self, dhcp_elt, staticmap_elt):
         """ remove a static map element of dhcp_elt as is, without searching for it by cid or mac """
         self.root_elt = dhcp_elt
+        self.netif = dhcp_elt.tag
         self.staticmaps = dhcp_elt.findall("staticmap")
         self.target_elt = staticmap_elt
         self.obj = dict(cid=staticmap_elt.findtext("cid") or "", mac=staticmap_elt.findtext("mac") or "")
@@ -239,6 +240,10 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, "descr", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "arp_table_static_entry", fvalue=self.fvalue_bool, add_comma=(values))
         return values
+
+    def _log_fields_delete(self):
+        """ generate pseudo-CLI command fields parameters to delete an obj """
+        return " on '{0}'".format(self.netif)
 
     ##############################
     # run
