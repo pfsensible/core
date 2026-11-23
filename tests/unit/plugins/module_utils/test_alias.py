@@ -277,7 +277,7 @@ class AliasTests(unittest.TestCase):
         namespace = {}
         exec(compile(ast.Module(body=[method], type_ignores=[]), "<aggregate update>", "exec"), namespace)
         aggregate = SimpleNamespace(pfsense=self.helper, pfsense_aliases=self.alias)
-        for name in ("vlans", "interfaces", "rules", "rule_separators", "nat_port_forwards", "nat_outbounds"):
+        for name in ("vlans", "interfaces", "dhcp_statics", "rules", "rule_separators", "nat_port_forwards", "nat_outbounds"):
             setattr(aggregate, "pfsense_" + name, SimpleNamespace(result={"changed": False}))
         namespace["_update"](aggregate)
         self.assertEqual(self.events, ["initialize", "reload"])

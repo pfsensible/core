@@ -16,9 +16,9 @@ DOCUMENTATION = """
 module: pfsense_aggregate
 version_added: 0.1.0
 author: Frederic Bor (@f-bor)
-short_description: Manage multiple pfSense firewall aliases, rules, and rule separators, plus interfaces and VLANs
+short_description: Manage multiple pfSense firewall aliases, rules, and rule separators, plus interfaces, VLANs and DHCP static mappings
 description:
-  - Manage multiple pfSense firewall aliases, rules, and rule separators, plus interfaces and VLANs
+  - Manage multiple pfSense firewall aliases, rules, and rule separators, plus interfaces, VLANs and DHCP static mappings
 notes:
   - aggregated_* use the same options definitions than pfsense corresponding module
 options:
@@ -61,6 +61,122 @@ options:
         description: Update frequency in days for urltable
         default: null
         type: int
+  aggregated_dhcp_statics:
+    description: Dict of DHCP static mappings to apply on the target
+    required: False
+    type: list
+    elements: dict
+    version_added: 0.8.0
+    suboptions:
+      name:
+        description: The client name identifier.  At least one of I(name) or I(macaddr) is required.
+        type: str
+        aliases:
+          - cid
+      netif:
+        description: The network interface.  This defaults to the only enabled DHCP interface if there is only one.
+        type: str
+      macaddr:
+        description: The mac address.  At least one of I(name) or I(macaddr) is required.
+        type: str
+      ipaddr:
+        description: The IP address
+        type: str
+      hostname:
+        description: The hostname
+        type: str
+      descr:
+        description: The description
+        type: str
+      filename:
+        description: The filename
+        type: str
+      rootpath:
+        description: The root path
+        type: str
+      defaultleasetime:
+        description: The default lease time
+        type: str
+      maxleasetime:
+        description: The max lease time
+        type: str
+      gateway:
+        description: The gateway
+        type: str
+      domain:
+        description: The domain
+        type: str
+      winsserver:
+        description: The WINS server
+        type: list
+        elements: str
+      dnsserver:
+        description: The dns server
+        type: list
+        elements: str
+      ntpserver:
+        description: The ntpserver
+        type: list
+        elements: str
+      domainsearchlist:
+        description: The domain search list servers
+        type: str
+      ddnsdomain:
+        description: The ddns domain
+        type: str
+      ddnsdomainprimary:
+        description: The ddns primary domain
+        type: str
+      ddnsdomainsecondary:
+        description: The ddns secondary domain
+        type: str
+      ddnsdomainkeyname:
+        description: The ddns domain key name
+        type: str
+      ddnsdomainkeyalgorithm:
+        description: The ddns key algorithm
+        type: str
+        choices: [ 'hmac-md5', 'hmac-sha1', 'hmac-sha224', 'hmac-sha256', 'hmac-sha384', 'hmac-sha512' ]
+      ddnsdomainkey:
+        description: The ddns domain key
+        type: str
+      tftp:
+        description: The TFTP server
+        type: str
+      ldap:
+        description: The ldap server
+        type: str
+      nextserver:
+        description: The next server
+        type: str
+      filename32:
+        description: The filename for 32bits
+        type: str
+      filename64:
+        description: The filename for 64bits
+        type: str
+      filename32arm:
+        description: The filename for 32arm
+        type: str
+      filename64arm:
+        description: The filename for 64arm
+        type: str
+      uefihttpboot:
+        description: UEFI HTTPBoot URL
+        type: str
+      numberoptions:
+        description: The number options
+        type: str
+      arp_table_static_entry:
+        description: Create an ARP Table Static Entry for this MAC & IP Address pair
+        type: bool
+        required: false
+        default: false
+      state:
+        description: State in which to leave the configuration
+        default: present
+        choices: [ "present", "absent" ]
+        type: str
   aggregated_interfaces:
     description: Dict of interfaces to apply on the target
     required: False
@@ -519,6 +635,14 @@ options:
     required: False
     default: False
     type: bool
+  purge_dhcp_statics:
+    description:
+      - delete all the DHCP static mappings of every enabled DHCP server that are not defined into aggregated_dhcp_statics
+      - only applies when aggregated_dhcp_statics is given; an empty list deletes them all
+    required: False
+    default: False
+    type: bool
+    version_added: 0.8.0
   purge_interfaces:
     description: delete all the interfaces that are not defined into aggregated_interfaces
     required: False
@@ -593,6 +717,14 @@ EXAMPLES = """
     aggregated_vlans:
       - { descr: voice, vlan_id: 100, interface: mvneta0, state: present }
       - { descr: video, vlan_id: 200, interface: mvneta0, state: present }
+
+- name: "Setup DHCP static mappings on two interfaces in a single module call"
+  pfsense_aggregate:
+    aggregated_dhcp_statics:
+      - { name: printer, netif: lan, macaddr: "aa:bb:cc:dd:ee:01", ipaddr: 192.168.1.10 }
+      - { name: nas, netif: lan, macaddr: "aa:bb:cc:dd:ee:02", ipaddr: 192.168.1.11, hostname: nas }
+      - { name: camera, netif: opt1, macaddr: "aa:bb:cc:dd:ee:03", ipaddr: 10.0.0.20 }
+      - { name: old_laptop, netif: lan, state: absent }
 """
 
 RETURN = """
@@ -601,6 +733,11 @@ result_aliases:
     returned: success
     type: list
     sample: ["create alias 'adservers', type='host', address='10.0.0.1 10.0.0.2'", "update alias 'one_host' set address='10.9.8.7'", "delete alias 'one_alias'"]
+result_dhcp_statics:
+    description: the set of DHCP static mappings commands that would be pushed to the remote device (if pfSense had a CLI)
+    returned: success
+    type: list
+    sample: ["create dhcp_static 'printer', macaddr='aa:bb:cc:dd:ee:01', ipaddr='192.168.1.10'", "delete dhcp_static 'old_laptop'"]
 result_interfaces:
     description: the set of interfaces commands that would be pushed to the remote device (if pfSense had a CLI)
     returned: success
@@ -638,6 +775,12 @@ result_vlans:
 
 from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 from ansible_collections.pfsensible.core.plugins.module_utils.alias import PFSenseAliasModule, ALIAS_ARGUMENT_SPEC, ALIAS_MUTUALLY_EXCLUSIVE, ALIAS_REQUIRED_IF
+from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_static import (
+    PFSenseDHCPStaticModule,
+    DHCP_STATIC_ARGUMENT_SPEC,
+    DHCP_STATIC_REQUIRED_IF,
+    DHCP_STATIC_REQUIRED_ONE_OF,
+)
 from ansible_collections.pfsensible.core.plugins.module_utils.interface import (
     PFSenseInterfaceModule,
     INTERFACE_ARGUMENT_SPEC,
@@ -663,12 +806,13 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 class PFSenseModuleAggregate(object):
-    """ module managing pfsense aggregated aliases, rules, rule separators, interfaces and VLANs """
+    """ module managing pfsense aggregated aliases, rules, rule separators, interfaces, VLANs and DHCP static mappings """
 
     def __init__(self, module):
         self.module = module
         self.pfsense = PFSenseModule(module)
         self.pfsense_aliases = PFSenseAliasModule(module, self.pfsense)
+        self.pfsense_dhcp_statics = PFSenseDHCPStaticModule(module, self.pfsense)
         self.pfsense_interfaces = PFSenseInterfaceModule(module, self.pfsense)
         self.pfsense_nat_outbounds = PFSenseNatOutboundModule(module, self.pfsense)
         self.pfsense_nat_port_forwards = PFSenseNatPortForwardModule(module, self.pfsense)
@@ -691,6 +835,10 @@ class PFSenseModuleAggregate(object):
         if self.pfsense_interfaces.result["changed"]:
             run = True
             cmd += self.pfsense_interfaces.get_update_cmds()
+
+        if self.pfsense_dhcp_statics.result["changed"]:
+            run = True
+            cmd += self.pfsense_dhcp_statics.get_update_cmds()
 
         cmd += "if (filter_configure() == 0) { \n"
         if self.pfsense_aliases.result["changed"]:
@@ -1033,6 +1181,29 @@ class PFSenseModuleAggregate(object):
             for params in todel:
                 self.pfsense_aliases.run(params)
 
+    def run_dhcp_statics(self):
+        """ process input params to add/update/delete all DHCP static mappings """
+        want = self.module.params["aggregated_dhcp_statics"]
+
+        if want is None:
+            return
+
+        # processing aggregated parameter, remembering the static maps the present items resolved to.
+        # Purge keeps those elements instead of matching each static map against the params, which
+        # would repeat the netif resolution and the cid/mac matching of PFSenseDHCPStaticModule.
+        wanted_elts = set()
+        for param in want:
+            self.pfsense_dhcp_statics.run(param)
+            if param["state"] == "present":
+                wanted_elts.add(self.pfsense_dhcp_statics.target_elt)
+
+        # delete every other static map by element: a second cid/mac search could find a different one
+        if self.module.params["purge_dhcp_statics"]:
+            for dhcp_elt in self.pfsense_dhcp_statics.managed_dhcp_servers():
+                for staticmap_elt in dhcp_elt.findall("staticmap"):
+                    if staticmap_elt not in wanted_elts:
+                        self.pfsense_dhcp_statics.remove_staticmap(dhcp_elt, staticmap_elt)
+
     def run_interfaces(self):
         """ process input params to add/update/delete all interfaces """
         want = self.module.params["aggregated_interfaces"]
@@ -1130,7 +1301,8 @@ class PFSenseModuleAggregate(object):
         stdout = ""
         stderr = ""
         changed = (
-            self.pfsense_aliases.result["changed"] or self.pfsense_interfaces.result["changed"] or self.pfsense_nat_outbounds.result["changed"]
+            self.pfsense_aliases.result["changed"] or self.pfsense_dhcp_statics.result["changed"]
+            or self.pfsense_interfaces.result["changed"] or self.pfsense_nat_outbounds.result["changed"]
             or self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_rules.result["changed"]
             or self.pfsense_rule_separators.result["changed"] or self.pfsense_vlans.result["changed"]
         )
@@ -1141,6 +1313,7 @@ class PFSenseModuleAggregate(object):
 
         result = {}
         result["result_aliases"] = self.pfsense_aliases.result["commands"]
+        result["result_dhcp_statics"] = self.pfsense_dhcp_statics.result["commands"]
         result["result_interfaces"] = self.pfsense_interfaces.result["commands"]
         result["result_nat_outbounds"] = self.pfsense_nat_outbounds.result["commands"]
         result["result_nat_port_forwards"] = self.pfsense_nat_port_forwards.result["commands"]
@@ -1157,6 +1330,9 @@ def main():
     argument_spec = dict(
         aggregated_aliases=dict(
             type="list", elements="dict", options=ALIAS_ARGUMENT_SPEC, mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE, required_if=ALIAS_REQUIRED_IF),
+        aggregated_dhcp_statics=dict(
+            type="list", elements="dict",
+            options=DHCP_STATIC_ARGUMENT_SPEC, required_if=DHCP_STATIC_REQUIRED_IF, required_one_of=DHCP_STATIC_REQUIRED_ONE_OF),
         aggregated_interfaces=dict(
             type="list", elements="dict",
             options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE),
@@ -1169,6 +1345,7 @@ def main():
         aggregated_vlans=dict(type="list", elements="dict", options=VLAN_ARGUMENT_SPEC),
         order_rules=dict(default=False, type="bool"),
         purge_aliases=dict(default=False, type="bool"),
+        purge_dhcp_statics=dict(default=False, type="bool"),
         purge_interfaces=dict(default=False, type="bool"),
         purge_nat_outbounds=dict(default=False, type="bool"),
         purge_nat_port_forwards=dict(default=False, type="bool"),
@@ -1182,6 +1359,7 @@ def main():
 
     required_one_of = [[
         "aggregated_aliases",
+        "aggregated_dhcp_statics",
         "aggregated_interfaces",
         "aggregated_nat_outbounds",
         "aggregated_nat_port_forwards",
@@ -1199,6 +1377,7 @@ def main():
 
     pfmodule.run_vlans()
     pfmodule.run_interfaces()
+    pfmodule.run_dhcp_statics()
 
     pfmodule.run_aliases()
     pfmodule.run_nat_outbounds_rules()

@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_aggregate - add ``aggregated_dhcp_statics`` and ``purge_dhcp_statics`` to manage many DHCP static mappings in a single module call, reported in ``result_dhcp_statics`` (https://github.com/pfsensible/core/pull/311).

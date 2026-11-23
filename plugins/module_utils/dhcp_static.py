@@ -70,6 +70,8 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseDHCPStaticModule, self).__init__(module, pfsense)
         self.name = "pfsense_dhcp_static"
+        # Override for use with aggregate
+        self.argument_spec = DHCP_STATIC_ARGUMENT_SPEC
         self.dhcpd = self.pfsense.get_element("dhcpd")
         self.root_elt = None
         self.staticmaps = None
@@ -148,6 +150,8 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         return False
 
     def _find_staticmaps(self, netif=None):
+        # Reset per item, so a single instance can process many (pfsense_aggregate)
+        self.root_elt = None
         for e in self.dhcpd:
             if netif is None or e.tag == netif:
                 if e.find("enable") is not None:
@@ -182,6 +186,20 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
             self.module.fail_json(msg="Found multiple static maps for cid {0}.".format(self.obj["cid"]))
         else:
             return None
+
+    def managed_dhcp_servers(self):
+        """ return the DHCP server elements whose static maps this module manages """
+        if self.dhcpd is None:
+            return []
+        return [e for e in self.dhcpd if e.find("enable") is not None and self._is_valid_netif(e.tag)]
+
+    def remove_staticmap(self, dhcp_elt, staticmap_elt):
+        """ remove a static map element of dhcp_elt as is, without searching for it by cid or mac """
+        self.root_elt = dhcp_elt
+        self.staticmaps = dhcp_elt.findall("staticmap")
+        self.target_elt = staticmap_elt
+        self.obj = dict(cid=staticmap_elt.findtext("cid") or "", mac=staticmap_elt.findtext("mac") or "")
+        self._remove()
 
     def _create_target(self):
         """ create the XML target_elt """
@@ -225,15 +243,20 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
     ##############################
     # run
     #
-    def _update(self):
-        """ make the target pfsense reload """
-        return self.pfsense.phpshell("""
+    @staticmethod
+    def get_update_cmds():
+        """ build and return php commands to reload the DHCP server """
+        return """
             require_once("util.inc");
             require_once("services.inc");
             $retvaldhcp = services_dhcpd_configure();
             if ($retvaldhcp == 0) {
               clear_subsystem_dirty('dhcpd');
-            }""")
+            }"""
+
+    def _update(self):
+        """ make the target pfsense reload """
+        return self.pfsense.phpshell(self.get_update_cmds())
 
     def _pre_remove_target_elt(self):
         self.diff["after"] = {}
