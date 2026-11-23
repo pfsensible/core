@@ -292,7 +292,10 @@ options:
         type: str
         version_added: 0.8.0
       target:
-        description: The translated to address, in {ALIAS,IP}[:port] format.
+        description:
+          - The redirect target address or host alias, optionally followed by a colon and a port number or port alias.
+          - For a numeric incoming port range, specify the first translated port or an inclusive C(first-last) range of the same size.
+          - The incoming ports can be set with C(destination_port) or in the destination address.
         required: false
         default: null
         type: str
