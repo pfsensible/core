@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_nat_port_forward - Now accepts target port ranges (https://github.com/pfsensible/core/pull/309).

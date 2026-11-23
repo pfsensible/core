@@ -7,6 +7,8 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
+import re
+
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule
 
@@ -35,6 +37,7 @@ NAT_PORT_FORWARD_REQUIRED_IF = [
 ]
 
 PORT_PROTOCOLS = ("tcp", "udp", "tcp/udp")
+NUMERIC_PORTS = re.compile(r"([0-9]{1,5})(?:-([0-9]{1,5}))?")
 
 
 class PFSenseNatPortForwardModule(PFSenseModuleBase):
@@ -58,6 +61,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         self.after = None
         self.before = None
         self.position_changed = False
+        self.translated_port = ""
 
         self.root_elt = self.pfsense.get_element("nat")
         if self.root_elt is None:
@@ -136,20 +140,48 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         else:
             self.module.fail_json(msg='"%s" is not a valid redirect target IP address or host alias.' % (param))
 
+        protocol_has_ports = self.params["protocol"] in PORT_PROTOCOLS
         if ports is None:
-            if self.params["protocol"] in PORT_PROTOCOLS:
+            if protocol_has_ports:
                 self.module.fail_json(msg='Must specify a target port with protocol "{0}".'.format(self.params["protocol"]))
-            else:
-                # pfSense seems to always add an empty local-port element
-                obj["local-port"] = ""
+            # pfSense keeps an empty local-port element for protocols without ports.
+            obj["local-port"] = self.translated_port = ""
+            return
 
-        if ports is not None:
-            if self.params["protocol"] not in PORT_PROTOCOLS:
-                self.module.fail_json(msg='Cannot specify a target port with protocol "{0}".'.format(self.params["protocol"]))
-            elif self.pfsense.is_port_or_alias(ports):
-                obj["local-port"] = ports
-            else:
-                self.module.fail_json(msg='"{0}" is not a valid redirect target port. It must be a port alias or integer between 1 and 65535.'.format(ports))
+        if not protocol_has_ports:
+            self.module.fail_json(msg='Cannot specify a target port with protocol "{0}".'.format(self.params["protocol"]))
+
+        obj["local-port"], self.translated_port = self._parse_target_ports(ports, obj["destination"].get("port", ""))
+
+    def _parse_target_ports(self, ports, destination_port):
+        """ Return the NAT starting port and the firewall rule's translated ports. """
+        target = NUMERIC_PORTS.fullmatch(ports)
+        if target is None or target[2] is None:
+            if not self.pfsense.is_port_or_alias(ports):
+                self.module.fail_json(msg=f'"{ports}" is not a valid redirect target port. It must be a port alias or integer between 1 and 65535.')
+            if target is None:
+                return ports, ports
+
+        start = int(target[1])
+        destination = NUMERIC_PORTS.fullmatch(destination_port)
+        end = int(target[2]) if target[2] is not None else None
+        if end is not None:
+            if not 1 <= start <= end <= 65535:
+                self.module.fail_json(msg=f'"{ports}" is not a valid redirect target port range. Use ascending ports between 1 and 65535.')
+            if destination is None:
+                self.module.fail_json(msg="A redirect target port range requires numeric destination ports.")
+
+        width = int(destination[2]) - int(destination[1]) if destination and destination[2] is not None else 0
+        if width < 0:
+            self.module.fail_json(msg="The destination port range must be in ascending order.")
+        if end is not None and end - start != width:
+            self.module.fail_json(msg="The redirect target and destination port ranges must contain the same number of ports.")
+        if start + width > 65535:
+            self.module.fail_json(msg="The translated port range exceeds port 65535.")
+
+        # pfSense derives the target end from the incoming range and stores only the start.
+        first = target[1]
+        return first, f"{first}-{start + width}" if width else first
 
     def _validate_params(self):
         """ do some extra checks on input parameters """
@@ -178,7 +210,9 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         params["source"] = self.params["source"]
         # A NAT rule with no source port must also clear its associated rule's source port.
         params["source_port"] = self.params.get("source_port") if "port" in self.obj["source"] else ""
-        params["destination"] = self.params["target"]
+        params["destination"] = self.obj["target"]
+        if self.translated_port:
+            params["destination"] += ":" + self.translated_port
         params["disabled"] = self.params["disabled"]
         params["protocol"] = self.params["protocol"]
         return params

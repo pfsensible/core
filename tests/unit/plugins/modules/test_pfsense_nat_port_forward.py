@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_nat_port_forward
 from ansible_collections.pfsensible.core.plugins.module_utils.nat_port_forward import PFSenseNatPortForwardModule
 from .pfsense_module import TestPFSenseModule
@@ -295,6 +296,48 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         cmd2 = "update nat_port_forward 'last' set target='10.255.1.20:2222'"
         self.do_module_test(obj, command=[cmd1, cmd2], target_idx=2)
         self.assert_xml_elt_equal(self.get_target_elt(obj), "associated-rule-id", "nat_5e03858acc6b82.92150982")
+
+    def test_nat_port_forward_update_target_range(self):
+        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan",
+                   destination_port="22022-22025", target="10.255.1.20:22-25")
+        with set_module_args(self.args_from_var(obj)):
+            self.execute_module(changed=True, commands=[
+                "update rule 'NAT last' on 'wan' set destination_port='22-25'",
+                "update nat_port_forward 'last' set destination_port='22022-22025'",
+            ])
+            self.changed(changed=False)
+
+        self.assertTrue(self.load_xml_result())
+        nat_rule = self.get_target_elt(obj)
+        self.assert_xml_elt_equal(nat_rule, "local-port", "22")
+        self.assert_xml_elt_equal(nat_rule, "destination/port", "22022-22025")
+        rule_id = nat_rule.findtext("associated-rule-id")
+        self.assertEqual(rule_id, "nat_5e03858acc6b82.92150982")
+        filter_rule = self.get_associated_rule_elt(obj, rule_id)
+        self.assert_xml_elt_equal(filter_rule, "destination/port", "22-25")
+
+    def test_nat_port_forward_create_legacy_target_start_with_associated_range(self):
+        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4:8200-8203", target="2.3.4.5:9200")
+        with set_module_args(self.args_from_var(obj)):
+            self.execute_module(changed=True)
+
+        self.assertTrue(self.load_xml_result())
+        nat_rule = self.get_target_elt(obj)
+        self.assert_xml_elt_equal(nat_rule, "local-port", "9200")
+        filter_rule = self.get_associated_rule_elt(obj, nat_rule.findtext("associated-rule-id"))
+        self.assert_xml_elt_equal(filter_rule, "destination/port", "9200-9203")
+
+    def test_nat_port_forward_reject_target_range_length_mismatch(self):
+        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4:8200-8203", target="2.3.4.5:9200-9202")
+        self.do_module_test(obj, failed=True, msg="The redirect target and destination port ranges must contain the same number of ports.")
+
+    def test_nat_port_forward_reject_descending_target_range(self):
+        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4:8200-8203", target="2.3.4.5:9203-9200")
+        self.do_module_test(obj, failed=True, msg='"9203-9200" is not a valid redirect target port range. Use ascending ports between 1 and 65535.')
+
+    def test_nat_port_forward_reject_target_range_overflow(self):
+        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4:8200-8203", target="2.3.4.5:65534")
+        self.do_module_test(obj, failed=True, msg="The translated port range exceeds port 65535.")
 
     def test_nat_port_forward_update_target_ip_and_port(self):
         """ test """
