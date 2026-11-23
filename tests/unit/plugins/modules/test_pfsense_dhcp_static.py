@@ -11,7 +11,7 @@ if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_dhcp_static
-from ansible_collections.pfsensible.core.plugins.modules.pfsense_dhcp_static import PFSenseDHCPStaticModule
+from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_static import PFSenseDHCPStaticModule
 from .pfsense_module import TestPFSenseModule
 
 
