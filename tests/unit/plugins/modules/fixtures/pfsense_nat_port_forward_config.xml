@@ -2363,7 +2363,7 @@
 			<mode>ipalias</mode>
 			<interface>lan</interface>
 			<uniqid>5c0a4b6139b05</uniqid>
-			<descr></descr>
+			<descr>Forwarded VIP</descr>
 			<type>single</type>
 			<subnet_bits>24</subnet_bits>
 			<subnet>10.255.2.254</subnet>

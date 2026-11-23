@@ -120,7 +120,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, "strictusercn")
             obj["mode"] = self.params["mode"]
             obj["dev_mode"] = self.params["dev_mode"]
-            obj["interface"] = self.params["interface"]
+            obj["interface"] = self.pfsense.resolve_openvpn_interface(self.params["interface"])
             obj["protocol"] = self.params["protocol"]
             obj["server_addr"] = self.params["server_addr"]
             obj["server_port"] = str(self.params["server_port"])

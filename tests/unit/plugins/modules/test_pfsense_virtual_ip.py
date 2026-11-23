@@ -6,7 +6,7 @@ __metaclass__ = type
 import xml.etree.ElementTree as ET
 
 from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
-from ansible_collections.pfsensible.core.plugins.modules import pfsense_virtual_ip_carp
+from ansible_collections.pfsensible.core.plugins.modules import pfsense_virtual_ip_alias, pfsense_virtual_ip_carp
 from .pfsense_module import TestPFSenseModule
 
 
@@ -25,14 +25,15 @@ class TestVirtualIP(TestPFSenseModule):
         vips = tree.getroot().find("virtualip")
         if vips is None:
             vips = ET.SubElement(tree.getroot(), "virtualip")
-        fields = dict(mode=self.existing_mode, subnet="192.0.2.10", subnet_bits="24", type="single",
+        fields = dict(mode=self.existing_mode, descr="Backup WAN IP", subnet="192.0.2.10", subnet_bits="24", type="single",
                       interface="lan", vhid="11", password="previous-carp-password", uniqid="testcarp")
         vip = ET.SubElement(vips, "vip")
         for key, value in fields.items():
             ET.SubElement(vip, key).text = value
         if self.stacked:
             child = ET.SubElement(vips, "vip")
-            for key, value in dict(mode="ipalias", subnet="192.0.2.11", subnet_bits="24", interface="_viptestcarp").items():
+            for key, value in dict(mode="ipalias", type="single", subnet="192.0.2.11", subnet_bits="24",
+                                   interface="_viptestcarp", uniqid="testalias").items():
                 ET.SubElement(child, key).text = value
         tree.write(self.tmp_file, encoding="utf-8", short_empty_elements=False)
 
@@ -54,3 +55,25 @@ class TestVirtualIP(TestPFSenseModule):
         with set_module_args(dict(address="192.0.2.10", state="absent")):
             self.execute_module(changed=False)
         self.phpshell.assert_not_called()
+
+    def test_stack_alias_by_carp_description(self):
+        self.module = pfsense_virtual_ip_alias
+        with set_module_args(dict(address="192.0.2.11/24", interface="Backup WAN IP")):
+            result = self.execute_module(changed=True)
+        self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp")
+
+        self.stacked = True
+        for interface in ("Backup WAN IP", "192.0.2.10", "_viptestcarp"):
+            with self.subTest(interface=interface), set_module_args(dict(address="192.0.2.11/24", interface=interface)):
+                self.execute_module(changed=False)
+
+    def test_stack_alias_by_description_outside_carp_subnet(self):
+        self.module = pfsense_virtual_ip_alias
+        with set_module_args(dict(address="192.0.3.11/24", interface="Backup WAN IP")):
+            self.execute_module(failed=True, msg="A stacked IP Alias must be in its CARP VIP's subnet")
+
+    def test_stack_alias_by_description_requires_carp(self):
+        self.module = pfsense_virtual_ip_alias
+        self.existing_mode = "ipalias"
+        with set_module_args(dict(address="192.0.2.11/24", interface="Backup WAN IP")):
+            self.execute_module(failed=True, msg="Backup WAN IP is not a valid interface")

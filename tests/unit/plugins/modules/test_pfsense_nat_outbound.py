@@ -10,6 +10,7 @@ import sys
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_nat_outbound
 from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound import PFSenseNatOutboundModule
 from .pfsense_module import TestPFSenseModule
@@ -181,6 +182,16 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443", address="4.5.6.7:888-999")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443', address='4.5.6.7/32:888-999'"
         self.do_module_test(obj, command=command, target_idx=3)
+
+    def test_nat_outbound_create_with_vip_description(self):
+        obj = dict(descr="VIP translation", interface="lan", source="Outbound VIP", destination="any", address="Outbound VIP:8000")
+        with set_module_args(dict(obj, state="present")):
+            result = self.execute_module(changed=True)
+        after = result["diff"]["after"]
+        self.assertEqual(after["source"], {"network": "10.255.2.254/32"})
+        self.assertEqual(after["target"], "10.255.2.254")
+        self.assertIsNone(after["target_subnet"])
+        self.assertEqual(after["natport"], "8000")
 
     def test_nat_outbound_create_address_net(self):
         """ test """

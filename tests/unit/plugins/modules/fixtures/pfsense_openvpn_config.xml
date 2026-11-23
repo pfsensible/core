@@ -442,4 +442,15 @@
                         <netbios_scope></netbios_scope>
                 </openvpn-csc>
         </openvpn>
+        <virtualip>
+                <vip>
+                        <mode>carp</mode>
+                        <interface>wan</interface>
+                        <uniqid>testcarp</uniqid>
+                        <descr>Backup WAN IP</descr>
+                        <type>single</type>
+                        <subnet_bits>24</subnet_bits>
+                        <subnet>192.0.2.10</subnet>
+                </vip>
+        </virtualip>
 </pfsense>

@@ -135,6 +135,16 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         )
         self.do_module_test(obj, command=command, target_idx=3)
 
+    def test_nat_port_forward_create_with_vip_descriptions(self):
+        obj = dict(descr="VIP forwarding", interface="lan", source="any", destination="!Forwarded VIP",
+                   destination_port="443", target="Forwarded VIP:8443", associated_rule="pass")
+        with set_module_args(dict(obj, state="present")):
+            result = self.execute_module(changed=True)
+        after = result["diff"]["after"]
+        self.assertEqual(after["destination"], {"address": "10.255.2.254", "not": "", "port": "443"})
+        self.assertEqual(after["target"], "10.255.2.254")
+        self.assertEqual(after["local-port"], "8443")
+
     def test_nat_port_forward_create_range(self):
         """ test """
         obj = dict(descr="test_pf", interface="lan", source="any:9000-10000", destination="1.2.3.4:9000-10000", target="2.3.4.5:9000", associated_rule="none")

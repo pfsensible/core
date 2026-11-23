@@ -170,7 +170,13 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
             elif self.pfsense.find_alias(address, "host") is not None or self.pfsense.find_alias(address, "network") is not None:
                 ret[target] = address
             else:
-                self.module.fail_json(msg="Cannot parse address %s, not %s network or alias" % (address, self.params["ipprotocol"]))
+                vip_address = self.pfsense.get_virtual_ip_address(address)
+                if vip_address and self.params["ipprotocol"] != "inet6" and self.pfsense.is_ipv4_address(vip_address):
+                    ret[target] = vip_address + "/32"
+                elif vip_address and self.params["ipprotocol"] != "inet" and self.pfsense.is_ipv6_address(vip_address):
+                    ret[target] = vip_address + "/128"
+                else:
+                    self.module.fail_json(msg="Cannot parse address %s, not %s network or alias" % (address, self.params["ipprotocol"]))
 
         if ports is not None:
             self._parse_ports(obj, ports, field_port, param)
@@ -202,7 +208,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
             return
 
         param = self.params["address"]
-        addr = param.split(":")
+        addr = [param] if self.pfsense.is_ipv6_address(param) else param.split(":")
         if len(addr) > 2:
             self.module.fail_json(msg="Cannot parse address %s" % (param))
 
@@ -210,7 +216,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
         ports = addr[1] if len(addr) > 1 else None
         if address is not None and address != "":
-            if self.pfsense.is_virtual_ip(address):
+            if self.pfsense.find_virtual_ip(address, fields=("subnet",)) is not None:
                 obj["target"] = address
                 obj["target_subnet"] = None
             elif self.pfsense.find_alias(address, "host") is not None or self.pfsense.find_alias(address, "network") is not None:
@@ -222,11 +228,16 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
                 obj["target"] = address
                 obj["target_subnet"] = "32"
             else:
-                (addr, part) = self.pfsense.parse_ip_network(address, False, False)
-                if addr is None:
-                    self.module.fail_json(msg="Cannot parse address %s, not IP or alias" % (address))
-                obj["target"] = addr
-                obj["target_subnet"] = str(part)
+                network = self.pfsense.parse_ip_network(address, False, False)
+                if network is None:
+                    vip_address = self.pfsense.get_virtual_ip_address(address)
+                    if vip_address is None:
+                        self.module.fail_json(msg="Cannot parse address %s, not IP or alias" % (address))
+                    obj["target"] = vip_address
+                    obj["target_subnet"] = None
+                else:
+                    obj["target"], prefix = network
+                    obj["target_subnet"] = str(prefix)
             del obj["address"]
 
         self._parse_ports(obj, ports, "natport", param)
