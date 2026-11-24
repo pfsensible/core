@@ -6,10 +6,12 @@ __metaclass__ = type
 
 import pytest
 import sys
+import xml.etree.ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_dhcp_static
 from ansible_collections.pfsensible.core.plugins.module_utils.dhcp_static import PFSenseDHCPStaticModule
 from .pfsense_module import TestPFSenseModule
@@ -81,6 +83,37 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
         )
         self.do_module_test(obj, command=command)
 
+    def test_dhcp_static_creates_lowercase_mac_and_matches_both_cases(self):
+        params = dict(name="test_entry", macaddr="AB:AB:AB:AB:AB:AC", ipaddr="10.0.0.101", netif="opt1")
+        self.load_fixtures()
+        with set_module_args(params):
+            result = self.changed(True)
+        self.assertEqual(result["diff"]["after"]["mac"], "ab:ab:ab:ab:ab:ac")
+        self.assertEqual(result["commands"], ["create dhcp_static 'test_entry', macaddr='ab:ab:ab:ab:ab:ac', ipaddr='10.0.0.101'"])
+
+        self.phpshell.reset_mock()
+        for macaddr in ("ab:ab:ab:ab:ab:ac", "AB:AB:AB:AB:AB:AC"):
+            with self.subTest(macaddr=macaddr), set_module_args(dict(params, macaddr=macaddr)):
+                self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+        maps = ET.parse(self.tmp_file).findall("dhcpd/opt1/staticmap[cid='test_entry']")
+        self.assertEqual([mapping.findtext("mac") for mapping in maps], ["ab:ab:ab:ab:ab:ac"])
+
+    def test_dhcp_static_updates_existing_uppercase_mac_in_place(self):
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        tree.find("dhcpd/opt1/staticmap[cid='dhcphostid']/mac").text = "AB:AB:AB:AB:AB:AB"
+        tree.write(self.tmp_file)
+
+        params = dict(name="dhcphostid", macaddr="ab:ab:ab:ab:ab:ab", ipaddr="10.0.0.100", hostname="dhcphostname", netif="opt1")
+        with set_module_args(params):
+            result = self.changed(True)
+        self.assertEqual(result["diff"]["before"]["mac"], "AB:AB:AB:AB:AB:AB")
+        self.assertEqual(result["diff"]["after"]["mac"], "ab:ab:ab:ab:ab:ab")
+        self.assertEqual(result["commands"], ["update dhcp_static 'dhcphostid' set macaddr='ab:ab:ab:ab:ab:ab'"])
+        maps = ET.parse(self.tmp_file).findall("dhcpd/opt1/staticmap[cid='dhcphostid']")
+        self.assertEqual([mapping.findtext("mac") for mapping in maps], ["ab:ab:ab:ab:ab:ab"])
+
     def test_dhcp_static_create_empty(self):
         """ test """
         obj = dict(name="test_entry", macaddr="ab:ab:ab:ab:ab:ac", ipaddr="10.10.0.101", netif="opt2")
@@ -135,10 +168,15 @@ class TestPFSenseDHCPStaticModule(TestPFSenseModule):
         self.do_module_test(obj, failed=True, msg=msg)
 
     def test_dhcp_static_delete_macaddr(self):
-        """ test """
-        obj = dict(macaddr="ab:ab:ab:ab:ab:ab", netif="opt1", state="absent")
-        command = "delete dhcp_static 'ab:ab:ab:ab:ab:ab' on 'opt1'"
-        self.do_module_test(obj, command=command, delete=True)
+        params = dict(macaddr="AB:AB:AB:AB:AB:AB", netif="opt1", state="absent")
+        self.load_fixtures()
+        with set_module_args(params):
+            result = self.changed(True)
+        self.assertEqual(result["diff"]["before"]["mac"], "ab:ab:ab:ab:ab:ab")
+        self.assertEqual(result["commands"], ["delete dhcp_static 'ab:ab:ab:ab:ab:ab' on 'opt1'"])
+        self.assertIsNone(ET.parse(self.tmp_file).find("dhcpd/opt1/staticmap[cid='dhcphostid']"))
+        with set_module_args(params):
+            self.assertEqual(self.changed(False)["commands"], [])
 
     def test_dhcp_static_delete_name(self):
         """ test """

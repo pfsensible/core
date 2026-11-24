@@ -31,7 +31,9 @@ options:
       The network interface.  This defaults to the only enabled DHCP interface if there is only one.
     type: str
   macaddr:
-    description: The mac address.  At least one of I(name) or I(macaddr) is required.
+    description:
+      - The MAC address. At least one of I(name) or I(macaddr) is required.
+      - The module matches MAC addresses case-insensitively and stores them in lowercase.
     type: str
   ipaddr:
     description: The IP address

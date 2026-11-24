@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_dhcp_static stores MAC addresses in lowercase and matches existing
+    mappings case-insensitively to prevent duplicate reservations
+    (https://github.com/pfsensible/core/issues/244).
