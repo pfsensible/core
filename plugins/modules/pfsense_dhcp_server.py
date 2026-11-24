@@ -79,11 +79,11 @@ options:
     description: DDNS domain key
     type: str
   mac_allow:
-    description: Allowed MAC addresses
+    description: Allowed MAC addresses. Omit this option or pass an empty list to clear the allow list.
     type: list
     elements: str
   mac_deny:
-    description: Denied MAC addresses
+    description: Denied MAC addresses. Omit this option or pass an empty list to clear the deny list.
     type: list
     elements: str
   ddnsclientupdates:
