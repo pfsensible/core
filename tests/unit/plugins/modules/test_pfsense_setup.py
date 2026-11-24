@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import pytest
 import sys
+import xml.etree.ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
@@ -13,6 +14,7 @@ if sys.version_info < (2, 7):
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_setup
 from .pfsense_module import TestPFSenseModule
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 
 
 class TestPFSenseSetupModule(TestPFSenseModule):
@@ -153,6 +155,56 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         setup = dict(webguifixedmenu=True)
         command = "update setup general set webguifixedmenu=True"
         self.do_module_test(setup, command=command, state=None)
+
+    def test_setup_webgui_false_is_idempotent_when_options_are_absent(self):
+        self.load_fixtures()
+        with set_module_args(dict(interfacessort=False, webguifixedmenu=False)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+
+    def test_setup_disables_enabled_webgui_options(self):
+        options = (
+            "dashboardavailablewidgetspanel", "disablealiaspopupdetail", "interfacessort", "loginshowhost",
+            "requirestatefilter", "roworderdragging", "statusmonitoringsettingspanel", "systemlogsfilterpanel",
+            "systemlogsmanagelogpanel", "webguifixedmenu", "webguileftcolumnhyper",
+        )
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        webgui = tree.find("system/webgui")
+        for option in options:
+            ET.SubElement(webgui, option).text = "fixed" if option == "webguifixedmenu" else None
+        ET.SubElement(webgui, "nohttpreferercheck")
+        tree.write(self.tmp_file)
+
+        params = dict.fromkeys(options, False)
+        params["dashboardcolumns"] = 3
+        with set_module_args(params):
+            result = self.changed(True)
+        for option in options:
+            self.assertIn(option, result["diff"]["before"]["webgui"])
+            self.assertNotIn(option, result["diff"]["after"]["webgui"])
+            self.assertIn(f"{option}=False", result["commands"][0])
+        webgui = ET.parse(self.tmp_file).find("system/webgui")
+        self.assertEqual(webgui.findtext("protocol"), "http")
+        self.assertEqual(webgui.findtext("dashboardcolumns"), "3")
+        self.assertIsNotNone(webgui.find("nohttpreferercheck"))
+        for option in options:
+            self.assertIsNone(webgui.find(option))
+        with set_module_args(params):
+            self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_setup_applies_webgui_options_when_section_is_absent(self):
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        system = tree.find("system")
+        system.remove(system.find("webgui"))
+        tree.write(self.tmp_file)
+
+        with set_module_args(dict(interfacessort=False)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(interfacessort=False, dashboardcolumns=3)):
+            result = self.changed(True)
+        self.assertEqual(result["diff"]["after"]["webgui"], {"dashboardcolumns": "3"})
 
     def test_setup_interfacessort(self):
         """ test setup interfacessort """

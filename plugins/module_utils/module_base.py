@@ -235,7 +235,7 @@ class PFSenseModuleBase(object):
 
             # Handle renaming of parameters
             for p, o in self.map_param:
-                if self.params.get(p) is not None:
+                if self.params.get(p) is not None and p in obj:
                     move_dict_key(obj, p, o)
 
             # Handle conditional renaming of parameters

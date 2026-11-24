@@ -430,6 +430,11 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     def _params_to_obj(self):
         """ return a dict from module params """
         obj = super(PFSenseSetupModule, self)._params_to_obj()
+        webgui = obj.get("webgui") or {}
+        # Mapped WebGUI flags are stored by presence. Drop disabled flags from the copied configuration.
+        for param, path in SETUP_MAP_PARAM:
+            if self.params.get(param) is False:
+                webgui.pop(path.rsplit("/", 1)[-1], None)
         self._dns_params_to_obj(self.params, obj)
         return obj
 
@@ -592,11 +597,9 @@ load_thermal_hardware();"""
         if restart_sshguard:
             cmd += "system_sshguard_stop();$retval |= system_syslogd_start(true);\n"
 
-        restart_webgui = False
-        for param in ["ssl-certref"]:
-            if self.obj["webgui"].get(param) != self.diff["before"]["webgui"].get(param):
-                restart_webgui = True
-        if restart_webgui:
+        webgui = self.obj.get("webgui") or {}
+        before_webgui = self.diff["before"].get("webgui") or {}
+        if webgui.get("ssl-certref") != before_webgui.get("ssl-certref"):
             cmd += "restart_GUI();\n"
 
         self.result["cmd"] = cmd
@@ -612,8 +615,8 @@ load_thermal_hardware();"""
 
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
-        bwebgui = self.diff["before"]["webgui"]
-        webgui = self.obj["webgui"]
+        bwebgui = self.diff["before"].get("webgui") or {}
+        webgui = self.obj.get("webgui") or {}
 
         obj_before = self._prepare_dns_log(self.diff["before"])
         obj_after = self._prepare_dns_log(self.obj)
@@ -659,7 +662,7 @@ load_thermal_hardware();"""
     def _prepare_dns_log(obj):
         """ construct dict for logging """
         ret = dict()
-        webgui = obj["webgui"]
+        webgui = obj.get("webgui") or {}
 
         ret["webguicss"] = webgui["webguicss"].replace(".css", "") if "webguicss" in webgui else None
 

@@ -1,0 +1,4 @@
+bugfixes:
+  - >-
+    pfsense_setup accepts false for WebGUI options and removes their configuration
+    flags when present (https://github.com/pfsensible/core/issues/256).
