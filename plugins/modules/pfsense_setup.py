@@ -146,7 +146,9 @@ options:
     required: false
     type: bool
   logincss:
-    description: Color for the login page as six digit hexadecimal string e.g. V(33ffb2)
+    description:
+      - Login page color as six hexadecimal digits with an optional trailing semicolon.
+      - The forms C(1e3f75) and C(1e3f75;) both select Dark Blue.
     required: false
     type: str
   loginshowhost:
@@ -303,6 +305,16 @@ def p2o_webguicss(self, name, params, obj):
             obj[name] = params[name]
 
 
+def p2o_logincss(self, name, params, obj):
+    color = params[name].lower().rstrip(";")
+    current = (obj.get("webgui") or {}).get(name)
+    if isinstance(current, str) and current.lower() in (color, color + ";"):
+        obj[name] = current
+    else:
+        # The pfSense color picker uses a trailing semicolon for Dark Blue.
+        obj[name] = "1e3f75;" if color == "1e3f75" else color
+
+
 def validate_webguicss(self, webguicss):
     """ check css style """
     path = "/usr/local/www/css/"
@@ -315,6 +327,7 @@ def validate_webguicss(self, webguicss):
 # TODO - validate crypto_hardware against $crypto_modules = getSystemAdvancedMiscCryptoModules();
 SETUP_ARG_ROUTE = dict(
     dnslocalhost=dict(parse=p2o_dnslocalhost),
+    logincss=dict(parse=p2o_logincss),
     sshguard_whitelist=dict(parse=p2o_network_list_to_space_separated),
     webguicert=dict(parse=p2o_cert, validate=validate_cert),
     webguicss=dict(parse=p2o_webguicss, validate=validate_webguicss),
@@ -467,14 +480,8 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         if params.get("hostname") is not None:
             self._validate_hostname(params["hostname"], "hostname", True)
 
-        if params.get("logincss") is not None:
-            error = False
-            try:
-                int(params["logincss"], 16)
-            except ValueError:
-                error = True
-            if error or len(params["logincss"]) != 6:
-                self.module.fail_json(msg="logincss must be a six digits hexadecimal string.")
+        if params.get("logincss") is not None and not re.fullmatch(r"[0-9a-fA-F]{6};?", params["logincss"]):
+            self.module.fail_json(msg="logincss must contain six hexadecimal digits with an optional trailing semicolon.")
 
         if params.get("timezone") is not None:
             self._validate_timezone(params["timezone"])

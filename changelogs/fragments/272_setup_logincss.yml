@@ -1,0 +1,4 @@
+bugfixes:
+  - >-
+    pfsense_setup accepts login colors with an optional trailing semicolon
+    and preserves equivalent saved colors (https://github.com/pfsensible/core/issues/272).
