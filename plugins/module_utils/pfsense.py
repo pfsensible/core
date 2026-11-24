@@ -883,7 +883,7 @@ try {
         changed = False
         for (key, value) in src.items():
             this_elt = top_elt.find(key)
-            self.debug.write("changed=%s key=%s value=%s this_elt=%s, sub=%d\n" % (changed, key, value, this_elt, sub))
+            self.debug.write("changed=%s key=%s this_elt=%s, sub=%d\n" % (changed, key, this_elt, sub))
             if this_elt is None:
                 if isinstance(value, dict):
                     changed = True
@@ -961,14 +961,14 @@ try {
                     # Note: ET.Element.clear() is not used here because it also
                     # resets .tail, which would corrupt pretty-print whitespace.
                     if len(this_elt) > 0:
-                        self.debug.write("changed=%s this_elt=%s != value=%s\n" % (changed, repr(this_elt), repr(value)))
+                        self.debug.write("changed=%s replacing contents of %s\n" % (changed, key))
                         for child in list(this_elt):
                             this_elt.remove(child)
                         changed = True
                     if this_elt.text is None and value == "":
                         pass
                     elif this_elt.text != value:
-                        self.debug.write("changed=%s this_elt.text=%s != value=%s\n" % (changed, repr(this_elt.text), repr(value)))
+                        self.debug.write("changed=%s replacing text of %s\n" % (changed, key))
                         this_elt.text = value
                         changed = True
                 prev_elt = this_elt
