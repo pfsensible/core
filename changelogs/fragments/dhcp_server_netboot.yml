@@ -1,0 +1,5 @@
+minor_changes:
+  - >-
+    pfsense_dhcp_server - add the ``netboot`` option ("Enable Network Booting"), without which
+    pfSense does not give ``nextserver``, ``filename`` and ``rootpath`` to the DHCP clients.
+    When not set, the current setting is left unchanged.

@@ -34,6 +34,7 @@ DHCPSERVER_ARGUMENT_SPEC = dict(
     ddnsclientupdates=dict(type="str", default="allow", choices=["allow", "deny", "ignore"]),
     tftp=dict(type="str"),
     ldap=dict(type="str"),
+    netboot=dict(type="bool"),
     nextserver=dict(type="str"),
     filename=dict(type="str"),
     filename32=dict(type="str"),
@@ -151,6 +152,9 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             for option in ["dhcpinlocaltime", "statsgraph"]:
                 self._get_ansible_param_bool(obj, option, value="yes")
 
+            # Only managed when set: unset, the current value is kept
+            self._get_ansible_param_bool(obj, "netboot", value="")
+
             self._get_ansible_param(obj, "denyunknown")
             if obj.get("denyunknown") == "disabled":
                 del obj["denyunknown"]
@@ -213,6 +217,8 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
         params = ["enable", "ignorebootp", "nonak", "ignoreclientuids", "staticarp", "disablepingcheck", "dhcpinlocaltime", "statsgraph"]
         if self.params.get("denyunknown") == "disabled":
             params.append("denyunknown")
+        if self.params.get("netboot") is False:
+            params.append("netboot")
         return params
 
     def _create_target(self):
@@ -254,6 +260,7 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             values += self.format_cli_field(self.obj, "ddnsclientupdates")
             values += self.format_cli_field(self.obj, "tftp")
             values += self.format_cli_field(self.obj, "ldap")
+            values += self.format_cli_field(self.obj, "netboot", fvalue=self.fvalue_bool)
             values += self.format_cli_field(self.obj, "nextserver")
             values += self.format_cli_field(self.obj, "filename")
             values += self.format_cli_field(self.obj, "filename32")
@@ -282,6 +289,8 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, "ddnsclientupdates")
             values += self.format_updated_cli_field(self.obj, before, "tftp")
             values += self.format_updated_cli_field(self.obj, before, "ldap")
+            if self.params.get("netboot") is not None:
+                values += self.format_updated_cli_field(self.obj, before, "netboot", fvalue=self.fvalue_bool)
             values += self.format_updated_cli_field(self.obj, before, "nextserver")
             values += self.format_updated_cli_field(self.obj, before, "filename")
             values += self.format_updated_cli_field(self.obj, before, "filename32")

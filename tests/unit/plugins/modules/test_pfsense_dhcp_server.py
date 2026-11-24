@@ -46,6 +46,8 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, "mac_deny")
         self.check_param_equal(obj, target_elt, "tftp")
         self.check_param_equal(obj, target_elt, "ldap")
+        if "netboot" in obj:
+            self.check_param_bool(obj, target_elt, "netboot")
         self.check_param_equal(obj, target_elt, "nextserver")
         self.check_param_equal(obj, target_elt, "filename")
         self.check_param_equal(obj, target_elt, "filename32")
@@ -152,3 +154,68 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
                            "nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
+
+    def test_dhcp_server_create_with_netboot(self):
+        """ test creation with network booting """
+        obj = dict(
+            interface="opt2",
+            enable=True,
+            range_from="172.16.0.100",
+            range_to="172.16.0.199",
+            netboot=True,
+            nextserver="172.16.0.10",
+            filename="ipxe.efi",
+        )
+        command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
+                           "range_to='172.16.0.199', failover_peerip='', defaultleasetime='', ",
+                           "maxleasetime='', netmask='', gateway='', domain='', ",
+                           "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
+                           "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
+                           "ddnsclientupdates='allow', tftp='', ldap='', netboot=True, nextserver='172.16.0.10', ",
+                           "filename='ipxe.efi', filename32='', filename64='', rootpath='', numberoptions=''"]
+        command = "".join(command_as_list)
+        self.do_module_test(obj, command=command)
+
+    def test_dhcp_server_update_enable_netboot(self):
+        """ test enabling network booting on an existing DHCP server """
+        obj = dict(
+            interface="lan",
+            enable=True,
+            range_from="192.168.1.100",
+            range_to="192.168.1.199",
+            defaultleasetime=86400,
+            maxleasetime=172800,
+            netboot=True,
+        )
+        command = "update dhcp_server 'lan' set , netboot=True"
+        self.do_module_test(obj, command=command)
+
+    def test_dhcp_server_update_disable_netboot(self):
+        """ test disabling network booting on an existing DHCP server """
+        obj = dict(
+            interface="opt1",
+            enable=True,
+            range_from="10.0.0.100",
+            range_to="10.0.0.199",
+            defaultleasetime=86400,
+            maxleasetime=172800,
+            domain="opt1.example.com",
+            denyunknown="enabled",
+            netboot=False,
+        )
+        command = "update dhcp_server 'opt1' set , netboot=False"
+        self.do_module_test(obj, command=command)
+
+    def test_dhcp_server_update_keep_netboot(self):
+        """ test that network booting is left as it is when netboot is not set """
+        obj = dict(
+            interface="opt1",
+            enable=True,
+            range_from="10.0.0.100",
+            range_to="10.0.0.199",
+            defaultleasetime=86400,
+            maxleasetime=172800,
+            domain="opt1.example.com",
+            denyunknown="enabled",
+        )
+        self.do_module_test(obj, changed=False)

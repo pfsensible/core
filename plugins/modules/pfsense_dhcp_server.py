@@ -97,6 +97,14 @@ options:
   ldap:
     description: LDAP server
     type: str
+  netboot:
+    description:
+      - Enable network booting ("Enable Network Booting" in the web GUI).
+      - Without it, pfSense does not give O(nextserver), O(filename), O(filename32), O(filename64) and
+        O(rootpath) to the DHCP clients.
+      - When not set, the current setting is left unchanged.
+    type: bool
+    version_added: 0.8.0
   nextserver:
     description: Next server
     type: str
@@ -168,6 +176,16 @@ EXAMPLES = """
     domain: example.com
     defaultleasetime: 86400
     maxleasetime: 172800
+
+- name: Boot the LAN clients from a PXE server
+  pfsense_dhcp_server:
+    interface: lan
+    enable: true
+    range_from: 192.168.1.100
+    range_to: 192.168.1.200
+    netboot: true
+    nextserver: 192.168.1.10
+    filename: ipxe.efi
 
 - name: Remove DHCP server from opt1 interface
   pfsense_dhcp_server:
