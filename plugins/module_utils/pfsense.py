@@ -95,8 +95,29 @@ class PFSenseModule(object):
         self.ipsec = self.get_element("ipsec")
         self.openvpn = self.get_element("openvpn")
         self.virtualip = self.get_element("virtualip")
-        self.debug = open("/tmp/pfsense.debug", "w")
+        self.debug = self._open_debug(module)
         self.pfsense_version = None
+
+    DEBUG_FILE = "/tmp/pfsense.debug"
+
+    @classmethod
+    def _open_debug(cls, module):
+        """ The trace of the XML changes holds the values written, secrets included. It is only
+            written in Ansible's debug mode (ANSIBLE_DEBUG), to a new file readable by its owner only.
+            A trace left by an earlier version, or by a debug run, is removed in any case. """
+        try:
+            # Removes a symbolic link itself, not its target
+            os.unlink(cls.DEBUG_FILE)
+        except OSError:
+            pass
+        if not getattr(module, "_debug", False):
+            return open(os.devnull, "w")
+        try:
+            fd = os.open(cls.DEBUG_FILE, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        except OSError as exc:
+            module.warn("Not writing the debug trace: cannot create {0} ({1})".format(cls.DEBUG_FILE, exc.strerror))
+            return open(os.devnull, "w")
+        return os.fdopen(fd, "w")
 
     @staticmethod
     def _uses_legacy_html_entities():

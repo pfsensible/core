@@ -3,13 +3,11 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from io import StringIO
 import os
 import xml.etree.ElementTree as ET
 
 from parameterized import parameterized
 
-from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_notification_smtp
 from .pfsense_module import TestPFSenseModule
@@ -65,18 +63,14 @@ class TestPFSenseNotificationSMTPModule(TestPFSenseModule):
 
     def test_password_rotation_redacts_both_values(self):
         self.configure_smtp()
-        debug = StringIO()
-
-        def capture_debug(path, *args, **kwargs):
-            if path == "/tmp/pfsense.debug":
-                return debug
-            return open(path, *args, **kwargs)
-
-        with patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.open", create=True, side_effect=capture_debug):
-            result = self.run_module(changed=True, password="new&secret'456", _ansible_diff=True)
+        # Debug mode, so that the trace is written (to the test directory)
+        result = self.run_module(changed=True, password="new&secret'456", _ansible_diff=True, _ansible_debug=True)
+        with open(self.debug_file) as debug:
+            trace = debug.read()
+        self.assertNotEqual(trace, "")
         for secret in ("old&secret'123", "new&secret'456"):
             self.assertNotIn(secret, repr(result))
-            self.assertNotIn(secret, debug.getvalue())
+            self.assertNotIn(secret, trace)
         self.assertEqual(self.smtp_config().findtext("password"), "new&secret'456")
         self.assertEqual(result["diff"]["before"]["password"], "VALUE_SPECIFIED_IN_NO_LOG_PARAMETER")
         self.assertEqual(result["diff"]["after"]["password"], "VALUE_SPECIFIED_IN_NO_LOG_PARAMETER")
