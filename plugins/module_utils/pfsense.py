@@ -1138,7 +1138,8 @@ try {
         return "_vip" + uid if uid else None
 
     def resolve_openvpn_interface(self, value):
-        """Resolve a VIP description to the interface and address OpenVPN stores."""
+        """Resolve a VIP description to the web GUI's selector form, `_vip<uniqid>|<address>`.
+        OpenVPN stores the two parts apart: use get_openvpn_bind to get them."""
         if not value or value in ("any", "lo0") or self.is_interface_port(value):
             return value
         if value.startswith("_vip") and "|" in value:
@@ -1148,6 +1149,17 @@ try {
         if vip is not None and vip.findtext("uniqid") and vip.findtext("subnet") and not self.is_gateway_group(value):
             return "_vip{0}|{1}".format(vip.findtext("uniqid"), vip.findtext("subnet"))
         return value
+
+    def get_openvpn_bind(self, value):
+        """Return the interface and the address an OpenVPN instance binds to.
+        As the web GUI does, a VIP is stored as its interface (_vip<uniqid>) and, apart, its address (ipaddr):
+        openvpn.inc binds to ipaddr, and does not resolve an interface holding both."""
+        interface, separator, address = self.resolve_openvpn_interface(value).partition("|")
+        if not separator and interface.startswith("_vip"):
+            # As for a description, only the VIPs the web GUI offers to OpenVPN
+            vip = self.find_virtual_ip(interface[4:], fields=("uniqid",), modes=("carp", "ipalias"))
+            address = vip.findtext("subnet", "") if vip is not None else ""
+        return interface, address
 
     def find_queue(self, name, interface=None, enabled=False):
         """ return QOS queue if found """

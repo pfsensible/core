@@ -1,0 +1,7 @@
+bugfixes:
+  - >-
+    pfsense_openvpn_server, pfsense_openvpn_client - store an instance bound to a virtual IP as the
+    web GUI does: ``interface`` set to ``_vip<uniqid>`` and, apart, ``ipaddr`` set to the VIP's
+    address, which ``openvpn.inc`` binds to. An instance created on ``_vip<uniqid>`` by an earlier
+    version gets its ``ipaddr`` on the next run, which restarts it once. Moving an instance off a
+    virtual IP now clears ``ipaddr``.
