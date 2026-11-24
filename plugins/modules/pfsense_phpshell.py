@@ -19,12 +19,20 @@ version_added: 0.7.0
 author: Geno (@genofire)
 short_description: PHP Shell
 description:
-  - Run a php shell
+  - Run PHP code in the pfSense shell.
+  - Successful runs report C(changed=true) by default. Set C(changed_when) on the task to report changes according to the script's behavior.
+  - For read-only scripts, set C(changed_when=false) on the task.
 options:
   cmd:
     description: PHP Code to run
     required: true
     type: str
+attributes:
+  check_mode:
+    description: Ansible skips the task in check mode without executing the PHP code.
+    support: none
+notes:
+  - Setting C(check_mode=false) on a task executes the script normally, even during a check-mode playbook run.
 """
 
 EXAMPLES = """
@@ -34,18 +42,25 @@ EXAMPLES = """
       require_once("filter.inc");
       require_once("squid.inc");
       squid_resync("yes");
+
+- name: Read the pfSense hostname
+  pfsensible.core.pfsense_phpshell:
+    cmd: |
+      global $config;
+      echo $config['system']['hostname'], PHP_EOL;
+  changed_when: false
 """
 
 RETURN = """
 rc:
   description: Status code after run php-shell (could be changed using `exit(x)`)
-  returned: always
+  returned: success
   type: int
   sample:
     - 0
 stdout:
   description: Output of the php-shell (include your code)
-  returned: always
+  returned: success
   type: str
   sample: |
       pfSense shell: global $debug;
@@ -58,12 +73,12 @@ stdout:
       pfSense shell: exit
 stderr:
   description: Output on error of the php-shell
-  returned: always
+  returned: success
   type: str
   sample: ""
 changed:
-  description: It returns always true (you could overwrite with changed_when)
-  returned: always
+  description: Defaults to C(true) after successful execution. The task can override it with C(changed_when).
+  returned: success
   type: bool
 failed:
   description: rc is not 0 or stderr contains output (you still could overwrite with failed_when)
@@ -116,7 +131,7 @@ class PFSensePHPShellModule(PFSenseModuleBase):
 def main():
     module = AnsibleModule(
         argument_spec=PHP_SHELL_ARGUMENT_SPEC,
-        supports_check_mode=True)
+        supports_check_mode=False)
 
     pfmodule = PFSensePHPShellModule(module)
     pfmodule.run(module.params)

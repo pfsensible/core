@@ -1,0 +1,4 @@
+bugfixes:
+  - >-
+    pfsense_phpshell now skips PHP execution in check mode and documents how
+    to use changed_when for read-only scripts (https://github.com/pfsensible/core/issues/264).
