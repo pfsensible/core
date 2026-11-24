@@ -3,11 +3,9 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-import builtins
 import errno
 import fcntl
 import importlib.util
-import io
 import json
 import os
 from pathlib import Path
@@ -75,14 +73,10 @@ class ConfigWriteTests(unittest.TestCase):
         self.path.chmod(0o640)
         self.cache.write_bytes(b"old cache")
 
-        def local_open(path, *args, **kwargs):
-            if path == "/tmp/pfsense.debug":
-                return io.StringIO()
-            return builtins.open(path, *args, **kwargs)
-
-        self.open_patch = patch.object(pfsense, "open", side_effect=local_open, create=True)
-        self.open_patch.start()
-        self.addCleanup(self.open_patch.stop)
+        # The debug trace, written in debug mode only, goes to the test directory
+        debug_file_patch = patch.object(pfsense.PFSenseModule, "DEBUG_FILE", str(Path(self.directory.name) / "pfsense.debug"))
+        debug_file_patch.start()
+        self.addCleanup(debug_file_patch.stop)
         # The test runner may use a UID without a local passwd entry.
         username_patch = patch.object(pfsense.PFSenseModule, "get_username", return_value="test")
         username_patch.start()

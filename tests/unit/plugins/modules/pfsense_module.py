@@ -74,6 +74,12 @@ class TestPFSenseModule(ModuleTestCase):
         mock_init.start()
         self.addCleanup(mock_init.stop)
 
+        # The debug trace, written in debug mode only, goes to the test directory
+        self.debug_file = os.path.join(directory.name, "pfsense.debug")
+        mock_debug_file = patch.object(PFSenseModule, "DEBUG_FILE", self.debug_file)
+        mock_debug_file.start()
+        self.addCleanup(mock_debug_file.stop)
+
         # PHP is unavailable in module tests. Decode the transport XML as the
         # native formatter would, while retaining the real atomic write path.
         def format_config(path):

@@ -1,0 +1,7 @@
+security_fixes:
+  - >-
+    Modules no longer write ``/tmp/pfsense.debug`` on every run. This trace of the configuration
+    changes holds the values written, secrets included (pre-shared keys, password hashes), and was
+    readable by all. It is now only written when Ansible's debug mode is on (``ANSIBLE_DEBUG``), to
+    a new file readable by its owner only, and a trace left by an earlier version is removed by the
+    next module run.
