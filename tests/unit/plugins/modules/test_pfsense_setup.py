@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import pytest
 import sys
+import xml.etree.ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
@@ -13,6 +14,7 @@ if sys.version_info < (2, 7):
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_setup
 from .pfsense_module import TestPFSenseModule
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 
 
 class TestPFSenseSetupModule(TestPFSenseModule):
@@ -263,10 +265,29 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         self.do_module_test(setup, command=command, state=None)
 
     def test_setup_logincss_invalid(self):
-        """ test setup logincss """
-        setup = dict(logincss="gg0000")
-        msg = "logincss must be a six digits hexadecimal string."
-        self.do_module_test(setup, msg=msg, state=None, failed=True)
+        msg = "logincss must contain six hexadecimal digits with an optional trailing semicolon."
+        for value in ("gg0000", "1e3f75;;", "+12345", "1e3f75\n"):
+            with self.subTest(value=value):
+                self.do_module_test(dict(logincss=value), msg=msg, state=None, failed=True)
+
+    def test_setup_logincss_dark_blue_uses_pfsense_form(self):
+        self.load_fixtures()
+        with set_module_args(dict(logincss="1e3f75")):
+            result = self.changed(True)
+        self.assertEqual(result["diff"]["after"]["webgui"]["logincss"], "1e3f75;")
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/webgui/logincss"), "1e3f75;")
+        for value in ("1e3f75", "1e3f75;"):
+            with self.subTest(value=value), set_module_args(dict(logincss=value)):
+                self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_setup_logincss_preserves_equivalent_saved_value(self):
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        ET.SubElement(tree.find("system/webgui"), "logincss").text = "1e3f75"
+        tree.write(self.tmp_file)
+        with set_module_args(dict(logincss="1e3f75;", _ansible_check_mode=True)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
 
     def test_setup_dns_addresses(self):
         """ test setup dns """
