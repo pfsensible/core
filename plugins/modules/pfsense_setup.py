@@ -31,15 +31,19 @@ options:
     required: false
     type: str
   dns_addresses:
-    description: DNS IP addresses, separated by space
+    description: Space-separated DNS IP addresses. Omit to preserve the existing addresses.
     required: false
     type: str
   dns_hostnames:
-    description: DNS hostnames, separated by space. You can use none for empty values.
+    description:
+      - Space-separated DNS hostnames in DNS server order. Use C(none) for a slot without a hostname.
+      - Omit to preserve the existing hostname entries, even when changing the server addresses.
     required: false
     type: str
   dns_gateways:
-    description: DNS gateways, separated by space. You can use none for empty values.
+    description:
+      - Space-separated DNS gateways in DNS server order. Use C(none) for a slot without a gateway.
+      - Omit to preserve the existing gateway entries, even when changing the server addresses.
     required: false
     type: str
   dnsallowoverride:
@@ -370,62 +374,56 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     ##############################
     # params processing
     #
+    @staticmethod
+    def _dns_addresses(obj):
+        addresses = obj.get("dnsserver") or []
+        return [addresses] if isinstance(addresses, str) else addresses
+
+    @staticmethod
+    def _dns_slots(obj, suffix):
+        slots = {}
+        for key, value in obj.items():
+            match = re.fullmatch(r"dns([1-9][0-9]*)" + suffix, key)
+            if match:
+                slots[int(match.group(1))] = value
+        return slots
+
     def _dns_params_to_obj(self, params, obj):
-        """ set the dns servers from params to obj """
-        dns_addresses = None
-        dns_hostnames = []
-        dns_gateways = []
-        idx = 0
+        """Apply only the DNS options supplied by the task."""
         if params.get("dns_addresses") is not None:
-            dns_addresses = params["dns_addresses"].split()
-            del obj["dns_addresses"]
-        if params.get("dns_hostnames") is not None:
-            dns_hostnames = params["dns_hostnames"].split()
-            del obj["dns_hostnames"]
-        if params.get("dns_gateways") is not None:
-            dns_gateways = params["dns_gateways"].split()
-            del obj["dns_gateways"]
+            obj["dnsserver"] = obj.pop("dns_addresses").split()
 
-        if dns_addresses is not None:
-            # set the servers
-            obj["dnsserver"] = dns_addresses
+        addresses = self._dns_addresses(obj)
+        for param, suffix in (("dns_hostnames", "host"), ("dns_gateways", "gw")):
+            if params.get(param) is None:
+                continue
 
-            # set the names & gateways
-            for address in dns_addresses:
-                gateway = "none"
-                if idx < len(dns_hostnames) and dns_hostnames[idx] != "none":
-                    obj["dns{0}host".format(idx + 1)] = dns_hostnames[idx]
-                if idx < len(dns_gateways) and dns_gateways[idx] != "none":
-                    gateway = dns_gateways[idx]
+            values = obj.pop(param).split()
+            previous = self._dns_slots(obj, suffix)
+            for index, address in enumerate(addresses, 1):
+                if index <= len(values):
+                    value = values[index - 1]
+                elif suffix == "host":
+                    previous.pop(index, None)
+                    continue
+                else:
+                    value = "none"
+                if suffix == "host" and value == "none":
+                    continue
 
-                gw_key = "dns{0}gw".format(idx + 1)
-                if gw_key not in obj or gateway != obj[gw_key]:
-                    obj[gw_key] = gateway
+                key = "dns{0}{1}".format(index, suffix)
+                obj[key] = value
+                if suffix == "gw" and value != previous.get(index):
                     if self.pfsense.is_ipv4_address(address):
                         self.route_cmds.append("/sbin/route delete {0}".format(address))
                     elif self.pfsense.is_ipv6_address(address):
                         self.route_cmds.append("/sbin/route delete -inet6 {0}".format(address))
+                previous.pop(index, None)
 
-                idx += 1
-
-        elif "dnsserver" in obj:
-            # no servers
-            del obj["dnsserver"]
-
-        idx += 1
-        # delete everything required
-        while True:
-            host = "dns{0}host".format(idx)
-            gateway = "dns{0}gw".format(idx)
-            if host not in obj and gateway not in obj:
-                break
-            if host in obj:
-                del obj[host]
-                self.params_to_delete.append(host)
-            if gateway in obj:
-                del obj[gateway]
-                self.params_to_delete.append(gateway)
-            idx += 1
+            for index in previous:
+                key = "dns{0}{1}".format(index, suffix)
+                del obj[key]
+                self.params_to_delete.append(key)
 
     def _params_to_obj(self):
         """ return a dict from module params """
@@ -494,7 +492,6 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
                             self.module.fail_json(msg="ldap_pam_groupdn not set for authserver '{0}'.".format(value))
 
         # DNS
-        ip_types = []
         dns_addresses = []
         if params.get("dns_addresses") is not None:
             dns_addresses = params["dns_addresses"].split()
@@ -502,28 +499,26 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
                 if dns_addresses.count(address) > 1:
                     self.module.fail_json(msg="Each configured DNS server must have a unique IP address. Remove the duplicated IP.")
 
-                if self.pfsense.is_ipv4_address(address):
-                    ip_types.append(4)
-                elif self.pfsense.is_ipv6_address(address):
-                    ip_types.append(6)
-                else:
+                if not (self.pfsense.is_ipv4_address(address) or self.pfsense.is_ipv6_address(address)):
                     self.module.fail_json(msg="A valid IP address must be specified for DNS server {0}.".format(address))
 
         if params.get("dns_hostnames") is not None:
-            for hostname in params["dns_hostnames"].split(" "):
+            for hostname in params["dns_hostnames"].split():
                 if hostname != "none":
                     self._validate_hostname(hostname, "DNS hostname")
 
         if params.get("dns_gateways") is not None:
-            for idx, address in enumerate(params["dns_gateways"].split(" ")):
+            if params.get("dns_addresses") is None:
+                dns_addresses = [elt.text or "" for elt in self.root_elt.findall("system/dnsserver")]
+            for idx, address in enumerate(params["dns_gateways"].split()):
                 if idx >= len(dns_addresses) or address == "none":
                     continue
 
                 if self.pfsense.find_gateway_elt(address, protocol="inet") is not None:
-                    if ip_types[idx] == 6:
+                    if self.pfsense.is_ipv6_address(dns_addresses[idx]):
                         self.module.fail_json(msg='The IPv4 gateway "{0}" can not be specified for IPv6 DNS server "{1}".'.format(address, dns_addresses[idx]))
                 elif self.pfsense.find_gateway_elt(address, protocol="inet6") is not None:
-                    if ip_types[idx] == 4:
+                    if self.pfsense.is_ipv4_address(dns_addresses[idx]):
                         self.module.fail_json(msg='The IPv6 gateway "{0}" can not be specified for IPv4 DNS server "{1}".'.format(address, dns_addresses[idx]))
                 else:
                     self.module.fail_json(msg='The gateway "{0}" does not exist.'.format(address))
@@ -655,49 +650,18 @@ load_thermal_hardware();"""
 
         return values
 
-    @staticmethod
-    def _prepare_dns_log(obj):
+    def _prepare_dns_log(self, obj):
         """ construct dict for logging """
         ret = dict()
         webgui = obj["webgui"]
 
         ret["webguicss"] = webgui["webguicss"].replace(".css", "") if "webguicss" in webgui else None
 
-        if "dnsserver" in obj:
-            ret["dns_addresses"] = " ".join(obj["dnsserver"])
-        else:
-            ret["dns_addresses"] = None
-
-        ret["dns_hostnames"] = None
-        ret["dns_gateways"] = None
-        idx = 1
-        hosts = list()
-        gateways = list()
-        while True:
-            host = "dns{0}host".format(idx)
-            gateway = "dns{0}gw".format(idx)
-            if host not in obj or gateway not in obj:
-                break
-
-            hosts.append(obj[host] if obj[host] != "" else "none")
-            gateways.append(obj[gateway] if obj[gateway] != "" else "none")
-
-            idx += 1
-
-        # we have multiple string that can give the same configuration
-        # we remove the ending nones (assuming the user won't specify them for nothing)
-        while True:
-            if len(hosts) and hosts[-1] == "none":
-                hosts.pop()
-                continue
-            if len(gateways) and gateways[-1] == "none":
-                gateways.pop()
-                continue
-            break
-        if len(hosts):
-            ret["dns_hostnames"] = " ".join(hosts)
-        if len(gateways):
-            ret["dns_gateways"] = " ".join(gateways)
+        ret["dns_addresses"] = " ".join(self._dns_addresses(obj)) or None
+        for param, suffix in (("dns_hostnames", "host"), ("dns_gateways", "gw")):
+            slots = self._dns_slots(obj, suffix)
+            last = max((index for index, value in slots.items() if value and value != "none"), default=0)
+            ret[param] = " ".join(slots.get(index) or "none" for index in range(1, last + 1)) or None
         return ret
 
 
