@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_setup - omitting dns_gateways preserves existing dns gateways.

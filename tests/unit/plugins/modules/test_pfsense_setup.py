@@ -345,6 +345,67 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         command = "update setup general set dns_addresses='8.8.4.4 8.8.8.8', dns_hostnames='acme1 acme2', dns_gateways='none GW_WAN'"
         self.do_module_test(setup, command=command, state=None)
 
+    def configure_dns_fixture(self, addresses=("8.8.4.4", "8.8.8.8")):
+        self.load_fixtures()
+        config = ET.parse(self.tmp_file)
+        system = config.find("system")
+        for address in addresses:
+            ET.SubElement(system, "dnsserver").text = address
+        ET.SubElement(system, "dns1gw").text = "none"
+        ET.SubElement(system, "dns2gw").text = "none"
+        ET.SubElement(system, "dns2host").text = "resolver.example.com"
+        config.write(self.tmp_file, encoding="utf-8")
+
+    def test_setup_omitted_dns_options_preserve_xml(self):
+        self.configure_dns_fixture()
+        with set_module_args({}):
+            self.changed(changed=False)
+        self.assertFalse(self.load_xml_result())
+        with set_module_args({"hostname": "updated"}):
+            result = self.changed(changed=True)
+        self.assertEqual(result["commands"], ["update setup general set hostname='updated'"])
+        for key in ("dnsserver", "dns1gw", "dns2gw", "dns2host"):
+            self.assertEqual(result["diff"]["after"][key], result["diff"]["before"][key])
+        self.run_command.assert_not_called()
+
+    def test_setup_dns_addresses_preserve_omitted_slot_settings(self):
+        self.configure_dns_fixture()
+        with set_module_args({"dns_addresses": "1.1.1.1"}):
+            result = self.changed(changed=True)
+        after = result["diff"]["after"]
+        self.assertEqual(after["dnsserver"], "1.1.1.1")
+        self.assertEqual(after["dns1gw"], "none")
+        self.assertEqual(after["dns2gw"], "none")
+        self.assertEqual(after["dns2host"], "resolver.example.com")
+        self.assertEqual(result["commands"], ["update setup general set dns_addresses='1.1.1.1'"])
+        self.run_command.assert_not_called()
+
+    def test_setup_dns_hostnames_only(self):
+        self.configure_dns_fixture()
+        with set_module_args({"dns_hostnames": "updated.example.com none"}):
+            result = self.changed(changed=True)
+        after = result["diff"]["after"]
+        self.assertEqual(after["dnsserver"], ["8.8.4.4", "8.8.8.8"])
+        self.assertEqual(after["dns1gw"], "none")
+        self.assertEqual(after["dns2gw"], "none")
+        self.assertEqual(after["dns1host"], "updated.example.com")
+        self.assertNotIn("dns2host", after)
+        self.assertEqual(result["commands"], ["update setup general set dns_hostnames='updated.example.com'"])
+        self.run_command.assert_not_called()
+
+    def test_setup_dns_gateway_only(self):
+        self.configure_dns_fixture(addresses=("8.8.4.4",))
+        with set_module_args({"dns_gateways": "GW_WAN"}):
+            result = self.changed(changed=True)
+            self.changed(changed=False)
+        after = result["diff"]["after"]
+        self.assertEqual(after["dnsserver"], "8.8.4.4")
+        self.assertEqual(after["dns1gw"], "GW_WAN")
+        self.assertNotIn("dns2gw", after)
+        self.assertEqual(after["dns2host"], "resolver.example.com")
+        self.assertEqual(result["commands"], ["update setup general set dns_gateways='GW_WAN'"])
+        self.run_command.assert_called_once_with("/sbin/route delete 8.8.4.4")
+
     def test_setup_dns_addresses_invalid(self):
         """ test setup dns """
         setup = dict(dns_addresses="8.8.4.4 8.8.8.8 256.255.254.253", dns_hostnames="acme1 acme2", dns_gateways="none GW_WAN")
