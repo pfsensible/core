@@ -152,6 +152,7 @@ The following modules are currently available:
 * [pfsense_log_settings](https://github.com/pfsensible/core/wiki/pfsense_log_settings) for logging settings
 * [pfsense_nat_outbound](https://github.com/pfsensible/core/wiki/pfsense_nat_outbound) for outbound NAT (SNAT) rules
 * [pfsense_nat_port_forward](https://github.com/pfsensible/core/wiki/pfsense_nat_port_forward) for port forwarding NAT (DNAT) rules
+* [pfsense_notification_smtp](plugins/modules/pfsense_notification_smtp.py) for SMTP notification settings
 * [pfsense_openvpn_client](https://github.com/pfsensible/core/wiki/pfsense_openvpn_client) for OpenVPN client configuration
 * [pfsense_openvpn_override](https://github.com/pfsensible/core/wiki/pfsense_openvpn_override) for OpenVPN override configuration
 * [pfsense_openvpn_server](https://github.com/pfsensible/core/wiki/pfsense_openvpn_server) for OpenVPN server configuration
