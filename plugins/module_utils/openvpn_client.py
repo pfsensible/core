@@ -120,7 +120,9 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, "strictusercn")
             obj["mode"] = self.params["mode"]
             obj["dev_mode"] = self.params["dev_mode"]
-            obj["interface"] = self.pfsense.resolve_openvpn_interface(self.params["interface"])
+            obj["interface"], address = self.pfsense.get_openvpn_bind(self.params["interface"])
+            if address:
+                obj["ipaddr"] = address
             obj["protocol"] = self.params["protocol"]
             obj["server_addr"] = self.params["server_addr"]
             obj["server_port"] = str(self.params["server_port"])
@@ -270,6 +272,9 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     def _find_target(self):
         """ find the XML target_elt """
         (target_elt, self.idx) = self._find_openvpn_client(self.obj["description"])
+        # Moved off a virtual IP: clear the address it was bound to
+        if self.params["state"] == "present" and target_elt is not None and "ipaddr" not in self.obj and target_elt.findtext("ipaddr"):
+            self.obj["ipaddr"] = ""
         for param in ["shared_key", "tls"]:
             current_elt = self.pfsense.get_element(param, target_elt)
             if self.params[param] == "generate":

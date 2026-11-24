@@ -12,7 +12,7 @@ if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_openvpn_server
-from .pfsense_module import TestPFSenseModule
+from .pfsense_module import TestPFSenseModule, load_fixture
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
 from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 
@@ -54,6 +54,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         """ mocking up """
 
         super(TestPFSenseOpenVPNServerModule, self).setUp()
+        self.ovpns2_bind = None
 
         self.mock_run_command = patch("ansible.module_utils.basic.AnsibleModule.run_command")
         self.run_command = self.mock_run_command.start()
@@ -73,6 +74,26 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
     def runTest():
         """ dummy function needed to instantiate this test module from another in python 2.7 """
         pass
+
+    OVPNS2_BIND = "<interface>wan</interface>\n                        <ipaddr></ipaddr>\n"
+    PROXYARP_VIP = ("<vip><mode>proxyarp</mode><interface>wan</interface><uniqid>testparp</uniqid><descr>Proxy ARP IP</descr>"
+                    "<type>single</type><subnet_bits>32</subnet_bits><subnet>198.51.100.7</subnet></vip></virtualip>")
+
+    def load_fixtures(self):
+        """ the fixture, with ovpns2's interface and ipaddr replaced when set, and a proxy ARP VIP """
+        data = load_fixture(self.get_config_file())
+        if self.ovpns2_bind is not None:
+            self.assertIn(self.OVPNS2_BIND, data)
+            data = data.replace(self.OVPNS2_BIND, self.ovpns2_bind)
+        data = data.replace("</virtualip>", self.PROXYARP_VIP)
+        with open(self.tmp_file, "w") as config:
+            config.write(data)
+
+    def run_ovpns2(self, interface, changed):
+        """ ovpns2 as the fixture has it, on the given interface """
+        obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, tls=TLSKEY, tls_type="auth", interface=interface)
+        with set_module_args(obj):
+            return self.execute_module(changed=changed)
 
     def get_target_elt(self, obj, absent=False, module_result=None):
         """ return target elt from XML """
@@ -179,7 +200,54 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="Backup WAN IP")
         with set_module_args(obj):
             result = self.execute_module(changed=True)
-        self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp|192.0.2.10")
+        # Stored as the web GUI does: openvpn.inc binds to ipaddr
+        self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp")
+        self.assertEqual(result["diff"]["after"]["ipaddr"], "192.0.2.10")
+
+    def test_openvpn_server_bind_to_vip_id(self):
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="_viptestcarp")
+        with set_module_args(obj):
+            result = self.execute_module(changed=True)
+        self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp")
+        self.assertEqual(result["diff"]["after"]["ipaddr"], "192.0.2.10")
+
+    def test_openvpn_server_move_off_vip(self):
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="Backup WAN IP")
+        with set_module_args(obj):
+            self.execute_module(changed=True)
+            self.changed(False)
+        obj["interface"] = "wan"
+        with set_module_args(obj):
+            result = self.changed(True)
+            self.changed(False)
+        self.assertEqual(result["diff"]["after"]["interface"], "wan")
+        self.assertEqual(result["diff"]["after"]["ipaddr"], "")
+
+    def test_openvpn_server_gui_vip_unchanged(self):
+        """ an instance the web GUI bound to a VIP, given by description, uniqid or selector form """
+        self.ovpns2_bind = "<interface>_viptestcarp</interface>\n                        <ipaddr>192.0.2.10</ipaddr>\n"
+        for interface in ("Backup WAN IP", "_viptestcarp", "_viptestcarp|192.0.2.10"):
+            self.run_ovpns2(interface, False)
+
+    def test_openvpn_server_single_value_vip_fixed(self):
+        """ an instance stored as one interface value "_vip<uniqid>|<address>" gets the web GUI's form """
+        self.ovpns2_bind = "<interface>_viptestcarp|192.0.2.10</interface>\n                        <ipaddr></ipaddr>\n"
+        result = self.run_ovpns2("Backup WAN IP", True)
+        self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp")
+        self.assertEqual(result["diff"]["after"]["ipaddr"], "192.0.2.10")
+
+    def test_openvpn_server_vip_port_conflict(self):
+        """ the port check sees an instance the web GUI bound to the same VIP """
+        self.ovpns2_bind = "<interface>_viptestcarp</interface>\n                        <ipaddr>192.0.2.10</ipaddr>\n"
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, interface="Backup WAN IP")
+        self.do_module_test(obj, failed=True, msg="The specified local_port (1195) is in use by vpn ID 2")
+
+    def test_openvpn_server_proxyarp_vip_not_bound(self):
+        """ the web GUI does not offer proxy ARP VIPs to OpenVPN: no address to bind to """
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="_viptestparp")
+        with set_module_args(obj):
+            result = self.execute_module(changed=True)
+        self.assertNotIn("ipaddr", result["diff"]["after"])
 
     def test_openvpn_server_delete(self):
         """ test deletion of a OpenVPN server """
