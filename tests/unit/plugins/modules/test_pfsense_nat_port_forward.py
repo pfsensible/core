@@ -145,6 +145,49 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.assertEqual(after["target"], "10.255.2.254")
         self.assertEqual(after["local-port"], "8443")
 
+    def test_nat_port_forward_interface_target_is_idempotent(self):
+        self.load_fixtures()
+        obj = dict(descr="Redirect DNS", interface="vpn", protocol="tcp/udp", source="any",
+                   destination="!vpn", destination_port="53", target="vpn:53", associated_rule="pass")
+        with set_module_args(obj):
+            self.changed(True)
+
+        self.assertTrue(self.load_xml_result())
+        nat_rule = self.get_target_elt(obj)
+        self.assert_xml_elt_equal(nat_rule, "target", "opt1ip")
+        self.assert_xml_elt_equal(nat_rule, "local-port", "53")
+
+        for target in ("opt1ip:53", "IP:opt1:53", "IP:VPN:53"):
+            with self.subTest(target=target), set_module_args(dict(obj, target=target)):
+                self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_nat_port_forward_associated_rule_uses_interface_address(self):
+        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan",
+                   destination_port="22022-22023", target="IP:vpn:22-23", ipprotocol="inet6")
+        with set_module_args(obj):
+            self.execute_module(changed=True)
+
+        self.assertTrue(self.load_xml_result())
+        nat_rule = self.get_target_elt(obj)
+        self.assert_xml_elt_equal(nat_rule, "target", "opt1ip")
+        self.assert_xml_elt_equal(nat_rule, "local-port", "22")
+        filter_rule = self.get_associated_rule_elt(obj, nat_rule.findtext("associated-rule-id"))
+        self.assert_xml_elt_equal(filter_rule, "destination/network", "opt1ip")
+        self.assertIsNone(filter_rule.find("destination/address"))
+        self.assert_xml_elt_equal(filter_rule, "destination/port", "22-23")
+        self.assert_xml_elt_equal(filter_rule, "ipprotocol", "inet6")
+
+        with set_module_args(dict(obj, target="opt1ip:22")):
+            self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_nat_port_forward_rejects_unknown_interface_target(self):
+        obj = dict(descr="Redirect DNS", interface="lan", source="any", destination="any",
+                   destination_port="53", associated_rule="pass")
+        for target in ("opt99ip:53", "IP:missing:53"):
+            with self.subTest(target=target):
+                msg = f'"{target}" is not a valid redirect target IP address, host alias, virtual IP, or interface address.'
+                self.do_module_test(dict(obj, target=target), failed=True, msg=msg)
+
     def test_nat_port_forward_create_range(self):
         """ test """
         obj = dict(descr="test_pf", interface="lan", source="any:9000-10000", destination="1.2.3.4:9000-10000", target="2.3.4.5:9000", associated_rule="none")

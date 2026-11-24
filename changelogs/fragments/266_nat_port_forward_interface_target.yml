@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_nat_port_forward accepts interface addresses as redirect targets and
+    uses the interface address in the associated firewall rule
+    (https://github.com/pfsensible/core/issues/266).

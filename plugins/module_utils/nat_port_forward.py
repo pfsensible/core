@@ -129,17 +129,17 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
 
         param = self.params["target"]
         addr = param.split(":")
-        if len(addr) > 2:
+        explicit_interface = len(addr) > 1 and addr[0] == "IP"
+        if explicit_interface:
+            addr = addr[1:]
+        if len(addr) > 2 or not addr[0]:
             self.module.fail_json(msg="Cannot parse address %s" % (param))
 
         address = addr[0]
-
         ports = addr[1] if len(addr) > 1 else None
-        if self.pfsense.find_alias(address, "host") is None and not self.pfsense.is_ipv4_address(address):
-            address = self.pfsense.get_virtual_ip_address(address)
-            if address is None or not self.pfsense.is_ipv4_address(address):
-                self.module.fail_json(msg='"%s" is not a valid redirect target IP address or host alias.' % (param))
-        obj["target"] = address
+        obj["target"] = self._resolve_target_address(address, explicit_interface)
+        if obj["target"] is None:
+            self.module.fail_json(msg=f'"{param}" is not a valid redirect target IP address, host alias, virtual IP, or interface address.')
 
         protocol_has_ports = self.params["protocol"] in PORT_PROTOCOLS
         if ports is None:
@@ -153,6 +153,27 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
             self.module.fail_json(msg='Cannot specify a target port with protocol "{0}".'.format(self.params["protocol"]))
 
         obj["local-port"], self.translated_port = self._parse_target_ports(ports, obj["destination"].get("port", ""))
+
+    def _target_interface_id(self, target):
+        """Return the configured interface ID for a pfSense interface address token."""
+        if target.endswith("ip") and self.pfsense.is_interface_port(target[:-2]):
+            return target[:-2]
+        return None
+
+    def _resolve_target_address(self, address, explicit_interface):
+        """Resolve a target to the value pfSense stores in the NAT rule."""
+        if not explicit_interface:
+            if (self._target_interface_id(address) or self.pfsense.is_ipv4_address(address)
+                    or self.pfsense.find_alias(address, "host") is not None):
+                return address
+            vip = self.pfsense.get_virtual_ip_address(address)
+            if vip is not None and self.pfsense.is_ipv4_address(vip):
+                return vip
+
+        interface = address if self.pfsense.is_interface_port(address) else self.pfsense.get_interface_by_display_name(address)
+        if interface is not None:
+            return interface + "ip"
+        return None
 
     def _parse_target_ports(self, ports, destination_port):
         """ Return the NAT starting port and the firewall rule's translated ports. """
@@ -205,13 +226,15 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         params["state"] = "present"
         params["action"] = "pass"
         if self.pfsense.is_at_least_2_5_0():
-            params["ipprotocol"] = "inet"
+            params["ipprotocol"] = self.obj.get("ipprotocol", "inet")
         params["statetype"] = "keep state"
         params["interface"] = self.params["interface"]
         params["source"] = self.params["source"]
         # A NAT rule with no source port must also clear its associated rule's source port.
         params["source_port"] = self.params.get("source_port") if "port" in self.obj["source"] else ""
-        params["destination"] = self.obj["target"]
+        target = self.obj["target"]
+        interface = self._target_interface_id(target)
+        params["destination"] = f"IP:{interface}" if interface is not None else target
         if self.translated_port:
             params["destination"] += ":" + self.translated_port
         params["disabled"] = self.params["disabled"]

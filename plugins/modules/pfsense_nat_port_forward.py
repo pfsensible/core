@@ -76,8 +76,10 @@ options:
     version_added: 0.8.0
   target:
     description:
-      - The redirect target address or host alias, optionally followed by a colon and a port number or port alias.
+      - The redirect target address, host alias, or interface address.
       - You can use a virtual IP description in place of its address.
+      - For an interface address, use its display name (C(IoT)), the explicit form C(IP:IoT), or the pfSense interface address token (C(opt4ip)).
+      - Append a colon and a port number or port alias for C(tcp), C(udp), and C(tcp/udp).
       - For a numeric incoming port range, specify the first translated port or an inclusive C(first-last) range of the same size.
       - The incoming ports can be set with C(destination_port) or in the destination address.
     required: false
@@ -123,6 +125,16 @@ EXAMPLES = """
     target: 1.2.3.4:22
     associated_rule: pass
     state: present
+- name: Redirect DNS to the firewall's IoT interface address
+  pfsensible.core.pfsense_nat_port_forward:
+    descr: Redirect IoT DNS
+    interface: IoT
+    protocol: tcp/udp
+    source: any
+    destination: "!IoT"
+    destination_port: "53"
+    target: "IoT:53"
+    associated_rule: pass
 - name: "Delete NAT port forward traffic rule"
   pfsense_nat_port_forward:
     descr: 'ssh'
