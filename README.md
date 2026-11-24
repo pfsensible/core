@@ -141,6 +141,7 @@ The following modules are currently available:
 * [pfsense_dhcp_server](https://github.com/pfsensible/core/wiki/pfsense_dhcp_server) for configuring DHCP server
 * [pfsense_dhcp_static](https://github.com/pfsensible/core/wiki/pfsense_dhcp_static) for static DHCP entries
 * [pfsense_dns_resolver](https://github.com/pfsensible/core/wiki/pfsense_dns_resolver) for DNS resolver (unbound) settings
+* [pfsense_freeradius_sync](plugins/modules/pfsense_freeradius_sync.py) for the XMLRPC sync settings of the FreeRADIUS package
 * [pfsense_gateway](https://github.com/pfsensible/core/wiki/pfsense_gateway) for routing gateways
 * [pfsense_gateway_group](https://github.com/pfsensible/core/wiki/pfsense_gateway_group) for gateway groups
 * [pfsense_group](https://github.com/pfsensible/core/wiki/pfsense_group) for user groups
