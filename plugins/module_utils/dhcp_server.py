@@ -11,6 +11,8 @@ import re
 
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
+MAC_LIST_OPTIONS = ("mac_allow", "mac_deny")
+
 DHCPSERVER_ARGUMENT_SPEC = dict(
     state=dict(type="str", default="present", choices=["present", "absent"]),
     interface=dict(required=True, type="str"),
@@ -129,16 +131,14 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             for option in ["failover_peerip", "defaultleasetime", "maxleasetime",
                            "netmask", "gateway", "domain", "domainsearchlist",
                            "ddnsdomain", "ddnsdomainprimary", "ddnsdomainkeyname",
-                           "ddnsdomainkeyalgorithm", "ddnsdomainkey", "mac_allow",
-                           "mac_deny", "ddnsclientupdates", "tftp", "ldap",
+                           "ddnsdomainkeyalgorithm", "ddnsdomainkey",
+                           "ddnsclientupdates", "tftp", "ldap",
                            "nextserver", "filename", "filename32", "filename64",
                            "rootpath", "numberoptions"]:
                 self._get_ansible_param(obj, option, force=True)
 
-            for option in ["mac_allow", "mac_deny"]:
-                if params[option] is None:
-                    params[option] = ""
-                self._get_ansible_param(obj, ",".join(params[option]))
+            for option in MAC_LIST_OPTIONS:
+                obj[option] = ",".join(params.get(option) or [])
 
             # Non-forced options
             for option in ["winsserver", "dnsserver", "ntpserver"]:
@@ -208,6 +208,15 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
+    def _remove_deleted_params(self):
+        changed = super(PFSenseDHCPServerModule, self)._remove_deleted_params()
+        # Older versions wrote one element per MAC. The first now holds the entire list.
+        for option in MAC_LIST_OPTIONS:
+            for duplicate in self.target_elt.findall(option)[1:]:
+                self.target_elt.remove(duplicate)
+                changed = True
+        return changed
+
     def _get_params_to_remove(self):
         """returns the list of params to remove if they are not set"""
         params = ["enable", "ignorebootp", "nonak", "ignoreclientuids", "staticarp", "disablepingcheck", "dhcpinlocaltime", "statsgraph"]

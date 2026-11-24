@@ -6,10 +6,12 @@ __metaclass__ = type
 
 import pytest
 import sys
+import xml.etree.ElementTree as ET
 
 if sys.version_info < (2, 7):
     pytestmark = pytest.mark.skip("pfSense Ansible modules require Python >= 2.7")
 
+from ansible_collections.community.internal_test_tools.tests.unit.plugins.modules.utils import set_module_args
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_dhcp_server
 from ansible_collections.pfsensible.core.plugins.modules.pfsense_dhcp_server import PFSenseDHCPServerModule
 from .pfsense_module import TestPFSenseModule
@@ -95,6 +97,48 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
                            "defaultleasetime='', maxleasetime='', domain='updated.example.com'"]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
+
+    def test_mac_lists_are_saved_as_csv_and_converge(self):
+        params = dict(
+            interface="opt2", range_from="172.16.0.100", range_to="172.16.0.199",
+            mac_allow=["02:00:00:00:00:01", "02:00:00:00:00:02"],
+            mac_deny=["02:00:00:00:00:03", "02:00:00:00:00:04"],
+        )
+        self.load_fixtures()
+        with set_module_args(params):
+            result = self.changed(True)
+        server = ET.parse(self.tmp_file).find("dhcpd/opt2")
+        for name in ("mac_allow", "mac_deny"):
+            expected = ",".join(params[name])
+            self.assertEqual([element.text for element in server.findall(name)], [expected])
+            self.assertEqual(result["diff"]["after"][name], expected)
+
+        self.phpshell.reset_mock()
+        with set_module_args(params):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+
+    def test_mac_lists_replace_repeated_xml_elements(self):
+        allowed = ["02:00:00:00:00:01", "02:00:00:00:00:02"]
+        denied = ["02:00:00:00:00:03", "02:00:00:00:00:04"]
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        server = tree.find("dhcpd/lan")
+        for name, addresses in (("mac_allow", allowed), ("mac_deny", denied)):
+            server.find(name).text = addresses[0]
+            ET.SubElement(server, name).text = addresses[1]
+        tree.write(self.tmp_file, encoding="utf-8")
+
+        params = dict(interface="lan", range_from="192.168.1.50", range_to="192.168.1.150", mac_allow=allowed)
+        with set_module_args(params):
+            result = self.changed(True)
+        self.assertEqual(result["diff"]["before"]["mac_allow"], allowed)
+        self.assertEqual(result["diff"]["before"]["mac_deny"], denied)
+        server = ET.parse(self.tmp_file).find("dhcpd/lan")
+        self.assertEqual([element.text for element in server.findall("mac_allow")], [",".join(allowed)])
+        self.assertEqual([element.text for element in server.findall("mac_deny")], [None])
+        with set_module_args(dict(params, mac_deny=[])):
+            self.assertEqual(self.changed(False)["commands"], [])
 
     def test_dhcp_server_update_disable_denyunknown(self):
         """ test disabling denyunknown from an existing DHCP server """

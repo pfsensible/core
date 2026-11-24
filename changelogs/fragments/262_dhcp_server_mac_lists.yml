@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_dhcp_server stores mac_allow and mac_deny as comma-separated values
+    and replaces repeated XML elements written by older versions so the settings
+    converge on subsequent runs (https://github.com/pfsensible/core/issues/262).
