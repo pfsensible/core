@@ -52,7 +52,8 @@ IPSEC_P2_ARGUMENT_SPEC = dict(
         type="str"
     ),
     lifetime=dict(default=3600, type="int"),
-    pinghost=dict(required=False, type="str")
+    pinghost=dict(required=False, type="str"),
+    keepalive=dict(required=False, type="bool"),
 )
 
 IPSEC_P2_REQUIRED_IF = [
@@ -199,6 +200,9 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
                 obj["pinghost"] = params["pinghost"]
             else:
                 obj["pinghost"] = ""
+
+            if params.get("keepalive") is not None:
+                obj["keepalive"] = "enabled" if params["keepalive"] else "disabled"
 
             self._check_for_duplicate_phase2(obj)
 
@@ -473,6 +477,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             values += self.format_cli_field(self.params, "pfsgroup")
             values += self.format_cli_field(self.params, "lifetime")
             values += self.format_cli_field(self.params, "pinghost")
+            values += self.format_cli_field(self.obj, "keepalive")
         else:
             self._prepare_log_address(before, "local", "localid")
             self._prepare_log_address(before, "nat", "natlocalid")
@@ -509,6 +514,8 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.obj, before, "pfsgroup", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "lifetime", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "pinghost", add_comma=(values))
+            if "keepalive" in self.obj:
+                values += self.format_updated_cli_field(self.obj, before, "keepalive", add_comma=(values))
         return values
 
     def _prepare_log_address(self, before, param, name):

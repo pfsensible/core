@@ -1345,6 +1345,7 @@
             <pfsgroup>14</pfsgroup>
             <lifetime>3600</lifetime>
             <pinghost></pinghost>
+            <keepalive>enabled</keepalive>
             <descr>one_p2</descr>
     </phase2>
     <phase2>
