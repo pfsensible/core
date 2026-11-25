@@ -1,0 +1,4 @@
+bugfixes:
+  - pfsense_openvpn_server, pfsense_openvpn_client, pfsense_openvpn_override - deleting an entry no longer stops the OpenVPN instance or removes its files in check mode. The PHP now runs once config.xml is written.
+  - pfsense_openvpn_client - deleting a client called ``openvpn_delete()`` with one argument instead of two.
+  - pfsense_openvpn_override - deleting an override no longer resyncs the override that followed it.

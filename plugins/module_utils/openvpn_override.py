@@ -43,10 +43,16 @@ OPENVPN_OVERRIDE_PHP_COMMAND_SET = OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX + """
 openvpn_resync_csc($csc);
 """
 
-OPENVPN_OVERRIDE_PHP_COMMAND_DEL = OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX + """
-openvpn_delete_csc($csc);
-unset($csc);
+# Run once config.xml no longer holds the override: openvpn_delete_csc() only needs these two fields.
+OPENVPN_OVERRIDE_PHP_COMMAND_DEL = """
+require_once('openvpn.inc');
+openvpn_delete_csc(array('common_name' => {common_name}, 'server_list' => {server_list}));
 """
+
+
+def php_string(value):
+    """ return value as a single-quoted PHP string """
+    return "'" + (value or "").replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
 class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
@@ -207,11 +213,13 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         self.diff["after"] = ""
         self.diff["before"] = ""
         super(PFSenseOpenVPNOverrideModule, self)._remove()
-        return self.pfsense.phpshell(OPENVPN_OVERRIDE_PHP_COMMAND_DEL.format(idx=self.idx))
 
     def _update(self):
         """ make the target pfsense reload """
-        return self.pfsense.phpshell(OPENVPN_OVERRIDE_PHP_COMMAND_SET.format(idx=self.idx))
+        if self.params["state"] == "present":
+            return self.pfsense.phpshell(OPENVPN_OVERRIDE_PHP_COMMAND_SET.format(idx=self.idx))
+        return self.pfsense.phpshell(OPENVPN_OVERRIDE_PHP_COMMAND_DEL.format(
+            common_name=php_string(self.diff["before"].get("common_name")), server_list=php_string(self.diff["before"].get("server_list"))))
 
     ##############################
     # Logging

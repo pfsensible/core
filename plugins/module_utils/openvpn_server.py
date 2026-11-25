@@ -89,8 +89,10 @@ openvpn_resync('server',$ovpn);
 openvpn_resync_csc_all();
 """
 
-OPENVPN_SERVER_PHP_COMMAND_DEL = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
-openvpn_delete('server',$ovpn);
+# Run once config.xml no longer holds the server: openvpn_delete() only needs its vpnid.
+OPENVPN_SERVER_PHP_COMMAND_DEL = """
+require_once('openvpn.inc');
+openvpn_delete('server', array('vpnid' => '{vpnid}'));
 """
 
 # Define the line endings in bytes for binary mode
@@ -384,14 +386,13 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                                       .format(self.diff["before"]["vpnid"]))
 
         self.result["vpnid"] = int(self.diff["before"]["vpnid"])
-        self.command_output = self.pfsense.phpshell(OPENVPN_SERVER_PHP_COMMAND_DEL.format(idx=self.idx))
 
     def _update(self):
         """ make the target pfsense reload """
         if self.params["state"] == "present":
             return self.pfsense.phpshell(OPENVPN_SERVER_PHP_COMMAND_SET.format(idx=self.idx))
         else:
-            return self.command_output
+            return self.pfsense.phpshell(OPENVPN_SERVER_PHP_COMMAND_DEL.format(vpnid=self.result["vpnid"]))
 
     ##############################
     # Logging
