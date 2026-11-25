@@ -100,6 +100,12 @@ class TestPFSenseOpenVPNAggregateModule(TestPFSenseModule):
         self.assertIn("openvpn_delete('client', array('vpnid' => '3'));", command)
         self.assertEqual(self.names("openvpn-client", root=config), [])
 
+    def test_absent_client(self):
+        self.run_aggregate(aggregated_openvpn_clients=[dict(name="ovpnc3", state="absent")])
+        (command, config) = self.php_command()
+        self.assertIn("openvpn_delete('client', array('vpnid' => '3'));", command)
+        self.assertEqual(self.names("openvpn-client", root=config), [])
+
     def test_update_server(self):
         result = self.run_aggregate(aggregated_openvpn_servers=[dict(SERVER2, tunnel_network="10.10.10.10/24")])
         self.assertEqual(result["result_openvpn_servers"], ["update openvpn_server 'ovpns2' set "])

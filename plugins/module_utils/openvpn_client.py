@@ -20,7 +20,7 @@ OPENVPN_CLIENT_ARGUMENT_SPEC = dict(
     custom_options=dict(default=None, required=False, type="str"),
     disable=dict(default=False, required=False, type="bool"),
     interface=dict(default="wan", required=False, type="str"),
-    server_addr=dict(required=True, type="str"),
+    server_addr=dict(type="str"),
     server_port=dict(default=1194, required=False, type="int"),
     protocol=dict(default="UDP4", required=False, choices=["UDP4", "TCP4"]),
     dev_mode=dict(default="tun", required=False, choices=["tun", "tap"]),
@@ -64,8 +64,7 @@ OPENVPN_CLIENT_ARGUMENT_SPEC = dict(
 )
 
 OPENVPN_CLIENT_REQUIRED_IF = [
-    ["mode", "p2p_tls", ["ca"]],
-    ["mode", "p2p_shared_key", ["shared_key"]],
+    ["state", "present", ["server_addr"]],
 ]
 
 OPENVPN_CLIENT_PHP_COMMAND_PREFIX = """
@@ -190,6 +189,10 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
 
         if params["state"] == "absent":
             return True
+
+        credential = "ca" if params["mode"] == "p2p_tls" else "shared_key"
+        if params[credential] is None:
+            self.module.fail_json(msg="{0} is required for mode={1}".format(credential, params["mode"]))
 
         # tls is not valid for p2p_shared_key
         if params["mode"] == "p2p_shared_key" and params["tls"] is not None:
