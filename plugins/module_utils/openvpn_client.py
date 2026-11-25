@@ -77,10 +77,10 @@ OPENVPN_CLIENT_PHP_COMMAND_SET = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
 openvpn_resync('client',$ovpn);
 """
 
-OPENVPN_CLIENT_PHP_COMMAND_DEL = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
-openvpn_delete($ovpn);
-unset($ovpn);
-openvpn_resync('client',$ovpn);
+# Run once config.xml no longer holds the client: openvpn_delete() only needs its vpnid.
+OPENVPN_CLIENT_PHP_COMMAND_DEL = """
+require_once('openvpn.inc');
+openvpn_delete('client', array('vpnid' => '{vpnid}'));
 """
 
 
@@ -301,11 +301,14 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         self.diff["after"] = ""
         self.diff["before"] = ""
         super(PFSenseOpenVPNClientModule, self)._remove()
-        return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_DEL.format(idx=self.idx))
+        if self.target_elt is not None:
+            self.result["vpnid"] = int(self.diff["before"]["vpnid"])
 
     def _update(self):
         """ make the target pfsense reload """
-        return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_SET.format(idx=self.idx))
+        if self.params["state"] == "present":
+            return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_SET.format(idx=self.idx))
+        return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_DEL.format(vpnid=self.result["vpnid"]))
 
     ##############################
     # Logging
