@@ -4,9 +4,12 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
+from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import Mock, patch
 from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 from ansible_collections.pfsensible.core.tests.unit.plugins.modules.pfsense_module import TestPFSenseModule
+
+# The test harness mocks phpshell(): keep the real one
+PHPSHELL = PFSenseModule.phpshell
 
 
 class TestPFSense(TestPFSenseModule):
@@ -54,3 +57,10 @@ class TestPFSense(TestPFSenseModule):
         self.pfsense.pfsense_version = None
         self.version = "22.01"
         assert self.pfsense.is_at_least_2_5_0()
+
+    def test_phpshell(self):
+        self.pfsense.module = Mock()
+        self.pfsense.module.run_command.return_value = (0, "", "")
+        for debug, prefix in ((True, "global $config;\nglobal $debug;\n$debug = 1;\n"), (False, "global $config;\n")):
+            PHPSHELL(self.pfsense, "filter_configure();", debug=debug)
+            self.pfsense.module.run_command.assert_called_with("/usr/local/sbin/pfSsh.php dummy", data=prefix + "filter_configure();\nexec\nexit")

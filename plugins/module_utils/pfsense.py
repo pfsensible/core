@@ -1374,7 +1374,7 @@ try {
         """ Run a command in the php developer shell """
         phpshell = "global $config;\n"
         if debug:
-            phpshell = "global $debug;\n$debug = 1;\n"
+            phpshell += "global $debug;\n$debug = 1;\n"
         phpshell += command + "\nexec\nexit"
         # Dummy argument suppresses displaying help message
         return self.module.run_command("/usr/local/sbin/pfSsh.php dummy", data=phpshell)
