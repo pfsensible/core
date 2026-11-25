@@ -29,3 +29,6 @@
 
     - name: Test virtual IPs on appliance interfaces
       ansible.builtin.include_tasks: modules/virtual_ip/main.yml
+
+    - name: Test OpenVPN connections and client-specific overrides
+      ansible.builtin.include_tasks: modules/openvpn/main.yml

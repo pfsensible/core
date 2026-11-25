@@ -1,0 +1,21 @@
+---
+- name: Apply the OpenVPN client identity
+  pfsensible.core.pfsense_openvpn_client:
+    name: "{{ openvpn_client_name }}"
+    interface: lo0
+    server_addr: 127.0.0.1
+    server_port: "{{ openvpn_server_port }}"
+    ca: "{{ openvpn_ca_name }}"
+    cert: "{{ openvpn_override.cn }}"
+    data_ciphers:
+      - AES-256-GCM
+      - AES-128-GCM
+    compression: ''
+    # Both tunnel interfaces share one network stack.
+    custom_options: route-noexec
+  register: openvpn_client
+
+- name: Verify the session comes up with the override address
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/modules/openvpn/verify.yml"
+  vars:
+    openvpn_observe_retries: 60

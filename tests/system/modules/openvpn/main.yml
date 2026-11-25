@@ -1,0 +1,115 @@
+---
+- name: Exercise OpenVPN on appliance loopback
+  vars:
+    openvpn_ca_name: CI OpenVPN CA
+    openvpn_server_name: CI OpenVPN server
+    openvpn_client_name: CI OpenVPN client
+    openvpn_server_port: 21194
+    openvpn_server_address: 10.84.0.1
+    openvpn_overrides:
+      - cn: ci-openvpn-alpha
+        address: 10.84.0.101
+      - cn: ci-openvpn-beta
+        address: 10.84.0.102
+  block:
+    - name: Generate a temporary CA on the appliance
+      pfsensible.core.pfsense_ca:
+        name: "{{ openvpn_ca_name }}"
+        dn_commonname: ci-openvpn-ca
+        method: internal
+        lifetime: 1
+      diff: false
+
+    - name: Generate a server certificate on the appliance
+      pfsensible.core.pfsense_cert:
+        name: ci-openvpn-server
+        ca: "{{ openvpn_ca_name }}"
+        certtype: server
+        lifetime: 1
+      diff: false
+
+    - name: Generate a client certificate for each override
+      pfsensible.core.pfsense_cert:
+        name: "{{ item.cn }}"
+        ca: "{{ openvpn_ca_name }}"
+        certtype: user
+        lifetime: 1
+      loop: "{{ openvpn_overrides }}"
+      diff: false
+
+    - name: Create a certificate-authenticated OpenVPN server
+      pfsensible.core.pfsense_openvpn_server:
+        name: "{{ openvpn_server_name }}"
+        mode: server_tls
+        interface: lo0
+        local_port: "{{ openvpn_server_port }}"
+        ca: "{{ openvpn_ca_name }}"
+        cert: ci-openvpn-server
+        remote_cert_tls: true
+        tunnel_network: 10.84.0.0/24
+        topology: subnet
+      register: openvpn_server
+
+    - name: Create a static address override for each certificate common name
+      pfsensible.core.pfsense_openvpn_override:
+        name: "{{ item.cn }}"
+        server_list:
+          - "{{ openvpn_server_name }}"
+        tunnel_network: "{{ item.address }}/24"
+      loop: "{{ openvpn_overrides }}"
+
+    - name: Install the OpenVPN runtime observer
+      ansible.builtin.copy:
+        src: files/observe_openvpn.py
+        dest: /tmp/pfsensible-system/observe_openvpn.py
+        mode: '0600'
+
+    - name: Connect with each identity and verify its override
+      ansible.builtin.include_tasks: connect.yml
+      loop: "{{ openvpn_overrides }}"
+      loop_control:
+        loop_var: openvpn_override
+        label: "{{ openvpn_override.cn }}"
+
+    - name: Save the running OpenVPN state before previewing deletions
+      ansible.builtin.set_fact:
+        openvpn_before_delete: "{{ openvpn_observed.stdout | from_json }}"
+
+    - name: Preview deletion of each running OpenVPN instance
+      ansible.builtin.include_tasks: check_delete.yml
+      loop:
+        - server
+        - client
+      loop_control:
+        loop_var: openvpn_component
+      vars:
+        openvpn_override: "{{ openvpn_overrides | last }}"
+
+    - name: Delete the OpenVPN client
+      pfsensible.core.pfsense_openvpn_client:
+        name: "{{ openvpn_client_name }}"
+        state: absent
+
+    - name: Delete the client-specific overrides
+      pfsensible.core.pfsense_openvpn_override:
+        name: "{{ item.cn }}"
+        state: absent
+      loop: "{{ openvpn_overrides }}"
+
+    - name: Delete the OpenVPN server
+      pfsensible.core.pfsense_openvpn_server:
+        name: "{{ openvpn_server_name }}"
+        state: absent
+
+    - name: Delete the temporary certificates
+      pfsensible.core.pfsense_cert:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ ['ci-openvpn-server'] + (openvpn_overrides | map(attribute='cn') | list) }}"
+      diff: false
+
+    - name: Delete the temporary CA
+      pfsensible.core.pfsense_ca:
+        name: "{{ openvpn_ca_name }}"
+        state: absent
+      diff: false

@@ -1,0 +1,29 @@
+---
+- name: Preview deleting the OpenVPN server
+  pfsensible.core.pfsense_openvpn_server:
+    name: "{{ openvpn_server_name }}"
+    state: absent
+  check_mode: true
+  register: openvpn_preview_server
+  when: openvpn_component == 'server'
+
+- name: Preview deleting the OpenVPN client
+  pfsensible.core.pfsense_openvpn_client:
+    name: "{{ openvpn_client_name }}"
+    state: absent
+  check_mode: true
+  register: openvpn_preview_client
+  when: openvpn_component == 'client'
+
+- name: Verify the tunnel immediately after the deletion preview
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/modules/openvpn/verify.yml"
+
+- name: Verify the preview reports a change and preserves the configuration and live session
+  ansible.builtin.assert:
+    that:
+      - openvpn_preview_server.changed or openvpn_preview_client.changed
+      - openvpn_after_preview.config_sha256 == openvpn_before_delete.config_sha256
+      - openvpn_after_preview.pids == openvpn_before_delete.pids
+      - openvpn_after_preview.client_state == openvpn_before_delete.client_state
+  vars:
+    openvpn_after_preview: "{{ openvpn_observed.stdout | from_json }}"
