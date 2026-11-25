@@ -166,6 +166,9 @@ class TestPFSenseIpsecP2Module(TestPFSenseModule):
         else:
             self.assert_xml_elt_is_none_or_empty(target_elt, "pinghost")
 
+        if obj.get("keepalive") is not None:
+            self.assert_xml_elt_equal(target_elt, "keepalive", "enabled" if obj["keepalive"] else "disabled")
+
         # encryptions
         self.check_enc(obj, target_elt, "aes", "aes")
         self.check_enc(obj, target_elt, "aes128gcm", "aes128gcm")
@@ -219,6 +222,32 @@ class TestPFSenseIpsecP2Module(TestPFSenseModule):
             p1_descr="test_tunnel", descr="one_p2", mode="tunnel", local="lan", remote="10.20.30.40/24",
             aes="True", aes_len="128", aes128gcm=True, aes128gcm_len="128", sha256="True")
         self.do_module_test(phase2, changed=False)
+
+    def test_phase2_create_keepalive(self):
+        """ test creation of a new phase2 with keep alive """
+        phase2 = dict(
+            p1_descr="test_tunnel", descr="test_p2", mode="tunnel", local="lan_100", remote="1.2.3.4/24", aes="True", aes_len="auto", sha256="True",
+            keepalive=True)
+        command = (
+            "create ipsec_p2 'test_p2' on 'test_tunnel', disabled=False, mode='tunnel', local='lan_100', remote='1.2.3.4/24', "
+            "aes=True, aes_len='auto', sha256=True, pfsgroup='14', lifetime=3600, keepalive='enabled'"
+        )
+        self.do_module_test(phase2, command=command)
+
+    def test_phase2_update_keepalive_noop(self):
+        """ test not updating the keep alive of a phase2 """
+        phase2 = dict(
+            p1_descr="test_tunnel", descr="one_p2", mode="tunnel", local="lan", remote="10.20.30.40/24",
+            aes="True", aes_len="128", aes128gcm=True, aes128gcm_len="128", sha256="True", keepalive=True)
+        self.do_module_test(phase2, changed=False)
+
+    def test_phase2_update_keepalive(self):
+        """ test disabling the keep alive of a phase2 """
+        phase2 = dict(
+            p1_descr="test_tunnel", descr="one_p2", mode="tunnel", local="lan", remote="10.20.30.40/24",
+            aes="True", aes_len="128", aes128gcm=True, aes128gcm_len="128", sha256="True", keepalive=False)
+        command = "update ipsec_p2 'one_p2' on 'test_tunnel' set keepalive='disabled'"
+        self.do_module_test(phase2, command=command)
 
     def test_phase2_update_aes_len(self):
         """ test update aes """

@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_ipsec_p2, pfsense_ipsec_aggregate - new ``keepalive`` option, the Keep Alive setting of a phase 2. When not set, the current setting is left unchanged.

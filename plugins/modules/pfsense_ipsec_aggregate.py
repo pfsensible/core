@@ -346,6 +346,12 @@ options:
         description: Automatically ping host
         required: False
         type: str
+      keepalive:
+        description:
+          - Enable the periodic keep alive check of the phase 2 (Keep Alive in the web GUI).
+          - When not set, the current setting is left unchanged.
+        type: bool
+        version_added: 0.8.0
       descr:
         description: The description of the IPsec tunnel phase2
         required: True
