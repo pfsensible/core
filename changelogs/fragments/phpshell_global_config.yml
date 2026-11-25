@@ -1,0 +1,2 @@
+bugfixes:
+  - phpshell - the PHP code run by the modules declares ``global $config;`` again when debug is on, which is the default. Since 0.7.0 it was only declared with ``debug=False``.
