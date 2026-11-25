@@ -177,6 +177,7 @@ These modules allow you to make important changes at once and, using the purge p
 
 * [pfsense_aggregate](https://github.com/pfsensible/core/wiki/pfsense_aggregate) for firewall aliases, rules, and rule separators, plus interfaces, VLANs and DHCP static mappings
 * [pfsense_ipsec_aggregate](https://github.com/pfsensible/core/wiki/pfsense_ipsec_aggregate) for IPsec tunnels, phases 1, phases 2 and proposals
+* [pfsense_openvpn_aggregate](plugins/modules/pfsense_openvpn_aggregate.py) for OpenVPN servers, clients and client specific overrides
 
 ## Third party modules
 These modules allow you to manage installed packages:
