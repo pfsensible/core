@@ -1,0 +1,5 @@
+minor_changes:
+  - pfsense_phpshell - the code can report that it changed nothing with ``$ansible_changed = false;``. The module returns it as ``changed``, ``true`` by default as before.
+  - pfsense_phpshell - a failure returns ``rc``, ``stdout`` and ``stderr``.
+breaking_changes:
+  - pfsense_phpshell - ``stdout`` only holds what the code printed, without the shell's echo of each line of the code.
