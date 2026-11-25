@@ -38,8 +38,12 @@ It also verifies that Proxy ARP is registered on the selected interface and
 that Proxy ARP and Other addresses are absent from interface assignments.
 It verifies saved configuration, idempotence, and deletion for each case.
 
-The suite inspects appliance configuration and kernel rules. Packet delivery and
-package behavior such as HAProxy are outside its current coverage.
+The OpenVPN scenario connects an appliance client to a certificate-authenticated
+server on loopback. It connects with two certificate identities in turn and
+checks that both daemons report each session with the address assigned by its
+client-specific override. It also checks the addresses on both live tunnel
+interfaces. A check-mode deletion of each running instance must report a change
+while preserving the saved configuration, daemon PIDs, and active session.
 
 Filter reloads run asynchronously on pfSense. After create/update, action changes,
 reboot, and deletion, the suite polls observed PF state instead of assuming a module
@@ -130,7 +134,8 @@ a prepared image rather than attempting an unattended account-based installation
 4. Ensure PF is enabled and leave `vtnet2` unassigned if it is present. Keep the
    names `ci_urltable`, `CI URL table test`, `CI NAT port forward test`, `CI_UPLINK`,
    and `CI_UPLINK_GW` available. Leave loopback port 18080 and the fixture's redirect
-   target `192.168.100.80` unused. Shut down cleanly.
+   target `192.168.100.80` unused. Reserve loopback UDP port 21194 and tunnel
+   subnet `10.84.0.0/24` for the OpenVPN scenario. Shut down cleanly.
 5. Export a self-contained qcow2 disk with no backing/data files. For example,
    flatten an existing qcow2 image on the hypervisor host:
 
@@ -222,6 +227,7 @@ cleanup. The files are organized by responsibility:
 | `modules/alias/` | Alias creation, idempotence, check mode, URL updates, cache repair, and deletion |
 | `modules/interface/` | Static interface and gateway creation, native gateway visibility, check mode, idempotence, update, and cleanup |
 | `modules/nat_port_forward/` | NAT match and translated ports, associated filter rule, idempotence, check mode, and deletion |
+| `modules/openvpn/` | OpenVPN TLS connections and live tunnel addresses assigned by client-specific overrides |
 | `modules/rule/` | Rule apply/verification, idempotence, action changes, and deletion |
 | `modules/virtual_ip/` | Saved VIP entries, interface addresses, CARP VHIDs, Proxy ARP registrations, and deletion |
 | `scenarios/persistence.yml` | Reboot and verify without reapplying configuration |

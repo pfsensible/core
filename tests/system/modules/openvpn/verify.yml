@@ -1,0 +1,21 @@
+---
+- name: Verify both daemons report the session and its assigned tunnel address
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_python_interpreter }}"
+      - /tmp/pfsensible-system/observe_openvpn.py
+      - "{{ openvpn_server.vpnid | string }}"
+      - "{{ openvpn_client.vpnid | string }}"
+      - "{{ openvpn_override.cn }}"
+      - "{{ openvpn_server_address }}"
+      - "{{ openvpn_override.address }}"
+  register: openvpn_observed
+  changed_when: false
+  # Exit 1 with evidence indicates that the tunnel has yet to converge.
+  until: openvpn_observed.rc != 1 or (openvpn_observed.stdout | trim | length == 0)
+  retries: "{{ openvpn_observe_retries | default(0) }}"
+  delay: 1
+
+- name: Record the active OpenVPN session in CI evidence
+  ansible.builtin.debug:
+    msg: "{{ openvpn_observed.stdout | from_json }}"
