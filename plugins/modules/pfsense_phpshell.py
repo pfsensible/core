@@ -20,7 +20,8 @@ author: Geno (@genofire)
 short_description: PHP Shell
 description:
   - Run PHP code in the pfSense shell.
-  - Successful runs report C(changed=true) by default. Set C(changed_when) on the task to report changes according to the script's behavior.
+  - Successful runs report C(changed=true) by default. The code can set C($ansible_changed = false;) when it changed nothing, or
+    the task can set C(changed_when) to report changes according to the script's behavior.
   - For read-only scripts, set C(changed_when=false) on the task.
 options:
   cmd:
@@ -33,6 +34,8 @@ attributes:
     support: none
 notes:
   - Setting C(check_mode=false) on a task executes the script normally, even during a check-mode playbook run.
+  - In such a task, C(ansible_check_mode) still tells whether the playbook runs in check mode. The code can get it from the task,
+    to only report what it would change. See the examples.
 """
 
 EXAMPLES = """
@@ -49,35 +52,45 @@ EXAMPLES = """
       global $config;
       echo $config['system']['hostname'], PHP_EOL;
   changed_when: false
+
+- name: Set the time zone when it differs, and only report it in check mode
+  pfsensible.core.pfsense_phpshell:
+    cmd: |
+      require_once("system.inc");
+      $dry_run = {{ ansible_check_mode | ternary('true', 'false') }};
+      $ansible_changed = config_get_path("system/timezone") != "Europe/Paris";
+      if ($ansible_changed && !$dry_run) {
+          config_set_path("system/timezone", "Europe/Paris");
+          write_config("Set the time zone");
+          system_timezone_configure();
+      }
+  check_mode: false
 """
 
 RETURN = """
 rc:
   description: Status code after run php-shell (could be changed using `exit(x)`)
-  returned: success
+  returned: always
   type: int
   sample:
     - 0
 stdout:
-  description: Output of the php-shell (include your code)
-  returned: success
+  description:
+    - What the code printed, without the shell's echo of each line of the code.
+    - When PHP cannot parse the code, the whole output of the php-shell, with the error.
+  returned: always
   type: str
   sample: |
-      pfSense shell: global $debug;
-      pfSense shell: $debug = 1;
-      pfSense shell: require_once("filter.inc");
-      pfSense shell: require_once("squid.inc");
-      pfSense shell: squid_resync("yes");
-      pfSense shell:
-      pfSense shell: exec
-      pfSense shell: exit
+      pfsense.example.com
 stderr:
   description: Output on error of the php-shell
-  returned: success
+  returned: always
   type: str
   sample: ""
 changed:
-  description: Defaults to C(true) after successful execution. The task can override it with C(changed_when).
+  description:
+    - The value of C($ansible_changed) when the code ends, C(true) unless the code sets it to C(false).
+    - C(true) when the code stops early (C(exit), C(return)). The task can override it with C(changed_when).
   returned: success
   type: bool
 failed:
@@ -86,6 +99,9 @@ failed:
   type: bool
 """
 
+import json
+import uuid
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
@@ -93,6 +109,13 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 PHP_SHELL_ARGUMENT_SPEC = dict(
     cmd=dict(required=True, type="str")
 )
+
+# pfSsh.php echoes each line it reads before running them all: the markers are split in the code, so that only the
+# lines printed when the code runs hold them whole.
+PHP_SHELL_CODE = """$ansible_changed = true;
+echo "\\n" . "{marker[0]}" . "{marker[1]}" . "\\n";
+{cmd}
+echo "\\n" . "{marker[0]}" . "{marker[1]}" . json_encode(array("changed" => (bool) $ansible_changed)) . "\\n";"""
 
 
 class PFSensePHPShellModule(PFSenseModuleBase):
@@ -115,17 +138,39 @@ class PFSensePHPShellModule(PFSenseModuleBase):
     # run
     #
     def run(self, params):
-        (rc, stdout, stderr) = self.pfsense.phpshell(params["cmd"])
+        marker = uuid.uuid4().hex
+        marker = ("ansible_" + marker[:16], marker[16:])
+        (rc, stdout, stderr) = self.pfsense.phpshell(PHP_SHELL_CODE.format(marker=marker, cmd=params["cmd"]))
+        (changed, stdout) = self._parse_output(stdout, "\n" + "".join(marker))
         self.result.update({
+            "changed": changed,
             "rc": rc,
             "stdout": stdout,
             "stderr": stderr,
         })
 
         if int(rc) != 0 or len(stderr) > 0:
-            self.module.fail_json(msg="rc is not 0 or stderr contains output (you still could overwrite with failed_when)")
+            self.module.fail_json(msg="rc is not 0 or stderr contains output (you still could overwrite with failed_when)", **self.result)
         else:
             self.module.exit_json(**self.result)
+
+    @staticmethod
+    def _parse_output(stdout, marker):
+        """ return the changed flag and what the code printed, between the two markers """
+        start = stdout.find(marker + "\n")
+        if start < 0:
+            # PHP did not run the code: keep the shell's output, with the error
+            return (True, stdout)
+        output = stdout[start + len(marker) + 1:]
+        end = output.rfind(marker + "{")
+        if end < 0:
+            # The code stopped early (exit, return)
+            return (True, output)
+        try:
+            changed = json.loads(output[end + len(marker):].splitlines()[0])["changed"]
+        except (ValueError, KeyError, TypeError):
+            changed = True
+        return (bool(changed), output[:end])
 
 
 def main():
