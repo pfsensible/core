@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_openvpn_client, pfsense_openvpn_aggregate - deleting an OpenVPN
+    client now requires only its ``name`` and ``state: absent``. The server
+    address and mode-specific credentials are required only for ``state: present``.

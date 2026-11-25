@@ -396,8 +396,7 @@ options:
         default: wan
         type: str
       server_addr:
-        description: The address for OpenVPN to connect to.
-        required: true
+        description: The address for OpenVPN to connect to. Required when I(state=present).
         type: str
       server_port:
         description: The port for OpenVPN to connect to.
@@ -430,7 +429,7 @@ options:
         - crypt
         type: str
       ca:
-        description: Certificate Authority name.
+        description: Certificate Authority name. Required when I(state=present) and I(mode=p2p_tls).
         type: str
       crl:
         description: Certificate Revocation List name.
@@ -448,7 +447,9 @@ options:
         default: false
         type: bool
       shared_key:
-        description: Pre-shared key for shared key modes.  If set to 'generate' it will create a key if one does not already exist.
+        description:
+          - Pre-shared key. Required when I(state=present) and I(mode=p2p_shared_key).
+          - Set to C(generate) to create a key if one does not already exist.
         type: str
       dh_length:
         description: DH parameter length.

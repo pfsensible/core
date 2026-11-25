@@ -14,8 +14,6 @@ from ansible_collections.pfsensible.core.plugins.modules import pfsense_openvpn_
 from .pfsense_module import TestPFSenseModule
 
 CLIENT = "<openvpn-client><vpnid>3</vpnid><description>ovpnc3</description><mode>p2p_tls</mode></openvpn-client>"
-# The client module asks for these even with state=absent
-CLIENT_PARAMS = dict(server_addr="192.0.2.1", ca="OpenVPN CA")
 
 
 class TestPFSenseOpenVPNDelete(TestPFSenseModule):
@@ -44,9 +42,9 @@ class TestPFSenseOpenVPNDelete(TestPFSenseModule):
         self.calls.append((command, ET.parse(self.tmp_file).getroot()))
         return (0, "", "")
 
-    def delete(self, module, name, check_mode=False, **params):
+    def delete(self, module, name, check_mode=False):
         self.module = module
-        with set_module_args(dict(name=name, state="absent", _ansible_check_mode=check_mode, **params)):
+        with set_module_args(dict(name=name, state="absent", _ansible_check_mode=check_mode)):
             return self.execute_module(changed=True)
 
     def assert_deleted_then_run(self, php, tag, field, name):
@@ -65,12 +63,12 @@ class TestPFSenseOpenVPNDelete(TestPFSenseModule):
         self.assertEqual(self.calls, [])
 
     def test_client(self):
-        result = self.delete(pfsense_openvpn_client, "ovpnc3", **CLIENT_PARAMS)
+        result = self.delete(pfsense_openvpn_client, "ovpnc3")
         self.assertEqual(result["vpnid"], 3)
         self.assert_deleted_then_run("openvpn_delete('client', array('vpnid' => '3'));", "openvpn-client", "description", "ovpnc3")
 
     def test_client_check_mode(self):
-        self.delete(pfsense_openvpn_client, "ovpnc3", check_mode=True, **CLIENT_PARAMS)
+        self.delete(pfsense_openvpn_client, "ovpnc3", check_mode=True)
         self.assertEqual(self.calls, [])
 
     def test_override(self):

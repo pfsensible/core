@@ -47,8 +47,7 @@ options:
     default: wan
     type: str
   server_addr:
-    description: The address for OpenVPN to connect to.
-    required: true
+    description: The address for OpenVPN to connect to. Required when I(state=present).
     type: str
   server_port:
     description: The port for OpenVPN to connect to.
@@ -76,7 +75,7 @@ options:
     type: str
     version_added: 0.6.2
   ca:
-    description: Certificate Authority name.
+    description: Certificate Authority name. Required when I(state=present) and I(mode=p2p_tls).
     type: str
   crl:
     description: Certificate Revocation List name.
@@ -94,7 +93,9 @@ options:
     default: false
     type: bool
   shared_key:
-    description: Pre-shared key for shared key modes.  If set to 'generate' it will create a key if one does not already exist.
+    description:
+      - Pre-shared key. Required when I(state=present) and I(mode=p2p_shared_key).
+      - Set to C(generate) to create a key if one does not already exist.
     type: str
   dh_length:
     description: DH parameter length.
@@ -223,9 +224,18 @@ options:
 """
 
 EXAMPLES = r"""
-- name: "Add OpenVPN client"
-  pfsense_openvpn_client:
-    name: 'OpenVPN Client'
+- name: Add OpenVPN client
+  pfsensible.core.pfsense_openvpn_client:
+    name: OpenVPN Client
+    server_addr: vpn.example.com
+    ca: OpenVPN CA
+    data_ciphers:
+      - AES-256-GCM
+
+- name: Delete OpenVPN client
+  pfsensible.core.pfsense_openvpn_client:
+    name: OpenVPN Client
+    state: absent
 """
 
 RETURN = r"""

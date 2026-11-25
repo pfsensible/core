@@ -25,6 +25,15 @@ class TestPFSenseOpenVPNClientModule(TestPFSenseModule):
         self.php.return_value = {"SHA256": "SHA256 (256-bit)"}
         self.addCleanup(mock_php.stop)
 
+    def test_present_requires_server_address(self):
+        with set_module_args(dict(name="c1", ca="OpenVPN CA")):
+            self.execute_module(failed=True, msg="state is present but all of the following are missing: server_addr")
+
+    def test_present_requires_mode_credential(self):
+        for mode, credential in (("p2p_tls", "ca"), ("p2p_shared_key", "shared_key")):
+            with self.subTest(mode=mode), set_module_args(dict(name="c1", mode=mode, server_addr="203.0.113.1")):
+                self.execute_module(failed=True, msg="{0} is required for mode={1}".format(credential, mode))
+
     def test_openvpn_client_vip(self):
         """ a client bound to a VIP stores its interface and address apart, as the web GUI does """
         obj = dict(name="c1", ca="OpenVPN CA", server_addr="203.0.113.1", interface="Backup WAN IP", data_ciphers=["AES-256-GCM"])
