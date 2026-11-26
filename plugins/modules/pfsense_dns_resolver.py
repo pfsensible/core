@@ -179,6 +179,21 @@ options:
     description: version.server and version.bind queries are refused.
     required: false
     type: bool
+  qname_minimisation:
+    description:
+      - Query Name Minimization. Send the minimum amount of QNAME/QTYPE information to upstream servers to enhance privacy.
+      - The full QNAME and original QTYPE are still sent when an upstream server replies with an error.
+    required: false
+    type: bool
+    version_added: 0.8.0
+  qname_minimisation_strict:
+    description:
+      - Strict Query Name Minimization. Do not fall back to sending the full QNAME to potentially broken DNS servers.
+      - A significant number of domains fail to resolve with this option.
+      - It only has an effect when O(qname_minimisation) is enabled.
+    required: false
+    type: bool
+    version_added: 0.8.0
   prefetch:
     description: Message cache elements are prefetched before they expire to help keep the cache up to date.
     required: false
@@ -191,6 +206,13 @@ options:
     description: If enabled, DNSSEC data is required for trust-anchored zones.
     required: false
     type: bool
+  sock_queue_timeout:
+    description:
+      - Drop Old UDP Queries. Timeout in seconds before dropping UDP queries waiting in the socket buffer.
+      - V(0) disables it, which is the pfSense default.
+    required: false
+    type: int
+    version_added: 0.8.0
   msgcachesize:
     description: Message cache size in MB
     required: false
@@ -229,6 +251,14 @@ options:
     description: The Minimum Time to Live (in seconds) for RRsets and messages in the cache.
     required: false
     type: int
+  infra_keep_probing:
+    description:
+      - Keep Probing. Keep probing servers that are down.
+      - When disabled, it may take up to O(infra_host_ttl) for a server to be used again after being marked as down.
+      - pfSense treats a configuration without this setting as enabled.
+    required: false
+    type: bool
+    version_added: 0.8.0
   infra_host_ttl:
     description: Time to Live, in seconds, for entries in the infrastructure host cache.
     required: false
@@ -273,6 +303,12 @@ EXAMPLES = """
     hosts:
       - { host: test, domain: home.local, ip: 192.168.1.100, descr: "Example host override",
           aliases: [{ host: test-admin, domain: home.local, description: "Example aliases" }] }
+
+- name: Minimize the query names sent upstream and keep probing servers that are down
+  pfsense_dns_resolver:
+    state: present
+    qname_minimisation: true
+    infra_keep_probing: true
 
 - name: Disable DNS Resolver
   pfsense_dns_resolver:
@@ -343,12 +379,13 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     # Advanced Settings
     hideidentity=dict(type="bool"),
     hideversion=dict(type="bool"),
-    # TODO: Query Name Minimization
-    # TODO: Strict Query Name Minimization
+    qname_minimisation=dict(type="bool"),
+    qname_minimisation_strict=dict(type="bool"),
     prefetch=dict(type="bool"),
     prefetchkey=dict(type="bool"),
     dnssecstripped=dict(type="bool"),
     # TODO: Serve Expired
+    sock_queue_timeout=dict(type="int"),
     # TODO: Aggressive NSEC
     msgcachesize=dict(type="int", choices=[4, 10, 20, 50, 100, 250, 512]),
     outgoing_num_tcp=dict(type="int", choices=[0, 10, 20, 30, 50]),
@@ -358,6 +395,7 @@ DNS_RESOLVER_ARGUMENT_SPEC = dict(
     jostle_timeout=dict(type="int", choices=[100, 200, 500, 1000]),
     cache_max_ttl=dict(type="int"),
     cache_min_ttl=dict(type="int"),
+    infra_keep_probing=dict(type="bool"),
     infra_host_ttl=dict(type="int", choices=[60, 120, 300, 600, 900]),
     infra_cache_numhosts=dict(type="int", choices=[1000, 5000, 10000, 20000, 50000, 100000, 200000]),
     unwanted_reply_threshold=dict(type="str", choices=["disabled", "5000000", "10000000", "20000000", "40000000", "50000000"]),
@@ -394,7 +432,13 @@ DNS_RESOLVER_CREATE_DEFAULT = dict(
 
 DNS_RESOLVER_BOOL_PARAMS = (
     "hideidentity", "hideversion", "dnssecstripped", "forwarding", "regdhcp", "regdhcpstatic", "regovpnclients", "enablessl", "dnssec",
-    "forward_tls_upstream", "prefetch", "prefetchkey", "strictout",
+    "forward_tls_upstream", "prefetch", "prefetchkey", "strictout", "qname_minimisation", "qname_minimisation_strict",
+)
+
+# Parameters stored under another name in the configuration
+DNS_RESOLVER_FIELDS = dict(
+    qname_minimisation="qname-minimisation",
+    qname_minimisation_strict="qname-minimisation-strict",
 )
 
 DNS_RESOLVER_REQUIRED_IF = []
@@ -458,10 +502,12 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 obj["custom_options"] = base64.b64encode(custom_options.encode("utf-8")).decode("ascii")
 
         for param in DNS_RESOLVER_BOOL_PARAMS:
-            self._get_ansible_param_bool(obj, param, value="")
-        for param in ("port", "tlsport", "system_domain_local_zone_type", "msgcachesize", "outgoing_num_tcp", "incoming_num_tcp",
-                      "edns_buffer_size", "num_queries_per_thread", "jostle_timeout", "cache_max_ttl", "cache_min_ttl", "infra_host_ttl",
-                      "infra_cache_numhosts", "unwanted_reply_threshold", "log_verbosity"):
+            self._get_ansible_param_bool(obj, param, fname=DNS_RESOLVER_FIELDS.get(param), value="")
+        # pfSense stores enabled or disabled, and treats a missing value as enabled
+        self._get_ansible_param_bool(obj, "infra_keep_probing", value="enabled", value_false="disabled")
+        for param in ("port", "tlsport", "system_domain_local_zone_type", "sock_queue_timeout", "msgcachesize", "outgoing_num_tcp",
+                      "incoming_num_tcp", "edns_buffer_size", "num_queries_per_thread", "jostle_timeout", "cache_max_ttl", "cache_min_ttl",
+                      "infra_host_ttl", "infra_cache_numhosts", "unwanted_reply_threshold", "log_verbosity"):
             self._get_ansible_param(obj, param)
         if params["sslcert"]:
             obj["sslcertref"] = self.pfsense.find_cert_elt(params["sslcert"]).find("refid").text
@@ -523,6 +569,10 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 if not self.pfsense.is_ipv4_address(domain["ip"]) and not self.pfsense.is_ipv6_address(domain["ip"]):
                     self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4/ipv6 address')
 
+        # The web GUI field only takes a whole number of seconds, 0 or more
+        if params["sock_queue_timeout"] is not None and params["sock_queue_timeout"] < 0:
+            self.module.fail_json(msg="sock_queue_timeout must be 0 or more")
+
     ##############################
     # XML processing
     #
@@ -532,7 +582,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
 
     def _get_params_to_remove(self):
         """ return boolean flags explicitly set to false """
-        return [param for param in DNS_RESOLVER_BOOL_PARAMS if self.params[param] is False]
+        return [DNS_RESOLVER_FIELDS.get(param, param) for param in DNS_RESOLVER_BOOL_PARAMS if self.params[param] is False]
 
     def _remove_target_elt(self):
         """ disable the resolver: target_elt is the unbound root, so only clear its enable flag """
@@ -585,6 +635,11 @@ clear_subsystem_dirty("unbound");
         values += self.format_updated_cli_field(after, previous, "regdhcpstatic", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "prefetch", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "prefetchkey", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(after, previous, "qname-minimisation", fvalue=self.fvalue_bool, add_comma=(values), log_none=False,
+                                                fname="qname_minimisation")
+        values += self.format_updated_cli_field(after, previous, "qname-minimisation-strict", fvalue=self.fvalue_bool, add_comma=(values),
+                                                log_none=False, fname="qname_minimisation_strict")
+        values += self.format_updated_cli_field(after, previous, "sock_queue_timeout", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "msgcachesize", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "outgoing_num_tcp", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "incoming_num_tcp", add_comma=(values), log_none=False)
@@ -593,6 +648,7 @@ clear_subsystem_dirty("unbound");
         values += self.format_updated_cli_field(after, previous, "jostle_timeout", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "cache_max_ttl", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "cache_min_ttl", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(after, previous, "infra_keep_probing", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "infra_host_ttl", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "infra_cache_numhosts", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "unwanted_reply_threshold", add_comma=(values), log_none=False)

@@ -52,9 +52,15 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, "domainoverrides")
         self.check_param_bool(obj, target_elt, "hideidentity", default=True)
         self.check_param_bool(obj, target_elt, "hideversions", default=True)
+        # qname-minimisation is set in the full fixture and not in the init one
+        if "qname_minimisation" in obj:
+            self.check_param_bool(obj, target_elt, "qname_minimisation", xml_field="qname-minimisation")
+        self.check_param_bool(obj, target_elt, "qname_minimisation_strict", xml_field="qname-minimisation-strict")
         self.check_param_bool(obj, target_elt, "prefetch")
         self.check_param_bool(obj, target_elt, "prefetchkey")
         self.check_param_bool(obj, target_elt, "dnssecstripped", default=True)
+        if "sock_queue_timeout" in obj:
+            self.check_param_equal(obj, target_elt, "sock_queue_timeout")
         self.check_param_equal(obj, target_elt, "msgcachesize", default=4)
         self.check_param_equal(obj, target_elt, "outgoing_num_tcp", default=10)
         self.check_param_equal(obj, target_elt, "incoming_num_tcp", default=10)
@@ -63,6 +69,8 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, "jostle_timeout", default=200)
         self.check_param_equal(obj, target_elt, "cache_max_ttl", default=86400)
         self.check_param_equal(obj, target_elt, "cache_min_ttl", default=0)
+        if "infra_keep_probing" in obj:
+            self.check_param_bool(obj, target_elt, "infra_keep_probing", value_true="enabled", value_false="disabled")
         self.check_param_equal(obj, target_elt, "infra_host_ttl", default=900)
         self.check_param_equal(obj, target_elt, "infra_cache_numhosts", default=10000)
         self.check_param_equal(obj, target_elt, "unwanted_reply_threshold", default="disabled")
@@ -237,3 +245,60 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         override = dict(obj["domainoverrides"][0])
         del override["forward_tls_upstream"]
         self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], domainoverrides=override))
+
+    def test_dns_resolver_qname_minimisation_noop(self):
+        """ qname_minimisation is already enabled """
+        self.do_module_test(dict(qname_minimisation=True), changed=False)
+
+    def test_dns_resolver_qname_minimisation_enable(self):
+        """ qname_minimisation is stored as an empty qname-minimisation element """
+        self.config_file = "pfsense_dns_resolver_config.xml"
+        obj = dict(qname_minimisation=True)
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True, commands=["update dns_resolver pfsense_dns_resolver set qname_minimisation=True"])
+        self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], **{"qname-minimisation": ""}))
+
+    def test_dns_resolver_qname_minimisation_disable(self):
+        """ disabling qname_minimisation removes its element """
+        obj = dict(qname_minimisation=False)
+        self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set qname_minimisation=False")
+
+    def test_dns_resolver_qname_minimisation_strict(self):
+        """ enable strict query name minimisation """
+        obj = dict(qname_minimisation=True, qname_minimisation_strict=True)
+        self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set qname_minimisation_strict=True")
+
+    def test_dns_resolver_infra_keep_probing_enable(self):
+        """ infra_keep_probing is stored as enabled, even where pfSense already treats a missing value as enabled """
+        obj = dict(infra_keep_probing=True)
+        self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set infra_keep_probing='enabled'")
+
+    def test_dns_resolver_infra_keep_probing_disable(self):
+        """ infra_keep_probing is stored as disabled """
+        obj = dict(infra_keep_probing=False)
+        self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set infra_keep_probing='disabled'")
+
+    def test_dns_resolver_infra_keep_probing_disable_enabled(self):
+        """ disabling infra_keep_probing changes the stored value """
+        self.config_file = "pfsense_dns_resolver_config.xml"
+        obj = dict(infra_keep_probing=False)
+        with set_module_args(self.args_from_var(obj)):
+            result = self.execute_module(changed=True, commands=["update dns_resolver pfsense_dns_resolver set infra_keep_probing='disabled'"])
+        self.assertEqual(result["diff"]["before"]["infra_keep_probing"], "enabled")
+        self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], infra_keep_probing="disabled"))
+
+    def test_dns_resolver_sock_queue_timeout(self):
+        """ set sock_queue_timeout """
+        obj = dict(sock_queue_timeout=5)
+        self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set sock_queue_timeout='5'")
+
+    def test_dns_resolver_sock_queue_timeout_invalid(self):
+        """ sock_queue_timeout cannot be negative """
+        obj = dict(sock_queue_timeout=-1)
+        self.do_module_test(obj, failed=True, msg="sock_queue_timeout must be 0 or more")
+
+    def test_dns_resolver_advanced_options_noop(self):
+        """ values stored by the web GUI are left unchanged """
+        self.config_file = "pfsense_dns_resolver_config.xml"
+        obj = dict(infra_keep_probing=True, sock_queue_timeout=0, qname_minimisation_strict=False)
+        self.do_module_test(obj, changed=False)
