@@ -25,7 +25,24 @@ GATEWAY_ARGUMENT_SPEC = dict(
     latencyhigh=dict(required=False, type="int"),
     losslow=dict(required=False, type="int"),
     losshigh=dict(required=False, type="int"),
+    interval=dict(required=False, type="int"),
+    loss_interval=dict(required=False, type="int"),
+    time_period=dict(required=False, type="int"),
+    alert_interval=dict(required=False, type="int"),
+    data_payload=dict(required=False, type="int"),
     nonlocalgateway=dict(default=False, type="bool"),
+)
+
+# The monitoring defaults of pfSense (return_dpinger_defaults() in gwlb.inc)
+DPINGER_DEFAULTS = dict(
+    latencylow=200,
+    latencyhigh=500,
+    losslow=10,
+    losshigh=20,
+    interval=500,
+    loss_interval=2000,
+    time_period=60000,
+    alert_interval=1000,
 )
 
 GATEWAY_REQUIRED_IF = [
@@ -163,6 +180,11 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             self._get_ansible_param(obj, "latencyhigh")
             self._get_ansible_param(obj, "losslow")
             self._get_ansible_param(obj, "losshigh")
+            self._get_ansible_param(obj, "interval")
+            self._get_ansible_param(obj, "loss_interval")
+            self._get_ansible_param(obj, "time_period")
+            self._get_ansible_param(obj, "alert_interval")
+            self._get_ansible_param(obj, "data_payload")
 
             self._get_ansible_param_bool(obj, "disabled", value=None)
             self._get_ansible_param_bool(obj, "monitor_disable", value=None)
@@ -193,6 +215,14 @@ class PFSenseGatewayModule(PFSenseModuleBase):
                 if params.get(param) is not None and (params[param] < 1 or params[param] > 100):
                     self.module.fail_json(msg=f"{param} must be between 1 and 100")
 
+            # check latency thresholds and probe timings
+            for param in ["latencylow", "latencyhigh", "interval", "loss_interval", "time_period", "alert_interval"]:
+                if params.get(param) is not None and params[param] < 1:
+                    self.module.fail_json(msg=f"{param} must be greater than 0")
+            if params.get("data_payload") is not None and params["data_payload"] < 0:
+                self.module.fail_json(msg="data_payload must be 0 or greater")
+            self._check_monitoring_settings()
+
             if self.dynamic:
                 if params["gateway"] != "dynamic":
                     self.module.fail_json(msg="The gateway use 'dynamic' as a target. This is read-only, so you must set gateway as dynamic too")
@@ -208,6 +238,40 @@ class PFSenseGatewayModule(PFSenseModuleBase):
                 self.module.fail_json(msg="The gateway use 'dynamic' as a target. You can not delete it")
             if not self._check_gateway_groups() or not self._check_routes():
                 self.module.fail_json(msg="The gateway is still in use. You can not delete it")
+
+    def _check_monitoring_settings(self):
+        """ check the thresholds and timings against each other, as the pfSense GUI does. Only the rules that
+        involve an option set by the task are checked, so that values already stored do not block other changes """
+        set_params = [param for param in DPINGER_DEFAULTS if self.params.get(param) is not None]
+        if not set_params:
+            return
+
+        # each value from the parameters, else from the gateway, else from the pfSense defaults
+        values = dict()
+        for param, default in DPINGER_DEFAULTS.items():
+            current = self.target_elt.findtext(param) if self.target_elt is not None else None
+            if self.params.get(param) is not None:
+                values[param] = self.params[param]
+            elif current is not None and current.isdigit():
+                values[param] = int(current)
+            else:
+                values[param] = default
+
+        rules = [
+            (["latencylow", "latencyhigh"], values["latencylow"] < values["latencyhigh"],
+             "latencyhigh ({latencyhigh}) must be greater than latencylow ({latencylow})"),
+            (["losslow", "losshigh"], values["losslow"] < values["losshigh"],
+             "losshigh ({losshigh}) must be greater than losslow ({losslow})"),
+            (["latencyhigh", "loss_interval"], values["latencyhigh"] <= values["loss_interval"],
+             "loss_interval ({loss_interval}) must be greater than or equal to latencyhigh ({latencyhigh})"),
+            (["interval", "loss_interval", "time_period"], values["interval"] * 2 + values["loss_interval"] < values["time_period"],
+             "time_period ({time_period}) must be greater than twice interval ({interval}) plus loss_interval ({loss_interval})"),
+            (["interval", "alert_interval"], values["interval"] <= values["alert_interval"],
+             "alert_interval ({alert_interval}) must be greater than or equal to interval ({interval})"),
+        ]
+        for params, valid, msg in rules:
+            if not valid and any(param in set_params for param in params):
+                self.module.fail_json(msg=msg.format(**values))
 
     ##############################
     # XML processing
@@ -271,6 +335,11 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
             values += self.format_cli_field(self.obj, "latencyhigh")
             values += self.format_cli_field(self.obj, "losslow")
             values += self.format_cli_field(self.obj, "losshigh")
+            values += self.format_cli_field(self.obj, "interval")
+            values += self.format_cli_field(self.obj, "loss_interval")
+            values += self.format_cli_field(self.obj, "time_period")
+            values += self.format_cli_field(self.obj, "alert_interval")
+            values += self.format_cli_field(self.obj, "data_payload")
             values += self.format_cli_field(self.params, "nonlocalgateway", fvalue=self.fvalue_bool, default=False)
         else:
             fbefore = dict()
@@ -286,10 +355,11 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
             values += self.format_updated_cli_field(self.obj, before, "action_disable", fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "force_down", fvalue=self.fvalue_bool, default=False, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "weight", default="1", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "latencylow", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "latencyhigh", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "losslow", add_comma=(values))
-            values += self.format_updated_cli_field(self.obj, before, "losshigh", add_comma=(values))
+            # only when set: an unset option leaves the stored value as it is (configs from older pfSense versions,
+            # like the test fixture, can also hold an empty interval)
+            for param in ["latencylow", "latencyhigh", "losslow", "losshigh", "interval", "loss_interval", "time_period", "alert_interval", "data_payload"]:
+                if param in self.obj:
+                    values += self.format_updated_cli_field(self.obj, before, param, add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "nonlocalgateway", fvalue=self.fvalue_bool)
 
         return values

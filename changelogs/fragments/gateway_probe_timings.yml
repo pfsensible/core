@@ -1,0 +1,6 @@
+minor_changes:
+  - pfsense_gateway - new ``interval``, ``loss_interval``, ``time_period``, ``alert_interval`` and ``data_payload`` options, the probe settings of the gateway monitoring. When not set, the current setting is left unchanged.
+bugfixes:
+  - pfsense_gateway - an update no longer logs ``latencylow``, ``latencyhigh``, ``losslow`` or ``losshigh`` as removed (``=none``) when the task does not set them. They are left unchanged, as before.
+breaking_changes:
+  - pfsense_gateway - the latency and loss thresholds and the probe settings are now checked against each other as in the GUI (for example ``losshigh`` must be greater than ``losslow``), with the gateway's current values, else the pfSense defaults, for the options a task does not set. A task setting values that the GUI refuses, such as ``losshigh`` below the default ``losslow`` of 10, now fails.
