@@ -447,3 +447,69 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         setup = dict(dns_addresses="8.8.8.8 8.8.8.8", dns_hostnames="acme1 acme2", dns_gateways="none GW_WAN")
         msg = "Each configured DNS server must have a unique IP address. Remove the duplicated IP."
         self.do_module_test(setup, msg=msg, state=None, failed=True)
+
+    def test_setup_althostnames(self):
+        """ test setup althostnames: set, again (no change), then removed by an empty list """
+        self.load_fixtures()
+        names = ["fw.example.com", "192.168.1.1", "2001:db8::1"]
+        with set_module_args(dict(althostnames=names)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set althostnames='fw.example.com 192.168.1.1 2001:db8::1'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/webgui/althostnames"), "fw.example.com 192.168.1.1 2001:db8::1")
+        self.assertNotIn("prefer_ipv4_or_ipv6();", self.phpshell.call_args[0][0])
+        with set_module_args(dict(althostnames=names)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(althostnames=[])):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set althostnames=none"])
+        webgui = ET.parse(self.tmp_file).find("system/webgui")
+        self.assertIsNone(webgui.find("althostnames"))
+        self.assertEqual(webgui.findtext("protocol"), "http")
+        with set_module_args(dict(althostnames=[])):
+            self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_setup_althostnames_invalid(self):
+        """ test setup althostnames with a name that is not a hostname """
+        self.load_fixtures()
+        with set_module_args(dict(althostnames=["fw.example.com", "fw example"])):
+            self.assertIn("alternate hostname fw example", self.failed()["msg"])
+
+    def test_setup_ipv6allow(self):
+        """ test setup ipv6allow: off (the fixture has it on), again (no change), then on """
+        self.load_fixtures()
+        with set_module_args(dict(ipv6allow=False)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set ipv6allow=False"])
+        self.assertIsNone(ET.parse(self.tmp_file).find("system/ipv6allow"))
+        self.assertIn("prefer_ipv4_or_ipv6();", self.phpshell.call_args[0][0])
+        self.assertIn("filter_configure();", self.phpshell.call_args[0][0])
+        with set_module_args(dict(ipv6allow=False)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(ipv6allow=True)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set ipv6allow=True"])
+        self.assertIsNotNone(ET.parse(self.tmp_file).find("system/ipv6allow"))
+
+    def test_setup_maximumstates(self):
+        """ test setup maximumstates: set, again (no change), then back to the default with 0 """
+        self.load_fixtures()
+        with set_module_args(dict(maximumstates=406000)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set maximumstates='406000'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/maximumstates"), "406000")
+        self.assertIn("setup_loader_settings();", self.phpshell.call_args[0][0])
+        self.assertNotIn("prefer_ipv4_or_ipv6();", self.phpshell.call_args[0][0])
+        with set_module_args(dict(maximumstates=406000)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(maximumstates=0)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set maximumstates=none"])
+        self.assertIsNone(ET.parse(self.tmp_file).find("system/maximumstates"))
+        with set_module_args(dict(maximumstates=0)):
+            self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_setup_maximumstates_invalid(self):
+        """ test setup maximumstates below 0 """
+        self.load_fixtures()
+        with set_module_args(dict(maximumstates=-1)):
+            self.assertEqual(self.failed()["msg"], "The Firewall Maximum States value must be 0 or more.")
