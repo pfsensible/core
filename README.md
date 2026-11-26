@@ -142,6 +142,7 @@ The following modules are currently available:
 * [pfsense_dhcp_ha](https://github.com/pfsensible/core/wiki/pfsense_dhcp_ha) for the high availability of the Kea DHCP server
 * [pfsense_dhcp_server](https://github.com/pfsensible/core/wiki/pfsense_dhcp_server) for configuring DHCP server
 * [pfsense_dhcp_static](https://github.com/pfsensible/core/wiki/pfsense_dhcp_static) for static DHCP entries
+* [pfsense_dhcpv6_server](https://github.com/pfsensible/core/wiki/pfsense_dhcpv6_server) for configuring DHCPv6 servers
 * [pfsense_dns_resolver](https://github.com/pfsensible/core/wiki/pfsense_dns_resolver) for DNS resolver (unbound) settings
 * [pfsense_gateway](https://github.com/pfsensible/core/wiki/pfsense_gateway) for routing gateways
 * [pfsense_gateway_group](https://github.com/pfsensible/core/wiki/pfsense_gateway_group) for gateway groups
