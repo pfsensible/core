@@ -1,0 +1,6 @@
+minor_changes:
+  - >-
+    pfsense_dns_resolver - new ``qname_minimisation``, ``qname_minimisation_strict``, ``sock_queue_timeout`` and
+    ``infra_keep_probing`` options, from the Advanced Settings page of the DNS Resolver
+    ("Query Name Minimization", "Strict Query Name Minimization", "Drop Old UDP Queries" and "Keep Probing").
+    When not set, the current setting is left unchanged.

@@ -1468,6 +1468,7 @@
 	<network_interface>lan</network_interface>
 	<outgoing_interface>all</outgoing_interface>
 	<log_verbosity>1</log_verbosity>
+	<sock_queue_timeout>0</sock_queue_timeout>
 	<msgcachesize>4</msgcachesize>
 	<outgoing_num_tcp>10</outgoing_num_tcp>
 	<incoming_num_tcp>10</incoming_num_tcp>
@@ -1476,6 +1477,7 @@
 	<jostle_timeout>200</jostle_timeout>
 	<cache_max_ttl>86400</cache_max_ttl>
 	<cache_min_ttl>0</cache_min_ttl>
+	<infra_keep_probing>enabled</infra_keep_probing>
 	<infra_host_ttl>900</infra_host_ttl>
 	<infra_cache_numhosts>10000</infra_cache_numhosts>
 	<unwanted_reply_threshold>disabled</unwanted_reply_threshold>
