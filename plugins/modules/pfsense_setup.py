@@ -188,6 +188,58 @@ options:
     type: list
     elements: str
     version_added: 0.7.2
+  consolebell:
+    description: >
+      Console Bell (System > Advanced > Notifications). When set, emergency console messages, such as from a GUI login, trigger a bell in connected consoles
+      including serial terminals. pfSense rings the bell when this setting has never been saved.
+    required: false
+    type: bool
+    version_added: 0.8.0
+  powerd_enable:
+    description: >
+      PowerD (System > Advanced > Miscellaneous). The powerd utility monitors the system state and sets various power control options accordingly, using
+      the modes set by O(powerd_ac_mode), O(powerd_battery_mode) and O(powerd_normal_mode).
+    required: false
+    type: bool
+    version_added: 0.8.0
+  powerd_ac_mode:
+    description: >
+      PowerD mode on AC power. V(hadp) is Hiadaptive, V(adp) Adaptive, V(min) Minimum and V(max) Maximum.
+      pfSense uses V(hadp) when this setting has never been saved.
+    required: false
+    type: str
+    choices: ['hadp', 'adp', 'min', 'max']
+    version_added: 0.8.0
+  powerd_battery_mode:
+    description: PowerD mode on battery power. The values are those of O(powerd_ac_mode).
+    required: false
+    type: str
+    choices: ['hadp', 'adp', 'min', 'max']
+    version_added: 0.8.0
+  powerd_normal_mode:
+    description: PowerD mode when the power source is unknown. The values are those of O(powerd_ac_mode).
+    required: false
+    type: str
+    choices: ['hadp', 'adp', 'min', 'max']
+    version_added: 0.8.0
+  gw_down_kill_states:
+    description: >
+      State Killing on Gateway Failure (System > Advanced > Miscellaneous): what to do with the states when a gateway is down during a filter reload.
+      V(none) does not kill states, V(down) kills the states of the gateways which are down, and V(all) flushes all states. Killing the states of a down
+      gateway only affects the states created by policy routing rules and reply-to, and a gateway can override V(none) and V(down).
+      pfSense does not kill states when this setting has never been saved.
+    required: false
+    type: str
+    choices: ['none', 'down', 'all']
+    version_added: 0.8.0
+  statepolicy:
+    description: >
+      Firewall State Policy (System > Advanced > Firewall & NAT). V(if-bound) binds the states to their interface, V(floating) does not.
+      pfSense uses V(if-bound) when this setting has never been saved. A firewall rule can override it with its own state policy.
+    required: false
+    type: str
+    choices: ['if-bound', 'floating']
+    version_added: 0.8.0
   crypto_hardware:
     description: >
       A cryptographic accelerator module will use hardware support to speed up some cryptographic functions on systems which have the chip. Loading the BSD
@@ -298,6 +350,13 @@ SETUP_ARGUMENT_SPEC = dict(
     nodnsrebindcheck=dict(required=False, type="bool"),
     nohttpreferercheck=dict(required=False, type="bool"),
     sshguard_whitelist=dict(required=False, type="list", elements="str"),
+    consolebell=dict(required=False, type="bool"),
+    powerd_enable=dict(required=False, type="bool"),
+    powerd_ac_mode=dict(required=False, type="str", choices=["hadp", "adp", "min", "max"]),
+    powerd_battery_mode=dict(required=False, type="str", choices=["hadp", "adp", "min", "max"]),
+    powerd_normal_mode=dict(required=False, type="str", choices=["hadp", "adp", "min", "max"]),
+    gw_down_kill_states=dict(required=False, type="str", choices=["none", "down", "all"]),
+    statepolicy=dict(required=False, type="str", choices=["if-bound", "floating"]),
     crypto_hardware=dict(required=False, type="str", choices=["", "aesni", "aesni_cryptodev", "qat"]),
     thermal_hardware=dict(required=False, type="str", choices=["", "coretemp", "amdtemp"]),
     althostnames=dict(required=False, type="list", elements="str"),
@@ -376,8 +435,11 @@ SETUP_ARG_ROUTE = dict(
 
 # Booleans that map to different values
 SETUP_BOOL_VALUES = dict(
+    consolebell=("disabled", "enabled"),
     webguifixedmenu=(None, "fixed"),
 )
+
+POWERD_PARAMS = ("powerd_enable", "powerd_ac_mode", "powerd_battery_mode", "powerd_normal_mode")
 
 SETUP_MAP_PARAM = [
     ("althostnames", "webgui/althostnames"),
@@ -676,6 +738,13 @@ load_thermal_hardware();"""
         if restart_sshguard:
             cmd += "system_sshguard_stop();$retval |= system_syslogd_start(true);\n"
 
+        # What System > Advanced > Notifications and Miscellaneous do when these change. The state policy and the
+        # gateway state killing need only the filter reload above.
+        if self.obj.get("consolebell") != self.diff["before"].get("consolebell"):
+            cmd += "set_single_sysctl('kern.vt.enable_bell', '{0}');\n".format("0" if self.obj.get("consolebell") == "disabled" else "1")
+        if any(self.obj.get(param) != self.diff["before"].get(param) for param in POWERD_PARAMS):
+            cmd += "activate_powerd();\n"
+
         webgui = self.obj.get("webgui") or {}
         before_webgui = self.diff["before"].get("webgui") or {}
         if webgui.get("ssl-certref") != before_webgui.get("ssl-certref"):
@@ -714,6 +783,14 @@ load_thermal_hardware();"""
 
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "dnsallowoverride", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "dnslocalhost", add_comma=(values), log_none=False)
+
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "consolebell", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "powerd_enable", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "powerd_ac_mode", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "powerd_battery_mode", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "powerd_normal_mode", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "gw_down_kill_states", add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "statepolicy", add_comma=(values), log_none=False)
 
         values += self.format_updated_cli_field(obj_after, obj_before, "webguicert", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(obj_after, obj_before, "webguicss", add_comma=(values), log_none=False)

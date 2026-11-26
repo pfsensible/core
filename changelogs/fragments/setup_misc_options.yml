@@ -1,0 +1,5 @@
+minor_changes:
+  - pfsense_setup - add the ``consolebell`` option (System > Advanced > Notifications, Console Bell).
+  - pfsense_setup - add the ``powerd_enable``, ``powerd_ac_mode``, ``powerd_battery_mode`` and ``powerd_normal_mode`` options (System > Advanced > Miscellaneous, PowerD).
+  - pfsense_setup - add the ``gw_down_kill_states`` option (System > Advanced > Miscellaneous, State Killing on Gateway Failure).
+  - pfsense_setup - add the ``statepolicy`` option (System > Advanced > Firewall & NAT, Firewall State Policy).
