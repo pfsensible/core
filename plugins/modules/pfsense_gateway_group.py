@@ -17,6 +17,7 @@ version_added: "0.7.2"
 
 description:
   - Manage pfSense gateway groups.
+  - The changes are applied as with the Apply button of the GUI (routing, filter, gateway monitoring, dynamic DNS).
 
 options:
   name:
@@ -92,6 +93,7 @@ commands:
 """
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.pfsensible.core.plugins.module_utils.gateway import PFSenseGatewayModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 GATEWAY_GROUP_ARGUMENT_SPEC = dict(
@@ -144,7 +146,9 @@ class PFSenseGatewayGroupModule(PFSenseModuleBase):
         return GATEWAY_GROUP_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
+        # apply the change as pfsense_gateway does
         super(PFSenseGatewayGroupModule, self).__init__(module, pfsense, root="gateways", node="gateway_group", key="name",
+                                                        update_php=PFSenseGatewayModule.get_update_cmds(),
                                                         arg_route=GATEWAY_GROUP_ARG_ROUTE, create_default=GATEWAY_GROUP_CREATE_DEFAULT)
 
 

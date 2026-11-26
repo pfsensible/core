@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_gateway_group - apply the changes (routing, filter, gateway monitoring, dynamic DNS) as ``pfsense_gateway`` does. They were only written to the configuration, and took effect at the next reload done by something else.
