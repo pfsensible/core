@@ -166,6 +166,7 @@ The following modules are currently available:
 * [pfsense_rule_separator](https://github.com/pfsensible/core/wiki/pfsense_rule_separator) for firewall rule separators
 * [pfsense_setup](https://github.com/pfsensible/core/wiki/pfsense_setup) for general setup
 * [pfsense_shellcmd](https://github.com/pfsensible/core/wiki/pfsense_shellcmd) for shellcmd package
+* [pfsense_update_settings](https://github.com/pfsensible/core/wiki/pfsense_update_settings) for the update settings
 * [pfsense_user](https://github.com/pfsensible/core/wiki/pfsense_user) for users
 * [pfsense_virtual_ip_alias](https://github.com/pfsensible/core/wiki/pfsense_virtual_ip_alias) for alias Virtual IPs
 * [pfsense_virtual_ip_carp](https://github.com/pfsensible/core/wiki/pfsense_virtual_ip_carp) for CARP Virtual IPs
