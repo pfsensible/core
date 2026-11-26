@@ -21,6 +21,8 @@ short_description: Manage pfSense gateways
 description:
   - Manage pfSense gateways
 notes:
+  - The latency and loss thresholds and the probe settings are checked against each other as in the GUI. An option that is not
+    set is taken from the gateway, else from the pfSense default. Only the rules that involve an option set by the task are checked.
 options:
   name:
     description: Gateway name
@@ -79,7 +81,9 @@ options:
     type: int
     version_added: 0.8.0
   latencyhigh:
-    description: High threshold for packet latency in ms.  Default is 500.
+    description:
+      - High threshold for packet latency in ms.  Default is 500.
+      - Must be greater than O(latencylow), and less than or equal to O(loss_interval).
     type: int
     version_added: 0.8.0
   losslow:
@@ -87,8 +91,38 @@ options:
     type: int
     version_added: 0.7.2
   losshigh:
-    description: High threshold for packet loss in %.  Default is 20.
+    description:
+      - High threshold for packet loss in %.  Default is 20.
+      - Must be greater than O(losslow).
     type: int
+  interval:
+    description:
+      - How often a probe is sent, in ms.  Default is 500.
+      - Twice O(interval) plus O(loss_interval) must be less than O(time_period).
+    type: int
+    version_added: 0.8.0
+  loss_interval:
+    description:
+      - Time without a reply after which a probe is counted as lost, in ms.  Default is 2000.
+      - Must be greater than or equal to O(latencyhigh).
+    type: int
+    version_added: 0.8.0
+  time_period:
+    description:
+      - Time over which the latency and loss are averaged, in ms.  Default is 60000.
+      - Must be greater than twice O(interval) plus O(loss_interval).
+    type: int
+    version_added: 0.8.0
+  alert_interval:
+    description:
+      - Time between two checks for an alarm condition, in ms.  Default is 1000.
+      - Must be greater than or equal to O(interval).
+    type: int
+    version_added: 0.8.0
+  data_payload:
+    description: Bytes of data sent in each probe.  Default is 1.
+    type: int
+    version_added: 0.8.0
   nonlocalgateway:
     description:
       - This will allow use of a gateway outside of this interface's subnet.
@@ -108,6 +142,20 @@ EXAMPLES = """
     name: default_gw
     interface: wan
     gateway: 1.2.3.4
+    state: present
+
+- name: Add gateway with its monitoring settings
+  pfsense_gateway:
+    name: backup_gw
+    interface: opt1
+    gateway: 5.6.7.8
+    monitor: 8.8.4.4
+    latencyhigh: 400
+    losshigh: 15
+    interval: 1000
+    loss_interval: 2000
+    time_period: 30000
+    alert_interval: 1000
     state: present
 
 - name: Remove gateway
