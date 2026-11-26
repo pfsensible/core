@@ -1,0 +1,4 @@
+minor_changes:
+  - pfsense_setup - add the ``althostnames`` option (System > Advanced > Admin Access, Alternate Hostnames).
+  - pfsense_setup - add the ``ipv6allow`` option (System > Advanced > Networking, Allow IPv6).
+  - pfsense_setup - add the ``maximumstates`` option (System > Advanced > Firewall & NAT, Firewall Maximum States).

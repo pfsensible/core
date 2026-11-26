@@ -174,6 +174,14 @@ options:
     required: false
     type: bool
     version_added: 0.8.0
+  althostnames:
+    description: >
+      Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks: other host names or IP addresses by which the webConfigurator is reached. They are
+      accepted by the DNS Rebinding and HTTP_REFERER checks. The list replaces the stored names, and an empty list removes them.
+    required: false
+    type: list
+    elements: str
+    version_added: 0.8.0
   sshguard_whitelist:
     description: Addresses (in CIDR notation) listed will bypass login protection.
     required: false
@@ -198,6 +206,19 @@ options:
     type: str
     choices: ['', 'coretemp', 'amdtemp']
     version_added: 0.7.2
+  ipv6allow:
+    description: >
+      Allow IPv6 (System > Advanced > Networking). When this is not set, all IPv6 traffic is blocked by the firewall.
+    required: false
+    type: bool
+    version_added: 0.8.0
+  maximumstates:
+    description: >
+      Firewall Maximum States (System > Advanced > Firewall & NAT): the maximum number of connections to hold in the firewall state table. V(0) removes the
+      setting, and pfSense then uses its default, which depends on the memory of the system.
+    required: false
+    type: int
+    version_added: 0.8.0
 """
 
 EXAMPLES = """
@@ -279,6 +300,9 @@ SETUP_ARGUMENT_SPEC = dict(
     sshguard_whitelist=dict(required=False, type="list", elements="str"),
     crypto_hardware=dict(required=False, type="str", choices=["", "aesni", "aesni_cryptodev", "qat"]),
     thermal_hardware=dict(required=False, type="str", choices=["", "coretemp", "amdtemp"]),
+    althostnames=dict(required=False, type="list", elements="str"),
+    ipv6allow=dict(required=False, type="bool"),
+    maximumstates=dict(required=False, type="int"),
 )
 
 
@@ -298,6 +322,17 @@ def p2o_network_list_to_space_separated(self, name, params, obj):
             if not (self.pfsense.is_ipv4_network(net, strict=False) or self.pfsense.is_ipv6_network(net, strict=False)):
                 self.module.fail_json(msg=f"Address {net} is not a valid network")
         obj[name] = " ".join(params[name])
+
+
+def p2o_space_separated(self, name, params, obj):
+    if params[name] is not None:
+        obj[name] = " ".join(params[name])
+
+
+def p2o_maximumstates(self, name, params, obj):
+    # 0 means pfSense's default: _params_to_obj() removes the setting
+    if params[name] is not None:
+        obj[name] = str(params[name])
 
 
 def p2o_webguicss(self, name, params, obj):
@@ -333,6 +368,8 @@ SETUP_ARG_ROUTE = dict(
     dnslocalhost=dict(parse=p2o_dnslocalhost),
     logincss=dict(parse=p2o_logincss),
     sshguard_whitelist=dict(parse=p2o_network_list_to_space_separated),
+    althostnames=dict(parse=p2o_space_separated),
+    maximumstates=dict(parse=p2o_maximumstates),
     webguicert=dict(parse=p2o_cert, validate=validate_cert),
     webguicss=dict(parse=p2o_webguicss, validate=validate_webguicss),
 )
@@ -343,6 +380,7 @@ SETUP_BOOL_VALUES = dict(
 )
 
 SETUP_MAP_PARAM = [
+    ("althostnames", "webgui/althostnames"),
     ("authmode", "webgui/authmode"),
     ("dashboardavailablewidgetspanel", "webgui/dashboardavailablewidgetspanel"),
     ("dashboardcolumns", "webgui/dashboardcolumns"),
@@ -446,6 +484,12 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         for param, path in SETUP_MAP_PARAM:
             if self.params.get(param) is False:
                 webgui.pop(path.rsplit("/", 1)[-1], None)
+        # As the web GUI does, no value removes the setting
+        if self.params.get("althostnames") == []:
+            webgui.pop("althostnames", None)
+        if self.params.get("maximumstates") == 0:
+            obj.pop("maximumstates", None)
+            self.params_to_delete.append("maximumstates")
         self._dns_params_to_obj(self.params, obj)
         return obj
 
@@ -468,6 +512,14 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
 
         if params.get("dashboardcolumns") is not None and (params["dashboardcolumns"] < 1 or params["dashboardcolumns"] > 6):
             self.module.fail_json(msg="The submitted Dashboard Columns value is invalid.")
+
+        if params.get("althostnames") is not None:
+            for althostname in params["althostnames"]:
+                if not (self.pfsense.is_ipv4_address(althostname) or self.pfsense.is_ipv6_address(althostname)):
+                    self._validate_hostname(althostname, "alternate hostname {0}".format(althostname))
+
+        if params.get("maximumstates") is not None and params["maximumstates"] < 0:
+            self.module.fail_json(msg="The Firewall Maximum States value must be 0 or more.")
 
         if params.get("domain") is not None:
             domain = params["domain"].lower()
@@ -590,6 +642,12 @@ load_thermal_hardware();"""
         if self.params.get("shellauth") is not None:
             cmd += "$retval |= set_pam_auth();"
 
+        # What System > Advanced > Networking and Firewall & NAT do when these change
+        if self.obj.get("ipv6allow") != self.diff["before"].get("ipv6allow"):
+            cmd += "prefer_ipv4_or_ipv6();\n"
+        if self.obj.get("maximumstates") != self.diff["before"].get("maximumstates"):
+            cmd += "setup_loader_settings();\n"
+
         cmd += "$retval |= filter_configure();\n"
 
         restart_sshguard = False
@@ -657,6 +715,9 @@ load_thermal_hardware();"""
         values += self.format_updated_cli_field(webgui, bwebgui, "loginshowhost", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, "nodnsrebindcheck", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(webgui, bwebgui, "nohttpreferercheck", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(webgui, bwebgui, "althostnames", add_comma=(values), log_none=True)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "ipv6allow", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "maximumstates", add_comma=(values), log_none=True)
 
         return values
 
