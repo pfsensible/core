@@ -513,3 +513,19 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         self.load_fixtures()
         with set_module_args(dict(maximumstates=-1)):
             self.assertEqual(self.failed()["msg"], "The Firewall Maximum States value must be 0 or more.")
+
+    def test_setup_diff_keeps_managed_fields(self):
+        """ test that the diff does not show the users and their password hashes """
+        self.load_fixtures()
+        password_hash = ET.parse(self.tmp_file).findtext("system/user/bcrypt-hash")
+        self.assertTrue(password_hash)
+        with set_module_args(dict(hostname="acme", webguifixedmenu=True, dns_addresses="8.8.8.8", _ansible_diff=True)):
+            result = self.changed(True)
+        self.assertNotIn(password_hash, repr(result))
+        for side in ("before", "after"):
+            self.assertNotIn("user", result["diff"][side])
+            self.assertNotIn("protocol", result["diff"][side]["webgui"])
+        self.assertEqual(result["diff"]["after"]["hostname"], "acme")
+        self.assertEqual(result["diff"]["after"]["webgui"]["webguifixedmenu"], "fixed")
+        self.assertEqual(result["diff"]["after"]["dnsserver"], "8.8.8.8")
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/user/bcrypt-hash"), password_hash)
