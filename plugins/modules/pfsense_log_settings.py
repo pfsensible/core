@@ -67,7 +67,9 @@ options:
     required: false
     type: bool
   logconfigchanges:
-    description: Log changes to the configuration.
+    description:
+      - Log changes to the configuration.
+      - Stored as C(enabled) or C(disabled), as the webGUI does. pfSense logs the changes unless the value is C(disabled).
     required: false
     type: bool
     version_added: "0.7.1"
@@ -254,6 +256,11 @@ params_map = {
 # fields with inverted logic
 inverted_list = ["nologdefaultpass"]
 
+# boolean fields stored as a value (true, false) instead of by the presence of the element
+value_bools = {
+    "logconfigchanges": ("enabled", "disabled"),
+}
+
 
 class PFSenseLogSettingsModule(PFSenseModuleBase):
     """ module managing pfsense log settings """
@@ -306,7 +313,9 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
             _param = params_map.get(param, param)
             if params.get(param) is not None:
                 value = not params.get(param) if param in inverted_list else params.get(param)
-                if value is True and _param not in target:
+                if param in value_bools:
+                    target[_param] = value_bools[param][0] if value else value_bools[param][1]
+                elif value is True and _param not in target:
                     target[_param] = ""
                 elif value is False and _param in target:
                     del target[_param]
@@ -468,13 +477,27 @@ $retval |= system_syslogd_start();"""
         """ return obj's name """
         return "syslog"
 
+    @staticmethod
+    def _value_bool(settings, param):
+        """ return settings with the value of the boolean field param as True or False """
+        _param = params_map.get(param, param)
+        if settings.get(_param) not in value_bools[param]:
+            return settings
+        result = dict(settings)
+        result[_param] = settings[_param] == value_bools[param][0]
+        return result
+
     def _log_fields(self, before=None):
         """ generate pseudo-CLI command fields parameters to create an obj """
         values = ""
 
         for param in LOG_SETTINGS_ARGUMENT_SPEC:
             _param = params_map.get(param, param)
-            if LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
+            if param in value_bools:
+                # logged as true or false; another stored value (empty) is logged when it changes
+                values += self.format_updated_cli_field(self._value_bool(self.obj, param), self._value_bool(self.before, param), _param,
+                                                        add_comma=(values), log_none=False)
+            elif LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
                 values += self.format_updated_cli_field(self.obj, self.before, _param, fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
             else:
                 values += self.format_updated_cli_field(self.obj, self.before, _param, add_comma=(values), log_none=False)

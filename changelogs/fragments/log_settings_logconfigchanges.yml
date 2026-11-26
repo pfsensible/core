@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_log_settings stores logconfigchanges as enabled or disabled, as the
+    webGUI does. It added an empty element for true, which left a disabled value
+    in place, and removed the element for false, which pfSense reads as enabled.
