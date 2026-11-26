@@ -152,6 +152,7 @@ The following modules are currently available:
 * [pfsense_ipsec](https://github.com/pfsensible/core/wiki/pfsense_ipsec) for IPsec tunnels and phase 1 options
 * [pfsense_ipsec_proposal](https://github.com/pfsensible/core/wiki/pfsense_ipsec_proposal) for IPsec proposals
 * [pfsense_ipsec_p2](https://github.com/pfsensible/core/wiki/pfsense_ipsec_p2) for IPsec tunnels phase 2 options
+* [pfsense_ipsec_settings](plugins/modules/pfsense_ipsec_settings.py) for IPsec advanced settings
 * [pfsense_log_settings](https://github.com/pfsensible/core/wiki/pfsense_log_settings) for logging settings
 * [pfsense_nat_outbound](https://github.com/pfsensible/core/wiki/pfsense_nat_outbound) for outbound NAT (SNAT) rules
 * [pfsense_nat_port_forward](https://github.com/pfsensible/core/wiki/pfsense_nat_port_forward) for port forwarding NAT (DNAT) rules
