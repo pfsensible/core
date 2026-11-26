@@ -12,7 +12,7 @@ if sys.version_info < (2, 7):
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_log_settings
 
-from .pfsense_module import TestPFSenseModule
+from .pfsense_module import TestPFSenseModule, load_fixture
 
 
 class TestPFSenseLogSettingsModule(TestPFSenseModule):
@@ -30,10 +30,20 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
             "sourceip": None,
             "ipproto": "ipv4",
         }
+        # value of syslog/logconfigchanges in the config before the test (None: absent)
+        self.logconfigchanges_before = None
 
     ##############
     # tests utils
     #
+    def load_fixtures(self):
+        """ loading data, with the logconfigchanges value of the test """
+        config = load_fixture(self.get_config_file())
+        if self.logconfigchanges_before is not None:
+            config = config.replace("<syslog>", "<syslog>\n\t\t<logconfigchanges>{0}</logconfigchanges>".format(self.logconfigchanges_before), 1)
+        with open(self.tmp_file, "w") as config_file:
+            config_file.write(config)
+
     def get_target_elt(self, obj, absent=False, module_result=None):
         """ get the generated xml definition """
         return self.assert_find_xml_elt(self.xml_result, "syslog")
@@ -100,6 +110,14 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
         check_bool_param("nologprivatenets")
         check_bool_param("nolognginx")
         check_bool_param("rawfilter")
+        if obj is not None:
+            # Stored as a value: enabled or disabled
+            if "logconfigchanges" in obj:
+                self.check_param_bool(obj, target_elt, "logconfigchanges", value_true="enabled", value_false="disabled")
+            elif self.logconfigchanges_before is None:
+                self.assert_not_find_xml_elt(target_elt, "logconfigchanges")
+            else:
+                self.assert_xml_elt_equal(target_elt, "logconfigchanges", self.logconfigchanges_before)
         check_param("filterdescriptions")
         check_bool_param("disablelocallogging")
         check_param("logfilesize")
@@ -289,6 +307,58 @@ class TestPFSenseLogSettingsModule(TestPFSenseModule):
         """ test log_settings disablelocallogging=True """
         syslog = dict(disablelocallogging=True)
         command = "update log_settings syslog set disablelocallogging=True"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_logconfigchanges_true_absent(self):
+        """ test log_settings logconfigchanges=True, not set before """
+        syslog = dict(logconfigchanges=True)
+        command = "update log_settings syslog set logconfigchanges=True"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_logconfigchanges_true_disabled(self):
+        """ test log_settings logconfigchanges=True, disabled before """
+        self.logconfigchanges_before = "disabled"
+        syslog = dict(logconfigchanges=True)
+        command = "update log_settings syslog set logconfigchanges=True"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_logconfigchanges_true_empty(self):
+        """ test log_settings logconfigchanges=True, set empty before (earlier versions of the module) """
+        self.logconfigchanges_before = ""
+        syslog = dict(logconfigchanges=True)
+        command = "update log_settings syslog set logconfigchanges=True"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_logconfigchanges_true_enabled(self):
+        """ test log_settings logconfigchanges=True, enabled before """
+        self.logconfigchanges_before = "enabled"
+        syslog = dict(logconfigchanges=True)
+        self.do_module_test(syslog, changed=False, state=None)
+
+    def test_syslog_logconfigchanges_false_enabled(self):
+        """ test log_settings logconfigchanges=False, enabled before """
+        self.logconfigchanges_before = "enabled"
+        syslog = dict(logconfigchanges=False)
+        command = "update log_settings syslog set logconfigchanges=False"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_logconfigchanges_false_absent(self):
+        """ test log_settings logconfigchanges=False, not set before (pfSense logs the changes then) """
+        syslog = dict(logconfigchanges=False)
+        command = "update log_settings syslog set logconfigchanges=False"
+        self.do_module_test(syslog, command=command, state=None)
+
+    def test_syslog_logconfigchanges_false_disabled(self):
+        """ test log_settings logconfigchanges=False, disabled before """
+        self.logconfigchanges_before = "disabled"
+        syslog = dict(logconfigchanges=False)
+        self.do_module_test(syslog, changed=False, state=None)
+
+    def test_syslog_logconfigchanges_kept(self):
+        """ test log_settings without logconfigchanges keeps its value """
+        self.logconfigchanges_before = "disabled"
+        syslog = dict(rawfilter=True)
+        command = "update log_settings syslog set rawfilter=True"
         self.do_module_test(syslog, command=command, state=None)
 
     def test_syslog_logfilesize_valid1(self):
