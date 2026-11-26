@@ -339,6 +339,103 @@ class TestPFSenseSetupModule(TestPFSenseModule):
             self.assertEqual(self.changed(False)["commands"], [])
         self.phpshell.assert_not_called()
 
+    def test_setup_consolebell(self):
+        """ test setup consolebell: off (never saved in the fixture), again (no change), then on """
+        self.load_fixtures()
+        with set_module_args(dict(consolebell=False)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set consolebell='disabled'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/consolebell"), "disabled")
+        cmd = self.phpshell.call_args[0][0]
+        self.assertIn("set_single_sysctl('kern.vt.enable_bell', '0');", cmd)
+        self.assertNotIn("activate_powerd();", cmd)
+        self.phpshell.reset_mock()
+        with set_module_args(dict(consolebell=False)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+        with set_module_args(dict(consolebell=True)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set consolebell='enabled'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/consolebell"), "enabled")
+        self.assertIn("set_single_sysctl('kern.vt.enable_bell', '1');", self.phpshell.call_args[0][0])
+
+    def test_setup_powerd(self):
+        """ test setup powerd: on, again (no change), a mode, then off """
+        self.load_fixtures()
+        with set_module_args(dict(powerd_enable=False)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(powerd_enable=True)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set powerd_enable=True"])
+        self.assertIsNotNone(ET.parse(self.tmp_file).find("system/powerd_enable"))
+        cmd = self.phpshell.call_args[0][0]
+        self.assertIn("activate_powerd();", cmd)
+        self.assertNotIn("set_single_sysctl(", cmd)
+        self.phpshell.reset_mock()
+        with set_module_args(dict(powerd_enable=True, powerd_ac_mode="hadp")):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+        with set_module_args(dict(powerd_ac_mode="adp", powerd_battery_mode="min", powerd_normal_mode="max")):
+            result = self.changed(True)
+        self.assertEqual(result["commands"],
+                         ["update setup general set powerd_ac_mode='adp', powerd_battery_mode='min', powerd_normal_mode='max'"])
+        system = ET.parse(self.tmp_file).find("system")
+        self.assertEqual(system.findtext("powerd_ac_mode"), "adp")
+        self.assertEqual(system.findtext("powerd_battery_mode"), "min")
+        self.assertEqual(system.findtext("powerd_normal_mode"), "max")
+        self.assertIn("activate_powerd();", self.phpshell.call_args[0][0])
+        with set_module_args(dict(powerd_enable=False)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set powerd_enable=False"])
+        system = ET.parse(self.tmp_file).find("system")
+        self.assertIsNone(system.find("powerd_enable"))
+        self.assertEqual(system.findtext("powerd_ac_mode"), "adp")
+        self.assertIn("activate_powerd();", self.phpshell.call_args[0][0])
+
+    def test_setup_powerd_mode_invalid(self):
+        """ test setup powerd with a mode the web page does not offer """
+        self.load_fixtures()
+        with set_module_args(dict(powerd_ac_mode="fast")):
+            self.assertIn("powerd_ac_mode", self.failed()["msg"])
+        self.assertFalse(self.load_xml_result())
+
+    def test_setup_gw_down_kill_states(self):
+        """ test setup gw_down_kill_states: from none to down, again (no change), then all """
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        ET.SubElement(tree.find("system"), "gw_down_kill_states").text = "none"
+        tree.write(self.tmp_file)
+        with set_module_args(dict(gw_down_kill_states="down")):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set gw_down_kill_states='down'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/gw_down_kill_states"), "down")
+        cmd = self.phpshell.call_args[0][0]
+        self.assertIn("filter_configure();", cmd)
+        self.assertNotIn("activate_powerd();", cmd)
+        self.assertNotIn("set_single_sysctl(", cmd)
+        with set_module_args(dict(gw_down_kill_states="down")):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(gw_down_kill_states="all")):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set gw_down_kill_states='all'"])
+
+    def test_setup_statepolicy(self):
+        """ test setup statepolicy: floating, again (no change), then back to if-bound """
+        self.load_fixtures()
+        with set_module_args(dict(statepolicy="floating")):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set statepolicy='floating'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/statepolicy"), "floating")
+        cmd = self.phpshell.call_args[0][0]
+        self.assertIn("filter_configure();", cmd)
+        self.assertNotIn("activate_powerd();", cmd)
+        with set_module_args(dict(statepolicy="floating")):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(statepolicy="if-bound")):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set statepolicy='if-bound'"])
+        self.assertEqual(ET.parse(self.tmp_file).findtext("system/statepolicy"), "if-bound")
+
     def test_setup_dns_addresses(self):
         """ test setup dns """
         setup = dict(dns_addresses="8.8.4.4 8.8.8.8", dns_hostnames="acme1 acme2", dns_gateways="none GW_WAN")
