@@ -610,6 +610,25 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     ##############################
     # run
     #
+    @staticmethod
+    def _diff_fields(values):
+        """ the fields of the system section the module manages """
+        mapped = dict(SETUP_MAP_PARAM)
+        webgui_fields = [path.split("/", 1)[1] for path in mapped.values()]
+        fields = dict()
+        for key, value in values.items():
+            if key == "webgui" and isinstance(value, dict):
+                fields[key] = dict((field, value[field]) for field in value if field in webgui_fields)
+            elif (key in SETUP_ARGUMENT_SPEC and key not in mapped) or key == "dnsserver" or re.fullmatch(r"dns[0-9]+(host|gw)", key):
+                fields[key] = value
+        return fields
+
+    def _run_post(self):
+        # The diff of the whole system section would show the users with their password hashes, the authentication servers
+        # with their secrets, the AutoConfigBackup password...: keep the fields the module manages
+        for side in ("before", "after"):
+            self.diff[side] = self._diff_fields(self.diff.get(side) or {})
+
     def _update(self):
         """ make the target pfsense reload """
         for cmd in self.route_cmds:
