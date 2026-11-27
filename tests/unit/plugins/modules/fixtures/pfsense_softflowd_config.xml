@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<pfsense>
+	<version>24.0</version>
+	<system>
+		<hostname>firewall</hostname>
+	</system>
+	<interfaces>
+		<wan>
+			<enable></enable>
+			<if>vmx0</if>
+			<descr>WAN</descr>
+		</wan>
+		<lan>
+			<enable></enable>
+			<if>vmx1</if>
+			<descr>LAN</descr>
+		</lan>
+		<opt1>
+			<enable></enable>
+			<if>vmx2</if>
+			<descr>Office</descr>
+		</opt1>
+	</interfaces>
+	<ifgroups>
+		<ifgroupentry>
+			<ifname>Inside</ifname>
+			<members>lan opt1</members>
+		</ifgroupentry>
+	</ifgroups>
+	<installedpackages>
+		<package>
+			<name>softflowd</name>
+			<configurationfile>softflowd.xml</configurationfile>
+		</package>
+	</installedpackages>
+</pfsense>
