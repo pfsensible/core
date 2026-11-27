@@ -611,6 +611,51 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         with set_module_args(dict(maximumstates=-1)):
             self.assertEqual(self.failed()["msg"], "The Firewall Maximum States value must be 0 or more.")
 
+    def test_setup_sshguard(self):
+        """ test setup login protection: set, again (no change), then back to the defaults with 0 """
+        self.load_fixtures()
+        args = dict(sshguard_threshold=30, sshguard_blocktime=120, sshguard_detection_time=1800)
+        with set_module_args(args):
+            result = self.changed(True)
+        self.assertEqual(result["commands"],
+                         ["update setup general set sshguard_threshold='30', sshguard_blocktime='120', sshguard_detection_time='1800'"])
+        system = ET.parse(self.tmp_file).find("system")
+        self.assertEqual(system.findtext("sshguard_threshold"), "30")
+        self.assertEqual(system.findtext("sshguard_blocktime"), "120")
+        self.assertEqual(system.findtext("sshguard_detection_time"), "1800")
+        self.assertIn("system_sshguard_stop();$retval |= system_syslogd_start(true);", self.phpshell.call_args[0][0])
+        self.phpshell.reset_mock()
+        with set_module_args(args):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+        with set_module_args(dict(sshguard_blocktime=0)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set sshguard_blocktime=none"])
+        system = ET.parse(self.tmp_file).find("system")
+        self.assertIsNone(system.find("sshguard_blocktime"))
+        self.assertEqual(system.findtext("sshguard_threshold"), "30")
+        self.assertIn("system_sshguard_stop();", self.phpshell.call_args[0][0])
+        with set_module_args(dict(sshguard_blocktime=0)):
+            self.assertEqual(self.changed(False)["commands"], [])
+
+    def test_setup_sshguard_restart_only_on_change(self):
+        """ test that sshguard is restarted for a pass list change, not for another setting """
+        self.load_fixtures()
+        with set_module_args(dict(hostname="acme")):
+            self.changed(True)
+        self.assertNotIn("system_sshguard_stop();", self.phpshell.call_args[0][0])
+        with set_module_args(dict(sshguard_whitelist=["10.0.0.0/8"])):
+            self.changed(True)
+        self.assertIn("system_sshguard_stop();", self.phpshell.call_args[0][0])
+
+    def test_setup_sshguard_invalid(self):
+        """ test setup login protection values the web form does not accept """
+        self.load_fixtures()
+        for param, value in (("sshguard_threshold", 5), ("sshguard_blocktime", 125), ("sshguard_detection_time", -10)):
+            with set_module_args({param: value}):
+                self.assertEqual(self.failed()["msg"], "{0} must be 0 (pfSense's default) or a multiple of 10, 10 or more.".format(param))
+        self.assertFalse(self.load_xml_result())
+
     def test_setup_diff_keeps_managed_fields(self):
         """ test that the diff does not show the users and their password hashes """
         self.load_fixtures()

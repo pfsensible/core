@@ -188,6 +188,28 @@ options:
     type: list
     elements: str
     version_added: 0.7.2
+  sshguard_threshold:
+    description: >
+      Login Protection Threshold (System > Advanced > Admin Access): attackers are blocked when their cumulative attack score exceeds it. Most attacks have
+      a score of 10. A multiple of 10, 10 or more, as the web form accepts. V(0) removes the setting, and pfSense then uses its default, 30.
+    required: false
+    type: int
+    version_added: 0.8.0
+  sshguard_blocktime:
+    description: >
+      Login Protection Blocktime, in seconds: attackers are blocked for initially this time after exceeding the threshold. Subsequent blocks increase by a
+      factor of 1.5. Attacks are unblocked at random intervals, so actual block times will be longer. A multiple of 10, 10 or more, as the web form accepts.
+      V(0) removes the setting, and pfSense then uses its default, 120.
+    required: false
+    type: int
+    version_added: 0.8.0
+  sshguard_detection_time:
+    description: >
+      Login Protection Detection time, in seconds: potential attackers are remembered for up to this time before their score is reset. A multiple of 10,
+      10 or more, as the web form accepts. V(0) removes the setting, and pfSense then uses its default, 1800.
+    required: false
+    type: int
+    version_added: 0.8.0
   consolebell:
     description: >
       Console Bell (System > Advanced > Notifications). When set, emergency console messages, such as from a GUI login, trigger a bell in connected consoles
@@ -350,6 +372,9 @@ SETUP_ARGUMENT_SPEC = dict(
     nodnsrebindcheck=dict(required=False, type="bool"),
     nohttpreferercheck=dict(required=False, type="bool"),
     sshguard_whitelist=dict(required=False, type="list", elements="str"),
+    sshguard_threshold=dict(required=False, type="int"),
+    sshguard_blocktime=dict(required=False, type="int"),
+    sshguard_detection_time=dict(required=False, type="int"),
     consolebell=dict(required=False, type="bool"),
     powerd_enable=dict(required=False, type="bool"),
     powerd_ac_mode=dict(required=False, type="str", choices=["hadp", "adp", "min", "max"]),
@@ -440,6 +465,10 @@ SETUP_BOOL_VALUES = dict(
 )
 
 POWERD_PARAMS = ("powerd_enable", "powerd_ac_mode", "powerd_battery_mode", "powerd_normal_mode")
+
+# The login protection values, which take 0 to remove the setting
+SSHGUARD_VALUES = ("sshguard_threshold", "sshguard_blocktime", "sshguard_detection_time")
+SSHGUARD_PARAMS = ("sshguard_whitelist",) + SSHGUARD_VALUES
 
 SETUP_MAP_PARAM = [
     ("althostnames", "webgui/althostnames"),
@@ -549,9 +578,10 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         # As the web GUI does, no value removes the setting
         if self.params.get("althostnames") == []:
             webgui.pop("althostnames", None)
-        if self.params.get("maximumstates") == 0:
-            obj.pop("maximumstates", None)
-            self.params_to_delete.append("maximumstates")
+        for param in ("maximumstates",) + SSHGUARD_VALUES:
+            if self.params.get(param) == 0:
+                obj.pop(param, None)
+                self.params_to_delete.append(param)
         self._dns_params_to_obj(self.params, obj)
         return obj
 
@@ -582,6 +612,12 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
 
         if params.get("maximumstates") is not None and params["maximumstates"] < 0:
             self.module.fail_json(msg="The Firewall Maximum States value must be 0 or more.")
+
+        # The web form takes a multiple of 10, 10 or more (min 10, step 10)
+        for param in SSHGUARD_VALUES:
+            value = params.get(param)
+            if value is not None and value != 0 and (value < 10 or value % 10 != 0):
+                self.module.fail_json(msg="{0} must be 0 (pfSense's default) or a multiple of 10, 10 or more.".format(param))
 
         if params.get("domain") is not None:
             domain = params["domain"].lower()
@@ -731,11 +767,8 @@ load_thermal_hardware();"""
 
         cmd += "$retval |= filter_configure();\n"
 
-        restart_sshguard = False
-        for param in ["sshguard_whitelist"]:
-            if self.obj.get(param) != self.diff["before"].get(param):
-                restart_sshguard = True
-        if restart_sshguard:
+        # What System > Advanced > Admin Access does when a login protection setting changes
+        if any(self.obj.get(param) != self.diff["before"].get(param) for param in SSHGUARD_PARAMS):
             cmd += "system_sshguard_stop();$retval |= system_syslogd_start(true);\n"
 
         # What System > Advanced > Notifications and Miscellaneous do when these change. The state policy and the
@@ -791,6 +824,8 @@ load_thermal_hardware();"""
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "powerd_normal_mode", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "gw_down_kill_states", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "statepolicy", add_comma=(values), log_none=False)
+        for param in SSHGUARD_VALUES:
+            values += self.format_updated_cli_field(self.obj, self.diff["before"], param, add_comma=(values), log_none=True)
 
         values += self.format_updated_cli_field(obj_after, obj_before, "webguicert", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(obj_after, obj_before, "webguicss", add_comma=(values), log_none=False)
