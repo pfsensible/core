@@ -138,6 +138,7 @@ The following modules are currently available:
 * [pfsense_autoconfigbackup](plugins/modules/pfsense_autoconfigbackup.py) for AutoConfigBackup settings
 * [pfsense_ca](https://github.com/pfsensible/core/wiki/pfsense_ca) for Certificate Authorities
 * [pfsense_cert](https://github.com/pfsensible/core/wiki/pfsense_cert) for Certificates
+* [pfsense_dashboard](https://github.com/pfsensible/core/wiki/pfsense_dashboard) for configuring the dashboard
 * [pfsense_default_gateway](https://github.com/pfsensible/core/wiki/pfsense_default_gateway) for setting the default gateways
 * [pfsense_dhcp_ha](https://github.com/pfsensible/core/wiki/pfsense_dhcp_ha) for the high availability of the Kea DHCP server
 * [pfsense_dhcp_server](https://github.com/pfsensible/core/wiki/pfsense_dhcp_server) for configuring DHCP server
