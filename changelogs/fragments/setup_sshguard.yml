@@ -1,0 +1,3 @@
+minor_changes:
+  - pfsense_setup - add the ``sshguard_threshold``, ``sshguard_blocktime`` and ``sshguard_detection_time`` options (System > Advanced > Admin Access, Login Protection).
+  - pfsense_setup - restart sshguard when any login protection setting changes, not only ``sshguard_whitelist``.
