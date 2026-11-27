@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -16,7 +17,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
-
     module = pfsense_haproxy_backend
 
     def __init__(self, *args, **kwargs):
@@ -28,7 +28,7 @@ class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
     # tests utils
     #
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated backend xml definition """
+        """get the generated backend xml definition"""
         pkgs_elt = self.assert_find_xml_elt(self.xml_result, "installedpackages")
         hap_elt = self.assert_find_xml_elt(pkgs_elt, "haproxy")
         backends_elt = self.assert_find_xml_elt(hap_elt, "ha_pools")
@@ -43,7 +43,8 @@ class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
         return None
 
     def check_target_elt(self, obj, target_elt, backend_id=100):
-        """ test the xml definition of backend """
+        """test the xml definition of backend"""
+
         def _check_elt(name, fname=None, default=None):
             if fname is None:
                 fname = name
@@ -92,38 +93,38 @@ class TestPFSenseHaproxyBackendModule(TestPFSenseModule):
     # tests
     #
     def test_haproxy_backend_create(self):
-        """ test creation of a new backend """
+        """test creation of a new backend"""
         backend = dict(name="exchange")
         command = "create haproxy_backend 'exchange', balance='none', check_type='none'"
         self.do_module_test(backend, command=command, backend_id=102)
 
     def test_haproxy_backend_create2(self):
-        """ test creation of a new backend with some parameters"""
+        """test creation of a new backend with some parameters"""
         backend = dict(name="exchange", balance="roundrobin", check_type="HTTP")
         command = "create haproxy_backend 'exchange', balance='roundrobin', check_type='HTTP'"
         self.do_module_test(backend, command=command, backend_id=102)
 
     def test_haproxy_backend_create_invalid_name(self):
-        """ test creation of a new backend """
+        """test creation of a new backend"""
         backend = dict(name="exchange test")
         msg = "The field 'name' contains invalid characters."
         self.do_module_test(backend, msg=msg, failed=True)
 
     def test_haproxy_backend_delete(self):
-        """ test deletion of a backend """
+        """test deletion of a backend"""
         backend = dict(name="test-backend")
         command = "delete haproxy_backend 'test-backend'"
         self.do_module_test(backend, delete=True, command=command)
 
     def test_haproxy_backend_update_noop(self):
-        """ test not updating a backend """
+        """test not updating a backend"""
         backend = dict(
             name="test-backend", balance="uri", balance_uriwhole=True, log_checks=True, check_type="SSL", check_frequency=123456, httpcheck_method="OPTIONS"
         )
         self.do_module_test(backend, changed=False)
 
     def test_haproxy_backend_update_bools(self):
-        """ test updating bools """
+        """test updating bools"""
         backend = dict(name="test-backend", balance="uri", check_type="SSL", check_frequency=123456, httpcheck_method="OPTIONS")
         command = "update haproxy_backend 'test-backend' set balance_uriwhole=False, log_checks=False"
         self.do_module_test(backend, changed=True, command=command)

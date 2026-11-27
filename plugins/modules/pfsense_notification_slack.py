@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -83,13 +84,18 @@ class PFSenseNotificationSlackModule(PFSenseModuleConfigBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return NOTIFICATION_SLACK_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
         super(PFSenseNotificationSlackModule, self).__init__(
-            module, pfsense, name="pfsense_notification_slack", root="notifications", node="slack",
-            create_root=True, bool_style="absent/present",
+            module,
+            pfsense,
+            name="pfsense_notification_slack",
+            root="notifications",
+            node="slack",
+            create_root=True,
+            bool_style="absent/present",
         )
 
     def _validate_params(self):
@@ -125,7 +131,7 @@ class PFSenseNotificationSlackModule(PFSenseModuleConfigBase):
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "slack"
 
     def format_cli_field(self, after, field, *args, **kwargs):
@@ -135,9 +141,7 @@ class PFSenseNotificationSlackModule(PFSenseModuleConfigBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=NOTIFICATION_SLACK_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=NOTIFICATION_SLACK_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseNotificationSlackModule(module)
     # Pass params for testing framework

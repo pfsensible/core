@@ -1,6 +1,7 @@
 """Regression tests for root and anchor-scoped appliance observations."""
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import importlib.util
@@ -15,7 +16,7 @@ SPEC = importlib.util.spec_from_file_location("system_observer", CORE / "tests/s
 observer = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(observer)
 
-RULE = "pass in on vtnet1 from <ci_urltable> to any label \"descr=CI URL table test\""
+RULE = 'pass in on vtnet1 from <ci_urltable> to any label "descr=CI URL table test"'
 
 
 class TestSystemObserver(unittest.TestCase):
@@ -45,8 +46,7 @@ class TestSystemObserver(unittest.TestCase):
         self.assertEqual(state["rule_tables"], {"/": ["192.0.2.10"]})
 
     def test_nested_rule_and_private_table_without_root_table(self):
-        state = self.state({"": "anchor \"userrules/*\" all", "userrules/123": "  " + RULE},
-                           {"userrules/123": ["192.0.2.10"]})
+        state = self.state({"": 'anchor "userrules/*" all', "userrules/123": "  " + RULE}, {"userrules/123": ["192.0.2.10"]})
         self.assertEqual(state["loaded_rules"], [RULE])
         self.assertEqual(state["rule_anchors"], ["userrules/123"])
         self.assertTrue(state["table_exists"])
@@ -57,8 +57,7 @@ class TestSystemObserver(unittest.TestCase):
         self.assertEqual(state["rule_tables"], {"userrules/123": ["192.0.2.10"]})
 
     def test_private_table_shadows_a_different_global_table(self):
-        state = self.state({"userrules/123": RULE},
-                           {"": ["198.51.100.20"], "userrules/123": ["192.0.2.10"]})
+        state = self.state({"userrules/123": RULE}, {"": ["198.51.100.20"], "userrules/123": ["192.0.2.10"]})
         self.assertEqual(state["rule_tables"], {"userrules/123": ["192.0.2.10"]})
 
     def test_unrelated_table_cannot_satisfy_a_rule_in_another_anchor(self):
@@ -66,7 +65,7 @@ class TestSystemObserver(unittest.TestCase):
         self.assertEqual(state["rule_tables"], {"userrules/123": None})
 
     def test_missing_rule_and_table_remain_missing(self):
-        state = self.state({"": "anchor \"userrules/*\" all"}, {})
+        state = self.state({"": 'anchor "userrules/*" all'}, {})
         self.assertEqual(state["loaded_rules"], [])
         self.assertEqual(state["rule_tables"], {})
         self.assertFalse(state["table_exists"])

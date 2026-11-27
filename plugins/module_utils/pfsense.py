@@ -3,10 +3,12 @@
 # Copyright: (c) 2018, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import sys
+
 if sys.version_info >= (3, 4):
     import html
     from html.entities import name2codepoint
@@ -14,8 +16,12 @@ try:
     from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address, IPv4Network, IPv6Network
 except ImportError:
     from ansible_collections.community.general.plugins.module_utils.compat.ipaddress import (
-        ip_address, IPv4Address, IPv6Address,
-        ip_network, IPv4Network, IPv6Network
+        ip_address,
+        IPv4Address,
+        IPv6Address,
+        ip_network,
+        IPv4Network,
+        IPv6Network,
     )
 import json
 import errno
@@ -57,10 +63,9 @@ def xml_find(node, elt):
 
 
 class PFSenseModule(object):
-    """ class managing pfsense base configuration """
+    """class managing pfsense base configuration"""
 
-    def __init__(self, module, config="/cf/conf/config.xml",
-                 config_lock="/tmp/config.lock", config_cache="/tmp/config.cache"):
+    def __init__(self, module, config="/cf/conf/config.xml", config_lock="/tmp/config.lock", config_cache="/tmp/config.cache"):
         self.module = module
         self.config = config
         self.config_lock = config_lock
@@ -76,9 +81,7 @@ class PFSenseModule(object):
             self._validate_config(self.tree)
             self._config_digest = hashlib.sha256(original).digest()
             self._required_sections = {
-                tag: len(self.tree.getroot().find(tag)) > 0
-                for tag in ("system", "interfaces")
-                if self.tree.getroot().find(tag) is not None
+                tag: len(self.tree.getroot().find(tag)) > 0 for tag in ("system", "interfaces") if self.tree.getroot().find(tag) is not None
             }
         except (OSError, ValueError, ET.ParseError, ExpatError, PFSenseConfigError) as error:
             self.module.fail_json(msg="Unable to read pfSense configuration safely: {0}".format(error))
@@ -102,9 +105,9 @@ class PFSenseModule(object):
 
     @classmethod
     def _open_debug(cls, module):
-        """ The trace of the XML changes holds the values written, secrets included. It is only
-            written in Ansible's debug mode (ANSIBLE_DEBUG), to a new file readable by its owner only.
-            A trace left by an earlier version, or by a debug run, is removed in any case. """
+        """The trace of the XML changes holds the values written, secrets included. It is only
+        written in Ansible's debug mode (ANSIBLE_DEBUG), to a new file readable by its owner only.
+        A trace left by an earlier version, or by a debug run, is removed in any case."""
         try:
             # Removes a symbolic link itself, not its target
             os.unlink(cls.DEBUG_FILE)
@@ -143,8 +146,7 @@ class PFSenseModule(object):
             if not entity.startswith("#"):
                 return entities.get(entity, match.group(0))
             codepoint = int(entity[2:], 16) if entity.startswith("#x") else int(entity[1:])
-            if (codepoint in (9, 10, 13) or 0x20 <= codepoint <= 0xD7FF
-                    or 0xE000 <= codepoint <= 0xFFFD or 0x10000 <= codepoint <= 0x10FFFF):
+            if codepoint in (9, 10, 13) or 0x20 <= codepoint <= 0xD7FF or 0xE000 <= codepoint <= 0xFFFD or 0x10000 <= codepoint <= 0x10FFFF:
                 return chr(codepoint)
             return match.group(0)
 
@@ -206,9 +208,7 @@ class PFSenseModule(object):
         # tags in ordered lists. A newly appended server can follow a client in
         # Python XML, but PHP emits it beside the other servers. Preserve order
         # *within* each tag's list, particularly filter/rule and NAT rule lists.
-        return (element.tag, element.attrib, text,
-                tuple((tag, tuple(cls._config_values(child) for child in groups[tag]))
-                      for tag in sorted(groups)))
+        return (element.tag, element.attrib, text, tuple((tag, tuple(cls._config_values(child) for child in groups[tag])) for tag in sorted(groups)))
 
     @staticmethod
     def _group_config_children(element):
@@ -233,12 +233,9 @@ class PFSenseModule(object):
             expected_children = expected_groups.get(tag, [])
             actual_children = actual_groups.get(tag, [])
             if len(expected_children) != len(actual_children):
-                return {"path": "{0}/{1}[{2}]".format(
-                    path, tag, min(len(expected_children), len(actual_children)) + 1),
-                    "reason": "element count differs"}
+                return {"path": "{0}/{1}[{2}]".format(path, tag, min(len(expected_children), len(actual_children)) + 1), "reason": "element count differs"}
             for index, (expected_child, actual_child) in enumerate(zip(expected_children, actual_children), 1):
-                difference = cls._config_difference(
-                    expected_child, actual_child, "{0}/{1}[{2}]".format(path, tag, index))
+                difference = cls._config_difference(expected_child, actual_child, "{0}/{1}[{2}]".format(path, tag, index))
                 if difference is not None:
                     return difference
         return None
@@ -305,8 +302,7 @@ class PFSenseModule(object):
 
     @staticmethod
     def _atomic_replace(path, data, metadata, mode, validate=None):
-        descriptor, temporary = mkstemp(prefix="." + os.path.basename(path) + ".",
-                                        dir=os.path.dirname(os.path.abspath(path)))
+        descriptor, temporary = mkstemp(prefix="." + os.path.basename(path) + ".", dir=os.path.dirname(os.path.abspath(path)))
         try:
             with os.fdopen(descriptor, "wb") as output:
                 current = os.fstat(output.fileno())
@@ -369,12 +365,14 @@ try {
     exit($stage);
 }
 """
-        result, unused_stdout, unused_stderr = self.module.run_command(
-            ["/usr/local/bin/php", "-r", command, path])
+        result, unused_stdout, unused_stderr = self.module.run_command(["/usr/local/bin/php", "-r", command, path])
         if result != 0:
             stage = {
-                10: "load_parser", 11: "parse_candidate", 12: "serialize_candidate",
-                13: "write_formatted_candidate", 14: "parse_formatted_candidate",
+                10: "load_parser",
+                11: "parse_candidate",
+                12: "serialize_candidate",
+                13: "write_formatted_candidate",
+                14: "parse_formatted_candidate",
                 15: "compare_native_roundtrip",
             }.get(result, "php_command")
             mismatch = None
@@ -385,21 +383,24 @@ try {
                     formatted = self._parse_config(candidate.read(), self._legacy_html_entities)
                 mismatch = self._config_difference(self.root, formatted.getroot())
             raise PFSenseConfigError(
-                "Native pfSense XML validation/formatting failed at {0} (PHP exit {1}); "
-                "live configuration was not replaced".format(stage, result),
-                mismatch=mismatch, native_validation={"stage": stage, "exit_code": result})
+                "Native pfSense XML validation/formatting failed at {0} (PHP exit {1}); live configuration was not replaced".format(stage, result),
+                mismatch=mismatch,
+                native_validation={"stage": stage, "exit_code": result},
+            )
         with open(path, "rb") as candidate:
             formatted = self._parse_config(candidate.read(), self._legacy_html_entities)
         self._validate_config(formatted)
         mismatch = self._config_difference(self.root, formatted.getroot())
         if mismatch is not None:
             raise PFSenseConfigError(
-                "Native XML formatting changed configuration values at {0} ({1}); "
-                "live configuration was not replaced".format(mismatch["path"], mismatch["reason"]),
-                mismatch=mismatch)
+                "Native XML formatting changed configuration values at {0} ({1}); live configuration was not replaced".format(
+                    mismatch["path"], mismatch["reason"]
+                ),
+                mismatch=mismatch,
+            )
 
     def get_interface_by_display_name(self, name):
-        """ return interface_id by name """
+        """return interface_id by name"""
         for interface in self.interfaces:
             descr_elt = interface.find("descr")
             if descr_elt is not None and descr_elt.text.strip().lower() == name.lower():
@@ -407,14 +408,14 @@ try {
         return None
 
     def get_interface_by_port(self, name):
-        """ return interface_id by port (os name) """
+        """return interface_id by port (os name)"""
         for interface in self.interfaces:
             if interface.find("if").text.strip() == name:
                 return interface.tag
         return None
 
     def get_interface_display_name(self, interface_id, return_none=False):
-        """ return interface display name if found, otherwhise return the interface_id """
+        """return interface display name if found, otherwhise return the interface_id"""
         if interface_id == "enc0":
             if return_none and not self.is_ipsec_enabled():
                 return None
@@ -436,21 +437,21 @@ try {
         return interface_id
 
     def get_interface_elt(self, interface_id):
-        """ return interface """
+        """return interface"""
         for interface in self.interfaces:
             if interface.tag == interface_id:
                 return interface
         return None
 
     def get_interface_port(self, interface_id):
-        """ return interface port """
+        """return interface port"""
         for interface in self.interfaces:
             if interface.tag == interface_id:
                 return interface.find("if").text.strip()
         return None
 
     def get_interface_port_by_display_name(self, name):
-        """ return interface port """
+        """return interface port"""
         for interface in self.interfaces:
             descr_elt = interface.find("descr")
             if descr_elt is not None and descr_elt.text.strip().lower() == name.lower():
@@ -458,7 +459,7 @@ try {
         return None
 
     def get_interfaces_networks(self):
-        """ return interface local networks """
+        """return interface local networks"""
         ret = []
         for interface in self.interfaces:
             if interface.find("enable") is None:
@@ -478,7 +479,7 @@ try {
         return ret
 
     def is_interface_port(self, interface_port):
-        """ determines if arg is a pfsense interface port or not """
+        """determines if arg is a pfsense interface port or not"""
         for interface in self.interfaces:
             interface_elt = interface.tag.strip()
             if interface_elt == interface_port:
@@ -486,7 +487,7 @@ try {
         return False
 
     def is_interface_display_name(self, name):
-        """ determines if arg is an interface name or not """
+        """determines if arg is an interface name or not"""
         for interface in self.interfaces:
             descr_elt = interface.find("descr")
             if descr_elt is not None:
@@ -495,7 +496,7 @@ try {
         return False
 
     def is_interface_group(self, name):
-        """ determines if arg is an interface group name or not """
+        """determines if arg is an interface group name or not"""
         if self.ifgroups is not None:
             for interface in self.ifgroups:
                 ifname_elt = interface.find("ifname")
@@ -506,7 +507,7 @@ try {
         return False
 
     def parse_interface(self, interface, fail=True, with_virtual=True, with_gwgroup=False):
-        """ validate param interface field """
+        """validate param interface field"""
         if with_virtual and (interface == "enc0" or interface.lower() == "ipsec") and self.is_ipsec_enabled():
             return "enc0"
         if with_virtual and (interface == "openvpn" or interface.lower() == "openvpn") and self.is_openvpn_enabled():
@@ -527,9 +528,9 @@ try {
 
     @staticmethod
     def is_ipv4_address(address):
-        """ test if address is a valid ipv4 address """
+        """test if address is a valid ipv4 address"""
         try:
-            addr = ip_address(u"{0}".format(address))
+            addr = ip_address("{0}".format(address))
             return isinstance(addr, IPv4Address)
         except ValueError:
             pass
@@ -537,9 +538,9 @@ try {
 
     @staticmethod
     def is_ipv6_address(address):
-        """ test if address is a valid ipv6 address """
+        """test if address is a valid ipv6 address"""
         try:
-            addr = ip_address(u"{0}".format(address))
+            addr = ip_address("{0}".format(address))
             return isinstance(addr, IPv6Address)
         except ValueError:
             pass
@@ -547,9 +548,9 @@ try {
 
     @staticmethod
     def is_ipv4_network(address, strict=True):
-        """ test if address is a valid ipv4 network """
+        """test if address is a valid ipv4 network"""
         try:
-            addr = ip_network(u"{0}".format(address), strict=strict)
+            addr = ip_network("{0}".format(address), strict=strict)
             return isinstance(addr, IPv4Network)
         except ValueError:
             pass
@@ -557,29 +558,29 @@ try {
 
     @staticmethod
     def is_ipv6_network(address, strict=True):
-        """ test if address is a valid ipv6 network """
+        """test if address is a valid ipv6 network"""
         try:
-            addr = ip_network(u"{0}".format(address), strict=strict)
+            addr = ip_network("{0}".format(address), strict=strict)
             return isinstance(addr, IPv6Network)
         except ValueError:
             pass
         return False
 
     def is_ip_network(self, address, strict=True):
-        """ test if address is a valid ip network """
+        """test if address is a valid ip network"""
         return self.is_ipv4_network(address, strict) or self.is_ipv6_network(address, strict)
 
     def is_within_local_networks(self, address):
-        """ test if address is contained in our local networks """
+        """test if address is contained in our local networks"""
         networks = self.get_interfaces_networks()
         try:
-            addr = ip_address(u"{0}".format(address))
+            addr = ip_address("{0}".format(address))
         except ValueError:
             return False
 
         for network in networks:
             try:
-                net = ip_network(u"{0}".format(network), strict=False)
+                net = ip_network("{0}".format(network), strict=False)
                 if addr in net:
                     return True
             except ValueError:
@@ -589,9 +590,9 @@ try {
 
     @staticmethod
     def parse_ip_network(address, strict=True, returns_ip=True):
-        """ return cidr parts of address """
+        """return cidr parts of address"""
         try:
-            addr = ip_network(u"{0}".format(address), strict=strict)
+            addr = ip_network("{0}".format(address), strict=strict)
             if strict or not returns_ip:
                 return (str(addr.network_address), addr.prefixlen)
             else:
@@ -605,7 +606,7 @@ try {
         return None
 
     def parse_address(self, param, allow_self=True):
-        """ validate param address field and returns it as a dict """
+        """validate param address field and returns it as a dict"""
         if self.is_ipv6_address(param) or self.is_ipv6_network(param):
             addr = [param]
         else:
@@ -657,7 +658,7 @@ try {
         return ret
 
     def parse_port(self, src_ports, ret):
-        """ validate and parse port address field and set it in ret """
+        """validate and parse port address field and set it in ret"""
         ports = src_ports.split("-")
         if len(ports) > 2 or ports[0] is None or ports[0] == "" or len(ports) == 2 and (ports[1] is None or ports[1] == ""):
             self.module.fail_json(msg="Cannot parse port %s" % (src_ports))
@@ -672,7 +673,7 @@ try {
             ret["port"] += "-" + ports[1]
 
     def check_name(self, name, objtype):
-        """ check name validity """
+        """check name validity"""
 
         msg = None
         if len(name) >= 32 or len(re.findall(r"(^_*$|^\d*$|[^a-zA-Z0-9_])", name)) > 0:
@@ -699,7 +700,7 @@ try {
             self.module.fail_json(msg=msg)
 
     def check_ip_address(self, address, ipprotocol, objtype, allow_networks=False, fail_ifnotip=False):
-        """ check address according to ipprotocol """
+        """check address according to ipprotocol"""
         if address is None:
             return
         if allow_networks:
@@ -720,7 +721,7 @@ try {
                 self.module.fail_json(msg="IPv4 and IPv6 addresses can not be used in objects that apply to both IPv4 and IPv6 (except within an alias).")
 
     def validate_openvpn_tunnel_network(self, network, ipproto):
-        """ check openvpn tunnel network validity - based on pfSense's openvpn_validate_tunnel_network() """
+        """check openvpn tunnel network validity - based on pfSense's openvpn_validate_tunnel_network()"""
         if network is not None and network != "":
             alias_elt = self.find_alias(network, aliastype="network")
             if alias_elt is not None:
@@ -738,14 +739,14 @@ try {
         return True
 
     def validate_string(self, name, objtype):
-        """ check string validity - similar to pfSense's do_input_validate() """
+        """check string validity - similar to pfSense's do_input_validate()"""
 
         if len(re.findall(r"[\000-\010\013\014\016-\037]", name)) > 0:
             self.module.fail_json("The {0} name contains invalid characters.".format(objtype))
 
     @staticmethod
     def addr_normalize(addr):
-        """ return address element formatted like module argument """
+        """return address element formatted like module argument"""
         address = ""
         ports = ""
         if "address" in addr:
@@ -764,7 +765,7 @@ try {
 
     @staticmethod
     def new_element(tag, text="\n\t\t\t"):
-        """ Create and return new XML configuration element  """
+        """Create and return new XML configuration element"""
         elt = ET.Element(tag)
         # Attempt to preserve some of the formatting of pfSense's config.xml
         elt.text = text
@@ -772,7 +773,7 @@ try {
         return elt
 
     def get_element(self, node, root_elt=None, create_node=False):
-        """ return <node> configuration element """
+        """return <node> configuration element"""
         if root_elt is None:
             root_elt = self.root
         top_elt = root_elt
@@ -785,24 +786,24 @@ try {
         return elt
 
     def get_elements(self, node, root_elt=None):
-        """ return all <node> configuration elements  """
+        """return all <node> configuration elements"""
         if root_elt is None:
             root_elt = self.root
         return root_elt.findall(node)
 
     def get_index(self, elt, root_elt=None):
-        """ Get elt index  """
+        """Get elt index"""
         if root_elt is None:
             root_elt = self.root
         return list(root_elt).index(elt)
 
     def find_elt(self, node, search_text, search_field="descr", root_elt=None, multiple_ok=False):
-        """ return object elt if found """
+        """return object elt if found"""
         search_xpath = "{0}[{1}='{2}']".format(node, search_field, search_text)
         return self.find_elt_xpath(search_xpath, root_elt, multiple_ok)
 
     def find_elt_xpath(self, search_xpath, root_elt=None, multiple_ok=False):
-        """ return object elt if found """
+        """return object elt if found"""
         if root_elt is None:
             root_elt = self.root
         result = root_elt.findall(search_xpath)
@@ -818,7 +819,7 @@ try {
 
     @staticmethod
     def remove_deleted_param_from_elt(elt, param, params):
-        """ Remove from a deleted param from an xml elt """
+        """Remove from a deleted param from an xml elt"""
         changed = False
         if param not in params:
             param_elt = elt.find(param)
@@ -828,7 +829,7 @@ try {
         return changed
 
     def is_ipsec_enabled(self):
-        """ return True if ipsec is enabled """
+        """return True if ipsec is enabled"""
         if self.ipsec is None:
             return False
 
@@ -838,7 +839,7 @@ try {
         return False
 
     def is_openvpn_enabled(self):
-        """ return True if openvpn is enabled """
+        """return True if openvpn is enabled"""
         if self.openvpn is None:
             return False
 
@@ -848,7 +849,7 @@ try {
         return False
 
     def find_ipsec_phase1(self, field_value, field="descr"):
-        """ return ipsec phase1 elt if found """
+        """return ipsec phase1 elt if found"""
         for ipsec_elt in self.ipsec:
             if ipsec_elt.tag != "phase1":
                 continue
@@ -861,8 +862,8 @@ try {
 
     @staticmethod
     def rule_match_interface(rule_elt, interface, floating):
-        """ check if a rule elt match the targeted interface
-            floating rules must match the floating mode instead of the interface name
+        """check if a rule elt match the targeted interface
+        floating rules must match the floating mode instead of the interface name
         """
         interface_elt = rule_elt.find("interface")
         floating_elt = rule_elt.find("floating")
@@ -873,7 +874,7 @@ try {
         return interface_elt is not None and interface_elt.text.lower() == interface.lower()
 
     def get_interface_rules_count(self, interface, floating):
-        """ get rules count in interface/floating """
+        """get rules count in interface/floating"""
         count = 0
         for rule_elt in self.rules:
             if not self.rule_match_interface(rule_elt, interface, floating):
@@ -883,7 +884,7 @@ try {
         return count
 
     def get_rule_position(self, descr, interface, floating, first=True):
-        """ get rule position in interface/floating """
+        """get rule position in interface/floating"""
         i = 0
         found = None
         for rule_elt in self.rules:
@@ -900,9 +901,9 @@ try {
         return found
 
     def copy_dict_to_element(self, src, top_elt, sub=0, prev_elt=None):
-        """ Copy/update top_elt from src """
+        """Copy/update top_elt from src"""
         changed = False
-        for (key, value) in src.items():
+        for key, value in src.items():
             this_elt = top_elt.find(key)
             self.debug.write("changed=%s key=%s this_elt=%s, sub=%d\n" % (changed, key, this_elt, sub))
             if this_elt is None:
@@ -1010,14 +1011,14 @@ try {
 
     @staticmethod
     def array_to_php(src, php_name):
-        """ Generate PHP commands to initialiaze a variable with contents of an array """
+        """Generate PHP commands to initialiaze a variable with contents of an array"""
         array_values = "'" + "','".join(src) + "'"
         cmd = f"${php_name} = array({array_values});\n"
         return cmd
 
     @staticmethod
     def dict_to_php(src, php_name):
-        """ Generate PHP commands to initialiaze a variable with contents of a dict """
+        """Generate PHP commands to initialiaze a variable with contents of a dict"""
         cmd = "${0} = array();\n".format(php_name)
         for key, value in src.items():
             if value is not None:
@@ -1028,7 +1029,7 @@ try {
 
     @staticmethod
     def element_to_dict(src_elt):
-        """ Create dict from XML src_elt """
+        """Create dict from XML src_elt"""
         res = {}
         for elt in src_elt:
             if len(elt) > 0:
@@ -1045,7 +1046,7 @@ try {
         return res
 
     def config_get_path(self, name, default=None):
-        """ get value of a specific configuration path """
+        """get value of a specific configuration path"""
         elt = self.find_elt_xpath(name)
         if elt is not None:
             return elt.text
@@ -1053,7 +1054,7 @@ try {
             return default
 
     def get_refid(self, node, name):
-        """ get refid of name in specific nodes """
+        """get refid of name in specific nodes"""
         elt = self.find_elt(node, name)
         if elt is not None:
             return xml_find(elt, "refid").text
@@ -1061,7 +1062,7 @@ try {
             return None
 
     def get_caref(self, name):
-        """ get CA refid for name """
+        """get CA refid for name"""
         # global is a special case
         if name == "global":
             return "global"
@@ -1069,16 +1070,16 @@ try {
         return self.get_refid("ca", name)
 
     def get_certref(self, name):
-        """ get Cert refid for name """
+        """get Cert refid for name"""
         return self.get_refid("cert", name)
 
     def get_crlref(self, name):
-        """ get CRL refid for name """
+        """get CRL refid for name"""
         return self.get_refid("crl", name)
 
     @staticmethod
     def get_username():
-        """ get username logged """
+        """get username logged"""
         username = pwd.getpwuid(os.getuid()).pw_name
         if os.environ.get("SUDO_USER"):
             username = os.environ.get("SUDO_USER")
@@ -1089,18 +1090,16 @@ try {
         return username
 
     def find_alias(self, name, aliastype=None):
-        """ return alias named name, having type aliastype if specified """
+        """return alias named name, having type aliastype if specified"""
         for alias in self.aliases:
             if xml_find(alias, "name").text == name and (aliastype is None or xml_find(alias, "type").text == aliastype):
                 return alias
         return None
 
     def is_ip_or_alias(self, address):
-        """ return True if address is an ip or an alias """
+        """return True if address is an ip or an alias"""
         # Is it an alias?
-        if (self.find_alias(address, "host") is not None
-                or self.find_alias(address, "network") is not None
-                or self.find_alias(address, "urltable") is not None):
+        if self.find_alias(address, "host") is not None or self.find_alias(address, "network") is not None or self.find_alias(address, "urltable") is not None:
             return True
 
         # Is it an IP address or network?
@@ -1111,13 +1110,12 @@ try {
         return False
 
     def is_gateway_group(self, gwgroup):
-        """ return True if gwgroup is a gateway group """
+        """return True if gwgroup is a gateway group"""
         return any(group.findtext("name") == gwgroup for group in self.root.findall("./gateways/gateway_group"))
 
     def is_port_or_alias(self, port):
-        """ return True if port is a valid port number or an alias """
-        if (self.find_alias(port, "port") is not None
-                or self.find_alias(port, "urltable_ports") is not None):
+        """return True if port is a valid port number or an alias"""
+        if self.find_alias(port, "port") is not None or self.find_alias(port, "urltable_ports") is not None:
             return True
         try:
             if int(port) > 0 and int(port) < 65536:
@@ -1183,7 +1181,7 @@ try {
         return interface, address
 
     def find_queue(self, name, interface=None, enabled=False):
-        """ return QOS queue if found """
+        """return QOS queue if found"""
 
         # iterate each interface
         for shaper_elt in self.shapers:
@@ -1214,7 +1212,7 @@ try {
         return None
 
     def find_limiter(self, name, enabled=False):
-        """ return QOS limiter if found """
+        """return QOS limiter if found"""
 
         # iterate each queue
         for queue_elt in self.dnshapers:
@@ -1232,7 +1230,7 @@ try {
         return None
 
     def find_vlan(self, interface, tag):
-        """ return vlan elt if found """
+        """return vlan elt if found"""
         if self.vlans is None:
             self.vlans = self.get_element("vlans")
 
@@ -1254,7 +1252,7 @@ try {
         return gw_elt
 
     def find_gateway_elt(self, name, interface=None, protocol=None, dhcp=False, vti=False):
-        """ return gateway elt if found """
+        """return gateway elt if found"""
         for gw_elt in self.get_elements("gateways/gateway_item"):
             if protocol is not None and xml_find(gw_elt, "ipprotocol").text != protocol:
                 continue
@@ -1295,7 +1293,7 @@ try {
         return None
 
     def find_gateway_group_elt(self, name, protocol="inet"):
-        """ return gateway_group elt if found """
+        """return gateway_group elt if found"""
         for gw_grp_elt in self.gateways:
             if gw_grp_elt.tag != "gateway_group":
                 continue
@@ -1321,7 +1319,7 @@ try {
         return None
 
     def find_active_gateways(self):
-        """ returns list of active gateways """
+        """returns list of active gateways"""
         (retcode, raw_output, error) = self.phpshell("playback gatewaystatus")
 
         write = False
@@ -1347,31 +1345,31 @@ try {
         return data
 
     def find_ca_elt(self, ca, search_field="descr"):
-        """ return certificate authority elt if found """
+        """return certificate authority elt if found"""
         return self.find_elt("ca", ca, search_field)
 
     def find_cert_elt(self, cert, search_field="descr"):
-        """ return certificate elt if found """
+        """return certificate elt if found"""
         return self.find_elt("cert", cert, search_field)
 
     def find_crl_elt(self, crl, search_field="descr"):
-        """ return certificate revocation list elt if found """
+        """return certificate revocation list elt if found"""
         return self.find_elt("crl", crl, search_field)
 
     def find_schedule_elt(self, name):
-        """ return schedule elt if found """
+        """return schedule elt if found"""
         return self.find_elt_xpath("./schedules/schedule[name='{0}']".format(name))
 
     @staticmethod
     def uniqid(prefix="", more_entropy=False):
-        """ return an identifier based on time """
+        """return an identifier based on time"""
         if more_entropy:
             return prefix + "{0:x}{1:05x}{2:.8F}".format(int(time.time()), int(time.time() * 1000000) % 0x100000, random.random() * 10)
 
         return prefix + "{0:x}{1:05x}".format(int(time.time()), int(time.time() * 1000000) % 0x100000)
 
     def phpshell(self, command, debug=True):
-        """ Run a command in the php developer shell """
+        """Run a command in the php developer shell"""
         phpshell = "global $config;\n"
         if debug:
             phpshell += "global $debug;\n$debug = 1;\n"
@@ -1380,7 +1378,7 @@ try {
         return self.module.run_command("/usr/local/sbin/pfSsh.php dummy", data=phpshell)
 
     def php(self, command):
-        """ Run a command in php and return the output """
+        """Run a command in php and return the output"""
         cmd = "<?php\n"
         cmd += command
         cmd += "\n?>\n"
@@ -1416,8 +1414,8 @@ try {
             mismatch = self._config_difference(self.root, validated.getroot())
             if mismatch is not None:
                 raise PFSenseConfigError(
-                    "Configuration text changed during XML serialization at {0} ({1})".format(
-                        mismatch["path"], mismatch["reason"]), mismatch=mismatch)
+                    "Configuration text changed during XML serialization at {0} ({1})".format(mismatch["path"], mismatch["reason"]), mismatch=mismatch
+                )
 
             with self._locked_config():
                 with open(self.config, "rb") as source:
@@ -1425,15 +1423,14 @@ try {
                     metadata = os.fstat(source.fileno())
                 if hashlib.sha256(current).digest() != self._config_digest:
                     raise PFSenseConfigError(
-                        "Configuration changed since this module read it; "
-                        "no config or backup was written. Rerun the task from a fresh read")
+                        "Configuration changed since this module read it; no config or backup was written. Rerun the task from a fresh read"
+                    )
 
                 # Keep one protected, byte-for-byte pre-change configuration.
                 # Failure to persist the backup aborts before replacing config.
                 self._atomic_replace(self.config + ".ansible.bak", current, metadata, 0o600)
                 self._sync_config_directory()
-                serialized = self._atomic_replace(self.config, serialized, metadata, stat.S_IMODE(metadata.st_mode),
-                                                  validate=self._validate_native_config)
+                serialized = self._atomic_replace(self.config, serialized, metadata, stat.S_IMODE(metadata.st_mode), validate=self._validate_native_config)
                 committed = True
                 self._config_digest = hashlib.sha256(serialized).digest()
                 try:
@@ -1453,15 +1450,15 @@ try {
             if isinstance(error, PFSenseConfigError) and error.native_validation is not None:
                 details["native_validation"] = error.native_validation
             self.module.fail_json(
-                msg="{0}: {1}".format(
-                    "Configuration was replaced, but finalization failed" if committed
-                    else "Refusing to write pfSense configuration", error),
+                msg="{0}: {1}".format("Configuration was replaced, but finalization failed" if committed else "Refusing to write pfSense configuration", error),
                 changed=committed,
-                backup_file=self.config + ".ansible.bak", **details)
+                backup_file=self.config + ".ansible.bak",
+                **details,
+            )
 
     @staticmethod
     def get_version():
-        """ get pfSense version """
+        """get pfSense version"""
         # TODO: use subprocess when we'll drop support for python 2.7
         os.system("pkg-static info | grep pfSense-base > /tmp/pfVersion")
         vfile = open("/tmp/pfVersion", "r")
@@ -1471,7 +1468,7 @@ try {
 
     @staticmethod
     def is_ce_version(version=None):
-        """ return True if version is a CE version (for now, we only have 2.x patterns) """
+        """return True if version is a CE version (for now, we only have 2.x patterns)"""
         if isinstance(version, list):
             return version[0] == 2
         if version is None:
@@ -1479,7 +1476,7 @@ try {
         return len(version.split(".")[0]) == 1
 
     def is_version(self, version, or_more=True):
-        """ check target pfSense version """
+        """check target pfSense version"""
         if self.pfsense_version is None:
             pfsense_version = self.get_version()
             self.pfsense_version = []
@@ -1507,15 +1504,15 @@ try {
         return True
 
     def is_at_least_2_5_2(self):
-        """ check target pfSense version """
+        """check target pfSense version"""
         return self.is_version([2, 5, 2]) or self.is_version([21, 5])
 
     def is_at_least_2_5_0(self):
-        """ check target pfSense version """
+        """check target pfSense version"""
         return self.is_version([2, 5, 0]) or self.is_version([21, 2])
 
     def apply_ipsec_changes(self):
-        """ execute pfSense code to appy ipsec changes """
+        """execute pfSense code to appy ipsec changes"""
         if self.is_at_least_2_5_0():
             return self.phpshell(
                 "require_once('vpn.inc');"

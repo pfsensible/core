@@ -1,6 +1,7 @@
 """Verify a downloaded appliance and unpack gzip/xz transport compression."""
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import argparse
@@ -40,8 +41,7 @@ def prepare_image(source, destination, expected_sha256):
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
-        with tempfile.NamedTemporaryFile(dir=str(destination.parent),
-                                         prefix=destination.name + ".", delete=False) as output:
+        with tempfile.NamedTemporaryFile(dir=str(destination.parent), prefix=destination.name + ".", delete=False) as output:
             temporary = Path(output.name)
             with opener(source, "rb") as image:
                 if image.read(4) != b"QFI\xfb":

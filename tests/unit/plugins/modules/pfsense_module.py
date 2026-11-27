@@ -3,7 +3,8 @@
 # Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -52,7 +53,7 @@ class TestPFSenseModule(ModuleTestCase):
         self.pfmodule = None
 
     def setUp(self):
-        """ mocking up """
+        """mocking up"""
         super(TestPFSenseModule, self).setUp()
 
         directory = TemporaryDirectory(prefix="pfsense-module-tests-")
@@ -66,9 +67,13 @@ class TestPFSenseModule(ModuleTestCase):
         original_init = PFSenseModule.__init__
 
         def init_config(helper, module, *args, **kwargs):
-            original_init(helper, module, config=self.tmp_file,
-                          config_lock=os.path.join(directory.name, "config.lock"),
-                          config_cache=os.path.join(directory.name, "config.cache"))
+            original_init(
+                helper,
+                module,
+                config=self.tmp_file,
+                config_lock=os.path.join(directory.name, "config.lock"),
+                config_cache=os.path.join(directory.name, "config.cache"),
+            )
 
         mock_init = patch.object(PFSenseModule, "__init__", autospec=True, side_effect=init_config)
         mock_init.start()
@@ -126,7 +131,7 @@ class TestPFSenseModule(ModuleTestCase):
         self.maxDiff = None
 
     def tearDown(self):
-        """ mocking down """
+        """mocking down"""
         super(TestPFSenseModule, self).tearDown()
 
         self.mock_php.stop()
@@ -134,27 +139,27 @@ class TestPFSenseModule(ModuleTestCase):
         self.mock_get_version.stop()
 
     def get_args_fields(self):
-        """ return params fields """
+        """return params fields"""
         try:
             return self.pfmodule.get_argument_spec().keys()
         except AttributeError:
             raise NotImplementedError()
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         raise NotImplementedError()
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
         raise NotImplementedError()
 
     def check_target_elt_direct(self, target_elt, expected_elt_string):
-        """ check XML definition of target elt against expected XML """
+        """check XML definition of target elt against expected XML"""
         target_elt_string = ET.tostring(target_elt, encoding="unicode", short_empty_elements=False)
         self.assertEqual(target_elt_string, expected_elt_string)
 
     def args_from_var(self, var, state="present", **kwargs):
-        """ return arguments for module from var """
+        """return arguments for module from var"""
         args = {}
 
         fields = self.get_args_fields()
@@ -192,7 +197,7 @@ class TestPFSenseModule(ModuleTestCase):
         return result
 
     def do_module_test(self, obj, command=None, changed=True, failed=False, msg=None, delete=False, state="present", expected_elt_string=None, **kwargs):
-        """ run test """
+        """run test"""
         if command is not None:
             command = self.strip_commands(command)
 
@@ -261,31 +266,31 @@ class TestPFSenseModule(ModuleTestCase):
         return result
 
     def strip_commands(self, commands):
-        """ remove old or new parameters """
+        """remove old or new parameters"""
         return commands
 
     def strip_params(self, params):
-        """ remove old or new parameters """
+        """remove old or new parameters"""
         return params
 
     def get_config_file(self):
-        """ get config file """
+        """get config file"""
         return self.config_file
 
     def load_fixtures(self):
-        """ loading data """
+        """loading data"""
         with open(self.tmp_file, "w") as config:
             config.write(load_fixture(self.get_config_file()))
 
     def load_xml_result(self):
-        """ load the resulting xml if not already loaded """
+        """load the resulting xml if not already loaded"""
         if self.xml_result is None and os.path.exists(self.backup_file):
             self.xml_result = ET.parse(self.tmp_file)
         return self.xml_result is not None
 
     @staticmethod
     def find_xml_tag(parent_tag, elt_filter):
-        """ return alias named name, having type aliastype """
+        """return alias named name, having type aliastype"""
         for tag in parent_tag:
             found = True
             for key, value in elt_filter.items():
@@ -302,7 +307,7 @@ class TestPFSenseModule(ModuleTestCase):
         return None
 
     def assert_xml_elt_value(self, parent_tag_name, elt_filter, elt_name, elt_value):
-        """ check the xml elt exist and has the exact value given """
+        """check the xml elt exist and has the exact value given"""
         self.load_xml_result()
         parent_tag = self.xml_result.find(parent_tag_name)
         if parent_tag is None:
@@ -315,7 +320,7 @@ class TestPFSenseModule(ModuleTestCase):
         self.assert_xml_elt_equal(tag, elt_name, elt_value)
 
     def assert_xml_elt_dict(self, parent_tag_name, elt_filter, elts):
-        """ check all the xml elt in elts exist and have the exact value given """
+        """check all the xml elt in elts exist and have the exact value given"""
         self.load_xml_result()
         parent_tag = self.xml_result.find(parent_tag_name)
         if parent_tag is None:
@@ -329,7 +334,7 @@ class TestPFSenseModule(ModuleTestCase):
             self.assert_xml_elt_equal(tag, elt_name, elt_value)
 
     def assert_has_xml_tag(self, parent_tag_name, elt_filter, absent=False):
-        """ check the xml elt exist (or not if absent is True) """
+        """check the xml elt exist (or not if absent is True)"""
         self.load_xml_result()
         parent_tag = self.xml_result.find(parent_tag_name)
         if parent_tag is None:
@@ -370,9 +375,9 @@ class TestPFSenseModule(ModuleTestCase):
 
         if elt.text != value:
             if elt.text is None:
-                self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(value) + "\' result: None")
+                self.fail("Element <" + elt_name + "> differs. Expected: '" + str(value) + "' result: None")
             else:
-                self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(value) + "\' result: \'" + elt.text + "\'")
+                self.fail("Element <" + elt_name + "> differs. Expected: '" + str(value) + "' result: '" + elt.text + "'")
         return elt
 
     def assert_xml_elt_match(self, tag, elt_name, elt_regex):
@@ -382,9 +387,9 @@ class TestPFSenseModule(ModuleTestCase):
 
         if re.fullmatch(elt_regex, elt.text) is None:
             if elt.text is None:
-                self.fail("Element <" + elt_name + "> does not match \'" + elt_regex + "\' result: None")
+                self.fail("Element <" + elt_name + "> does not match '" + elt_regex + "' result: None")
             else:
-                self.fail("Element <" + elt_name + "> does not match \'" + elt_regex + "\' result: \'" + elt.text + "\'")
+                self.fail("Element <" + elt_name + "> does not match '" + elt_regex + "' result: '" + elt.text + "'")
         return elt
 
     def assert_xml_elt_is_none_or_empty(self, tag, elt_name):
@@ -392,7 +397,7 @@ class TestPFSenseModule(ModuleTestCase):
         if elt is None:
             return elt
         if elt.text is not None and elt.text:
-            self.fail("Element <" + elt_name + "> differs. Expected: NoneType result: \'" + elt.text + "\'")
+            self.fail("Element <" + elt_name + "> differs. Expected: NoneType result: '" + elt.text + "'")
         return elt
 
     def assert_list_xml_elt_equal(self, tag, elt_name, elt_value):
@@ -404,18 +409,18 @@ class TestPFSenseModule(ModuleTestCase):
         for elt in elts:
             if elt.text not in elt_value_copy:
                 if elt.text is None:
-                    self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(elt_value) + "\' result: None")
+                    self.fail("Element <" + elt_name + "> differs. Expected: '" + str(elt_value) + "' result: None")
                 else:
-                    self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(elt_value) + "\' result: \'" + elt.text + "\'")
+                    self.fail("Element <" + elt_name + "> differs. Expected: '" + str(elt_value) + "' result: '" + elt.text + "'")
             elt_value_copy.remove(elt.text)
             elt_texts.append(elt.text)
         if len(elt_value_copy):
-            self.fail("Element <" + elt_name + "> differs. Expected: \'" + str(elt_value) + "\' result: \'" + str(elt_texts) + "\'")
+            self.fail("Element <" + elt_name + "> differs. Expected: '" + str(elt_value) + "' result: '" + str(elt_texts) + "'")
         return elts
 
     @staticmethod
     def unalias_interface(interface, physical=False):
-        """ return real alias name if required """
+        """return real alias name if required"""
         res = []
         if physical:
             interfaces = dict(lan="vmx1", wan="vmx0", opt1="vmx2", vpn="vmx2", opt2="vmx3", vt1="vmx3", opt3="vmx3.100", lan_100="vmx3.100")
@@ -431,7 +436,7 @@ class TestPFSenseModule(ModuleTestCase):
         return ",".join(res)
 
     def check_param_equal(self, params, target_elt, param, default=None, xml_field=None, not_find_val=None):
-        """ if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML """
+        """if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML"""
         if xml_field is None:
             xml_field = param
 
@@ -448,8 +453,8 @@ class TestPFSenseModule(ModuleTestCase):
             self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
 
     def check_param_bool(self, params, target_elt, param, default=False, value_true=None, value_false=None, xml_field=None):
-        """ if param is defined, check the elt exist and text equals value_true, otherwise that it does not exist in XML or
-            is empty if value_true is not None or equals value_false if set """
+        """if param is defined, check the elt exist and text equals value_true, otherwise that it does not exist in XML or
+        is empty if value_true is not None or equals value_false if set"""
         if xml_field is None:
             xml_field = param
 
@@ -468,7 +473,7 @@ class TestPFSenseModule(ModuleTestCase):
                     self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
 
     def check_value_equal(self, target_elt, xml_field, value, empty=True):
-        """ if value is defined, check if target_elt has the right value, otherwise that it does not exist in XML """
+        """if value is defined, check if target_elt has the right value, otherwise that it does not exist in XML"""
         if value is None:
             if empty:
                 self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
@@ -478,7 +483,7 @@ class TestPFSenseModule(ModuleTestCase):
             self.assert_xml_elt_equal(target_elt, xml_field, value)
 
     def check_param_equal_or_not_find(self, params, target_elt, param, xml_field=None, not_find_val=None, empty=False):
-        """ if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML """
+        """if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML"""
         if xml_field is None:
             xml_field = param
         if param in params:
@@ -492,7 +497,7 @@ class TestPFSenseModule(ModuleTestCase):
             self.assert_not_find_xml_elt(target_elt, xml_field)
 
     def check_param_equal_or_present(self, params, target_elt, param, xml_field=None):
-        """ if param is defined, check if target_elt has the right value, otherwise that it is present in XML """
+        """if param is defined, check if target_elt has the right value, otherwise that it is present in XML"""
         if xml_field is None:
             xml_field = param
         if param in params:
@@ -501,7 +506,7 @@ class TestPFSenseModule(ModuleTestCase):
             self.assert_find_xml_elt(target_elt, xml_field)
 
     def check_list_param_equal(self, params, target_elt, param, default=None, xml_field=None, not_find_val=None):
-        """ if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML """
+        """if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML"""
         if xml_field is None:
             xml_field = param
 
@@ -518,7 +523,7 @@ class TestPFSenseModule(ModuleTestCase):
             self.assert_xml_elt_is_none_or_empty(target_elt, xml_field)
 
     def check_list_param_equal_or_not_find(self, params, target_elt, param, xml_field=None, not_find_val=None, empty=False):
-        """ if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML """
+        """if param is defined, check if target_elt has the right value, otherwise that it does not exist in XML"""
         if xml_field is None:
             xml_field = param
         if param in params:

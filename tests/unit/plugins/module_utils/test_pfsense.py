@@ -1,7 +1,8 @@
 # Copyright: (c) 2022, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import Mock, patch
@@ -13,7 +14,6 @@ PHPSHELL = PFSenseModule.phpshell
 
 
 class TestPFSense(TestPFSenseModule):
-
     def __init__(self, *args, **kwargs):
         super(TestPFSense, self).__init__(*args, **kwargs)
 

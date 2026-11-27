@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -119,8 +120,15 @@ def _valid_hostname(hostname):
 
 def _valid_email(address):
     local, separator, domain = address.rpartition("@")
-    return (bool(separator) and len(address) <= 254 and len(local) <= 64 and EMAIL_LOCAL_PART.fullmatch(local) is not None
-            and "." in domain and not domain.endswith(".") and _valid_hostname(domain))
+    return (
+        bool(separator)
+        and len(address) <= 254
+        and len(local) <= 64
+        and EMAIL_LOCAL_PART.fullmatch(local) is not None
+        and "." in domain
+        and not domain.endswith(".")
+        and _valid_hostname(domain)
+    )
 
 
 class PFSenseNotificationSMTPModule(PFSenseModuleConfigBase):
@@ -132,13 +140,19 @@ class PFSenseNotificationSMTPModule(PFSenseModuleConfigBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return NOTIFICATION_SMTP_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
         super(PFSenseNotificationSMTPModule, self).__init__(
-            module, pfsense, name="pfsense_notification_smtp", root="notifications", node="smtp", create_root=True,
-            map_param=[("authmech", "authentication_mechanism")], bool_style="absent/present",
+            module,
+            pfsense,
+            name="pfsense_notification_smtp",
+            root="notifications",
+            node="smtp",
+            create_root=True,
+            map_param=[("authmech", "authentication_mechanism")],
+            bool_style="absent/present",
             bool_values={"sslvalidate": ("disabled", "enabled")},
             create_default=dict(authentication_mechanism="PLAIN", sslvalidate="enabled"),
         )
@@ -148,8 +162,11 @@ class PFSenseNotificationSMTPModule(PFSenseModuleConfigBase):
 
     def _validate_params(self):
         host = self.params.get("ipaddress")
-        if host and not (self.pfsense.is_ipv4_address(host) or ("%" not in host and self.pfsense.is_ipv6_address(host))
-                         or (_valid_hostname(host) and not re.fullmatch(r"[0-9.]+", host))):
+        if host and not (
+            self.pfsense.is_ipv4_address(host)
+            or ("%" not in host and self.pfsense.is_ipv6_address(host))
+            or (_valid_hostname(host) and not re.fullmatch(r"[0-9.]+", host))
+        ):
             self.module.fail_json(msg="ipaddress must be a hostname or an IPv4 or IPv6 address")
 
         port = self.params.get("port")
@@ -165,8 +182,7 @@ class PFSenseNotificationSMTPModule(PFSenseModuleConfigBase):
             self.module.fail_json(msg="fromaddress must be a valid email address")
 
         recipients = self.params.get("notifyemailaddress")
-        if recipients and ("\r" in recipients or "\n" in recipients
-                           or not all(_valid_email(address.strip(" \t")) for address in recipients.split(","))):
+        if recipients and ("\r" in recipients or "\n" in recipients or not all(_valid_email(address.strip(" \t")) for address in recipients.split(","))):
             self.module.fail_json(msg="notifyemailaddress must be a comma-separated list of valid email addresses")
 
         if self.params.get("disable") is False:
@@ -193,7 +209,7 @@ class PFSenseNotificationSMTPModule(PFSenseModuleConfigBase):
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "smtp"
 
     def _log_fields(self, before=None):
@@ -221,9 +237,7 @@ class PFSenseNotificationSMTPModule(PFSenseModuleConfigBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=NOTIFICATION_SMTP_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=NOTIFICATION_SMTP_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseNotificationSMTPModule(module)
     # Pass params for testing framework

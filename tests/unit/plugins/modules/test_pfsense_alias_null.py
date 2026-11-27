@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -19,7 +20,6 @@ from .pfsense_module import TestPFSenseModule
 
 # Test alias creation starting without an initial <aliases> element
 class TestPFSenseAliasNullModule(TestPFSenseModule):
-
     module = pfsense_alias
 
     def __init__(self, *args, **kwargs):
@@ -33,7 +33,7 @@ class TestPFSenseAliasNullModule(TestPFSenseModule):
     # Then, we check return values
     # Finally, we check the xml
     def do_alias_creation_test(self, alias, failed=False, msg="", command=None):
-        """ test creation of a new alias """
+        """test creation of a new alias"""
         with set_module_args(self.args_from_var(alias)):
             result = self.execute_module(changed=True, failed=failed, msg=msg)
 
@@ -49,7 +49,7 @@ class TestPFSenseAliasNullModule(TestPFSenseModule):
     # hosts
     #
     def test_host_create(self):
-        """ test creation of a new host alias """
+        """test creation of a new host alias"""
         alias = dict(name="adservers", address="10.0.0.1 10.0.0.2", descr="", type="host", detail="")
         command = "create alias 'adservers', type='host', address='10.0.0.1 10.0.0.2', descr='', detail=''"
         self.do_alias_creation_test(alias, command=command)

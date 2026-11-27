@@ -3,7 +3,8 @@
 # Deleting an OpenVPN server, client or override: the PHP that stops it runs once config.xml is
 # written, and never in check mode.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import xml.etree.ElementTree as ET
@@ -17,7 +18,6 @@ CLIENT = "<openvpn-client><vpnid>3</vpnid><description>ovpnc3</description><mode
 
 
 class TestPFSenseOpenVPNDelete(TestPFSenseModule):
-
     def __init__(self, *args, **kwargs):
         super(TestPFSenseOpenVPNDelete, self).__init__(*args, **kwargs)
         self.config_file = "pfsense_openvpn_config.xml"
@@ -31,14 +31,14 @@ class TestPFSenseOpenVPNDelete(TestPFSenseModule):
         self.phpshell.side_effect = self.record_phpshell
 
     def load_fixtures(self):
-        """ the fixture with a client added """
+        """the fixture with a client added"""
         super(TestPFSenseOpenVPNDelete, self).load_fixtures()
         tree = ET.parse(self.tmp_file)
         tree.getroot().find("openvpn").append(ET.fromstring(CLIENT))
         tree.write(self.tmp_file)
 
     def record_phpshell(self, command):
-        """ keep each PHP command with config.xml as it was when it ran """
+        """keep each PHP command with config.xml as it was when it ran"""
         self.calls.append((command, ET.parse(self.tmp_file).getroot()))
         return (0, "", "")
 
@@ -74,7 +74,8 @@ class TestPFSenseOpenVPNDelete(TestPFSenseModule):
     def test_override(self):
         self.delete(pfsense_openvpn_override, "delvpnuser")
         self.assert_deleted_then_run(
-            "openvpn_delete_csc(array('common_name' => 'delvpnuser', 'server_list' => '1'));", "openvpn-csc", "common_name", "delvpnuser")
+            "openvpn_delete_csc(array('common_name' => 'delvpnuser', 'server_list' => '1'));", "openvpn-csc", "common_name", "delvpnuser"
+        )
 
     def test_override_check_mode(self):
         self.delete(pfsense_openvpn_override, "delvpnuser", check_mode=True)

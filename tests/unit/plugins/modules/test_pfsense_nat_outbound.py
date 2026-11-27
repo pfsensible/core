@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -18,7 +19,6 @@ from ipaddress import ip_address, IPv4Address
 
 
 class TestPFSenseNatOutboundModule(TestPFSenseModule):
-
     module = pfsense_nat_outbound
 
     def __init__(self, *args, **kwargs):
@@ -28,16 +28,16 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
 
     @staticmethod
     def is_ipv4_address(address):
-        """ test if address is a valid ipv4 address """
+        """test if address is a valid ipv4 address"""
         try:
-            addr = ip_address(u"{0}".format(address))
+            addr = ip_address("{0}".format(address))
             return isinstance(addr, IPv4Address)
         except ValueError:
             pass
         return False
 
     def parse_address(self, name, addr, field, invert=False):
-        """ return address parsed in dict """
+        """return address parsed in dict"""
         parts = addr.split(":")
         res = {}
         port = None
@@ -77,7 +77,7 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         return value
 
     def check_addr(self, params, target_elt, addr, field, port, invert=False):
-        """ test the addresses definition """
+        """test the addresses definition"""
         (addr_dict, port_value) = self.parse_address(addr, params[addr], field, invert=invert)
         addr_elt = self.assert_find_xml_elt(target_elt, addr)
         for key, value in addr_dict.items():
@@ -89,7 +89,7 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         self.check_value_equal(target_elt, port, port_value, port == "sourceport")
 
     def check_target_addr(self, params, target_elt):
-        """ test the addresses definition """
+        """test the addresses definition"""
         if "address" not in params or params["address"] == "":
             self.assert_xml_elt_is_none_or_empty(target_elt, "target")
             self.assert_xml_elt_is_none_or_empty(target_elt, "target_subnet")
@@ -110,7 +110,7 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         return value
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
-        """ test the xml definition """
+        """test the xml definition"""
         self.check_addr(obj, target_elt, "source", "network", "sourceport")
         self.check_addr(obj, target_elt, "destination", "network", "dstport", invert=obj.get("invert"))
         self.check_target_addr(obj, target_elt)
@@ -130,7 +130,7 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         self.check_rule_idx(obj, target_idx)
 
     def check_rule_idx(self, params, target_idx):
-        """ test the xml position """
+        """test the xml position"""
         nat_elt = self.assert_find_xml_elt(self.xml_result, "nat")
         rules_elt = self.assert_find_xml_elt(nat_elt, "outbound")
 
@@ -148,7 +148,7 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         self.fail("rule not found " + str(idx))
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated xml definition """
+        """get the generated xml definition"""
         nat_elt = self.assert_find_xml_elt(self.xml_result, "nat")
         outbount_elt = self.assert_find_xml_elt(nat_elt, "outbound")
 
@@ -163,13 +163,13 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
     # tests
     #
     def test_nat_outbound_create(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_aliases(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="srv_admin:port_ssh", destination="srv_admin:port_ssh", address="srv_admin:port_ssh")
         command = (
             "create nat_outbound 'https-source-rewriting', interface='lan', source='srv_admin:port_ssh', "
@@ -178,7 +178,7 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_address(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443", address="4.5.6.7:888-999")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443', address='4.5.6.7/32:888-999'"
         self.do_module_test(obj, command=command, target_idx=3)
@@ -194,126 +194,126 @@ class TestPFSenseNatOutboundModule(TestPFSenseModule):
         self.assertEqual(after["natport"], "8000")
 
     def test_nat_outbound_create_address_net(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443", address="4.5.6.7/24:888-999")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443', address='4.5.6.0/24:888-999'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_networks(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="1.2.3.4/24", destination="2.3.4.5/24:443")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_ipprotocol(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", ipprotocol="inet", source="any", destination="1.2.3.4:443")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', ipprotocol='inet', source='any', destination='1.2.3.4:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_protocol(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", protocol="tcp", source="any", destination="1.2.3.4:443")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', protocol='tcp', source='any', destination='1.2.3.4:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_networks_invert(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="1.2.3.4/24", destination="2.3.4.5/24:443", invert=True)
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='2.3.4.5/24:443', invert=True"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_interface_destination_network(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="1.2.3.4/24", destination="NET:lan:443")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='1.2.3.4/24', destination='NET:lan:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_interface_source_network(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="NET:lan", destination="2.3.4.5/24:443")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='NET:lan', destination='2.3.4.5/24:443'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_top(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443", after="top")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443', after='top'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_outbound_create_after(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443", after="one rule")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443', after='one rule'"
         self.do_module_test(obj, command=command, target_idx=1)
 
     def test_nat_outbound_create_before(self):
-        """ test """
+        """test"""
         obj = dict(descr="https-source-rewriting", interface="lan", source="any", destination="1.2.3.4:443", before="another rule")
         command = "create nat_outbound 'https-source-rewriting', interface='lan', source='any', destination='1.2.3.4:443', before='another rule'"
         self.do_module_test(obj, command=command, target_idx=1)
 
     def test_nat_outbound_create_with_sourcehashkey(self):
-        """ test """
+        """test"""
         obj = dict(descr="valid", interface="lan", source="any", destination="1.2.3.4:443", source_hash_key="0x12345678901234567890123456789012")
         command = "create nat_outbound 'valid', interface='lan', source='any', destination='1.2.3.4:443', source_hash_key='0x12345678901234567890123456789012'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_create_with_sourcehashkey_str(self):
-        """ test """
+        """test"""
         obj = dict(descr="valid", interface="lan", source="any", destination="1.2.3.4:443", source_hash_key="acme_key")
         command = "create nat_outbound 'valid', interface='lan', source='any', destination='1.2.3.4:443', source_hash_key='0xfdc529cc680c4e8c74efbf114ec436fb'"
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_outbound_update_noop(self):
-        """ test """
+        """test"""
         obj = dict(descr="one rule", interface="wan", source="any", destination="any")
         self.do_module_test(obj, target_idx=0, changed=False)
 
     def test_nat_outbound_update_bottom(self):
-        """ test """
+        """test"""
         obj = dict(descr="one rule", interface="wan", source="any", destination="any", before="bottom")
         command = "update nat_outbound 'one rule' set before='bottom'"
         self.do_module_test(obj, command=command, target_idx=2)
 
     def test_nat_outbound_update_top(self):
-        """ test """
+        """test"""
         obj = dict(descr="another rule", interface="wan", source="any", destination="any", after="top")
         command = "update nat_outbound 'another rule' set after='top'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_outbound_update_source(self):
-        """ test """
+        """test"""
         obj = dict(descr="one rule", interface="wan", source="(self):123", destination="any")
         command = "update nat_outbound 'one rule' set source='(self):123'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_outbound_update_destination(self):
-        """ test """
+        """test"""
         obj = dict(descr="one rule", interface="wan", source="any", destination="1.2.3.4:555")
         command = "update nat_outbound 'one rule' set destination='1.2.3.4/32:555'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_outbound_update_interface(self):
-        """ test """
+        """test"""
         obj = dict(descr="one rule", interface="lan_100", source="any", destination="any")
         command = "update nat_outbound 'one rule' set interface='lan_100'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_outbound_delete(self):
-        """ test """
+        """test"""
         obj = dict(descr="one rule")
         command = "delete nat_outbound 'one rule'"
         self.do_module_test(obj, command=command, delete=True)
 
     def test_nat_outbound_invalid_sourcehashkey_hex(self):
-        """ test """
+        """test"""
         obj = dict(descr="invalid", interface="lan", source="any", destination="1.2.3.4:443", source_hash_key="0xg2345678901234567890123456789012")
-        msg = "Incorrect format for source-hash key, \"0x\" must be followed by exactly 32 hexadecimal characters."
+        msg = 'Incorrect format for source-hash key, "0x" must be followed by exactly 32 hexadecimal characters.'
         self.do_module_test(obj, msg=msg, failed=True)
 
     def test_nat_outbound_invalid_sourcehashkey_len(self):
-        """ test """
+        """test"""
         obj = dict(descr="invalid", interface="lan", source="any", destination="1.2.3.4:443", source_hash_key="0x1234567890123456789012345678901")
-        msg = "Incorrect format for source-hash key, \"0x\" must be followed by exactly 32 hexadecimal characters."
+        msg = 'Incorrect format for source-hash key, "0x" must be followed by exactly 32 hexadecimal characters.'
         self.do_module_test(obj, msg=msg, failed=True)

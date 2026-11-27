@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from ipaddress import ip_address, ip_network
@@ -51,11 +52,11 @@ GATEWAY_REQUIRED_IF = [
 
 
 class PFSenseGatewayModule(PFSenseModuleBase):
-    """ module managing pfsense gateways """
+    """module managing pfsense gateways"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return GATEWAY_ARGUMENT_SPEC
 
     ##############################
@@ -73,7 +74,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     # params processing
     #
     def _check_gateway_groups(self):
-        """ check if gateway is in use in gateway groups """
+        """check if gateway is in use in gateway groups"""
         for elt in self.root_elt:
             if (elt.tag == "defaultgw4" or elt.tag == "defaultgw6") and (elt.text is not None and elt.text == self.params["name"]):
                 return False
@@ -90,7 +91,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
         return True
 
     def _check_routes(self):
-        """ check if gateway is in use in static routes """
+        """check if gateway is in use in static routes"""
         routes = self.pfsense.get_element("staticroutes")
         if routes is None:
             return True
@@ -102,8 +103,8 @@ class PFSenseGatewayModule(PFSenseModuleBase):
         return True
 
     def _check_subnet(self, interface_elt):
-        """ check if addr lies into interface subnets """
-        addr = ip_address(u"{0}".format(self.params["gateway"]))
+        """check if addr lies into interface subnets"""
+        addr = ip_address("{0}".format(self.params["gateway"]))
         if addr.version == 6 and addr.is_link_local:
             return
 
@@ -116,7 +117,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
                 if vip_elt.findtext("interface") != interface_elt.tag or vip_elt.findtext("mode") != "other" or vip_elt.findtext("type") != "network":
                     continue
 
-                subnet = ip_network(u"{0}/{1}".format(vip_elt.find("subnet").text, vip_elt.find("subnet_bits").text), strict=False)
+                subnet = ip_network("{0}/{1}".format(vip_elt.find("subnet").text, vip_elt.find("subnet_bits").text), strict=False)
                 if addr in subnet:
                     return True
             return False
@@ -136,7 +137,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             if self.params["nonlocalgateway"]:
                 return
 
-            subnet = ip_network(u"{0}/{1}".format(f1_elt.text, f2_elt.text), strict=False)
+            subnet = ip_network("{0}/{1}".format(f1_elt.text, f2_elt.text), strict=False)
             if addr in subnet or _check_vips():
                 return
 
@@ -145,7 +146,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
             self.module.fail_json(msg="Cannot add {0} Gateway Address because no {0} address could be found on the interface.".format(inet_type))
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -195,14 +196,13 @@ class PFSenseGatewayModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         self.target_elt = self.pfsense.find_gateway_elt(params["name"], dhcp=True, vti=True)
         self.dynamic = self.target_elt is not None and self.target_elt.findtext("gateway") == "dynamic"
         if self.interface_elt is not None and self.target_elt is not None:
-            if (self.target_elt.findtext("interface") != self.interface_elt.tag or
-                    self.target_elt.findtext("ipprotocol") != params["ipprotocol"]):
+            if self.target_elt.findtext("interface") != self.interface_elt.tag or self.target_elt.findtext("ipprotocol") != params["ipprotocol"]:
                 self.module.fail_json(msg="Gateway {0} already belongs to another interface or address family.".format(params["name"]))
 
         if params["state"] == "present":
@@ -240,8 +240,8 @@ class PFSenseGatewayModule(PFSenseModuleBase):
                 self.module.fail_json(msg="The gateway is still in use. You can not delete it")
 
     def _check_monitoring_settings(self):
-        """ check the thresholds and timings against each other, as the pfSense GUI does. Only the rules that
-        involve an option set by the task are checked, so that values already stored do not block other changes """
+        """check the thresholds and timings against each other, as the pfSense GUI does. Only the rules that
+        involve an option set by the task are checked, so that values already stored do not block other changes"""
         set_params = [param for param in DPINGER_DEFAULTS if self.params.get(param) is not None]
         if not set_params:
             return
@@ -258,16 +258,27 @@ class PFSenseGatewayModule(PFSenseModuleBase):
                 values[param] = default
 
         rules = [
-            (["latencylow", "latencyhigh"], values["latencylow"] < values["latencyhigh"],
-             "latencyhigh ({latencyhigh}) must be greater than latencylow ({latencylow})"),
-            (["losslow", "losshigh"], values["losslow"] < values["losshigh"],
-             "losshigh ({losshigh}) must be greater than losslow ({losslow})"),
-            (["latencyhigh", "loss_interval"], values["latencyhigh"] <= values["loss_interval"],
-             "loss_interval ({loss_interval}) must be greater than or equal to latencyhigh ({latencyhigh})"),
-            (["interval", "loss_interval", "time_period"], values["interval"] * 2 + values["loss_interval"] < values["time_period"],
-             "time_period ({time_period}) must be greater than twice interval ({interval}) plus loss_interval ({loss_interval})"),
-            (["interval", "alert_interval"], values["interval"] <= values["alert_interval"],
-             "alert_interval ({alert_interval}) must be greater than or equal to interval ({interval})"),
+            (
+                ["latencylow", "latencyhigh"],
+                values["latencylow"] < values["latencyhigh"],
+                "latencyhigh ({latencyhigh}) must be greater than latencylow ({latencylow})",
+            ),
+            (["losslow", "losshigh"], values["losslow"] < values["losshigh"], "losshigh ({losshigh}) must be greater than losslow ({losslow})"),
+            (
+                ["latencyhigh", "loss_interval"],
+                values["latencyhigh"] <= values["loss_interval"],
+                "loss_interval ({loss_interval}) must be greater than or equal to latencyhigh ({latencyhigh})",
+            ),
+            (
+                ["interval", "loss_interval", "time_period"],
+                values["interval"] * 2 + values["loss_interval"] < values["time_period"],
+                "time_period ({time_period}) must be greater than twice interval ({interval}) plus loss_interval ({loss_interval})",
+            ),
+            (
+                ["interval", "alert_interval"],
+                values["interval"] <= values["alert_interval"],
+                "alert_interval ({alert_interval}) must be greater than or equal to interval ({interval})",
+            ),
         ]
         for params, valid, msg in rules:
             if not valid and any(param in set_params for param in params):
@@ -277,7 +288,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     # XML processing
     #
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         if self.interface_elt is not None:
             return []
         return ["disabled", "monitor", "monitor_disable", "action_disable", "force_down", "nonlocalgateway"]
@@ -287,7 +298,7 @@ class PFSenseGatewayModule(PFSenseModuleBase):
     #
     @staticmethod
     def get_update_cmds():
-        """ build PHP commands to reload gateway settings """
+        """build PHP commands to reload gateway settings"""
         return """
 require_once("filter.inc");
 $retval = 0;
@@ -304,18 +315,18 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
 """
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell(self.get_update_cmds())
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["name"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         if before is not None and self.interface_elt is not None:
             return self.format_updated_cli_field(self.obj, before, "gateway", add_comma=False)
 

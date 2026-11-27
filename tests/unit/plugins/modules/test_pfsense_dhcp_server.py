@@ -1,7 +1,8 @@
 # Copyright: (c) 2024, David Rosado <davidrosza0@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -18,7 +19,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseDHCPServerModule(TestPFSenseModule):
-
     module = pfsense_dhcp_server
 
     def __init__(self, *args, **kwargs):
@@ -27,7 +27,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         self.pfmodule = PFSenseDHCPServerModule
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
-        """ test the xml definition """
+        """test the xml definition"""
         # self.check_param_equal(obj, target_elt, 'interface')
         self.check_param_bool(obj, target_elt, "enable")
         self.check_param_equal(obj, target_elt, "range_from", xml_field="range/from")
@@ -58,7 +58,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, "numberoptions")
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated xml definition """
+        """get the generated xml definition"""
         root_elt = self.assert_find_xml_elt(self.xml_result, "dhcpd")
         return root_elt.find(obj["interface"])
 
@@ -66,7 +66,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
     # tests
     #
     def test_dhcp_server_create(self):
-        """ test creation of a new DHCP server """
+        """test creation of a new DHCP server"""
         obj = dict(
             interface="opt2",
             enable=True,
@@ -74,35 +74,35 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             range_to="172.16.0.199",
             defaultleasetime=86400,
             maxleasetime=172800,
-            domain="opt2.example.com"
+            domain="opt2.example.com",
         )
-        command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
-                           "range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', ",
-                           "maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', ",
-                           "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
-                           "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
-                           "ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', ",
-                           "filename64='', rootpath='', numberoptions=''"]
+        command_as_list = [
+            "create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
+            "range_to='172.16.0.199', failover_peerip='', defaultleasetime='86400', ",
+            "maxleasetime='172800', netmask='', gateway='', domain='opt2.example.com', ",
+            "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
+            "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
+            "ddnsclientupdates='allow', tftp='', ldap='', nextserver='', filename='', filename32='', ",
+            "filename64='', rootpath='', numberoptions=''",
+        ]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_update(self):
-        """ test updating an existing DHCP server """
-        obj = dict(
-            interface="lan",
-            enable=True,
-            range_from="192.168.1.50",
-            range_to="192.168.1.150",
-            domain="updated.example.com"
-        )
-        command_as_list = ["update dhcp_server 'lan' set , range_from='192.168.1.50', range_to='192.168.1.150', ",
-                           "defaultleasetime='', maxleasetime='', domain='updated.example.com'"]
+        """test updating an existing DHCP server"""
+        obj = dict(interface="lan", enable=True, range_from="192.168.1.50", range_to="192.168.1.150", domain="updated.example.com")
+        command_as_list = [
+            "update dhcp_server 'lan' set , range_from='192.168.1.50', range_to='192.168.1.150', ",
+            "defaultleasetime='', maxleasetime='', domain='updated.example.com'",
+        ]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_mac_lists_are_saved_as_csv_and_converge(self):
         params = dict(
-            interface="opt2", range_from="172.16.0.100", range_to="172.16.0.199",
+            interface="opt2",
+            range_from="172.16.0.100",
+            range_to="172.16.0.199",
             mac_allow=["02:00:00:00:00:01", "02:00:00:00:00:02"],
             mac_deny=["02:00:00:00:00:03", "02:00:00:00:00:04"],
         )
@@ -143,7 +143,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             self.assertEqual(self.changed(False)["commands"], [])
 
     def test_dhcp_server_update_disable_denyunknown(self):
-        """ test disabling denyunknown from an existing DHCP server """
+        """test disabling denyunknown from an existing DHCP server"""
         obj = dict(
             interface="opt1",
             enable=True,
@@ -151,30 +151,29 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             range_to="10.0.0.199",
             denyunknown="disabled",
         )
-        command_as_list = ["update dhcp_server 'opt1' set , ",
-                           "defaultleasetime='', maxleasetime='', domain='', denyunknown=none"]
+        command_as_list = ["update dhcp_server 'opt1' set , ", "defaultleasetime='', maxleasetime='', domain='', denyunknown=none"]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_delete(self):
-        """ test deletion of a DHCP server """
+        """test deletion of a DHCP server"""
         obj = dict(interface="opt1", state="absent")
         command = "delete dhcp_server 'opt1'"
         self.do_module_test(obj, command=command, delete=True)
 
     def test_dhcp_server_create_invalid_interface(self):
-        """ test creation with an invalid interface """
+        """test creation with an invalid interface"""
         obj = dict(interface="invalid_interface", enable=True, range_from="192.168.1.100", range_to="192.168.1.200")
         self.do_module_test(obj, failed=True, msg="The specified interface invalid_interface is not a valid logical interface or cannot be mapped to one")
 
     def test_dhcp_server_create_invalid_range(self):
-        """ test creation with an invalid IP range """
+        """test creation with an invalid IP range"""
         interface = "lan"
         obj = dict(interface=interface, enable=True, range_from="192.168.1.200", range_to="192.168.1.100")
         self.do_module_test(obj, failed=True, msg=f"The interface {interface} must have a valid IP range pool")
 
     def test_dhcp_server_create_with_options(self):
-        """ test creation with additional DHCP options """
+        """test creation with additional DHCP options"""
         obj = dict(
             interface="opt2",
             enable=True,
@@ -187,20 +186,22 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             ddnsdomainprimary="172.16.0.60",
             tftp="172.16.0.63",
             disablepingcheck=True,
-            winsserver=["172.16.0.80", "172.16.0.90"]
+            winsserver=["172.16.0.80", "172.16.0.90"],
         )
-        command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.50', ",
-                           "range_to='172.16.0.150', failover_peerip='', defaultleasetime='43200', ",
-                           "maxleasetime='86400', netmask='', gateway='', domain='opt1.example.com', ",
-                           "domainsearchlist='', ddnsdomain='ddns.example.com', ddnsdomainprimary='172.16.0.60', ",
-                           "ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', ",
-                           "mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='172.16.0.63', ldap='', ",
-                           "nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''"]
+        command_as_list = [
+            "create dhcp_server 'opt2', enable=True, range_from='172.16.0.50', ",
+            "range_to='172.16.0.150', failover_peerip='', defaultleasetime='43200', ",
+            "maxleasetime='86400', netmask='', gateway='', domain='opt1.example.com', ",
+            "domainsearchlist='', ddnsdomain='ddns.example.com', ddnsdomainprimary='172.16.0.60', ",
+            "ddnsdomainkeyname='', ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', ",
+            "mac_allow='', mac_deny='', ddnsclientupdates='allow', tftp='172.16.0.63', ldap='', ",
+            "nextserver='', filename='', filename32='', filename64='', rootpath='', numberoptions=''",
+        ]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_create_with_netboot(self):
-        """ test creation with network booting """
+        """test creation with network booting"""
         obj = dict(
             interface="opt2",
             enable=True,
@@ -210,18 +211,20 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
             nextserver="172.16.0.10",
             filename="ipxe.efi",
         )
-        command_as_list = ["create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
-                           "range_to='172.16.0.199', failover_peerip='', defaultleasetime='', ",
-                           "maxleasetime='', netmask='', gateway='', domain='', ",
-                           "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
-                           "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
-                           "ddnsclientupdates='allow', tftp='', ldap='', netboot=True, nextserver='172.16.0.10', ",
-                           "filename='ipxe.efi', filename32='', filename64='', rootpath='', numberoptions=''"]
+        command_as_list = [
+            "create dhcp_server 'opt2', enable=True, range_from='172.16.0.100', ",
+            "range_to='172.16.0.199', failover_peerip='', defaultleasetime='', ",
+            "maxleasetime='', netmask='', gateway='', domain='', ",
+            "domainsearchlist='', ddnsdomain='', ddnsdomainprimary='', ddnsdomainkeyname='', ",
+            "ddnsdomainkeyalgorithm='hmac-md5', ddnsdomainkey='', mac_allow='', mac_deny='', ",
+            "ddnsclientupdates='allow', tftp='', ldap='', netboot=True, nextserver='172.16.0.10', ",
+            "filename='ipxe.efi', filename32='', filename64='', rootpath='', numberoptions=''",
+        ]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_update_enable_netboot(self):
-        """ test enabling network booting on an existing DHCP server """
+        """test enabling network booting on an existing DHCP server"""
         obj = dict(
             interface="lan",
             enable=True,
@@ -235,7 +238,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_update_disable_netboot(self):
-        """ test disabling network booting on an existing DHCP server """
+        """test disabling network booting on an existing DHCP server"""
         obj = dict(
             interface="opt1",
             enable=True,
@@ -251,7 +254,7 @@ class TestPFSenseDHCPServerModule(TestPFSenseModule):
         self.do_module_test(obj, command=command)
 
     def test_dhcp_server_update_keep_netboot(self):
-        """ test that network booting is left as it is when netboot is not set """
+        """test that network booting is left as it is when netboot is not set"""
         obj = dict(
             interface="opt1",
             enable=True,

@@ -3,12 +3,14 @@
 # Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
 # module_base _params_to_obj currently does not call thse functions if
 # params[name] is None.
+
 
 def p2o_cert(self, name, params, obj):
     obj[name] = self.pfsense.get_certref(params[name])

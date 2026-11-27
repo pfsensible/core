@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -16,7 +17,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseIpsecModule(TestPFSenseModule):
-
     module = pfsense_ipsec
 
     def __init__(self, *args, **kwargs):
@@ -24,7 +24,7 @@ class TestPFSenseIpsecModule(TestPFSenseModule):
         self.pfmodule = PFSenseIpsecModule
 
     def get_config_file(self):
-        """ get config file """
+        """get config file"""
 
         return "pfsense_ipsec_config.xml"
 
@@ -32,7 +32,7 @@ class TestPFSenseIpsecModule(TestPFSenseModule):
     # tests utils
     #
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated ipsec xml definition """
+        """get the generated ipsec xml definition"""
         elt_filter = {}
         elt_filter["descr"] = obj["descr"]
 
@@ -40,7 +40,7 @@ class TestPFSenseIpsecModule(TestPFSenseModule):
 
     @staticmethod
     def caref(descr):
-        """ return refid for ca """
+        """return refid for ca"""
         if descr == "test ca":
             return "5db509cfed87d"
         if descr == "test ca copy":
@@ -49,7 +49,7 @@ class TestPFSenseIpsecModule(TestPFSenseModule):
 
     @staticmethod
     def certref(descr):
-        """ return refid for cert """
+        """return refid for cert"""
         if descr == "webConfigurator default (5c00e5f9029df)":
             return "5c00e5f9029df"
         if descr == "webConfigurator default copy":
@@ -57,7 +57,7 @@ class TestPFSenseIpsecModule(TestPFSenseModule):
         return ""
 
     def check_target_elt(self, obj, target_elt):
-        """ test the xml definition of ipsec elt """
+        """test the xml definition of ipsec elt"""
 
         # bools
         if obj.get("disabled"):
@@ -166,113 +166,183 @@ class TestPFSenseIpsecModule(TestPFSenseModule):
     # tests
     #
     def test_ipsec_create_ikev2(self):
-        """ test creation of a new ipsec tunnel with 2.5.2 params """
+        """test creation of a new ipsec tunnel with 2.5.2 params"""
         ipsec = dict(
-            descr="new_tunnel", interface="lan_100", remote_gateway="1.2.3.4", nattport=4501, iketype="ikev2",
-            authentication_method="pre_shared_key", preshared_key="1234", gw_duplicates=True, rekey_time=2500, reauth_time=2600, rand_time=2700)
+            descr="new_tunnel",
+            interface="lan_100",
+            remote_gateway="1.2.3.4",
+            nattport=4501,
+            iketype="ikev2",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            gw_duplicates=True,
+            rekey_time=2500,
+            reauth_time=2600,
+            rand_time=2700,
+        )
         command = (
             "create ipsec 'new_tunnel', iketype='ikev2', protocol='inet', interface='lan_100', remote_gateway='1.2.3.4', nattport='4501', "
             "authentication_method='pre_shared_key', preshared_key='1234', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
             "rekey_time='2500', reauth_time='2600', rand_time='2700', "
-            "mobike='off', gw_duplicates=True, startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'")
+            "mobike='off', gw_duplicates=True, startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
+        )
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_create_ikev1(self):
-        """ test creation of a new ipsec tunnel """
+        """test creation of a new ipsec tunnel"""
         ipsec = dict(
-            descr="new_tunnel", interface="lan_100", remote_gateway="1.2.3.4", iketype="ikev1",
-            authentication_method="pre_shared_key", preshared_key="1234", mode="main", startaction="none", closeaction="none")
+            descr="new_tunnel",
+            interface="lan_100",
+            remote_gateway="1.2.3.4",
+            iketype="ikev1",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            mode="main",
+            startaction="none",
+            closeaction="none",
+        )
         command = (
             "create ipsec 'new_tunnel', iketype='ikev1', mode='main', protocol='inet', interface='lan_100', remote_gateway='1.2.3.4', "
             "authentication_method='pre_shared_key', preshared_key='1234', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "disable_rekey=False, margintime='', startaction='none', closeaction='none', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'")
+            "disable_rekey=False, margintime='', startaction='none', closeaction='none', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
+        )
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_create_vip_descr(self):
-        """ test creation of a new ipsec tunnel with vip: interface name """
+        """test creation of a new ipsec tunnel with vip: interface name"""
         ipsec = dict(
-            descr="new_tunnel", interface="vip:WAN CARP", remote_gateway="1.2.3.4", iketype="ikev1",
-            authentication_method="pre_shared_key", preshared_key="1234", mode="main", startaction="start", closeaction="start")
+            descr="new_tunnel",
+            interface="vip:WAN CARP",
+            remote_gateway="1.2.3.4",
+            iketype="ikev1",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            mode="main",
+            startaction="start",
+            closeaction="start",
+        )
         command = (
             "create ipsec 'new_tunnel', iketype='ikev1', mode='main', protocol='inet', interface='vip:WAN CARP', remote_gateway='1.2.3.4', "
             "authentication_method='pre_shared_key', preshared_key='1234', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
             "disable_rekey=False, margintime='', startaction='start', closeaction='start', "
-            "nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'")
+            "nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
+        )
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_create_vip_subnet(self):
-        """ test creation of a new ipsec tunnel with vip: interface address """
+        """test creation of a new ipsec tunnel with vip: interface address"""
         ipsec = dict(
-            descr="new_tunnel", interface="vip:151.25.19.11", remote_gateway="1.2.3.4", iketype="ikev1",
-            authentication_method="pre_shared_key", preshared_key="1234", mode="main", startaction="trap", closeaction="trap")
+            descr="new_tunnel",
+            interface="vip:151.25.19.11",
+            remote_gateway="1.2.3.4",
+            iketype="ikev1",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            mode="main",
+            startaction="trap",
+            closeaction="trap",
+        )
         command = (
             "create ipsec 'new_tunnel', iketype='ikev1', mode='main', protocol='inet', interface='vip:151.25.19.11', remote_gateway='1.2.3.4', "
             "authentication_method='pre_shared_key', preshared_key='1234', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "disable_rekey=False, margintime='', startaction='trap', closeaction='trap', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'")
+            "disable_rekey=False, margintime='', startaction='trap', closeaction='trap', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
+        )
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_create_auto(self):
-        """ test creation of a new ipsec tunnel """
+        """test creation of a new ipsec tunnel"""
         ipsec = dict(
-            descr="new_tunnel", interface="lan_100", remote_gateway="1.2.3.4", iketype="auto",
-            authentication_method="pre_shared_key", preshared_key="1234", mode="main")
+            descr="new_tunnel",
+            interface="lan_100",
+            remote_gateway="1.2.3.4",
+            iketype="auto",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            mode="main",
+        )
         command = (
             "create ipsec 'new_tunnel', iketype='auto', mode='main', protocol='inet', interface='lan_100', remote_gateway='1.2.3.4', "
             "authentication_method='pre_shared_key', preshared_key='1234', myid_type='myaddress', peerid_type='peeraddress', lifetime='28800', "
-            "disable_rekey=False, margintime='', startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'")
+            "disable_rekey=False, margintime='', startaction='', closeaction='', nat_traversal='on', enable_dpd=True, dpd_delay='10', dpd_maxfail='5'"
+        )
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_delete(self):
-        """ test deletion of an ipsec """
+        """test deletion of an ipsec"""
         ipsec = dict(descr="test_tunnel", state="absent")
         command = "delete ipsec 'test_tunnel'"
         self.do_module_test(ipsec, delete=True, command=command)
 
     def test_ipsec_update_noop(self):
-        """ test not updating a ipsec """
+        """test not updating a ipsec"""
         ipsec = dict(
-            descr="test_tunnel", interface="lan_100", remote_gateway="1.2.4.8", iketype="ikev2",
-            authentication_method="pre_shared_key", preshared_key="1234")
+            descr="test_tunnel", interface="lan_100", remote_gateway="1.2.4.8", iketype="ikev2", authentication_method="pre_shared_key", preshared_key="1234"
+        )
         self.do_module_test(ipsec, changed=False)
 
     def test_ipsec_update_ike(self):
-        """ test updating ike """
+        """test updating ike"""
         ipsec = dict(
-            descr="test_tunnel", interface="lan_100", remote_gateway="1.2.4.8", iketype="ikev1",
-            authentication_method="pre_shared_key", preshared_key="1234", mode="main")
+            descr="test_tunnel",
+            interface="lan_100",
+            remote_gateway="1.2.4.8",
+            iketype="ikev1",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            mode="main",
+        )
         command = "update ipsec 'test_tunnel' set iketype='ikev1', mode='main'"
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_update_gw(self):
-        """ test updating gw """
+        """test updating gw"""
         ipsec = dict(
-            descr="test_tunnel", interface="lan_100", remote_gateway="1.2.3.5", iketype="ikev2",
-            authentication_method="pre_shared_key", preshared_key="1234")
+            descr="test_tunnel", interface="lan_100", remote_gateway="1.2.3.5", iketype="ikev2", authentication_method="pre_shared_key", preshared_key="1234"
+        )
         command = "update ipsec 'test_tunnel' set remote_gateway='1.2.3.5'"
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_update_auth(self):
-        """ test updating auth """
+        """test updating auth"""
         ipsec = dict(
-            descr="test_tunnel", interface="lan_100", remote_gateway="1.2.4.8", iketype="ikev2",
-            authentication_method="rsasig", certificate="webConfigurator default (5c00e5f9029df)", certificate_authority="test ca")
+            descr="test_tunnel",
+            interface="lan_100",
+            remote_gateway="1.2.4.8",
+            iketype="ikev2",
+            authentication_method="rsasig",
+            certificate="webConfigurator default (5c00e5f9029df)",
+            certificate_authority="test ca",
+        )
         command = (
             "update ipsec 'test_tunnel' set authentication_method='rsasig', "
-            "certificate='webConfigurator default (5c00e5f9029df)', certificate_authority='test ca'")
+            "certificate='webConfigurator default (5c00e5f9029df)', certificate_authority='test ca'"
+        )
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_update_cert(self):
-        """ test updating certificates """
+        """test updating certificates"""
         ipsec = dict(
-            descr="test_tunnel2", interface="lan_100", remote_gateway="1.2.3.6", iketype="ikev2",
-            authentication_method="rsasig", certificate="webConfigurator default copy", certificate_authority="test ca copy")
+            descr="test_tunnel2",
+            interface="lan_100",
+            remote_gateway="1.2.3.6",
+            iketype="ikev2",
+            authentication_method="rsasig",
+            certificate="webConfigurator default copy",
+            certificate_authority="test ca copy",
+        )
         command = "update ipsec 'test_tunnel2' set certificate='webConfigurator default copy', certificate_authority='test ca copy'"
         self.do_module_test(ipsec, command=command)
 
     def test_ipsec_duplicate_gw(self):
-        """ test using a duplicate gw """
+        """test using a duplicate gw"""
         ipsec = dict(
-            descr="new_tunnel", interface="lan_100", remote_gateway="1.2.4.8", iketype="ikev1",
-            authentication_method="pre_shared_key", preshared_key="1234", mode="main")
-        msg = "The remote gateway \"1.2.4.8\" is already used by phase1 \"test_tunnel\"."
+            descr="new_tunnel",
+            interface="lan_100",
+            remote_gateway="1.2.4.8",
+            iketype="ikev1",
+            authentication_method="pre_shared_key",
+            preshared_key="1234",
+            mode="main",
+        )
+        msg = 'The remote gateway "1.2.4.8" is already used by phase1 "test_tunnel".'
         self.do_module_test(ipsec, msg=msg, failed=True)

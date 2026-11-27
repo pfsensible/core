@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 import re
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -30,11 +31,11 @@ HAPROXY_BACKEND_ARGUMENT_SPEC = dict(
 
 
 class PFSenseHaproxyBackendModule(PFSenseModuleBase):
-    """ module managing pfsense haproxy backends """
+    """module managing pfsense haproxy backends"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return HAPROXY_BACKEND_ARGUMENT_SPEC
 
     ##############################
@@ -55,7 +56,7 @@ class PFSenseHaproxyBackendModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a backend dict from module params """
+        """return a backend dict from module params"""
         obj = dict()
         obj["name"] = self.params["name"]
         if self.params["state"] == "present":
@@ -80,7 +81,7 @@ class PFSenseHaproxyBackendModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         # check name
         if re.search(r"[^a-zA-Z0-9\.\-_]", self.params["name"]) is not None:
             self.module.fail_json(msg="The field 'name' contains invalid characters.")
@@ -89,13 +90,13 @@ class PFSenseHaproxyBackendModule(PFSenseModuleBase):
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         server_elt = self.pfsense.new_element("item")
         self.obj["id"] = self._get_next_id()
         return server_elt
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for item_elt in self.root_elt:
             if item_elt.tag != "item":
                 continue
@@ -105,7 +106,7 @@ class PFSenseHaproxyBackendModule(PFSenseModuleBase):
         return None
 
     def _get_next_id(self):
-        """ get next free haproxy id  """
+        """get next free haproxy id"""
         max_id = 99
         id_elts = self.haproxy.findall(".//id")
         for id_elt in id_elts:
@@ -120,7 +121,7 @@ class PFSenseHaproxyBackendModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload haproxy """
+        """make the target pfsense reload haproxy"""
         return self.pfsense.phpshell("""require_once("haproxy/haproxy.inc");
 $result = haproxy_check_and_run($savemsg, true); if ($result) unlink_if_exists($d_haproxyconfdirty_path);""")
 
@@ -128,7 +129,7 @@ $result = haproxy_check_and_run($savemsg, true); if ($result) unlink_if_exists($
     # Logging
     #
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "balance")
@@ -168,5 +169,5 @@ $result = haproxy_check_and_run($savemsg, true); if ($result) unlink_if_exists($
         return values
 
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["name"])

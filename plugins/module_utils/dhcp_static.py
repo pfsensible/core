@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ipaddress import ip_address, ip_network
@@ -57,11 +58,11 @@ DHCP_STATIC_REQUIRED_ONE_OF = [
 
 
 class PFSenseDHCPStaticModule(PFSenseModuleBase):
-    """ module managing pfsense dhcp static configuration """
+    """module managing pfsense dhcp static configuration"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return DHCP_STATIC_ARGUMENT_SPEC
 
     ##############################
@@ -80,7 +81,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
     # params processing
     #
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         params = self.params
 
@@ -99,12 +100,12 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         self._find_staticmaps(netif)
 
         if params["ipaddr"] is not None:
-            addr = ip_address(u"{0}".format(params["ipaddr"]))
+            addr = ip_address("{0}".format(params["ipaddr"]))
             if addr not in self.network:
                 self.module.fail_json(msg="The IP address must lie in the {0} subnet.".format(self.netif))
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -114,15 +115,34 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         obj["mac"] = (params["macaddr"] or "").lower()
 
         if params["state"] == "present":
-
             # Forced options
-            for option in ["ipaddr", "hostname", "descr", "filename",
-                           "rootpath", "defaultleasetime", "maxleasetime",
-                           "gateway", "domain", "domainsearchlist",
-                           "ddnsdomain", "ddnsdomainprimary", "ddnsdomainsecondary",
-                           "ddnsdomainkeyname", "ddnsdomainkeyalgorithm", "ddnsdomainkey",
-                           "tftp", "ldap", "nextserver", "filename32", "filename64",
-                           "filename32arm", "filename64arm", "uefihttpboot", "numberoptions"]:
+            for option in [
+                "ipaddr",
+                "hostname",
+                "descr",
+                "filename",
+                "rootpath",
+                "defaultleasetime",
+                "maxleasetime",
+                "gateway",
+                "domain",
+                "domainsearchlist",
+                "ddnsdomain",
+                "ddnsdomainprimary",
+                "ddnsdomainsecondary",
+                "ddnsdomainkeyname",
+                "ddnsdomainkeyalgorithm",
+                "ddnsdomainkey",
+                "tftp",
+                "ldap",
+                "nextserver",
+                "filename32",
+                "filename64",
+                "filename32arm",
+                "filename64arm",
+                "uefihttpboot",
+                "numberoptions",
+            ]:
                 self._get_ansible_param(obj, option, force=True)
             # Non-forced options
             for option in ["winsserver", "dnsserver", "ntpserver"]:
@@ -145,7 +165,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
                         if nic.findtext("subnet"):
                             subnet = int(nic.find("subnet").text)
                             if subnet < 31:
-                                self.network = ip_network(u"{0}/{1}".format(ipaddr, subnet), strict=False)
+                                self.network = ip_network("{0}/{1}".format(ipaddr, subnet), strict=False)
                                 return True
         return False
 
@@ -178,9 +198,9 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         if mac is not None:
             mac = mac.lower()
         result = [
-            mapping for mapping in self.staticmaps
-            if (name is None or mapping.findtext("cid") == name)
-            and (mac is None or mapping.findtext("mac", "").lower() == mac)
+            mapping
+            for mapping in self.staticmaps
+            if (name is None or mapping.findtext("cid") == name) and (mac is None or mapping.findtext("mac", "").lower() == mac)
         ]
 
         if len(result) == 1:
@@ -191,13 +211,13 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
             return None
 
     def managed_dhcp_servers(self):
-        """ return the DHCP server elements whose static maps this module manages """
+        """return the DHCP server elements whose static maps this module manages"""
         if self.dhcpd is None:
             return []
         return [e for e in self.dhcpd if e.find("enable") is not None and self._is_valid_netif(e.tag)]
 
     def remove_staticmap(self, dhcp_elt, staticmap_elt):
-        """ remove a static map element of dhcp_elt as is, without searching for it by cid or mac """
+        """remove a static map element of dhcp_elt as is, without searching for it by cid or mac"""
         self.root_elt = dhcp_elt
         self.netif = dhcp_elt.tag
         self.staticmaps = dhcp_elt.findall("staticmap")
@@ -206,29 +226,29 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         self._remove()
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element("staticmap")
 
     def _copy_and_add_target(self):
-        """ populate the XML target_elt """
+        """populate the XML target_elt"""
         super(PFSenseDHCPStaticModule, self)._copy_and_add_target()
         # Reset static map list
         self.staticmaps = self.root_elt.findall("staticmap")
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         return ["arp_table_static_entry"]
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["cid"] or self.obj["mac"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "mac", fname="macaddr", default="")
@@ -245,7 +265,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
         return values
 
     def _log_fields_delete(self):
-        """ generate pseudo-CLI command fields parameters to delete an obj """
+        """generate pseudo-CLI command fields parameters to delete an obj"""
         return " on '{0}'".format(self.netif)
 
     ##############################
@@ -253,7 +273,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
     #
     @staticmethod
     def get_update_cmds():
-        """ build and return php commands to reload the DHCP server """
+        """build and return php commands to reload the DHCP server"""
         return """
             require_once("util.inc");
             require_once("services.inc");
@@ -263,7 +283,7 @@ class PFSenseDHCPStaticModule(PFSenseModuleBase):
             }"""
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell(self.get_update_cmds())
 
     def _pre_remove_target_elt(self):

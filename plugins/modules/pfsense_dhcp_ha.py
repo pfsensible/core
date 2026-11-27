@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -178,8 +179,25 @@ DHCP_HA_ARGUMENT_SPEC = dict(
 )
 
 # The fields of <kea><ha> (<kea6><ha>), in the order of the page
-FIELDS = ["enable", "role", "localname", "localip", "localport", "remotename", "remoteip", "remoteport", "heartbeatdelay",
-          "maxresponsedelay", "maxackdelay", "maxunackedclients", "maxrejectedleaseupdates", "tls", "scertref", "mutualtls", "ccertref"]
+FIELDS = [
+    "enable",
+    "role",
+    "localname",
+    "localip",
+    "localport",
+    "remotename",
+    "remoteip",
+    "remoteport",
+    "heartbeatdelay",
+    "maxresponsedelay",
+    "maxackdelay",
+    "maxunackedclients",
+    "maxrejectedleaseupdates",
+    "tls",
+    "scertref",
+    "mutualtls",
+    "ccertref",
+]
 BOOL_FIELDS = ["enable", "tls", "mutualtls"]
 INT_FIELDS = ["heartbeatdelay", "maxresponsedelay", "maxackdelay", "maxunackedclients", "maxrejectedleaseupdates"]
 CERT_FIELDS = dict(scert="scertref", ccert="ccertref")
@@ -195,7 +213,7 @@ services_dhcpd_configure("{family}");
 
 
 class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
-    """ module managing the high availability of the Kea DHCP server """
+    """module managing the high availability of the Kea DHCP server"""
 
     ##############################
     # unit tests
@@ -203,14 +221,20 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return DHCP_HA_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
         family = module.params.get("ipprotocol") or "inet"
         super(PFSenseDHCPHAModule, self).__init__(
-            module, pfsense, name="pfsense_dhcp_ha", root="kea6" if family == "inet6" else "kea", node="ha", create_root=True,
-            bool_style="absent/present", update_php=DHCP_HA_PHP_COMMAND.format(family=family),
+            module,
+            pfsense,
+            name="pfsense_dhcp_ha",
+            root="kea6" if family == "inet6" else "kea",
+            node="ha",
+            create_root=True,
+            bool_style="absent/present",
+            update_php=DHCP_HA_PHP_COMMAND.format(family=family),
         )
 
     ##############################
@@ -221,7 +245,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
         return ha.findtext(field) if ha is not None else None
 
     def _wanted(self, field):
-        """ the value the field will have: the parameter when given, else the stored one """
+        """the value the field will have: the parameter when given, else the stored one"""
         param = {"scertref": "scert", "ccertref": "ccert"}.get(field, field)
         value = self.params.get(param)
         if value is None:
@@ -239,7 +263,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
         return cert.findtext("refid")
 
     def _validate_params(self):
-        """ do the checks of the web GUI, on the settings once changed """
+        """do the checks of the web GUI, on the settings once changed"""
         params = self.params
 
         for field in ["localname", "remotename"]:
@@ -275,7 +299,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
                 self.module.fail_json(msg="ccert is required with mutualtls")
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         obj = super(PFSenseDHCPHAModule, self)._params_to_obj()
         obj.pop("ipprotocol", None)
 
@@ -290,7 +314,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
         return obj
 
     def _get_params_to_remove(self):
-        """ the fields the web GUI removes along with an option """
+        """the fields the web GUI removes along with an option"""
         to_remove = super(PFSenseDHCPHAModule, self)._get_params_to_remove()
         if self.params.get("enable") is False:
             to_remove.append("role")
@@ -310,7 +334,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return self.root
 
     def _cert_name(self, refid):
@@ -328,7 +352,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
         return "'{0}'".format(value.replace("'", "\\'"))
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters """
+        """generate pseudo-CLI command fields parameters"""
         after = self.diff["after"] if before is not None else self.obj
         fields = []
         for field in FIELDS:
@@ -342,9 +366,7 @@ class PFSenseDHCPHAModule(PFSenseModuleConfigBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=DHCP_HA_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=DHCP_HA_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseDHCPHAModule(module)
     # Pass params for testing framework

@@ -2,7 +2,8 @@
 # Copyright: (c) 2025, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.pfsensible.core.plugins.modules import pfsense_dns_resolver
@@ -13,7 +14,6 @@ from ansible_collections.community.internal_test_tools.tests.unit.plugins.module
 
 
 class TestPFSenseDNSResolverModule(TestPFSenseModule):
-
     module = pfsense_dns_resolver
 
     def __init__(self, *args, **kwargs):
@@ -22,7 +22,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.pfmodule = PFSenseDNSResolverModule
 
     def setUp(self):
-        """ mocking up """
+        """mocking up"""
 
         super(TestPFSenseDNSResolverModule, self).setUp()
 
@@ -31,7 +31,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.php.return_value = {"wan": "WAN", "lan": "LAN", "_llocwan": "WAN IPv6 Link-Local", "_lloclan": "LAN IPv6 Link-Local", "lo0": "Localhost"}
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
-        """ test the xml definition """
+        """test the xml definition"""
         self.check_param_equal(obj, target_elt, "port")
         self.check_param_bool(obj, target_elt, "enablessl")
         self.check_param_equal(obj, target_elt, "sslcert")
@@ -77,23 +77,25 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.check_param_equal(obj, target_elt, "log_verbosity", default=1)
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated xml definition """
+        """get the generated xml definition"""
         return self.assert_find_xml_elt(self.xml_result, "unbound")
 
     ##############
     # tests
     #
     def test_dns_resolver_init(self):
-        """ test init of the DNS Resolver """
+        """test init of the DNS Resolver"""
         obj = dict()
-        command_as_list = ["create dns_resolver pfsense_dns_resolver set enable=True, active_interface='all', "
-                           "outgoing_interface='all', custom_options=True, hideidentity=True, hideversion=True, dnssecstripped=True, "
-                           "system_domain_local_zone_type='transparent', "
-                           "msgcachesize='4', outgoing_num_tcp='10', incoming_num_tcp='10', "
-                           "edns_buffer_size='auto', num_queries_per_thread='512', jostle_timeout='200', "
-                           "cache_max_ttl='86400', cache_min_ttl='0', infra_host_ttl='900', "
-                           "infra_cache_numhosts='10000', unwanted_reply_threshold='disabled', "
-                           "log_verbosity='1'"]
+        command_as_list = [
+            "create dns_resolver pfsense_dns_resolver set enable=True, active_interface='all', "
+            "outgoing_interface='all', custom_options=True, hideidentity=True, hideversion=True, dnssecstripped=True, "
+            "system_domain_local_zone_type='transparent', "
+            "msgcachesize='4', outgoing_num_tcp='10', incoming_num_tcp='10', "
+            "edns_buffer_size='auto', num_queries_per_thread='512', jostle_timeout='200', "
+            "cache_max_ttl='86400', cache_min_ttl='0', infra_host_ttl='900', "
+            "infra_cache_numhosts='10000', unwanted_reply_threshold='disabled', "
+            "log_verbosity='1'"
+        ]
         command = "".join(command_as_list)
         self.config_file = "pfsense_dns_resolver_config_init.xml"
         self.do_module_test(obj, command=command)
@@ -109,17 +111,14 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(result["diff"]["after"]["incoming_num_tcp"], "10")
 
     def test_dns_resolver_change(self):
-        """ test initialization of the DNS Resolver """
-        obj = dict(
-            active_interface=["lan", "lo0"],
-            outgoing_interface=["wan"]
-        )
+        """test initialization of the DNS Resolver"""
+        obj = dict(active_interface=["lan", "lo0"], outgoing_interface=["wan"])
         command_as_list = ["update dns_resolver pfsense_dns_resolver set active_interface='lan,lo0', outgoing_interface='wan'"]
         command = "".join(command_as_list)
         self.do_module_test(obj, command=command)
 
     def test_dns_resolver_noop(self):
-        """ test noop of the DNS Resolver """
+        """test noop of the DNS Resolver"""
         self.config_file = "pfsense_dns_resolver_config.xml"
         self.do_module_test({}, changed=False)
 
@@ -150,7 +149,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(result["diff"]["after"], expected)
 
     def test_dns_resolver_hosts_reorder_aliases_stay(self):
-        """ test that aliases stay with their parent host when hosts are reordered
+        """test that aliases stay with their parent host when hosts are reordered
 
         Regression test: copy_dict_to_element() pairs list items by position.
         When hosts are provided in a different order than config.xml, a host
@@ -166,9 +165,16 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         obj = dict(
             hosts=[
                 dict(host="other", domain="example.com", ip="10.0.0.2", descr="", aliases=[]),
-                dict(host="server", domain="example.com", ip="10.0.0.1", descr="",
-                     aliases=[dict(host="alias1", domain="example.com", description="Alias 1"),
-                              dict(host="alias2", domain="example.com", description="Alias 2")]),
+                dict(
+                    host="server",
+                    domain="example.com",
+                    ip="10.0.0.1",
+                    descr="",
+                    aliases=[
+                        dict(host="alias1", domain="example.com", description="Alias 1"),
+                        dict(host="alias2", domain="example.com", description="Alias 2"),
+                    ],
+                ),
             ]
         )
         # Run the module directly and inspect XML — bypass check_target_elt
@@ -188,21 +194,18 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
             aliases_elt = host_elt.find("aliases")
             if hostname == "other":
                 items = aliases_elt.findall("item") if aliases_elt is not None else []
-                self.assertEqual(len(items), 0,
-                                 "Host \"other\" should have no alias items but got %d — "
-                                 "aliases bled from \"server\" due to positional matching" % len(items))
+                self.assertEqual(
+                    len(items), 0, 'Host "other" should have no alias items but got %d — aliases bled from "server" due to positional matching' % len(items)
+                )
             elif hostname == "server":
                 items = aliases_elt.findall("item") if aliases_elt is not None else []
-                self.assertEqual(len(items), 2,
-                                 "Host \"server\" should have 2 alias items but got %d" % len(items))
-                self.assertEqual(
-                    [{child.tag: child.text for child in item} for item in items],
-                    obj["hosts"][1]["aliases"])
+                self.assertEqual(len(items), 2, 'Host "server" should have 2 alias items but got %d' % len(items))
+                self.assertEqual([{child.tag: child.text for child in item} for item in items], obj["hosts"][1]["aliases"])
             else:
                 self.fail("Unexpected host element with hostname %r in result XML" % hostname)
 
     def test_dns_resolver_preserve_host_aliases(self):
-        """ Preserve nested aliases when adding a host. """
+        """Preserve nested aliases when adding a host."""
         self.config_file = "pfsense_dns_resolver_config_hosts_aliases.xml"
         obj = dict(preserve=True, hosts=[dict(host="new", domain="example.com", ip="10.0.0.3")])
         with set_module_args(self.args_from_var(obj)):
@@ -215,7 +218,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(hosts[2].findall("aliases/item"), [])
 
     def test_dns_resolver_clear_host_aliases(self):
-        """ Explicitly empty aliases remove existing items. """
+        """Explicitly empty aliases remove existing items."""
         self.config_file = "pfsense_dns_resolver_config_hosts_aliases.xml"
         obj = dict(preserve=True, hosts=[dict(host="server", domain="example.com", ip="10.0.0.1", aliases=[])])
         with set_module_args(self.args_from_var(obj)):
@@ -226,7 +229,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(hosts[0].findall("aliases/item"), [])
 
     def test_dns_resolver_absent_disables_resolver(self):
-        """ state=absent removes the enable flag instead of the unbound root element """
+        """state=absent removes the enable flag instead of the unbound root element"""
         obj = dict()
         with set_module_args(self.args_from_var(obj, state="absent")):
             self.execute_module(changed=True)
@@ -237,9 +240,7 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
 
     def test_dns_resolver_domainoverrides_forward_tls_upstream(self):
         """A domain override with TLS disabled omits the nested flag."""
-        obj = dict(
-            domainoverrides=[dict(domain="test.example.com", descr="A description", forward_tls_upstream=False, ip="10.0.0.3", tls_hostname="")]
-        )
+        obj = dict(domainoverrides=[dict(domain="test.example.com", descr="A description", forward_tls_upstream=False, ip="10.0.0.3", tls_hostname="")])
         with set_module_args(self.args_from_var(obj)):
             result = self.execute_module(changed=True)
         override = dict(obj["domainoverrides"][0])
@@ -247,11 +248,11 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], domainoverrides=override))
 
     def test_dns_resolver_qname_minimisation_noop(self):
-        """ qname_minimisation is already enabled """
+        """qname_minimisation is already enabled"""
         self.do_module_test(dict(qname_minimisation=True), changed=False)
 
     def test_dns_resolver_qname_minimisation_enable(self):
-        """ qname_minimisation is stored as an empty qname-minimisation element """
+        """qname_minimisation is stored as an empty qname-minimisation element"""
         self.config_file = "pfsense_dns_resolver_config.xml"
         obj = dict(qname_minimisation=True)
         with set_module_args(self.args_from_var(obj)):
@@ -259,27 +260,27 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], **{"qname-minimisation": ""}))
 
     def test_dns_resolver_qname_minimisation_disable(self):
-        """ disabling qname_minimisation removes its element """
+        """disabling qname_minimisation removes its element"""
         obj = dict(qname_minimisation=False)
         self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set qname_minimisation=False")
 
     def test_dns_resolver_qname_minimisation_strict(self):
-        """ enable strict query name minimisation """
+        """enable strict query name minimisation"""
         obj = dict(qname_minimisation=True, qname_minimisation_strict=True)
         self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set qname_minimisation_strict=True")
 
     def test_dns_resolver_infra_keep_probing_enable(self):
-        """ infra_keep_probing is stored as enabled, even where pfSense already treats a missing value as enabled """
+        """infra_keep_probing is stored as enabled, even where pfSense already treats a missing value as enabled"""
         obj = dict(infra_keep_probing=True)
         self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set infra_keep_probing='enabled'")
 
     def test_dns_resolver_infra_keep_probing_disable(self):
-        """ infra_keep_probing is stored as disabled """
+        """infra_keep_probing is stored as disabled"""
         obj = dict(infra_keep_probing=False)
         self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set infra_keep_probing='disabled'")
 
     def test_dns_resolver_infra_keep_probing_disable_enabled(self):
-        """ disabling infra_keep_probing changes the stored value """
+        """disabling infra_keep_probing changes the stored value"""
         self.config_file = "pfsense_dns_resolver_config.xml"
         obj = dict(infra_keep_probing=False)
         with set_module_args(self.args_from_var(obj)):
@@ -288,17 +289,17 @@ class TestPFSenseDNSResolverModule(TestPFSenseModule):
         self.assertEqual(result["diff"]["after"], dict(result["diff"]["before"], infra_keep_probing="disabled"))
 
     def test_dns_resolver_sock_queue_timeout(self):
-        """ set sock_queue_timeout """
+        """set sock_queue_timeout"""
         obj = dict(sock_queue_timeout=5)
         self.do_module_test(obj, command="update dns_resolver pfsense_dns_resolver set sock_queue_timeout='5'")
 
     def test_dns_resolver_sock_queue_timeout_invalid(self):
-        """ sock_queue_timeout cannot be negative """
+        """sock_queue_timeout cannot be negative"""
         obj = dict(sock_queue_timeout=-1)
         self.do_module_test(obj, failed=True, msg="sock_queue_timeout must be 0 or more")
 
     def test_dns_resolver_advanced_options_noop(self):
-        """ values stored by the web GUI are left unchanged """
+        """values stored by the web GUI are left unchanged"""
         self.config_file = "pfsense_dns_resolver_config.xml"
         obj = dict(infra_keep_probing=True, sock_queue_timeout=0, qname_minimisation_strict=False)
         self.do_module_test(obj, changed=False)

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from base64 import b64encode
@@ -20,8 +21,11 @@ VIP_ARGUMENT_SPEC = dict(
 MODE_ARGUMENT_SPEC = {
     "ipalias": dict(interface=dict(type="str")),
     "carp": dict(
-        interface=dict(type="str"), vhid=dict(type="int"), password=dict(type="str", no_log=True),
-        advbase=dict(type="int", default=1), advskew=dict(type="int", default=0),
+        interface=dict(type="str"),
+        vhid=dict(type="int"),
+        password=dict(type="str", no_log=True),
+        advbase=dict(type="int", default=1),
+        advskew=dict(type="int", default=0),
     ),
     "proxyarp": dict(interface=dict(type="str"), noexpand=dict(type="bool")),
     "other": dict(noexpand=dict(type="bool")),
@@ -83,8 +87,12 @@ class PFSenseVirtualIPModule(PFSenseModuleBase):
 
     def __init__(self, module, mode):
         super(PFSenseVirtualIPModule, self).__init__(
-            module, name="pfsense_virtual_ip_" + MODE_SUFFIX[mode], root="virtualip", create_root=True,
-            node="vip", key="subnet",
+            module,
+            name="pfsense_virtual_ip_" + MODE_SUFFIX[mode],
+            root="virtualip",
+            create_root=True,
+            node="vip",
+            key="subnet",
         )
         self.mode = mode
 
@@ -176,8 +184,12 @@ class PFSenseVirtualIPModule(PFSenseModuleBase):
                 target = entry
         if present and self.mode == "carp":
             for entry in self.elements:
-                if (entry is not target and entry.findtext("mode") == "carp"
-                        and entry.findtext("interface") == self.obj["interface"] and entry.findtext("vhid") == self.obj["vhid"]):
+                if (
+                    entry is not target
+                    and entry.findtext("mode") == "carp"
+                    and entry.findtext("interface") == self.obj["interface"]
+                    and entry.findtext("vhid") == self.obj["vhid"]
+                ):
                     self.module.fail_json(msg="vhid is already in use on this interface")
         return target
 
@@ -216,8 +228,10 @@ class PFSenseVirtualIPModule(PFSenseModuleBase):
 
     def _update(self):
         before, after = self.diff["before"], self.diff["after"]
-        remove = self.mode in BOUND_MODES and before and (
-            not after or any(before.get(field) != after.get(field) for field in ("interface", "subnet", "subnet_bits", "vhid"))
+        remove = (
+            self.mode in BOUND_MODES
+            and before
+            and (not after or any(before.get(field) != after.get(field) for field in ("interface", "subnet", "subnet_bits", "vhid")))
         )
         proxy_interfaces = {vip.get("interface") or "wan" for vip in (before, after) if vip} if self.mode == "proxyarp" else set()
         data = {

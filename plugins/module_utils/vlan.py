@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
@@ -17,11 +18,11 @@ VLAN_ARGUMENT_SPEC = dict(
 
 
 class PFSenseVlanModule(PFSenseModuleBase):
-    """ module managing pfsense vlans """
+    """module managing pfsense vlans"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return VLAN_ARGUMENT_SPEC
 
     ##############################
@@ -44,33 +45,32 @@ class PFSenseVlanModule(PFSenseModuleBase):
         # get physical interfaces on which vlans can be set
         get_interface_cmd = (
             'require_once("/etc/inc/interfaces.inc");'
-            '$portlist = get_interface_list();'
-            '$lagglist = get_lagg_interface_list();'
-            '$portlist = array_merge($portlist, $lagglist);'
-            'foreach ($lagglist as $laggif => $lagg) {'
+            "$portlist = get_interface_list();"
+            "$lagglist = get_lagg_interface_list();"
+            "$portlist = array_merge($portlist, $lagglist);"
+            "foreach ($lagglist as $laggif => $lagg) {"
             "    $laggmembers = explode(',', $lagg['members']);"
-            '    foreach ($laggmembers as $lagm)'
-            '        if (isset($portlist[$lagm]))'
-            '            unset($portlist[$lagm]);'
-            '}')
+            "    foreach ($laggmembers as $lagm)"
+            "        if (isset($portlist[$lagm]))"
+            "            unset($portlist[$lagm]);"
+            "}"
+        )
 
         if self.pfsense.is_at_least_2_5_0():
             get_interface_cmd += (
-                '$list = array();'
-                'foreach ($portlist as $ifn => $ifinfo) {'
+                "$list = array();"
+                "foreach ($portlist as $ifn => $ifinfo) {"
                 '  $list[$ifn] = $ifn . " (" . $ifinfo["mac"] . ")";'
-                '  $iface = convert_real_interface_to_friendly_interface_name($ifn);'
-                '  if (isset($iface) && strlen($iface) > 0)'
+                "  $iface = convert_real_interface_to_friendly_interface_name($ifn);"
+                "  if (isset($iface) && strlen($iface) > 0)"
                 '    $list[$ifn] .= " - $iface";'
-                '}'
-                'echo json_encode($list);')
+                "}"
+                "echo json_encode($list);"
+            )
         else:
             get_interface_cmd += (
-                "$list = array();"
-                "foreach ($portlist as $ifn => $ifinfo)"
-                "   if (is_jumbo_capable($ifn))"
-                "       array_push($list, $ifn);"
-                "echo json_encode($list);")
+                "$list = array();foreach ($portlist as $ifn => $ifinfo)   if (is_jumbo_capable($ifn))       array_push($list, $ifn);echo json_encode($list);"
+            )
 
         self.interfaces = self.pfsense.php(get_interface_cmd)
 
@@ -78,7 +78,7 @@ class PFSenseVlanModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -103,7 +103,7 @@ class PFSenseVlanModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         # check interface
@@ -114,7 +114,7 @@ class PFSenseVlanModule(PFSenseModuleBase):
                 interface = self.pfsense.get_interface_port(params["interface"])
 
             if interface is None or interface not in self.interfaces:
-                self.module.fail_json(msg="Vlans can\'t be set on interface {0}".format(params["interface"]))
+                self.module.fail_json(msg="Vlans can't be set on interface {0}".format(params["interface"]))
 
         # check vlan
         if params["vlan_id"] < 1 or params["vlan_id"] > 4094:
@@ -128,7 +128,7 @@ class PFSenseVlanModule(PFSenseModuleBase):
     # XML processing
     #
     def _cmd_create(self):
-        """ return the php shell to create the vlan's interface """
+        """return the php shell to create the vlan's interface"""
         cmd = "$vlan = array();\n"
         cmd += "$vlan['if'] = '{0}';\n".format(self.obj["if"])
         cmd += "$vlan['tag'] = '{0}';\n".format(self.obj["tag"])
@@ -149,12 +149,12 @@ class PFSenseVlanModule(PFSenseModuleBase):
         return cmd
 
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         super(PFSenseVlanModule, self)._copy_and_add_target()
         self.setup_vlan_cmds += self._cmd_create()
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         old_vlanif = self.target_elt.find("vlanif").text
         (before, changed) = super(PFSenseVlanModule, self)._copy_and_update_target()
         if changed:
@@ -164,15 +164,15 @@ class PFSenseVlanModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element("vlan")
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         return self.pfsense.find_vlan(self.obj["if"], self.obj["tag"])
 
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         if self.pfsense.get_interface_by_port("{0}.{1}".format(self.obj["if"], self.obj["tag"])) is not None:
             self.module.fail_json(
                 msg="vlan {0} on {1} cannot be deleted because it is still being used as an interface".format(self.obj["tag"], self.obj["if"])
@@ -183,7 +183,7 @@ class PFSenseVlanModule(PFSenseModuleBase):
     # run
     #
     def get_update_cmds(self):
-        """ build and return php commands to setup interfaces """
+        """build and return php commands to setup interfaces"""
         cmd = 'require_once("filter.inc");\n'
         if self.setup_vlan_cmds != "":
             cmd += 'require_once("interfaces.inc");\n'
@@ -192,18 +192,18 @@ class PFSenseVlanModule(PFSenseModuleBase):
         return cmd
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell(self.get_update_cmds())
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}.{1}'".format(self.obj["if"], self.obj["tag"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "descr")

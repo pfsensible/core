@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -16,7 +17,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
-
     module = pfsense_haproxy_backend_server
 
     def __init__(self, *args, **kwargs):
@@ -28,7 +28,7 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
     # tests utils
     #
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated backend server xml definition """
+        """get the generated backend server xml definition"""
         pkgs_elt = self.assert_find_xml_elt(self.xml_result, "installedpackages")
         hap_elt = self.assert_find_xml_elt(pkgs_elt, "haproxy")
         backends_elt = self.assert_find_xml_elt(hap_elt, "ha_pools")
@@ -54,7 +54,7 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
 
     @staticmethod
     def caref(descr):
-        """ return refid for ca """
+        """return refid for ca"""
         if descr == "test ca":
             return "5d85d3071588f"
         if descr == "test ca2":
@@ -63,7 +63,7 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
 
     @staticmethod
     def crlref(descr):
-        """ return refid for crl """
+        """return refid for crl"""
         if descr == "test crl":
             return "5df5edf6cae0f"
         if descr == "test crl2":
@@ -72,7 +72,7 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
 
     @staticmethod
     def certref(descr):
-        """ return refid for cert """
+        """return refid for cert"""
         if descr == "test cert":
             return "5df5ec78b3048"
         if descr == "test cert2":
@@ -81,11 +81,12 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
 
     @staticmethod
     def idem(descr):
-        """ return value passed """
+        """return value passed"""
         return descr
 
     def check_target_elt(self, obj, target_elt, server_id):
-        """ test the xml definition of server """
+        """test the xml definition of server"""
+
         def _check_elt(name, fname=None, default=None, fvalue=self.idem):
             if fname is None:
                 fname = name
@@ -134,13 +135,13 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
     # tests
     #
     def test_haproxy_backend_server_create(self):
-        """ test creation of a new backend server """
+        """test creation of a new backend server"""
         server = dict(backend="test-backend", name="exchange", address="exchange.acme.org", port=443)
         command = "create haproxy_backend_server 'exchange' on 'test-backend', status='active', address='exchange.acme.org', port=443"
         self.do_module_test(server, command=command, server_id=103)
 
     def test_haproxy_backend_server_create2(self):
-        """ test creation of a new backend server with some parameters"""
+        """test creation of a new backend server with some parameters"""
         server = dict(
             backend="test-backend", name="exchange", address="exchange.acme.org", port=443, ssl=True, ca="test ca", clientcert="test cert", crl="test crl"
         )
@@ -151,36 +152,36 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
         self.do_module_test(server, command=command, server_id=103)
 
     def test_haproxy_backend_server_create_invalid_backend(self):
-        """ test creation of a new backend server """
+        """test creation of a new backend server"""
         server = dict(backend="test.backend", name="exchange", address="exchange.acme.org", port=443)
         msg = "The backend named 'test.backend' does not exist"
         self.do_module_test(server, msg=msg, failed=True)
 
     def test_haproxy_backend_server_create_invalid_name(self):
-        """ test creation of a new backend server """
+        """test creation of a new backend server"""
         server = dict(backend="test-backend", name="test exchange", address="exchange.acme.org", port=443)
         msg = "The field 'name' contains invalid characters"
         self.do_module_test(server, msg=msg, failed=True)
 
     def test_haproxy_backend_server_delete(self):
-        """ test deletion of a backend server """
+        """test deletion of a backend server"""
         server = dict(backend="test-backend", name="exchange.acme.org")
         command = "delete haproxy_backend_server 'exchange.acme.org' on 'test-backend'"
         self.do_module_test(server, delete=True, command=command)
 
     def test_haproxy_backend_server_update_noop(self):
-        """ test not updating a backend server """
+        """test not updating a backend server"""
         server = dict(backend="test-backend", name="exchange.acme.org", address="exchange.acme.org", port=443)
         self.do_module_test(server, changed=False)
 
     def test_haproxy_backend_server_update_frontend(self):
-        """ test updating a backend server """
+        """test updating a backend server"""
         server = dict(backend="test-backend", name="exchange.acme.org", forwardto="test-frontend")
         command = "update haproxy_backend_server 'exchange.acme.org' on 'test-backend' set forwardto='test-frontend', address=none, port=none"
         self.do_module_test(server, changed=True, command=command, server_id=101)
 
     def test_haproxy_backend_server_update_certs(self):
-        """ test updating certs """
+        """test updating certs"""
         server = dict(
             backend="test-backend", name="exchange2.acme.org", address="exchange2.acme.org", port=443, ca="test ca2", clientcert="test cert2", crl="test crl2"
         )
@@ -188,15 +189,13 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
         self.do_module_test(server, changed=True, command=command, server_id=102)
 
     def test_haproxy_backend_server_update_certs2(self):
-        """ test updating certs """
-        server = dict(
-            backend="test-backend", name="exchange2.acme.org", address="exchange2.acme.org", port=443
-        )
+        """test updating certs"""
+        server = dict(backend="test-backend", name="exchange2.acme.org", address="exchange2.acme.org", port=443)
         command = "update haproxy_backend_server 'exchange2.acme.org' on 'test-backend' set ca=none, crl=none, clientcert=none"
         self.do_module_test(server, changed=True, command=command, server_id=102)
 
     def test_haproxy_backend_server_update_certs3(self):
-        """ test updating certs """
+        """test updating certs"""
         server = dict(
             backend="test-backend", name="exchange.acme.org", address="exchange.acme.org", port=443, ca="test ca2", clientcert="test cert2", crl="test crl2"
         )
@@ -204,25 +203,25 @@ class TestPFSenseHaproxyBackendServerModule(TestPFSenseModule):
         self.do_module_test(server, changed=True, command=command, server_id=101)
 
     def test_haproxy_backend_server_invalid_ca(self):
-        """ test updating certs """
+        """test updating certs"""
         server = dict(backend="test-backend", name="exchange", address="exchange.acme.org", port=443, ca="test ca3")
         msg = "test ca3 is not a valid certificate authority"
         self.do_module_test(server, msg=msg, failed=True)
 
     def test_haproxy_backend_server_invalid_crl(self):
-        """ test updating certs """
+        """test updating certs"""
         server = dict(backend="test-backend", name="exchange", address="exchange.acme.org", port=443, crl="test crl3")
         msg = "test crl3 is not a valid certificate revocation list"
         self.do_module_test(server, msg=msg, failed=True)
 
     def test_haproxy_backend_server_invalid_cert(self):
-        """ test updating certs """
+        """test updating certs"""
         server = dict(backend="test-backend", name="exchange", address="exchange.acme.org", port=443, clientcert="test cert3")
         msg = "test cert3 is not a valid certificate"
         self.do_module_test(server, msg=msg, failed=True)
 
     def test_haproxy_backend_server_invalid_frontend(self):
-        """ test updating certs """
+        """test updating certs"""
         server = dict(backend="test-backend", name="exchange", forwardto="test frontend")
         msg = "The frontend named 'test frontend' does not exist"
         self.do_module_test(server, msg=msg, failed=True)

@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -24,38 +25,76 @@ class TestPFSenseNotificationSMTPModule(TestPFSenseModule):
         return ET.parse(self.tmp_file).find("notifications/smtp")
 
     def configure_smtp(self):
-        self.run_module(changed=True, disable=True, ipaddress="relay.example.com", port=465, timeout=30,
-                        ssl=True, sslvalidate=False, fromaddress="firewall@example.com",
-                        notifyemailaddress="ops+firewall@example.com, admin@example.net",
-                        username="mailer", password="old&secret'123", authmech="LOGIN")
+        self.run_module(
+            changed=True,
+            disable=True,
+            ipaddress="relay.example.com",
+            port=465,
+            timeout=30,
+            ssl=True,
+            sslvalidate=False,
+            fromaddress="firewall@example.com",
+            notifyemailaddress="ops+firewall@example.com, admin@example.net",
+            username="mailer",
+            password="old&secret'123",
+            authmech="LOGIN",
+        )
 
     def test_create_and_repeat(self):
         self.configure_smtp()
         smtp = self.smtp_config()
-        self.assertEqual({child.tag: child.text or "" for child in smtp}, dict(
-            disable="", ipaddress="relay.example.com", port="465", timeout="30", ssl="", sslvalidate="disabled",
-            fromaddress="firewall@example.com", notifyemailaddress="ops+firewall@example.com, admin@example.net",
-            username="mailer", password="old&secret'123", authentication_mechanism="LOGIN",
-        ))
-        result = self.run_module(disable=True, ipaddress="relay.example.com", port=465, timeout=30,
-                                 ssl=True, sslvalidate=False, fromaddress="firewall@example.com",
-                                 notifyemailaddress="ops+firewall@example.com, admin@example.net",
-                                 username="mailer", password="old&secret'123", authmech="LOGIN")
+        self.assertEqual(
+            {child.tag: child.text or "" for child in smtp},
+            dict(
+                disable="",
+                ipaddress="relay.example.com",
+                port="465",
+                timeout="30",
+                ssl="",
+                sslvalidate="disabled",
+                fromaddress="firewall@example.com",
+                notifyemailaddress="ops+firewall@example.com, admin@example.net",
+                username="mailer",
+                password="old&secret'123",
+                authentication_mechanism="LOGIN",
+            ),
+        )
+        result = self.run_module(
+            disable=True,
+            ipaddress="relay.example.com",
+            port=465,
+            timeout=30,
+            ssl=True,
+            sslvalidate=False,
+            fromaddress="firewall@example.com",
+            notifyemailaddress="ops+firewall@example.com, admin@example.net",
+            username="mailer",
+            password="old&secret'123",
+            authmech="LOGIN",
+        )
         self.assertEqual(result["commands"], [])
 
     def test_partial_update_preserves_existing_settings_and_other_notifications(self):
         with open(self.tmp_file, "w") as config:
-            config.write("<pfsense><version>24.0</version><notifications><telegram><enable/></telegram>"
-                         "<smtp><disable/><ssl/><sslvalidate>disabled</sslvalidate><ipaddress>relay.example.com</ipaddress>"
-                         "<notifyemailaddress>admin@example.net</notifyemailaddress><password>stored-password</password>"
-                         "</smtp></notifications></pfsense>")
+            config.write(
+                "<pfsense><version>24.0</version><notifications><telegram><enable/></telegram>"
+                "<smtp><disable/><ssl/><sslvalidate>disabled</sslvalidate><ipaddress>relay.example.com</ipaddress>"
+                "<notifyemailaddress>admin@example.net</notifyemailaddress><password>stored-password</password>"
+                "</smtp></notifications></pfsense>"
+            )
         result = self.run_module(changed=True, disable=False, ssl=False, sslvalidate=True, authmech="LOGIN")
         config = ET.parse(self.tmp_file)
         smtp = config.find("notifications/smtp")
-        self.assertEqual({child.tag: child.text for child in smtp}, dict(
-            sslvalidate="enabled", ipaddress="relay.example.com", notifyemailaddress="admin@example.net",
-            password="stored-password", authentication_mechanism="LOGIN",
-        ))
+        self.assertEqual(
+            {child.tag: child.text for child in smtp},
+            dict(
+                sslvalidate="enabled",
+                ipaddress="relay.example.com",
+                notifyemailaddress="admin@example.net",
+                password="stored-password",
+                authentication_mechanism="LOGIN",
+            ),
+        )
         self.assertIsNotNone(config.find("notifications/telegram/enable"))
         self.assertEqual(result["commands"], ["update notification_smtp smtp set disable=False, ssl=False, sslvalidate='enabled', authmech='LOGIN'"])
         self.assertNotIn("stored-password", repr(result))
@@ -100,17 +139,31 @@ class TestPFSenseNotificationSMTPModule(TestPFSenseModule):
         self.assertEqual(self.smtp_config().findtext("ipaddress"), host)
         self.assertEqual(self.smtp_config().findtext("port"), str(port))
 
-    @parameterized.expand([
-        ("ipaddress", "smtp://relay.example.com"), ("ipaddress", "relay.example.com:25"),
-        ("ipaddress", "-relay.example.com"), ("ipaddress", "relay..example.com"),
-        ("ipaddress", "192.0.2.256"), ("ipaddress", "2001:db8::1/64"),
-        ("ipaddress", "a" * 64 + ".example.com"), ("ipaddress", "relay.example.com\n"),
-        ("port", 0), ("port", 65536), ("port", True), ("timeout", 0), ("timeout", -1), ("timeout", True),
-        ("fromaddress", "sender"), ("fromaddress", "a@example.com,b@example.com"),
-        ("fromaddress", "a..b@example.com"), ("notifyemailaddress", "admin@example.com,broken"),
-        ("notifyemailaddress", "admin@example.com,"), ("notifyemailaddress", "admin@example.com,\nops@example.net"),
-        ("authmech", "CRAM-MD5"),
-    ])
+    @parameterized.expand(
+        [
+            ("ipaddress", "smtp://relay.example.com"),
+            ("ipaddress", "relay.example.com:25"),
+            ("ipaddress", "-relay.example.com"),
+            ("ipaddress", "relay..example.com"),
+            ("ipaddress", "192.0.2.256"),
+            ("ipaddress", "2001:db8::1/64"),
+            ("ipaddress", "a" * 64 + ".example.com"),
+            ("ipaddress", "relay.example.com\n"),
+            ("port", 0),
+            ("port", 65536),
+            ("port", True),
+            ("timeout", 0),
+            ("timeout", -1),
+            ("timeout", True),
+            ("fromaddress", "sender"),
+            ("fromaddress", "a@example.com,b@example.com"),
+            ("fromaddress", "a..b@example.com"),
+            ("notifyemailaddress", "admin@example.com,broken"),
+            ("notifyemailaddress", "admin@example.com,"),
+            ("notifyemailaddress", "admin@example.com,\nops@example.net"),
+            ("authmech", "CRAM-MD5"),
+        ]
+    )
     def test_invalid_option(self, option, value):
         with set_module_args({"disable": True, option: value}):
             self.assertIn(option, self.failed()["msg"])

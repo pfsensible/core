@@ -2,21 +2,34 @@
 
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
 # These fields follow the pfSense alias deletion checks, with additional
 # fields for firewall source ports, outbound NAT, and OpenVPN clients.
 OPENVPN_NETWORK_FIELDS = (
-    "tunnel_network", "tunnel_networkv6", "local_network", "local_networkv6", "remote_network", "remote_networkv6",
+    "tunnel_network",
+    "tunnel_networkv6",
+    "local_network",
+    "local_networkv6",
+    "remote_network",
+    "remote_networkv6",
 )
 ALIAS_REFERENCE_FIELDS = {
     "filter/rule": ("source/address", "source/port", "destination/address", "destination/port"),
     "nat/rule": ("source/address", "source/port", "destination/address", "destination/port", "target", "local-port"),
     "nat/onetoone": ("destination/address",),
     "nat/outbound/rule": (
-        "source/network", "source/address", "sourceport", "destination/network", "destination/address", "dstport", "target", "natport",
+        "source/network",
+        "source/address",
+        "sourceport",
+        "destination/network",
+        "destination/address",
+        "dstport",
+        "target",
+        "natport",
     ),
     "aliases/alias": ("address",),
     "staticroutes/route": ("network",),

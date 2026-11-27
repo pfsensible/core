@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import json
@@ -19,7 +20,8 @@ class TestPFSensePHPShellModule(TestPFSenseModule):
     module = pfsense_phpshell
 
     def shell(self, output="", changed=True, rc=0, stderr="", runs=True, ends=True, exits=False):
-        """ act as pfSsh.php: echo each line read, then print what the code prints when it runs """
+        """act as pfSsh.php: echo each line read, then print what the code prints when it runs"""
+
         def run(command):
             marker = "".join(MARKER.search(command).groups())
             stdout = "".join(PROMPT + line + "\n" for line in command.split("\n")) + PROMPT + "exec\n"

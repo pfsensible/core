@@ -1,7 +1,8 @@
 # Copyright: (c) 2020, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from collections import OrderedDict
@@ -12,7 +13,7 @@ from ansible_collections.community.internal_test_tools.tests.unit.plugins.module
 
 
 def ordered_dump(data, dumper_cls=yaml.Dumper):
-    """ dump and return yaml string from data using ordered dicts """
+    """dump and return yaml string from data using ordered dicts"""
 
     class OrderedDumper(dumper_cls):
         pass
@@ -37,27 +38,27 @@ class TestPFSenseLookup(ModuleTestCase):
         self.interfaces = None
 
     def setUp(self):
-        """ mocking up """
+        """mocking up"""
         super(TestPFSenseLookup, self).setUp()
 
         self.build_definitions()
 
         self.mock_get_hostname = patch("ansible_collections.pfsensible.core.plugins.lookup.pfsense.LookupModule.get_hostname")
         get_hostname = self.mock_get_hostname.start()
-        get_hostname.return_value = ("pf_test1")
+        get_hostname.return_value = "pf_test1"
 
         self.mock_get_definitions = patch("ansible_collections.pfsensible.core.plugins.lookup.pfsense.LookupModule.get_definitions")
         self.get_definitions = self.mock_get_definitions.start()
         self.get_definitions.return_value = self.definitions
 
     def tearDown(self):
-        """ mocking down """
+        """mocking down"""
         super(TestPFSenseLookup, self).tearDown()
         self.mock_get_hostname.stop()
         self.mock_get_definitions.stop()
 
     def build_definitions(self):
-        """ build definitions base for tests """
+        """build definitions base for tests"""
         self.definitions = OrderedDict()
         self.definitions["hosts_aliases"] = OrderedDict()
         self.definitions["ports_aliases"] = OrderedDict()
@@ -86,17 +87,17 @@ class TestPFSenseLookup(ModuleTestCase):
                 self.definitions["pfsenses"]["pf_test1"]["interfaces"][name]["adjacent_networks"] = defs["adjacent_base"].replace("x", "0.0/16")
 
     def save_definitions(self, filename="test_definitions.yml"):
-        """ save generated definitions to file for debbuging """
+        """save generated definitions to file for debbuging"""
         with open(filename, "w") as outfile:
             outfile.write(ordered_dump(self.definitions))
 
     def run_rules(self):
-        """ run the plugin for rules """
+        """run the plugin for rules"""
         pfsense_lookup = lookup_loader.get("pfsensible.core.pfsense")
         self.rules = pfsense_lookup.run(["dummy.yml", "rules"], {})[0]
 
     def assert_get_rule(self, rule_name, count=1):
-        """ check that rule_name is defined """
+        """check that rule_name is defined"""
         rules = []
         for rule in self.rules:
             if rule["name"] == rule_name:
@@ -112,14 +113,14 @@ class TestPFSenseLookup(ModuleTestCase):
         return rules
 
     def assert_rule_not_found(self, rule_name):
-        """ check that rule_name is not defined """
+        """check that rule_name is not defined"""
         for rule in self.rules:
             if rule["name"] == rule_name:
                 self.fail("{0} found".format(rule_name))
 
     @staticmethod
     def add_missing_fields(expected_rule, rule):
-        """ add missing generated field with default values """
+        """add missing generated field with default values"""
         for param in ["ackqueue", "gateway", "icmptype", "in_queue", "out_queue", "queue", "log", "sched"]:
             if param not in expected_rule and param in rule:
                 expected_rule[param] = None
@@ -132,7 +133,7 @@ class TestPFSenseLookup(ModuleTestCase):
 
     @staticmethod
     def correct_aliases(expected_rule):
-        """ we correct IP values with interface names """
+        """we correct IP values with interface names"""
         translations = {
             "10.20.30.1": "IP:LANA",
             # '10.20.30.3': 'IP:LANB',
@@ -142,7 +143,7 @@ class TestPFSenseLookup(ModuleTestCase):
                 expected_rule[field] = translations[expected_rule[field]]
 
     def compare_rules(self, expected_rule, rule):
-        """ compare rule with the expected result """
+        """compare rule with the expected result"""
         if "after" in rule:
             del rule["after"]
         self.add_missing_fields(expected_rule, rule)
@@ -150,7 +151,7 @@ class TestPFSenseLookup(ModuleTestCase):
         self.assertEqual(expected_rule, rule)
 
     def gen_rule(self, src, dst, interface, action):
-        """ generate rule definition according parameters """
+        """generate rule definition according parameters"""
         rule = OrderedDict()
         rule["protocol"] = "any"
         rule["name"] = src + "_" + dst + "_" + interface + "_" + action
@@ -191,7 +192,7 @@ class TestPFSenseLookup(ModuleTestCase):
         return rule
 
     def test_basic_generation(self):
-        """ test simple rules generatation for verifying that remote to remote rules are not generated and almost everything else is """
+        """test simple rules generatation for verifying that remote to remote rules are not generated and almost everything else is"""
         expected_rules = list()
         not_expected_rules = list()
         rules = self.definitions["rules"]
@@ -207,12 +208,7 @@ class TestPFSenseLookup(ModuleTestCase):
                         rules[rule["name"]] = rule
 
                         generated_rule = dict(
-                            name=rule["name"],
-                            interface="LANA",
-                            source=rule["src"],
-                            destination=rule["dst"],
-                            protocol="any",
-                            action=rule["action"]
+                            name=rule["name"], interface="LANA", source=rule["src"], destination=rule["dst"], protocol="any", action=rule["action"]
                         )
 
                         # we won't generate remote to remote rules or local to local on the same interface if the traffic is allowed

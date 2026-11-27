@@ -1,7 +1,8 @@
 # Copyright: (c) 2022, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import base64
@@ -30,7 +31,8 @@ CERTIFICATE = (
     "Q002OUh4eFlODQpCa2lpbXd1N09mRmFGZkZDT25NSjhvcStKVGxjMG9vREoxM2xCdHRONkdybnZrUTNQMXdZYkNFTmJuaWxPYVVCDQpUSXJpSHl0TkRRYW91TmEvS1dzN0ZhdW9iY3RCbDF3OWF0b0ha"
     "c041b2VoVDNyQVR2MUNDQXRqcGFUSklmSlIzDQowSVFPWWtlNG9ZNkRrSXdIcDJ2UFBtb29HZ0l0YlR3M1UrRTQxWVplN3FDbUUvN3pMVFNaa0lNMmx4NnpENDZqDQpEZjRyZ044TVVMNnhpd09Mbzly"
     "QUp5ckRNM2JEeTJ1QjY0QkVzRFFMa2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4DQpoMS9nekRaSURpK1dYQ1lBY2JnTGhaVkJxdG42MnVtRnBNUkl1dz09DQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t"
-    "DQo=")
+    "DQo="
+)
 
 TLSKEY = (
     "IwojIDIwNDggYml0IE9wZW5WUE4gc3RhdGljIGtleQojCi0tLS0tQkVHSU4gT3BlblZQTiBTdGF0aWMga2V5IFYxLS0tLS0KNjFiY2E4MDk0ZmM4YjA3ZTZlMjE3NzRmNTI0YTIyOWYKNGMzZGZhMDVjZ"
@@ -38,11 +40,11 @@ TLSKEY = (
     "kzMGRmMzEKMDY2Mzk1MjM2ZWRkYWQ3NDc3YmVjZjJmNDgyNzBlMjUKODM1N2JlMGE1MGUzY2Y0ZjllZTEyZTdkMmM4YTY2YzEKODUwNjBlODM5ZWUyMzdjNTZkZmUzNjA4NjU0NDhhYzgKNjhmM2JhYWQ"
     "4ODNjNDU3NTdlZTVjMWQ4ZDk5ZjM4ZjcKZGNiZDAwZmI3Nzc2ZWFlYjQ1ZmQwOTBjNGNlYTNmMGMKMzgzNDE0ZTJlYmU4MWNiZGIxZmNlN2M2YmFhMDlkMWYKMTU4OGUzNGRkYzUxY2NjOTE5NDNjNTFh"
     "OTI2OTE3NWQKNzZiZjdhOWI1ZmM3NDAyNmE3MTVkNGVmODVkYzY2Y2UKMWE5MWQwNjNhODIwZDY4MTc0ODlmYjJkZjNmYzY2MmMKMmU2OWZiMzNiMzM5MjdjYjUyNThkZDQ4M2NkNDE0Y2QKMDJhZWE3Z"
-    "jA3MmNhZmEwOTY5Yjg5NWVjYzNiYmExNGQKLS0tLS1FTkQgT3BlblZQTiBTdGF0aWMga2V5IFYxLS0tLS0K")
+    "jA3MmNhZmEwOTY5Yjg5NWVjYzNiYmExNGQKLS0tLS1FTkQgT3BlblZQTiBTdGF0aWMga2V5IFYxLS0tLS0K"
+)
 
 
 class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
-
     module = pfsense_openvpn_server
 
     def __init__(self, *args, **kwargs):
@@ -51,7 +53,7 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         self.pfmodule = pfsense_openvpn_server.PFSenseOpenVPNServerModule
 
     def setUp(self):
-        """ mocking up """
+        """mocking up"""
 
         super(TestPFSenseOpenVPNServerModule, self).setUp()
         self.ovpns2_bind = None
@@ -65,22 +67,24 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         self.php.return_value = {"SHA256": "SHA256 (256-bit)"}
 
     def tearDown(self):
-        """ mocking down """
+        """mocking down"""
         super(TestPFSenseOpenVPNServerModule, self).tearDown()
 
         self.run_command.stop()
 
     @staticmethod
     def runTest():
-        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        """dummy function needed to instantiate this test module from another in python 2.7"""
         pass
 
     OVPNS2_BIND = "<interface>wan</interface>\n                        <ipaddr></ipaddr>\n"
-    PROXYARP_VIP = ("<vip><mode>proxyarp</mode><interface>wan</interface><uniqid>testparp</uniqid><descr>Proxy ARP IP</descr>"
-                    "<type>single</type><subnet_bits>32</subnet_bits><subnet>198.51.100.7</subnet></vip></virtualip>")
+    PROXYARP_VIP = (
+        "<vip><mode>proxyarp</mode><interface>wan</interface><uniqid>testparp</uniqid><descr>Proxy ARP IP</descr>"
+        "<type>single</type><subnet_bits>32</subnet_bits><subnet>198.51.100.7</subnet></vip></virtualip>"
+    )
 
     def load_fixtures(self):
-        """ the fixture, with ovpns2's interface and ipaddr replaced when set, and a proxy ARP VIP """
+        """the fixture, with ovpns2's interface and ipaddr replaced when set, and a proxy ARP VIP"""
         data = load_fixture(self.get_config_file())
         if self.ovpns2_bind is not None:
             self.assertIn(self.OVPNS2_BIND, data)
@@ -90,13 +94,13 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
             config.write(data)
 
     def run_ovpns2(self, interface, changed):
-        """ ovpns2 as the fixture has it, on the given interface """
+        """ovpns2 as the fixture has it, on the given interface"""
         obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, tls=TLSKEY, tls_type="auth", interface=interface)
         with set_module_args(obj):
             return self.execute_module(changed=changed)
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         root_elt = self.xml_result.getroot().find("openvpn")
         result = root_elt.findall("openvpn-server[description='{0}']".format(obj["name"]))
         if len(result) == 1:
@@ -108,27 +112,27 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
 
     @staticmethod
     def caref(descr):
-        """ return refid for ca """
+        """return refid for ca"""
         if descr == "OpenVPN CA":
             return "6209e3cef1e81"
         return ""
 
     @staticmethod
     def crlref(descr):
-        """ return refid for crl """
+        """return refid for crl"""
         if descr == "OpenVPN CRL":
             return "6209e3cef1e81"
         return None
 
     @staticmethod
     def certref(descr):
-        """ return refid for cert """
+        """return refid for cert"""
         if descr == "OpenVPN CERT":
             return "6209e3cef1e81"
         return None
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
 
         # Use "generated" key
         if "shared_key" in obj and obj["shared_key"] == "generate":
@@ -187,12 +191,12 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
     # tests
     #
     def test_openvpn_server_create(self):
-        """ test creation of a new OpenVPN server """
+        """test creation of a new OpenVPN server"""
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196)
         self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
 
     def test_openvpn_server_create_generate(self):
-        """ test creation of a new OpenVPN server """
+        """test creation of a new OpenVPN server"""
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, tls="generate")
         self.do_module_test(obj, command="create openvpn_server 'ovpns3', description='ovpns3'")
 
@@ -224,50 +228,50 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         self.assertEqual(result["diff"]["after"]["ipaddr"], "")
 
     def test_openvpn_server_gui_vip_unchanged(self):
-        """ an instance the web GUI bound to a VIP, given by description, uniqid or selector form """
+        """an instance the web GUI bound to a VIP, given by description, uniqid or selector form"""
         self.ovpns2_bind = "<interface>_viptestcarp</interface>\n                        <ipaddr>192.0.2.10</ipaddr>\n"
         for interface in ("Backup WAN IP", "_viptestcarp", "_viptestcarp|192.0.2.10"):
             self.run_ovpns2(interface, False)
 
     def test_openvpn_server_single_value_vip_fixed(self):
-        """ an instance stored as one interface value "_vip<uniqid>|<address>" gets the web GUI's form """
+        """an instance stored as one interface value "_vip<uniqid>|<address>" gets the web GUI's form"""
         self.ovpns2_bind = "<interface>_viptestcarp|192.0.2.10</interface>\n                        <ipaddr></ipaddr>\n"
         result = self.run_ovpns2("Backup WAN IP", True)
         self.assertEqual(result["diff"]["after"]["interface"], "_viptestcarp")
         self.assertEqual(result["diff"]["after"]["ipaddr"], "192.0.2.10")
 
     def test_openvpn_server_vip_port_conflict(self):
-        """ the port check sees an instance the web GUI bound to the same VIP """
+        """the port check sees an instance the web GUI bound to the same VIP"""
         self.ovpns2_bind = "<interface>_viptestcarp</interface>\n                        <ipaddr>192.0.2.10</ipaddr>\n"
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, interface="Backup WAN IP")
         self.do_module_test(obj, failed=True, msg="The specified local_port (1195) is in use by vpn ID 2")
 
     def test_openvpn_server_port_of_disabled(self):
-        """ the port check skips a disabled instance, as the web GUI does """
+        """the port check skips a disabled instance, as the web GUI does"""
         self.ovpns2_bind = self.OVPNS2_BIND + "                        <disable></disable>\n"
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1195)
         with set_module_args(obj):
             self.execute_module(changed=True)
 
     def test_openvpn_server_proxyarp_vip_not_bound(self):
-        """ the web GUI does not offer proxy ARP VIPs to OpenVPN: no address to bind to """
+        """the web GUI does not offer proxy ARP VIPs to OpenVPN: no address to bind to"""
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="_viptestparp")
         with set_module_args(obj):
             result = self.execute_module(changed=True)
         self.assertNotIn("ipaddr", result["diff"]["after"])
 
     def test_openvpn_server_delete(self):
-        """ test deletion of a OpenVPN server """
+        """test deletion of a OpenVPN server"""
         obj = dict(name="ovpns2")
         self.do_module_test(obj, command="delete openvpn_server 'ovpns2'", delete=True)
 
     def test_openvpn_server_update_noop(self):
-        """ test not updating a OpenVPN server """
+        """test not updating a OpenVPN server"""
         obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, tls=TLSKEY, tls_type="auth")
         self.do_module_test(obj, changed=False)
 
     def test_openvpn_server_update_network(self):
-        """ test updating network of a OpenVPN server """
+        """test updating network of a OpenVPN server"""
         obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, tls=TLSKEY, tls_type="auth", tunnel_network="10.10.10.10/24")
         self.do_module_test(obj, command="update openvpn_server 'ovpns2' set ")
 
@@ -275,16 +279,16 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
     # misc
     #
     def test_create_openvpn_server_duplicate_port(self):
-        """ test creation of a new OpenVPN server with duplicate port """
+        """test creation of a new OpenVPN server with duplicate port"""
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA")
         self.do_module_test(obj, failed=True, msg="The specified local_port (1194) is in use by vpn ID 1")
 
     def test_create_openvpn_server_invalid_certificate(self):
-        """ test creation of a new OpenVPN server with invalid certificate """
+        """test creation of a new OpenVPN server with invalid certificate"""
         obj = dict(name="ovpns2", mode="p2p_tls", ca="OpenVPN CA", cert="blah")
         self.do_module_test(obj, failed=True, msg="blah is not a valid certificate")
 
     def test_delete_nonexistent_openvpn_server(self):
-        """ test deletion of an nonexistent OpenVPN server """
+        """test deletion of an nonexistent OpenVPN server"""
         obj = dict(name="novpn")
         self.do_module_test(obj, commmand=None, state="absent", changed=False)

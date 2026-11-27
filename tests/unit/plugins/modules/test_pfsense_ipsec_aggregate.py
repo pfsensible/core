@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -18,19 +19,18 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
-
     module = pfsense_ipsec_aggregate
 
     def __init__(self, *args, **kwargs):
         super(TestPFSenseIpsecAggregateModule, self).__init__(*args, **kwargs)
 
     def get_config_file(self):
-        """ get config file """
+        """get config file"""
 
         return "pfsense_ipsec_aggregate_config.xml"
 
     def assert_find_ipsec(self, ipsec):
-        """ test if an ipsec tunnel exist """
+        """test if an ipsec tunnel exist"""
         self.load_xml_result()
         parent_tag = self.xml_result.find("ipsec")
         if parent_tag is None:
@@ -49,7 +49,7 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
             self.fail("Ipsec tunnel not found: " + ipsec)
 
     def assert_not_find_ipsec(self, ipsec):
-        """ test if an ipsec tunnel does not exist """
+        """test if an ipsec tunnel does not exist"""
         self.load_xml_result()
         parent_tag = self.xml_result.find("ipsec")
         if parent_tag is None:
@@ -68,7 +68,8 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
             self.fail("Ipsec tunnel found: " + ipsec)
 
     def strip_commands(self, commands):
-        """ remove old or new parameters """
+        """remove old or new parameters"""
+
         def strip_command(command):
             command = command.replace("margintime='', ", "")
             command = command.replace("disable_rekey=False, ", "")
@@ -89,7 +90,7 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
     # we just test the output
     @parameterized.expand([["2.5.2"]])
     def test_ipsec_aggregate_ipsecs(self, pfsense_version):
-        """ test creation of a some tunnels """
+        """test creation of a some tunnels"""
         self.get_version.return_value = pfsense_version
         args = dict(
             purge_ipsecs=False,
@@ -98,10 +99,14 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
                 dict(descr="t2", interface="wan", remote_gateway="1.3.3.2", iketype="ikev2", authentication_method="pre_shared_key", preshared_key="qwerty123"),
                 dict(descr="test_tunnel2", state="absent"),
                 dict(
-                    descr="test_tunnel", interface="lan_100", remote_gateway="1.2.4.8", iketype="ikev2",
-                    authentication_method="pre_shared_key", preshared_key="0123456789"
+                    descr="test_tunnel",
+                    interface="lan_100",
+                    remote_gateway="1.2.4.8",
+                    iketype="ikev2",
+                    authentication_method="pre_shared_key",
+                    preshared_key="0123456789",
                 ),
-            ]
+            ],
         )
         with set_module_args(args):
             result = self.execute_module(changed=True)
@@ -130,14 +135,14 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
 
     @parameterized.expand([["2.5.2"]])
     def test_ipsec_aggregate_ipsecs_purge(self, pfsense_version):
-        """ test creation of a some tunnels with purge """
+        """test creation of a some tunnels with purge"""
         self.get_version.return_value = pfsense_version
         args = dict(
             purge_ipsecs=True,
             aggregated_ipsecs=[
                 dict(descr="t1", interface="wan", remote_gateway="1.3.3.1", iketype="ikev2", authentication_method="pre_shared_key", preshared_key="azerty123"),
                 dict(descr="t2", interface="wan", remote_gateway="1.3.3.2", iketype="ikev2", authentication_method="pre_shared_key", preshared_key="qwerty123"),
-            ]
+            ],
         )
         with set_module_args(args):
             result = self.execute_module(changed=True)
@@ -166,7 +171,7 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
 
     @parameterized.expand([["2.5.2"]])
     def test_ipsec_aggregate_proposals(self, pfsense_version):
-        """ test creation of a some proposals """
+        """test creation of a some proposals"""
         self.get_version.return_value = pfsense_version
         args = dict(
             purge_ipsec_proposals=False,
@@ -175,7 +180,7 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
                 dict(descr="test_tunnel2", encryption="cast128", hash="sha512", dhgroup=14),
                 dict(descr="test_tunnel", encryption="aes", key_length=128, hash="sha256", dhgroup=14, state="absent"),
                 dict(descr="test_tunnel2", encryption="blowfish", key_length=256, hash="aesxcbc", dhgroup=14, state="absent"),
-            ]
+            ],
         )
         with set_module_args(args):
             self.execute_module(changed=True)
@@ -193,14 +198,14 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
 
     @parameterized.expand([["2.5.2"]])
     def test_ipsec_aggregate_proposals_purge(self, pfsense_version):
-        """ test creation of a some proposals with purge """
+        """test creation of a some proposals with purge"""
         self.get_version.return_value = pfsense_version
         args = dict(
             purge_ipsec_proposals=True,
             aggregated_ipsec_proposals=[
                 dict(descr="test_tunnel", encryption="aes", key_length=128, hash="md5", dhgroup=14),
                 dict(descr="test_tunnel2", encryption="cast128", hash="sha512", dhgroup=14),
-            ]
+            ],
         )
         with set_module_args(args):
             self.execute_module(changed=True)
@@ -230,18 +235,26 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
             self.assertEqual(result["result_ipsec_proposals"], result_ipsec_proposals)
 
     def test_ipsec_aggregate_p2s(self):
-        """ test creation of a some p2s """
+        """test creation of a some p2s"""
         args = dict(
             purge_ipsec_p2s=False,
             aggregated_ipsec_p2s=[
                 dict(descr="p2_1", p1_descr="test_tunnel", mode="tunnel", local="1.2.3.4/24", remote="10.20.30.40/24", aes=True, aes_len="auto", sha256=True),
                 dict(descr="p2_2", p1_descr="test_tunnel", mode="tunnel", local="1.2.3.4/24", remote="10.20.30.50/24", aes=True, aes_len="auto", sha256=True),
                 dict(
-                    descr="one_p2", p1_descr="test_tunnel", mode="tunnel", local="lan", remote="10.20.30.60/24",
-                    aes="True", aes_len="128", aes128gcm=True, aes128gcm_len="128", sha256="True"
+                    descr="one_p2",
+                    p1_descr="test_tunnel",
+                    mode="tunnel",
+                    local="lan",
+                    remote="10.20.30.60/24",
+                    aes="True",
+                    aes_len="128",
+                    aes128gcm=True,
+                    aes128gcm_len="128",
+                    sha256="True",
                 ),
-                dict(descr="another_p2", p1_descr="test_tunnel", state="absent")
-            ]
+                dict(descr="another_p2", p1_descr="test_tunnel", state="absent"),
+            ],
         )
         with set_module_args(args):
             result = self.execute_module(changed=True)
@@ -260,13 +273,13 @@ class TestPFSenseIpsecAggregateModule(TestPFSenseModule):
             self.assertEqual(result["result_ipsec_p2s"], result_ipsec_p2s)
 
     def test_ipsec_aggregate_p2s_purge(self):
-        """ test creation of a some p2s with purge """
+        """test creation of a some p2s with purge"""
         args = dict(
             purge_ipsec_p2s=True,
             aggregated_ipsec_p2s=[
                 dict(descr="p2_1", p1_descr="test_tunnel", mode="tunnel", local="1.2.3.4/24", remote="10.20.30.40/24", aes=True, aes_len="auto", sha256=True),
                 dict(descr="p2_2", p1_descr="test_tunnel", mode="tunnel", local="1.2.3.4/24", remote="10.20.30.50/24", aes=True, aes_len="auto", sha256=True),
-            ]
+            ],
         )
         with set_module_args(args):
             result = self.execute_module(changed=True)

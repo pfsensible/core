@@ -6,6 +6,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -18,11 +19,11 @@ DEFAULT_GATEWAY_ARGUMENT_SPEC = dict(
 
 
 class PFSenseDefaultGatewayModule(PFSenseModuleBase):
-    """ module managing pfsense default gateways """
+    """module managing pfsense default gateways"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return DEFAULT_GATEWAY_ARGUMENT_SPEC
 
     ##############################
@@ -39,7 +40,7 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params
+        """return a dict from module params
         gateway     required, str
         ipprotocol  default : inet, choice inet/inet6
         """
@@ -62,7 +63,7 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters
+        """do some extra checks on input parameters
         gateway        required, str
         ipprotocol  default : inet, choice inet/inet6
         """
@@ -86,7 +87,7 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         if self.params["ipprotocol"] == "inet":
             return self.pfsense.new_element("defaultgw4")
         elif self.params["ipprotocol"] == "inet6":
@@ -126,12 +127,12 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         return []
 
     ##############################
     def run(self, params):
-        """ process input params to add/update/delete """
+        """process input params to add/update/delete"""
         self.params = params
         self._check_deprecated_params()
         self._check_onward_params()
@@ -143,7 +144,7 @@ class PFSenseDefaultGatewayModule(PFSenseModuleBase):
             self._add()
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell("""
 require_once("filter.inc");
 $retval = 0;
@@ -163,11 +164,11 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return ""
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if self.params["ipprotocol"] == "inet":
             values += self.format_updated_cli_field(self.obj, before, "defaultgw4", add_comma=values)

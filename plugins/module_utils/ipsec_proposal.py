@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from copy import deepcopy
@@ -30,11 +31,11 @@ IPSEC_PROPOSAL_REQUIRED_IF = [
 
 
 class PFSenseIpsecProposalModule(PFSenseModuleBase):
-    """ module managing pfsense ipsec phase 1 proposals """
+    """module managing pfsense ipsec phase 1 proposals"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return IPSEC_PROPOSAL_ARGUMENT_SPEC
 
     ##############################
@@ -59,7 +60,7 @@ class PFSenseIpsecProposalModule(PFSenseModuleBase):
         ]
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -83,7 +84,7 @@ class PFSenseIpsecProposalModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         key_length = dict()
@@ -121,15 +122,15 @@ class PFSenseIpsecProposalModule(PFSenseModuleBase):
     #
     @staticmethod
     def _copy_and_update_target():
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         return (None, False)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element("item")
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         # 2.5.0: when deleting, if prf is not specified we're taking the first matching proposal without taking prf into account
         if self.params["state"] == "absent" and self.params.get("prf") is None and self.pfsense.is_at_least_2_5_0():
             obj = deepcopy(self.obj)
@@ -150,18 +151,18 @@ class PFSenseIpsecProposalModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.apply_ipsec_changes()
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.params["descr"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         values += self.format_cli_field(self.params, "encryption")
         values += self.format_cli_field(self.params, "key_length")
@@ -172,5 +173,5 @@ class PFSenseIpsecProposalModule(PFSenseModuleBase):
         return values
 
     def _log_fields_delete(self):
-        """ generate pseudo-CLI command fields parameters to delete an obj """
+        """generate pseudo-CLI command fields parameters to delete an obj"""
         return self._log_fields()

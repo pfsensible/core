@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -195,10 +194,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.ipsec_p2 import PF
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=IPSEC_P2_ARGUMENT_SPEC,
-        required_if=IPSEC_P2_REQUIRED_IF,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=IPSEC_P2_ARGUMENT_SPEC, required_if=IPSEC_P2_REQUIRED_IF, supports_check_mode=True)
 
     pfmodule = PFSenseIpsecP2Module(module)
     pfmodule.run(module.params)

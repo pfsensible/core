@@ -1,7 +1,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -14,8 +15,9 @@ from .pfsense_module import TestPFSenseModule
 
 
 HASH = "$2y$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQ"
-SYSTEM = ("<system><hostname>fw</hostname><user><name>admin</name><bcrypt-hash>{0}</bcrypt-hash></user>"
-          "<pkg_repo_conf_path>26.07.2</pkg_repo_conf_path>{1}</system>")
+SYSTEM = (
+    "<system><hostname>fw</hostname><user><name>admin</name><bcrypt-hash>{0}</bcrypt-hash></user><pkg_repo_conf_path>26.07.2</pkg_repo_conf_path>{1}</system>"
+)
 NO_BE = "<firmware><disableautobe></disableautobe></firmware>"
 SWITCH = "pkg_switch_repo();"
 
@@ -26,8 +28,7 @@ class TestPFSenseUpdateSettingsModule(TestPFSenseModule):
     def setUp(self):
         super(TestPFSenseUpdateSettingsModule, self).setUp()
         self.write_config(NO_BE)
-        mock_php = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php",
-                         return_value=["26.07.2", "26.11"])
+        mock_php = patch("ansible_collections.pfsensible.core.plugins.module_utils.pfsense.PFSenseModule.php", return_value=["26.07.2", "26.11"])
         self.php = mock_php.start()
         self.addCleanup(mock_php.stop)
 
@@ -46,8 +47,9 @@ class TestPFSenseUpdateSettingsModule(TestPFSenseModule):
         result = self.run_module(changed=True, disableautobe=False, _ansible_diff=True)
         self.assertEqual(result["commands"], ["update update_settings firmware set disableautobe=False"])
         self.assertIsNone(self.system().find("firmware"))
-        self.assertEqual(result["diff"], {"before": {"pkg_repo_conf_path": "26.07.2", "firmware": {"disableautobe": ""}},
-                                          "after": {"pkg_repo_conf_path": "26.07.2"}})
+        self.assertEqual(
+            result["diff"], {"before": {"pkg_repo_conf_path": "26.07.2", "firmware": {"disableautobe": ""}}, "after": {"pkg_repo_conf_path": "26.07.2"}}
+        )
         self.assertNotIn(HASH, repr(result))
         self.assertEqual(self.system().findtext("user/bcrypt-hash"), HASH)
         self.phpshell.assert_not_called()

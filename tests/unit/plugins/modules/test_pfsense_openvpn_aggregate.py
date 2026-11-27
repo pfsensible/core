@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import base64
@@ -20,7 +21,6 @@ SERVER2_COPY = "<openvpn-server><vpnid>5</vpnid><description>ovpns2</description
 
 
 class TestPFSenseOpenVPNAggregateModule(TestPFSenseModule):
-
     module = pfsense_openvpn_aggregate
 
     def __init__(self, *args, **kwargs):
@@ -40,7 +40,7 @@ class TestPFSenseOpenVPNAggregateModule(TestPFSenseModule):
         self.phpshell.side_effect = self.record_phpshell
 
     def load_fixtures(self):
-        """ the fixture with a client, and the extra entries of the test """
+        """the fixture with a client, and the extra entries of the test"""
         super(TestPFSenseOpenVPNAggregateModule, self).load_fixtures()
         tree = ET.parse(self.tmp_file)
         for extra in self.extra:
@@ -48,7 +48,7 @@ class TestPFSenseOpenVPNAggregateModule(TestPFSenseModule):
         tree.write(self.tmp_file)
 
     def record_phpshell(self, command):
-        """ keep each PHP command with config.xml as it was when it ran """
+        """keep each PHP command with config.xml as it was when it ran"""
         self.calls.append((command, ET.parse(self.tmp_file).getroot()))
         return (0, "", "")
 
@@ -62,7 +62,7 @@ class TestPFSenseOpenVPNAggregateModule(TestPFSenseModule):
         return [elt.findtext(field) for elt in root.find("openvpn").findall(tag)]
 
     def php_command(self):
-        """ the one PHP command run, once config.xml was written """
+        """the one PHP command run, once config.xml was written"""
         self.assertEqual(len(self.calls), 1, self.calls)
         return self.calls[0]
 
@@ -116,8 +116,9 @@ class TestPFSenseOpenVPNAggregateModule(TestPFSenseModule):
 
     def test_overrides(self):
         result = self.run_aggregate(aggregated_openvpn_overrides=[dict(name="vpnuser1", block=True)], purge_openvpn_overrides=True)
-        self.assertEqual(result["result_openvpn_overrides"], ["create openvpn_override 'vpnuser1', common_name='vpnuser1'",
-                                                              "delete openvpn_override 'delvpnuser'"])
+        self.assertEqual(
+            result["result_openvpn_overrides"], ["create openvpn_override 'vpnuser1', common_name='vpnuser1'", "delete openvpn_override 'delvpnuser'"]
+        )
         (command, config) = self.php_command()
         self.assertIn("openvpn_delete_csc(array('common_name' => 'delvpnuser', 'server_list' => '1'));", command)
         self.assertIn("if (in_array($csc['common_name'], array('vpnuser1'), true)) { openvpn_resync_csc($csc); }", command)

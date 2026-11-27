@@ -4,7 +4,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import time
@@ -61,11 +62,11 @@ RULE_RESET_VALUES = {
 
 
 class PFSenseRuleModule(PFSenseModuleBase):
-    """ module managing pfsense rules """
+    """module managing pfsense rules"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return RULE_ARGUMENT_SPEC
 
     ##############################
@@ -84,10 +85,10 @@ class PFSenseRuleModule(PFSenseModuleBase):
         self.result["modified"] = []
 
         self.obj = None
-        self._floating = None               # are we on floating rule
-        self._floating_interfaces = None    # rule's interfaces before change
-        self._after = None                  # insert/move after
-        self._before = None                 # insert/move before
+        self._floating = None  # are we on floating rule
+        self._floating_interfaces = None  # rule's interfaces before change
+        self._after = None  # insert/move after
+        self._before = None  # insert/move before
 
         self._position_changed = False
         self.trackers = set()
@@ -96,7 +97,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -119,7 +120,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return obj
 
     def _parse_floating_interfaces(self, interfaces):
-        """ validate param interface field when floating is true """
+        """validate param interface field when floating is true"""
         res = []
         for interface in interfaces.split(","):
             if interface == "any":
@@ -130,7 +131,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return ",".join(res)
 
     def _configure_rule(self):
-        """ Build the requested changes and validate them against the resulting rule. """
+        """Build the requested changes and validate them against the resulting rule."""
         params = self.params
         obj = self.obj
         current = self.pfsense.element_to_dict(self.target_elt) if self.target_elt is not None else {}
@@ -142,8 +143,13 @@ class PFSenseRuleModule(PFSenseModuleBase):
                 self.module.fail_json(msg="The following parameters are required when creating a rule: " + ", ".join(missing))
             obj.update(RULE_DEFAULTS)
 
-        for field, xml_field in (("action", "type"), ("ipprotocol", "ipprotocol"), ("statetype", "statetype"),
-                                 ("direction", "direction"), ("statepolicy", "statepolicy")):
+        for field, xml_field in (
+            ("action", "type"),
+            ("ipprotocol", "ipprotocol"),
+            ("statetype", "statetype"),
+            ("direction", "direction"),
+            ("statepolicy", "statepolicy"),
+        ):
             self._get_ansible_param(obj, field, fname=xml_field)
         self._get_ansible_param(obj, "tracker", exclude="")
 
@@ -200,7 +206,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         self._validate_rule_options(effective, ipprotocol)
 
     def _validate_params(self):
-        """ Check positioning arguments before looking up the rule. """
+        """Check positioning arguments before looking up the rule."""
         params = self.params
         if params.get("after") and params.get("before"):
             self.module.fail_json(msg="Cannot specify both after and before")
@@ -238,8 +244,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
             gateway = effective["gateway"]
             if ipprotocol == "inet46":
                 self.module.fail_json(msg='Gateway selection is not valid for "IPV4+IPV6" address family.')
-            if (self.pfsense.find_gateway_group_elt(gateway, ipprotocol) is None
-                    and self.pfsense.find_gateway_elt(gateway, None, ipprotocol) is None):
+            if self.pfsense.find_gateway_group_elt(gateway, ipprotocol) is None and self.pfsense.find_gateway_elt(gateway, None, ipprotocol) is None:
                 self.module.fail_json(msg='Gateway "%s" does not exist or does not match target rule ip protocol.' % gateway)
             if self._floating and effective.get("direction") == "any":
                 self.module.fail_json(msg="Gateways can not be used in Floating rules without choosing a direction")
@@ -275,7 +280,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
             left = set(icmptypes) - set(v4_types) - set(both_types)
         elif ipprotocol == "inet6":
             left = set(icmptypes) - set(v6_types) - set(both_types)
-        else:   # inet46 only allow
+        else:  # inet46 only allow
             left = set(icmptypes) - set(both_types)
         if len(left) > 0:
             self.module.fail_json(msg="ICMP types {0} are invalid with IP type {1}".format(",".join(left), ipprotocol))
@@ -285,7 +290,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
     # XML processing
     #
     def _adjust_separators(self, start_idx, add=True, before=False):
-        """ update separators position """
+        """update separators position"""
         separators_elt = self.root_elt.find("separator")
         if separators_elt is None:
             return
@@ -317,7 +322,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
                     row_elt.text = "fr" + str(idx - 1)
 
     def _check_tracker(self, tracker, fail=False):
-        """ check the tracking used is unique and change it if required """
+        """check the tracking used is unique and change it if required"""
         if not self.trackers:
             tracker_elts = self.root_elt.findall("rule/tracker")
             for t_elt in tracker_elts:
@@ -339,7 +344,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return tracker
 
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         timestamp = "%d" % int(time.time())
         self.obj["id"] = ""
         if "tracker" not in self.obj:
@@ -357,7 +362,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         self.result["added"].append(self.obj)
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         timestamp = "%d" % int(time.time())
         before = self._rule_element_to_dict()
         if "tracker" not in self.obj:
@@ -396,11 +401,11 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element("rule")
 
     def _find_rule(self, value, field="descr"):
-        """ return rule element and index on interface/floating that matches criteria """
+        """return rule element and index on interface/floating that matches criteria"""
         i = 0
         for rule_elt in self.root_elt:
             field_elt = rule_elt.find(field)
@@ -410,7 +415,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return (None, -1)
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         rule_elt = None
         if "associated-rule-id" in self.obj:
             rule_elt, dummy = self._find_rule(self.obj["associated-rule-id"], "associated-rule-id")
@@ -423,7 +428,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return rule_elt
 
     def _get_expected_rule_position(self):
-        """ get expected rule position in interface/floating """
+        """get expected rule position in interface/floating"""
         if self._before == "bottom":
             return self.pfsense.get_interface_rules_count(self.obj["interface"], self._floating) - 1
         elif self._after == "top":
@@ -443,7 +448,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return -1
 
     def _get_expected_rule_xml_index(self):
-        """ get expected rule index in xml """
+        """get expected rule index in xml"""
         if self._before == "bottom":
             return self._get_last_rule_xml_index() + 1
         elif self._after == "top":
@@ -474,7 +479,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return -1
 
     def _get_first_rule_xml_index(self):
-        """ Find the first rule for the interface/floating and return its xml index """
+        """Find the first rule for the interface/floating and return its xml index"""
         i = 0
         for rule_elt in self.root_elt:
             if self._match_interface(rule_elt):
@@ -483,7 +488,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return i
 
     def _get_last_rule_xml_index(self):
-        """ Find the last rule for the interface/floating and return its xml index """
+        """Find the last rule for the interface/floating and return its xml index"""
         last_found = -1
         i = 0
         for rule_elt in self.root_elt:
@@ -493,8 +498,8 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return last_found
 
     def _get_first_deny_rule_xml_index(self):
-        """ Find the first block/reject rule for the interface/floating and return its xml index.
-            Returns None if no block/reject rules exist for this interface. """
+        """Find the first block/reject rule for the interface/floating and return its xml index.
+        Returns None if no block/reject rules exist for this interface."""
         i = 0
         for rule_elt in self.root_elt:
             if self._match_interface(rule_elt):
@@ -505,14 +510,14 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return None
 
     def _get_params_to_remove(self):
-        """ Return XML fields explicitly reset by the caller. """
+        """Return XML fields explicitly reset by the caller."""
         fields = [xml_field for field, (xml_field, reset) in RULE_RESET_VALUES.items() if self.params.get(field) == reset]
         if self.params.get("protocol") not in (None, "icmp"):
             fields.append("icmptype")
         return fields
 
     def _get_rule_position(self, descr=None, fail=True, first=True):
-        """ get rule position in interface/floating """
+        """get rule position in interface/floating"""
         if descr is None:
             descr = self.obj["descr"]
 
@@ -522,7 +527,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return res
 
     def _insert(self, rule_elt):
-        """ insert rule into xml """
+        """insert rule into xml"""
         rule_xml_idx = self._get_expected_rule_xml_index()
         self.root_elt.insert(rule_xml_idx, rule_elt)
 
@@ -530,11 +535,11 @@ class PFSenseRuleModule(PFSenseModuleBase):
         self._adjust_separators(rule_position, before=(self._after is None and self._before is not None))
 
     def _match_interface(self, rule_elt):
-        """ check if a rule elt match the targeted interface """
+        """check if a rule elt match the targeted interface"""
         return self.pfsense.rule_match_interface(rule_elt, self.obj["interface"], self._floating)
 
     def _update_rule_position(self, rule_elt):
-        """ move rule in xml if required """
+        """move rule in xml if required"""
         current_position = self._get_rule_position()
         expected_position = self._get_expected_rule_position()
         if current_position == expected_position:
@@ -557,13 +562,13 @@ class PFSenseRuleModule(PFSenseModuleBase):
         super(PFSenseRuleModule, self)._add()
 
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         self._adjust_separators(self._get_rule_position(), add=False)
         self.diff["before"] = self._rule_element_to_dict()
         self.result["deleted"].append(self._rule_element_to_dict())
 
     def _rule_element_to_dict(self):
-        """ convert rule_elt to dictionary like module arguments """
+        """convert rule_elt to dictionary like module arguments"""
         rule = self.pfsense.element_to_dict(self.target_elt)
 
         # We use 'name' for 'descr'
@@ -578,7 +583,7 @@ class PFSenseRuleModule(PFSenseModuleBase):
         return rule
 
     def _update(self):
-        """ make the target pfsense reload rules """
+        """make the target pfsense reload rules"""
         return self.pfsense.phpshell("""require_once("filter.inc");
 if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
 
@@ -586,11 +591,11 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}' on '{1}'".format(self.obj["descr"], self._interface_name())
 
     def _interface_name(self):
-        """ return formated interface name for logging """
+        """return formated interface name for logging"""
         if self._floating:
             if self._floating_interfaces is not None:
                 return "floating(" + self._floating_interfaces + ")"
@@ -598,7 +603,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
         return self.params["interface"]
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "source")
@@ -662,7 +667,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
         return values
 
     def _obj_address_to_log_field(self, rule, addr):
-        """ return formated address from dict """
+        """return formated address from dict"""
         field = ""
         field_port = ""
         if isinstance(rule[addr], dict):
@@ -695,7 +700,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
         return field, field_port
 
     def _obj_to_log_fields(self, rule):
-        """ return formated source and destination from dict """
+        """return formated source and destination from dict"""
         res = {}
         res["source"], res["source_port"] = self._obj_address_to_log_field(rule, "source")
         res["destination"], res["destination_port"] = self._obj_address_to_log_field(rule, "destination")

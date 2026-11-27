@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 import re
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -37,11 +38,11 @@ HAPROXY_BACKEND_SERVER_MUTUALLY_EXCLUSIVE = [
 
 
 class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
-    """ module managing pfsense haproxy backend servers """
+    """module managing pfsense haproxy backend servers"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return HAPROXY_BACKEND_SERVER_ARGUMENT_SPEC
 
     ##############################
@@ -66,7 +67,7 @@ class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -109,7 +110,7 @@ class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
         # check name
         if re.search(r"[^a-zA-Z0-9\.\-_]", params["name"]) is not None:
@@ -144,13 +145,13 @@ class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         server_elt = self.pfsense.new_element("item")
         self.obj["id"] = self._get_next_id()
         return server_elt
 
     def _find_backend(self, name):
-        """ return the target backend_elt if found """
+        """return the target backend_elt if found"""
         for item_elt in self.backends:
             if item_elt.tag != "item":
                 continue
@@ -160,7 +161,7 @@ class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
         return None
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for item_elt in self.root_elt:
             if item_elt.tag != "item":
                 continue
@@ -171,13 +172,13 @@ class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         params = ["ssl", "checkssl", "sslserververify", "forwardto", "address", "port", "weight", "istemplate", "verifyhost"]
         params += ["ssl-server-crl", "ssl-server-ca", "ssl-server-clientcert", "cookie", "maxconn", "advanced"]
         return params
 
     def _get_next_id(self):
-        """ get next free haproxy id  """
+        """get next free haproxy id"""
         max_id = 99
         id_elts = self.haproxy.findall(".//id")
         for id_elt in id_elts:
@@ -192,7 +193,7 @@ class PFSenseHaproxyBackendServerModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell("""require_once("haproxy/haproxy.inc");
 $result = haproxy_check_and_run($savemsg, true); if ($result) unlink_if_exists($d_haproxyconfdirty_path);""")
 
@@ -200,7 +201,7 @@ $result = haproxy_check_and_run($savemsg, true); if ($result) unlink_if_exists($
     # Logging
     #
     def _get_ref_names(self, before):
-        """ get cert and ca names """
+        """get cert and ca names"""
         if "ssl-server-ca" in before and before["ssl-server-ca"] is not None and before["ssl-server-ca"] != "":
             elt = self.pfsense.find_ca_elt(before["ssl-server-ca"], "refid")
             if elt is not None:
@@ -223,11 +224,11 @@ $result = haproxy_check_and_run($savemsg, true); if ($result) unlink_if_exists($
             before["clientcert"] = None
 
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}' on '{1}'".format(self.obj["name"], self.params["backend"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "mode", fname="status")
