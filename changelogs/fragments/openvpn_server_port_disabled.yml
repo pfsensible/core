@@ -1,0 +1,2 @@
+bugfixes:
+  - pfsense_openvpn_server - the local port check skips the disabled instances, as pfSense does: a disabled instance no longer keeps another one from using its port.

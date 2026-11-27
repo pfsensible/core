@@ -242,6 +242,13 @@ class TestPFSenseOpenVPNServerModule(TestPFSenseModule):
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1195, interface="Backup WAN IP")
         self.do_module_test(obj, failed=True, msg="The specified local_port (1195) is in use by vpn ID 2")
 
+    def test_openvpn_server_port_of_disabled(self):
+        """ the port check skips a disabled instance, as the web GUI does """
+        self.ovpns2_bind = self.OVPNS2_BIND + "                        <disable></disable>\n"
+        obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1195)
+        with set_module_args(obj):
+            self.execute_module(changed=True)
+
     def test_openvpn_server_proxyarp_vip_not_bound(self):
         """ the web GUI does not offer proxy ARP VIPs to OpenVPN: no address to bind to """
         obj = dict(name="ovpns3", mode="p2p_tls", ca="OpenVPN CA", local_port=1196, interface="_viptestparp")

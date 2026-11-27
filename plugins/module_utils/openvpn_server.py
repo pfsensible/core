@@ -276,7 +276,8 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
 
     def _openvpn_port_used(self, protocol, interface, port, vpnid=0):
         for elt in self.root_elt.findall("*[local_port]"):
-            if (elt.find("disable")):
+            # An empty <disable/> element is falsy: test that it exists
+            if elt.find("disable") is not None:
                 continue
 
             this_vpnid = int(elt.find("vpnid").text)
