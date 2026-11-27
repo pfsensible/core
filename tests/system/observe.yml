@@ -6,12 +6,13 @@
          + (['--expect-action', pf_expect_action] if pf_expect_action is defined else [])
          + (['--expect-entry', pf_expect_entry] if pf_expect_entry is defined else [])
          + (pf_nat_args | default([]))
+         + (pf_binat_args | default([]))
          + (interface_observation_args | default([])) }}
   register: observed
   changed_when: false
   # Only rc=1 with an observation means PF has not converged. Stop on tool errors.
   until: observed.rc != 1 or (observed.stdout | trim | length == 0)
-  retries: "{{ (pf_wait_retries | default(60)) if pf_expect_action is defined or pf_nat_args is defined else 0 }}"
+  retries: "{{ (pf_wait_retries | default(60)) if pf_expect_action is defined or pf_nat_args is defined or pf_binat_args is defined else 0 }}"
   delay: "{{ pf_wait_delay | default(1) }}"
 
 - name: Decode observed appliance state

@@ -83,6 +83,34 @@ def observe_nat(rule_name, target):
     }
 
 
+def observe_binat(rule_name, source):
+    """Read saved 1:1 rules and live PF entries for the test source."""
+    config = Path("/cf/conf/config.xml").read_bytes()
+    root = ET.fromstring(config)
+    fields = ("interface", "ipprotocol", "external", "source/address", "destination/address", "natreflection")
+    live_rules = []
+    source_match = rf"\bfrom {re.escape(source)} to "
+    for scope in pf_scopes():
+        command = ["/sbin/pfctl", "-P"] + (["-a", scope] if scope else [])
+        nat = subprocess.run(command + ["-sn"], capture_output=True, text=True, check=True)
+        live_rules.extend(line for line in map(str.strip, nat.stdout.splitlines()) if re.match(r"(?:no )?binat\b", line) and re.search(source_match, line))
+    return {
+        "config_sha256": hashlib.sha256(config).hexdigest(),
+        "binat_rules": [
+            dict(
+                {field: rule.findtext(field) for field in fields},
+                destination_any=rule.find("destination/any") is not None,
+                disabled=rule.find("disabled") is not None,
+                nobinat=rule.find("nobinat") is not None,
+            )
+            for rule in root.findall("nat/onetoone")
+            if rule.findtext("descr") == rule_name
+        ],
+        "live_binat_rules": live_rules,
+        "filter_reload": read_reload_status(),
+    }
+
+
 def observe_vlan(parent, tag):
     """Read the saved VLAN and inspect the corresponding FreeBSD interface."""
     config = Path("/cf/conf/config.xml").read_bytes()
@@ -238,6 +266,8 @@ if __name__ == "__main__":
     parser.add_argument("--interface-gateway", nargs=3, metavar=("DESCRIPTION", "PORT", "GATEWAY"))
     parser.add_argument("--nat-rule")
     parser.add_argument("--nat-target")
+    parser.add_argument("--binat-rule", nargs=2, metavar=("DESCRIPTION", "SOURCE"))
+    parser.add_argument("--expect-binat", help="Regular expression for the expected rule, or 'absent'")
     parser.add_argument("--rule", default="CI URL table test")
     parser.add_argument("--vip-address")
     parser.add_argument("--vlan", nargs=2, metavar=("PARENT", "TAG"))
@@ -253,6 +283,15 @@ if __name__ == "__main__":
         sys.exit(0)
     if arguments.interface_gateway is not None:
         print(json.dumps(observe_interface(*arguments.interface_gateway)))
+        sys.exit(0)
+    if arguments.binat_rule is not None:
+        state = observe_binat(*arguments.binat_rule)
+        print(json.dumps(state))
+        rules = state["live_binat_rules"]
+        if arguments.expect_binat == "absent":
+            sys.exit(0 if not rules else 1)
+        if arguments.expect_binat:
+            sys.exit(0 if len(rules) == 1 and re.fullmatch(arguments.expect_binat, rules[0]) else 1)
         sys.exit(0)
     if arguments.nat_rule is not None:
         if arguments.nat_target is None:
