@@ -1,0 +1,42 @@
+---
+- name: Read the VLAN from saved configuration and ifconfig
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_python_interpreter }}"
+      - /tmp/pfsensible-system/observe.py
+      - --vlan
+      - "{{ vlan_args.interface }}"
+      - "{{ vlan_args.vlan_id }}"
+  register: vlan_observed
+  changed_when: false
+
+- name: Decode the observed VLAN state
+  ansible.builtin.set_fact:
+    appliance: "{{ vlan_observed.stdout | from_json }}"
+
+- name: Record the saved and live VLAN state
+  ansible.builtin.debug:
+    var: appliance
+
+- name: Verify the VLAN is absent from configuration and the kernel
+  ansible.builtin.assert:
+    that:
+      - not appliance.vlans
+      - appliance.live_vlan is none
+  when: system_case.expect_absent | default(false)
+
+- name: Verify the saved VLAN and its live parent, tag and priority
+  ansible.builtin.assert:
+    that:
+      - appliance.vlans | length == 1
+      - appliance.vlans[0].vlanif == vlan_device
+      - appliance.vlans[0].descr == vlan_args.descr
+      - appliance.vlans[0].pcp == vlan_priority
+      - appliance.live_vlan is string
+      - appliance.live_vlan is search('vlan:[ ]+' ~ vlan_args.vlan_id ~ '( |$)')
+      - appliance.live_vlan is search('vlanpcp:[ ]+' ~ vlan_priority ~ '( |$)')
+      - appliance.live_vlan is search('parent interface:[ ]+' ~ vlan_args.interface ~ '( |$)', multiline=true)
+  vars:
+    vlan_device: "{{ vlan_args.interface }}.{{ vlan_args.vlan_id }}"
+    vlan_priority: "{{ system_case.args.priority | default(vlan_updated_args.priority) | string }}"
+  when: not (system_case.expect_absent | default(false))

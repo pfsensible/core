@@ -1327,7 +1327,9 @@ class PFSenseModuleAggregate(object):
 
         if changed and not self.module.check_mode:
             self.pfsense.write_config(descr="aggregated change")
-            (dummy, stdout, stderr) = self._update()
+            (rc, stdout, stderr) = self._update()
+            if rc and self.pfsense_vlans.result["changed"]:
+                self.module.fail_json(msg="Aggregate configuration was saved, but pfSense could not apply it", changed=True, rc=rc, stderr=stderr)
 
         result = {}
         result["result_aliases"] = self.pfsense_aliases.result["commands"]

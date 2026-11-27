@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import argparse
 import hashlib
+from html import unescape
 from ipaddress import ip_address, ip_interface
 import json
 from pathlib import Path
@@ -80,6 +81,27 @@ def observe_nat(rule_name, target):
         "filters": filters,
         "filter_reload": read_reload_status(),
     }
+
+
+def observe_vlan(parent, tag):
+    """Read the saved VLAN and inspect the corresponding FreeBSD interface."""
+    config = Path("/cf/conf/config.xml").read_bytes()
+    root = ET.fromstring(config)
+    vlans = [
+        {field: entry.findtext(field) for field in ("if", "tag", "vlanif", "pcp", "descr")}
+        for entry in root.findall("vlans/vlan")
+        if entry.findtext("if") == parent and entry.findtext("tag") == tag
+    ]
+    # pfSense stores descriptions in escaped CDATA, which ElementTree returns verbatim.
+    for vlan in vlans:
+        if vlan["descr"] is not None:
+            vlan["descr"] = unescape(vlan["descr"])
+    device = f"{parent}.{tag}"
+    interfaces = subprocess.run(["/sbin/ifconfig", "-l"], capture_output=True, text=True, check=True)
+    live = None
+    if device in interfaces.stdout.split():
+        live = subprocess.run(["/sbin/ifconfig", device], capture_output=True, text=True, check=True).stdout
+    return {"config_sha256": hashlib.sha256(config).hexdigest(), "vlans": vlans, "live_vlan": live}
 
 
 def observe_vip(address):
@@ -218,10 +240,14 @@ if __name__ == "__main__":
     parser.add_argument("--nat-target")
     parser.add_argument("--rule", default="CI URL table test")
     parser.add_argument("--vip-address")
+    parser.add_argument("--vlan", nargs=2, metavar=("PARENT", "TAG"))
     nat_expectation = parser.add_mutually_exclusive_group()
     nat_expectation.add_argument("--expect-nat-ports", nargs=3, metavar=("SOURCE", "DESTINATION", "TARGET"))
     nat_expectation.add_argument("--expect-nat-absent", action="store_true")
     arguments = parser.parse_args()
+    if arguments.vlan is not None:
+        print(json.dumps(observe_vlan(*arguments.vlan)))
+        sys.exit(0)
     if arguments.vip_address is not None:
         print(json.dumps(observe_vip(arguments.vip_address)))
         sys.exit(0)

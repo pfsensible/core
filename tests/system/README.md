@@ -32,6 +32,10 @@ gateway, the address on the live adapter, and the gateway in pfSense's native
 gateway inventory. It also verifies check mode, an unchanged repeat apply,
 a gateway address update, and cleanup.
 
+The VLAN scenario checks the saved VLAN entry and the live FreeBSD interface,
+including its parent, tag, and priority. It verifies creation, a priority
+update, deletion, idempotence, and check mode for both creation and deletion.
+
 The VIP scenario checks that IP Alias, CARP, and an IP Alias stacked on CARP
 appear on the expected interface, with the expected VHID where applicable.
 It also verifies that Proxy ARP is registered on the selected interface and
