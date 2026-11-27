@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -49,8 +50,10 @@ class TestPFSenseAutoConfigBackupModule(TestPFSenseModule):
         self.assertEqual(self.run_module(**params)["commands"], [])
 
     def test_enable_with_stored_password(self):
-        self.write_config("<acb><enable></enable><frequency>cron</frequency><minute>44</minute><hour>0</hour>"
-                          "<encryption_password>{0}</encryption_password><device_key>{1}</device_key></acb>".format(PASSWORD, DEVICE_KEY))
+        self.write_config(
+            "<acb><enable></enable><frequency>cron</frequency><minute>44</minute><hour>0</hour>"
+            "<encryption_password>{0}</encryption_password><device_key>{1}</device_key></acb>".format(PASSWORD, DEVICE_KEY)
+        )
         result = self.run_module(changed=True, enable=True, _ansible_diff=True)
         self.assertEqual(result["commands"], ["update autoconfigbackup acb set enable=True"])
         self.assertEqual(self.stored()["enable"], "yes")
@@ -116,20 +119,31 @@ class TestPFSenseAutoConfigBackupModule(TestPFSenseModule):
         self.assertIn("$new_key = false;", self.phpshell.call_args[0][0])
 
     def test_legacy_passwords_redacted(self):
-        self.write_config("<acb><enable>yes</enable><encryption_password>{0}</encryption_password>"
-                          "<gold_password>gold-portal-secret</gold_password>"
-                          "<gold_encryption_password>gold-encryption-secret</gold_encryption_password></acb>".format(PASSWORD))
+        self.write_config(
+            "<acb><enable>yes</enable><encryption_password>{0}</encryption_password>"
+            "<gold_password>gold-portal-secret</gold_password>"
+            "<gold_encryption_password>gold-encryption-secret</gold_encryption_password></acb>".format(PASSWORD)
+        )
         result = self.run_module(changed=True, hint="firewall", _ansible_diff=True)
         for secret in (PASSWORD, "gold-portal-secret", "gold-encryption-secret"):
             self.assertNotIn(secret, repr(result))
         self.assertEqual(result["diff"]["after"]["gold_password"], REDACTED)
 
-    @parameterized.expand([
-        ("minute", dict(minute="5;reboot")), ("minute", dict(minute="0")), ("hour", dict(hour="0 *")),
-        ("hour", dict(hour="*/6")), ("dow", dict(dow="mon")), ("day", dict(day="1,15")),
-        ("numman", dict(numman=51)), ("numman", dict(numman=-1)), ("numman", dict(numman=True)), ("hint", dict(hint="a" * 256)),
-        ("encryption_password", dict(encryption_password="short")),
-    ])
+    @parameterized.expand(
+        [
+            ("minute", dict(minute="5;reboot")),
+            ("minute", dict(minute="0")),
+            ("hour", dict(hour="0 *")),
+            ("hour", dict(hour="*/6")),
+            ("dow", dict(dow="mon")),
+            ("day", dict(day="1,15")),
+            ("numman", dict(numman=51)),
+            ("numman", dict(numman=-1)),
+            ("numman", dict(numman=True)),
+            ("hint", dict(hint="a" * 256)),
+            ("encryption_password", dict(encryption_password="short")),
+        ]
+    )
     def test_invalid_option(self, option, params):
         with set_module_args(params):
             result = self.failed()

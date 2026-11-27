@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -140,9 +141,17 @@ DHCPV6_SERVER_ARGUMENT_SPEC = dict(
 
 # The options, in the order of the page, and where they are stored
 FIELDS = [
-    ("enable", "enable"), ("range_from", "range/from"), ("range_to", "range/to"), ("prefixrange_from", "prefixrange/from"),
-    ("prefixrange_to", "prefixrange/to"), ("prefixrange_length", "prefixrange/prefixlength"), ("defaultleasetime", "defaultleasetime"),
-    ("maxleasetime", "maxleasetime"), ("dnsserver", "dnsserver"), ("domain", "domain"), ("domainsearchlist", "domainsearchlist"),
+    ("enable", "enable"),
+    ("range_from", "range/from"),
+    ("range_to", "range/to"),
+    ("prefixrange_from", "prefixrange/from"),
+    ("prefixrange_to", "prefixrange/to"),
+    ("prefixrange_length", "prefixrange/prefixlength"),
+    ("defaultleasetime", "defaultleasetime"),
+    ("maxleasetime", "maxleasetime"),
+    ("dnsserver", "dnsserver"),
+    ("domain", "domain"),
+    ("domainsearchlist", "domainsearchlist"),
     ("ntpserver", "ntpserver"),
 ]
 
@@ -160,14 +169,14 @@ services_dhcpd_configure("inet6");
 
 
 def as_list(value):
-    """ a repeated element as a list """
+    """a repeated element as a list"""
     if value is None or value == "":
         return []
     return value if isinstance(value, list) else [value]
 
 
 class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
-    """ module managing pfSense DHCPv6 servers """
+    """module managing pfSense DHCPv6 servers"""
 
     ##############################
     # unit tests
@@ -175,7 +184,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return DHCPV6_SERVER_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
@@ -188,7 +197,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
     # params processing
     #
     def _get_logical_interface(self, interface):
-        """ the name of the interface given by its name, port or description """
+        """the name of the interface given by its name, port or description"""
         for iface in self.pfsense.interfaces:
             if iface.tag.lower() == interface.lower():
                 return iface.tag
@@ -199,7 +208,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
         return None
 
     def _wanted(self, option, field):
-        """ the value the option will have: the parameter when given, else the stored one """
+        """the value the option will have: the parameter when given, else the stored one"""
         value = self.params.get(option)
         if value is None:
             current = self.current
@@ -231,7 +240,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
                 if address not in IPv6Network("::/64"):
                     self._fail("{0} must be a suffix, with the upper 64 bits zero (::1000), on an interface that tracks another one".format(option))
         elif self.pfsense.is_ipv6_address(ipaddrv6) and interface_elt.findtext("subnetv6"):
-            network = ip_network(u"{0}/{1}".format(ipaddrv6, interface_elt.findtext("subnetv6")), strict=False)
+            network = ip_network("{0}/{1}".format(ipaddrv6, interface_elt.findtext("subnetv6")), strict=False)
             if addresses[0] not in network or addresses[1] not in network:
                 self._fail("The range must lie in the subnet of {0} ({1})".format(params["interface"], network))
 
@@ -248,11 +257,11 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
                 continue
             if not self.pfsense.is_ipv6_address(params[option]):
                 self._fail("{0} must be a valid IPv6 prefix".format(option))
-            if length and str(IPv6Network(u"{0}/{1}".format(params[option], length), strict=False).network_address) != str(IPv6Address(params[option])):
+            if length and str(IPv6Network("{0}/{1}".format(params[option], length), strict=False).network_address) != str(IPv6Address(params[option])):
                 self._fail("{0} must be the first address of a /{1} prefix".format(option, length))
 
     def _validate_params(self):
-        """ do the checks of the web GUI """
+        """do the checks of the web GUI"""
         params = self.params
 
         self.target = self._get_logical_interface(params["interface"])
@@ -293,7 +302,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
             self._fail("A range is required to enable the DHCPv6 server, unless the Router Advertisement mode is Stateless DHCP")
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
         obj = dict()
         if params["state"] == "absent":
@@ -323,7 +332,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
         return obj
 
     def _get_params_to_remove(self):
-        """ the fields removed by the task """
+        """the fields removed by the task"""
         to_remove = []
         if self.params.get("enable") is False:
             to_remove.append("enable")
@@ -335,15 +344,15 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element(self.target)
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         return self.pfsense.get_element(self.target, root_elt=self.root_elt)
 
     def _remove_deleted_params(self):
-        """ remove the fields removed by the task, and every element of a list set to empty """
+        """remove the fields removed by the task, and every element of a list set to empty"""
         changed = super(PFSenseDHCPv6ServerModule, self)._remove_deleted_params()
         for option in ["dnsserver", "ntpserver"]:
             if self.params.get(option) == []:
@@ -366,12 +375,12 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.target)
 
     @staticmethod
     def _view(values):
-        """ the options of a server's fields, as the task gives them """
+        """the options of a server's fields, as the task gives them"""
         view = dict()
         for option, field in FIELDS:
             value = values
@@ -386,7 +395,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
         return view
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters """
+        """generate pseudo-CLI command fields parameters"""
         after = self._view(self.diff["after"] if before is not None else self.obj)
         if before is None:
             return "".join(", {0}={1}".format(option, after[option]) for option, dummy in FIELDS if after[option] not in ("none", "False"))
@@ -395,9 +404,7 @@ class PFSenseDHCPv6ServerModule(PFSenseModuleBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=DHCPV6_SERVER_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=DHCPV6_SERVER_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseDHCPv6ServerModule(module)
     # Pass params for testing framework

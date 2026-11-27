@@ -3,14 +3,15 @@
 # Copyright: (c) 2019, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible.errors import AnsibleFilterError
 
 
 def format_ipsec_aggregate_ipsecs(all_tunnels, pfname):
-    """ format ipsecs for format_ipsec_aggregate """
+    """format ipsecs for format_ipsec_aggregate"""
     res = list()
     for name, ipsec in all_tunnels.items():
         pfsenses = ipsec["pfsenses"]
@@ -46,7 +47,7 @@ def format_ipsec_aggregate_ipsecs(all_tunnels, pfname):
 
 
 def format_ipsec_aggregate_proposals(all_tunnels, pfname):
-    """ format proposals for format_ipsec_aggregate """
+    """format proposals for format_ipsec_aggregate"""
     res = list()
 
     for name, ipsec in all_tunnels.items():
@@ -93,7 +94,7 @@ def format_ipsec_aggregate_proposals(all_tunnels, pfname):
 
 
 def format_ipsec_aggregate_p2s(all_tunnels, pfname):
-    """ format p2s for format_ipsec_aggregate """
+    """format p2s for format_ipsec_aggregate"""
     res = list()
 
     for name, ipsec in all_tunnels.items():
@@ -163,7 +164,7 @@ def format_ipsec_aggregate_p2s(all_tunnels, pfname):
 
 
 def format_ipsec_aggregate(*terms):
-    """ format var for ipsec_aggregate """
+    """format var for ipsec_aggregate"""
     if len(terms) != 2 or not isinstance(terms[0], dict):
         raise AnsibleFilterError("format_ipsec_aggregate expects one dictionnary of ipsec tunnels")
 
@@ -179,11 +180,11 @@ def format_ipsec_aggregate(*terms):
 
 
 class FilterModule(object):
-    """ FilterModule """
+    """FilterModule"""
 
     @staticmethod
     def filters():
-        """ defined functions """
+        """defined functions"""
         return {
             "format_ipsec_aggregate": format_ipsec_aggregate,
         }

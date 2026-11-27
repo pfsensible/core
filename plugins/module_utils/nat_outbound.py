@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -38,9 +39,7 @@ NAT_OUTBOUND_MUTUALLY_EXCLUSIVE = [
     ("after", "before"),
 ]
 
-NAT_OUTBOUND_REQUIRED_IF = [
-    ["state", "present", ["interface", "source", "destination"]]
-]
+NAT_OUTBOUND_REQUIRED_IF = [["state", "present", ["interface", "source", "destination"]]]
 
 # Booleans that map to different values
 NAT_OUTBOUND_BOOL_VALUES = dict(
@@ -80,19 +79,20 @@ NAT_OUTBOUND_ARG_ROUTE = dict(
 
 
 class PFSenseNatOutboundModule(PFSenseModuleBase):
-    """ module managing pfsense NAT rules """
+    """module managing pfsense NAT rules"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return NAT_OUTBOUND_ARGUMENT_SPEC
 
     ##############################
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseNatOutboundModule, self).__init__(module, pfsense, root="nat/outbound", create_root=True, arg_route=NAT_OUTBOUND_ARG_ROUTE,
-                                                       bool_values=NAT_OUTBOUND_BOOL_VALUES)
+        super(PFSenseNatOutboundModule, self).__init__(
+            module, pfsense, root="nat/outbound", create_root=True, arg_route=NAT_OUTBOUND_ARG_ROUTE, bool_values=NAT_OUTBOUND_BOOL_VALUES
+        )
         self.name = "pfsense_nat_outbound"
         # Override for use with aggregate
         self.argument_spec = NAT_OUTBOUND_ARGUMENT_SPEC
@@ -105,7 +105,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
 
         obj = super(PFSenseNatOutboundModule, self)._params_to_obj()
         params = self.params
@@ -125,7 +125,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return obj
 
     def _parse_address(self, obj, field, field_port, allow_self, target):
-        """ validate param address field and returns it as a dict """
+        """validate param address field and returns it as a dict"""
         if self.params.get(field) is None or self.params[field] == "":
             return
 
@@ -184,7 +184,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         obj[field] = ret
 
     def _parse_ports(self, obj, ports, field_port, param):
-        """ validate param address field and returns it as a dict """
+        """validate param address field and returns it as a dict"""
         if ports is not None:
             ports = ports.split("-")
             if len(ports) > 2 or ports[0] is None or ports[0] == "" or len(ports) == 2 and (ports[1] is None or ports[1] == ""):
@@ -200,7 +200,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
                 obj[field_port] += ":" + ports[1]
 
     def _parse_translated_address(self, obj):
-        """ validate param address field and returns it as a dict """
+        """validate param address field and returns it as a dict"""
         obj["target"] = ""
         obj["target_subnet"] = ""
 
@@ -243,7 +243,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         self._parse_ports(obj, ports, "natport", param)
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         if self.params.get("after"):
             if self.params["after"] == self.params["descr"]:
@@ -255,19 +255,19 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         if self.params.get("source_hash_key") is not None and self.params["source_hash_key"].startswith("0x"):
             hash = self.params["source_hash_key"][2:]
             if len(hash) != 32 or not all(c in hexdigits for c in hash):
-                self.module.fail_json(msg='Incorrect format for source-hash key, \"0x\" must be followed by exactly 32 hexadecimal characters.')
+                self.module.fail_json(msg='Incorrect format for source-hash key, "0x" must be followed by exactly 32 hexadecimal characters.')
 
     ##############################
     # XML processing
     #
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff["after"] = self.obj
         self._insert(self.target_elt)
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff["before"] = before
 
@@ -279,8 +279,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
         # pfSense omits <target_subnet> for single-host IPs (implicit /32).
         # Don't create it if the target itself hasn't changed.
-        if ("target_subnet" in self.obj and "target_subnet" not in before
-                and "target" in self.obj and before.get("target", "") == self.obj["target"]):
+        if "target_subnet" in self.obj and "target_subnet" not in before and "target" in self.obj and before.get("target", "") == self.obj["target"]:
             del self.obj["target_subnet"]
 
         # pfSense XML may use either 'network' or 'address' as the key inside <source>/<destination>.
@@ -297,9 +296,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
             xml_target_elt = self.target_elt.find("target")
             if xml_target_elt is not None and xml_target_elt.text:
                 xml_target = xml_target_elt.text
-                if (xml_target != self.obj["target"]
-                        and not self.pfsense.is_ipv4_address(xml_target)
-                        and not self.pfsense.is_ipv4_network(xml_target, False)):
+                if xml_target != self.obj["target"] and not self.pfsense.is_ipv4_address(xml_target) and not self.pfsense.is_ipv4_network(xml_target, False):
                     self.obj["target"] = xml_target
                     if "target_subnet" in self.obj and self.target_elt.find("target_subnet") is None:
                         del self.obj["target_subnet"]
@@ -323,12 +320,12 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         target_elt = self.pfsense.new_element("rule")
         return target_elt
 
     def _find_first_rule_idx(self):
-        """ find the XML first rule idx """
+        """find the XML first rule idx"""
         for idx, rule_elt in enumerate(self.root_elt):
             if rule_elt.tag != "rule":
                 continue
@@ -337,7 +334,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return len(self.root_elt)
 
     def _find_rule_by_descr(self, descr):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for idx, rule_elt in enumerate(self.root_elt):
             if rule_elt.tag != "rule":
                 continue
@@ -347,7 +344,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return (None, None)
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for rule_elt in self.root_elt:
             if rule_elt.tag != "rule":
                 continue
@@ -357,7 +354,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return None
 
     def _get_expected_rule_position(self):
-        """ get expected rule position in interface/floating """
+        """get expected rule position in interface/floating"""
         if self.before == "bottom":
             return len(self.root_elt)
         elif self.after == "top":
@@ -377,7 +374,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return -1
 
     def _get_expected_rule_xml_index(self):
-        """ get expected rule index in xml """
+        """get expected rule index in xml"""
         if self.before == "bottom":
             return len(self.root_elt)
         elif self.after == "top":
@@ -403,11 +400,11 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         return ["disabled", "nonat", "invert", "staticnatport", "nosync", "dstport", "natport", "ipprotocol", "protocol"]
 
     def _get_rule_position(self, descr=None, fail=True):
-        """ get rule position in interface/floating """
+        """get rule position in interface/floating"""
         if descr is None:
             descr = self.obj["descr"]
 
@@ -417,12 +414,12 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
         return idx
 
     def _insert(self, rule_elt):
-        """ insert rule into xml """
+        """insert rule into xml"""
         rule_xml_idx = self._get_expected_rule_xml_index()
         self.root_elt.insert(rule_xml_idx, rule_elt)
 
     def _update_rule_position(self, rule_elt):
-        """ move rule in xml if required """
+        """move rule in xml if required"""
         current_position = self._get_rule_position()
         expected_position = self._get_expected_rule_position()
         if current_position == expected_position:
@@ -438,7 +435,7 @@ class PFSenseNatOutboundModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell("""require_once("filter.inc");
 if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem_dirty('filter'); }""")
 
@@ -447,7 +444,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
     #
     @staticmethod
     def fvalue_protocol(value):
-        """ boolean value formatting function """
+        """boolean value formatting function"""
         if value is None or value == "none":
             return "any"
 
@@ -455,14 +452,14 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
 
     @staticmethod
     def fvalue_ipprotocol(value):
-        """ boolean value formatting function """
+        """boolean value formatting function"""
         if value is None or value == "none":
             return "inet46"
 
         return value
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         fafter = self._obj_to_log_fields(self.obj)
         if before is None:
@@ -506,7 +503,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         return values
 
     def _obj_address_to_log_field(self, rule, addr, target, port):
-        """ return formated address from dict """
+        """return formated address from dict"""
         field = ""
         if addr in rule:
             # pfSense XML may use 'address' instead of 'network' as the key
@@ -527,7 +524,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         return field
 
     def _obj_to_log_fields(self, rule):
-        """ return formated source and destination from dict """
+        """return formated source and destination from dict"""
         res = {}
         res["source"] = self._obj_address_to_log_field(rule, "source", "network", "sourceport")
         res["destination"] = self._obj_address_to_log_field(rule, "destination", "network", "dstport")

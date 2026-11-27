@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -275,15 +276,19 @@ IPSEC_SETTINGS_ARGUMENT_SPEC = dict(
     port_nat_t=dict(type="int"),
     noshuntlaninterfaces=dict(type="bool"),
     ipsecbypass=dict(type="bool"),
-    bypassrules=dict(type="list", elements="dict", no_log=False, options=dict(
-        source=dict(type="str", required=True),
-        destination=dict(type="str", required=True),
-    )),
+    bypassrules=dict(
+        type="list",
+        elements="dict",
+        no_log=False,
+        options=dict(
+            source=dict(type="str", required=True),
+            destination=dict(type="str", required=True),
+        ),
+    ),
 )
 
 # The fields stored directly in <ipsec>, by option name
-FIELDS = dict((param, param.replace("dns_interval", "dns-interval")) for param in IPSEC_SETTINGS_ARGUMENT_SPEC
-              if param not in ["logging", "bypassrules"])
+FIELDS = dict((param, param.replace("dns_interval", "dns-interval")) for param in IPSEC_SETTINGS_ARGUMENT_SPEC if param not in ["logging", "bypassrules"])
 BOOL_PARAMS = [param for param in FIELDS if IPSEC_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool"]
 NUMBER_PARAMS = [param for param in FIELDS if IPSEC_SETTINGS_ARGUMENT_SPEC[param]["type"] in ["int", "float"]]
 
@@ -304,7 +309,7 @@ clear_subsystem_dirty('sysctl');
 
 
 class PFSenseIpsecSettingsModule(PFSenseModuleBase):
-    """ module managing the IPsec advanced settings """
+    """module managing the IPsec advanced settings"""
 
     ##############################
     # unit tests
@@ -312,7 +317,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return IPSEC_SETTINGS_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
@@ -324,7 +329,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
     # params processing
     #
     def _snapshot(self):
-        """ the settings stored in <ipsec>, without the tunnels and their keys """
+        """the settings stored in <ipsec>, without the tunnels and their keys"""
         values = dict()
         for param, field in FIELDS.items():
             elt = self.root_elt.find(field)
@@ -343,7 +348,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
         return values
 
     def _subnet_family(self, subnet):
-        """ is_subnet() of /etc/inc/util.inc: 4 or 6 for a valid address/bits, else None """
+        """is_subnet() of /etc/inc/util.inc: 4 or 6 for a valid address/bits, else None"""
         address, sep, bits = subnet.partition("/")
         if not sep or not re.fullmatch(r"[0-9]{1,3}", bits):
             return None
@@ -354,7 +359,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
         return None
 
     def _validate_params(self):
-        """ do the checks of the web GUI on each option """
+        """do the checks of the web GUI on each option"""
         params = self.params
 
         for param in NUMBER_PARAMS:
@@ -380,7 +385,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
                 self.module.fail_json(msg="IPsec bypass source and destination addresses must belong to the same address family")
 
     def _validate_obj(self):
-        """ do the checks of the web GUI that involve the other settings """
+        """do the checks of the web GUI that involve the other settings"""
         obj = self.obj
 
         ports = [obj.get(field) for field in ["port", "port_nat_t"]]
@@ -398,7 +403,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
                     self.module.fail_json(msg="Unable to disable PKCS#11 support, already in use for Phase 1 authentication")
 
     def _number(self, param, field):
-        """ the number to store, or the stored one when they are equal """
+        """the number to store, or the stored one when they are equal"""
         value = self.params[param]
         try:
             if float(self.before[field]) == value:
@@ -410,7 +415,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
         return str(value)
 
     def _params_to_obj(self):
-        """ return the settings once changed """
+        """return the settings once changed"""
         params = self.params
         obj = dict(self.before)
 
@@ -464,7 +469,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
     # XML processing
     #
     def _copy_and_update_target(self):
-        """ update the settings in <ipsec> """
+        """update the settings in <ipsec>"""
         before = self.before
         self.diff["before"] = before
         changed = self.obj != before
@@ -486,10 +491,9 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
     # run
     #
     def run(self, params):
-        """ process input params to update the settings """
+        """process input params to update the settings"""
         self.params = params
-        if not any(value is not None and not (isinstance(value, dict) and all(level is None for level in value.values()))
-                   for value in params.values()):
+        if not any(value is not None and not (isinstance(value, dict) and all(level is None for level in value.values())) for value in params.values()):
             return
 
         self.target_elt = self.root_elt
@@ -500,19 +504,20 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
         self._add()
 
     def _update(self):
-        """ reload IPsec as the page does """
+        """reload IPsec as the page does"""
         before, after = self.diff["before"], self.diff["after"]
         restart = any(before.get(field) != after.get(field) for field in RESTART_FIELDS)
         filterdns_restart = before.get("dns-interval") != after.get("dns-interval")
-        return self.pfsense.phpshell(IPSEC_SETTINGS_PHP_COMMAND.format(
-            restart="true" if restart else "false", filterdns_restart="true" if filterdns_restart else "false"))
+        return self.pfsense.phpshell(
+            IPSEC_SETTINGS_PHP_COMMAND.format(restart="true" if restart else "false", filterdns_restart="true" if filterdns_restart else "false")
+        )
 
     ##############################
     # Logging
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "ipsec"
 
     @staticmethod
@@ -530,11 +535,15 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
     def _log_rules(values):
         if not values.get("bypassrules"):
             return "none"
-        return "'{0}'".format(", ".join("{0}/{1} to {2}/{3}".format(rule.get("source"), rule.get("srcmask"), rule.get("destination"), rule.get("dstmask"))
-                                        for rule in values["bypassrules"]["rule"]))
+        return "'{0}'".format(
+            ", ".join(
+                "{0}/{1} to {2}/{3}".format(rule.get("source"), rule.get("srcmask"), rule.get("destination"), rule.get("dstmask"))
+                for rule in values["bypassrules"]["rule"]
+            )
+        )
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters """
+        """generate pseudo-CLI command fields parameters"""
         after = self.obj
         fields = []
         for param in IPSEC_SETTINGS_ARGUMENT_SPEC:
@@ -552,9 +561,7 @@ class PFSenseIpsecSettingsModule(PFSenseModuleBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=IPSEC_SETTINGS_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=IPSEC_SETTINGS_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseIpsecSettingsModule(module)
     # Pass params for testing framework

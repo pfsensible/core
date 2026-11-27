@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -362,15 +361,12 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.openvpn_server import (
     PFSenseOpenVPNServerModule,
     OPENVPN_SERVER_ARGUMENT_SPEC,
-    OPENVPN_SERVER_REQUIRED_IF
+    OPENVPN_SERVER_REQUIRED_IF,
 )
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=OPENVPN_SERVER_ARGUMENT_SPEC,
-        required_if=OPENVPN_SERVER_REQUIRED_IF,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=OPENVPN_SERVER_ARGUMENT_SPEC, required_if=OPENVPN_SERVER_REQUIRED_IF, supports_check_mode=True)
 
     pfopenvpn = PFSenseOpenVPNServerModule(module)
     pfopenvpn.run(module.params)

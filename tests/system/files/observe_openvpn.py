@@ -1,6 +1,7 @@
 """Read live OpenVPN management and tunnel interface state on pfSense."""
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import argparse
@@ -69,22 +70,23 @@ def main():
     # The server reports the certificate common name and virtual IPv4 address.
     sessions = [line.split("\t") for line in server if line.startswith("CLIENT_LIST\t")]
     states = [line.split(",") for line in client]
-    print(json.dumps({
-        "config_sha256": sha256(Path("/cf/conf/config.xml").read_bytes()).hexdigest(),
-        "pids": pids,
-        "server_status": server,
-        "client_state": client,
-        "server_interface_addresses": server_addresses,
-        "client_interface_addresses": client_addresses,
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "config_sha256": sha256(Path("/cf/conf/config.xml").read_bytes()).hexdigest(),
+                "pids": pids,
+                "server_status": server,
+                "client_state": client,
+                "server_interface_addresses": server_addresses,
+                "client_interface_addresses": client_addresses,
+            },
+            indent=2,
+        )
+    )
     server_has_session = any(row[1] == args.common_name and row[3] == args.client_address for row in sessions)
     client_connected = any(row[1:4] == ["CONNECTED", "SUCCESS", args.client_address] for row in states)
     ready = (
-        server_has_session
-        and client_connected
-        and all(pids.values())
-        and args.server_address in server_addresses
-        and args.client_address in client_addresses
+        server_has_session and client_connected and all(pids.values()) and args.server_address in server_addresses and args.client_address in client_addresses
     )
     return 0 if ready else 1
 

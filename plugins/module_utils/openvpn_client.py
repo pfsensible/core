@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import base64
@@ -72,9 +73,12 @@ require_once('openvpn.inc');
 $ovpn = config_get_path('openvpn/openvpn-client', [])[{idx}];
 """
 
-OPENVPN_CLIENT_PHP_COMMAND_SET = OPENVPN_CLIENT_PHP_COMMAND_PREFIX + """
+OPENVPN_CLIENT_PHP_COMMAND_SET = (
+    OPENVPN_CLIENT_PHP_COMMAND_PREFIX
+    + """
 openvpn_resync('client',$ovpn);
 """
+)
 
 # Run once config.xml no longer holds the client: openvpn_delete() only needs its vpnid.
 OPENVPN_CLIENT_PHP_COMMAND_DEL = """
@@ -84,7 +88,7 @@ openvpn_delete('client', array('vpnid' => '{vpnid}'));
 
 
 class PFSenseOpenVPNClientModule(PFSenseModuleBase):
-    """ module managing pfSense OpenVPN configuration """
+    """module managing pfSense OpenVPN configuration"""
 
     ##############################
     # init
@@ -95,9 +99,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         self.root_elt = self.pfsense.get_element("openvpn", create_node=True)
         self.obj = dict()
 
-        cmd = ('require_once("openvpn.inc");;'
-               '$digestlist = openvpn_get_digestlist();'
-               'echo json_encode($digestlist);')
+        cmd = 'require_once("openvpn.inc");;$digestlist = openvpn_get_digestlist();echo json_encode($digestlist);'
         self.digestlist = self.pfsense.php(cmd)
 
     ##############################
@@ -110,7 +112,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         self.module.fail_json(msg=f"Invalid digest '{digest}'")
 
     def _params_to_obj(self):
-        """ return dict from module params """
+        """return dict from module params"""
         obj = dict()
         obj["description"] = self.params["name"]
         if self.params["state"] == "present":
@@ -181,7 +183,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         # check name
@@ -220,12 +222,13 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
                     params[param] = base64.b64encode(key.encode()).decode()
                 else:
                     key_decoded = base64.b64decode(key.encode()).decode()
-                    if not re.search("^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$",
-                                     key_decoded, flags=re.MULTILINE | re.DOTALL):
+                    if not re.search(
+                        "^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$", key_decoded, flags=re.MULTILINE | re.DOTALL
+                    ):
                         self.module.fail_json(msg="Could not recognize {0} key format: {1}".format(param, key_decoded))
 
     def _nextvpnid(self):
-        """ find next available vpnid """
+        """find next available vpnid"""
         vpnid = 1
         while len(self.root_elt.findall("*[vpnid='{0}']".format(vpnid))) != 0:
             vpnid += 1
@@ -235,7 +238,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     # XML processing
     #
     def _find_openvpn_client(self, value, field="description"):
-        """ return openvpn-client element """
+        """return openvpn-client element"""
         i = 0
         for elt in self.root_elt.findall("openvpn-client"):
             field_elt = elt.find(field)
@@ -251,7 +254,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return i
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         (before, changed) = super(PFSenseOpenVPNClientModule, self)._copy_and_update_target()
 
         if not changed:
@@ -261,7 +264,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         target_elt = self.pfsense.new_element("openvpn-client")
         self.obj["vpnid"] = self._nextvpnid()
         self.result["vpnid"] = int(self.obj["vpnid"])
@@ -273,7 +276,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return target_elt
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         (target_elt, self.idx) = self._find_openvpn_client(self.obj["description"])
         # Moved off a virtual IP: clear the address it was bound to
         if self.params["state"] == "present" and target_elt is not None and "ipaddr" not in self.obj and target_elt.findtext("ipaddr"):
@@ -292,7 +295,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
         return target_elt
 
     def _remove_target_elt(self):
-        """ delete target_elt from xml """
+        """delete target_elt from xml"""
         super(PFSenseOpenVPNClientModule, self)._remove_target_elt()
         self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
 
@@ -300,7 +303,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     # run
     #
     def _remove(self):
-        """ delete obj """
+        """delete obj"""
         self.diff["after"] = ""
         self.diff["before"] = ""
         super(PFSenseOpenVPNClientModule, self)._remove()
@@ -308,7 +311,7 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
             self.result["vpnid"] = int(self.diff["before"]["vpnid"])
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         if self.params["state"] == "present":
             return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_SET.format(idx=self.idx))
         return self.pfsense.phpshell(OPENVPN_CLIENT_PHP_COMMAND_DEL.format(vpnid=self.result["vpnid"]))
@@ -317,11 +320,11 @@ class PFSenseOpenVPNClientModule(PFSenseModuleBase):
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'" + self.obj["description"] + "'"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "description")

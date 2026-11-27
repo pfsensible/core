@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -104,11 +103,11 @@ AUTHSERVER_RADIUS_SPEC = {
 
 
 class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
-    """ module managing pfsense RADIUS authentication """
+    """module managing pfsense RADIUS authentication"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return AUTHSERVER_RADIUS_SPEC
 
     def __init__(self, module, pfsense=None):
@@ -121,13 +120,13 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
     # params processing
     #
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         if int(self.params["timeout"]) < 1:
             self.module.fail_json(msg="timeout {0} must be greater than 1".format(self.params["timeout"]))
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -162,13 +161,13 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
         return self.authservers.index(self.target_elt)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         elt = self.pfsense.new_element("authserver")
         elt.append(self.pfsense.new_element("refid", text=self.pfsense.uniqid()))
         return elt
 
     def _copy_and_add_target(self):
-        """ populate the XML target_elt """
+        """populate the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff["after"] = self.obj
         if len(self.authservers) > 0:
@@ -180,11 +179,11 @@ class PFSenseAuthserverRADIUSModule(PFSenseModuleBase):
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["name"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         return values
 
@@ -195,7 +194,8 @@ def main():
         required_if=[
             ["state", "present", ["host", "secret"]],
         ],
-        supports_check_mode=True)
+        supports_check_mode=True,
+    )
 
     pfmodule = PFSenseAuthserverRADIUSModule(module)
     pfmodule.run(module.params)

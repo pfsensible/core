@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -17,7 +18,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseRuleModule(TestPFSenseModule):
-
     module = pfsense_rule
 
     def __init__(self, *args, **kwargs):
@@ -27,11 +27,11 @@ class TestPFSenseRuleModule(TestPFSenseModule):
 
     @staticmethod
     def runTest():
-        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        """dummy function needed to instantiate this test module from another in python 2.7"""
         pass
 
     def parse_address(self, addr):
-        """ return address parsed in dict """
+        """return address parsed in dict"""
         if PFSenseModule.is_ipv6_address(addr) or PFSenseModule.is_ipv6_network(addr):
             parts = [addr]
         else:
@@ -61,7 +61,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
         return res
 
     def check_rule_elt_addr(self, rule, rule_elt, addr):
-        """ test the addresses definition of rule """
+        """test the addresses definition of rule"""
         addr_dict = self.parse_address(rule[addr])
         addr_elt = self.assert_find_xml_elt(rule_elt, addr)
         for key, value in addr_dict.items():
@@ -80,14 +80,14 @@ class TestPFSenseRuleModule(TestPFSenseModule):
             self.assert_not_find_xml_elt(addr_elt, "not")
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         obj["interface"] = self.unalias_interface(obj["interface"])
         if "floating" in obj and obj["floating"] == "yes":
             return self.assert_has_xml_tag("filter", dict(descr=obj["name"], floating="yes"), absent=absent)
         return self.assert_has_xml_tag("filter", dict(descr=obj["name"], interface=obj["interface"]), absent=absent)
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
 
         # checking source address and ports
         self.check_rule_elt_addr(obj, target_elt, "source")
@@ -124,8 +124,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
         self.check_param_equal_or_not_find(obj, target_elt, "direction")
 
         # Empty values explicitly clear queue, limiter, and schedule settings.
-        for field, xml_field in (("queue", "defaultqueue"), ("ackqueue", "ackqueue"), ("in_queue", "dnpipe"),
-                                 ("out_queue", "pdnpipe"), ("sched", "sched")):
+        for field, xml_field in (("queue", "defaultqueue"), ("ackqueue", "ackqueue"), ("in_queue", "dnpipe"), ("out_queue", "pdnpipe"), ("sched", "sched")):
             if obj.get(field):
                 self.assert_xml_elt_equal(target_elt, xml_field, obj[field])
             else:
@@ -178,7 +177,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
             self.assert_xml_elt_equal(target_elt, "icmptype", obj["icmptype"])
 
     def check_rule_idx(self, rule, target_idx):
-        """ test the xml position of rule """
+        """test the xml position of rule"""
         floating = "floating" in rule and rule["floating"] == "yes"
         rule["interface"] = self.unalias_interface(rule["interface"])
         rules_elt = self.assert_find_xml_elt(self.xml_result, "filter")
@@ -202,7 +201,7 @@ class TestPFSenseRuleModule(TestPFSenseModule):
         self.fail("rule not found " + str(idx))
 
     def check_separator_idx(self, interface, sep_name, expected_idx):
-        """ test the logical position of separator """
+        """test the logical position of separator"""
         filter_elt = self.assert_find_xml_elt(self.xml_result, "filter")
         separator_elt = self.assert_find_xml_elt(filter_elt, "separator")
         iface_elt = self.assert_find_xml_elt(separator_elt, interface)

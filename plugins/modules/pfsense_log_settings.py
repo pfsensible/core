@@ -6,12 +6,11 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -205,8 +204,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 LOG_SETTINGS_ARGUMENT_SPEC = dict(
-    logformat=dict(required=False, type="str",
-                   choices=["rfc3164", "rfc5424"]),
+    logformat=dict(required=False, type="str", choices=["rfc3164", "rfc5424"]),
     reverse=dict(required=False, type="bool"),
     nentries=dict(required=False, type="int"),
     nologdefaultblock=dict(required=False, type="bool"),
@@ -218,17 +216,14 @@ LOG_SETTINGS_ARGUMENT_SPEC = dict(
     nolognginx=dict(required=False, type="bool"),
     logconfigchanges=dict(required=False, type="bool"),
     rawfilter=dict(required=False, type="bool"),
-    filterdescriptions=dict(required=False, type="int",
-                            choices=[0, 1, 2]),
+    filterdescriptions=dict(required=False, type="int", choices=[0, 1, 2]),
     disablelocallogging=dict(required=False, type="bool"),
     logfilesize=dict(required=False, type="int"),
-    logcompressiontype=dict(required=False, type="str",
-                            choices=["bzip2", "gzip", "xz", "zstd", "none"]),
+    logcompressiontype=dict(required=False, type="str", choices=["bzip2", "gzip", "xz", "zstd", "none"]),
     rotatecount=dict(required=False, type="int"),
     enable=dict(required=False, type="bool"),
     sourceip=dict(required=False, type="str"),
-    ipproto=dict(required=False, type="str",
-                 choices=["ipv4", "ipv6"]),
+    ipproto=dict(required=False, type="str", choices=["ipv4", "ipv6"]),
     remoteserver=dict(required=False, type="str"),
     remoteserver2=dict(required=False, type="str"),
     remoteserver3=dict(required=False, type="str"),
@@ -263,11 +258,11 @@ value_bools = {
 
 
 class PFSenseLogSettingsModule(PFSenseModuleBase):
-    """ module managing pfsense log settings """
+    """module managing pfsense log settings"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return LOG_SETTINGS_ARGUMENT_SPEC
 
     ##############################
@@ -289,7 +284,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = self.pfsense.element_to_dict(self.root_elt)
@@ -329,7 +324,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         return obj
 
     def _get_interface_by_ip_or_display_name(self, address):
-        """ return interface_id by ip address or name """
+        """return interface_id by ip address or name"""
 
         if address in ["127.0.0.1", "Localhost"]:
             return "lo0"
@@ -349,7 +344,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         return self._get_interface_by_ip_or_display_name(address) or self.pfsense.get_virtual_ip_interface(address)
 
     def _validate_syslog_server(self, hostname, name):
-        """ check hostname / ip address combinations with optional port """
+        """check hostname / ip address combinations with optional port"""
         if not hostname:
             return
 
@@ -375,7 +370,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
             self.module.fail_json(msg="The {0} can only contain the characters A-Z, 0-9 and '-'. It may not start or end with '-'".format(name))
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         if params.get("sourceip") is not None:
@@ -387,9 +382,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
                 self.module.fail_json(msg="sourceip: Invalid address {address}!".format(address=params.get("sourceip")))
 
         if params.get("logall") is True:
-            for log_param in ["system", "logfilter", "resolver",
-                              "dhcp", "ppp", "auth", "portalauth",
-                              "vpn", "dpinger", "routing", "ntpd", "hostapd"]:
+            for log_param in ["system", "logfilter", "resolver", "dhcp", "ppp", "auth", "portalauth", "vpn", "dpinger", "routing", "ntpd", "hostapd"]:
                 if params.get(log_param) is True:
                     self.module.fail_json(msg="{log_param} = True is invalid when logall is True".format(log_param=log_param))
 
@@ -410,7 +403,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
             logfilesize = int(params.get("logfilesize"))
             if logfilesize < 100000:
                 self.module.fail_json(msg="logfilesize must be an integer greater or equal than 100000")
-            elif logfilesize >= (2 ** 32) / 2:
+            elif logfilesize >= (2**32) / 2:
                 self.module.fail_json(msg="logfilesize is too large: {logfilesize}".format(logfilesize=logfilesize))
 
         if params.get("rotatecount") is not None:
@@ -422,7 +415,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     # XML processing
     #
     def _remove_deleted_params(self):
-        """ Remove from target_elt a few deleted params """
+        """Remove from target_elt a few deleted params"""
         changed = False
         for param in LOG_SETTINGS_ARGUMENT_SPEC:
             if LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
@@ -436,7 +429,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
     # run
     #
     def run(self, params):
-        """ process input params to add/update/delete """
+        """process input params to add/update/delete"""
         self.params = params
         self.target_elt = self.root_elt
         self._validate_params()
@@ -444,7 +437,7 @@ class PFSenseLogSettingsModule(PFSenseModuleBase):
         self._add()
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         for cmd in self.route_cmds:
             self.module.run_command(cmd)
 
@@ -455,12 +448,12 @@ $retval |= system_syslogd_start();"""
 
         for param in ["nologdefaultblock", "nologdefaultpass", "nologbogons", "nologprivatenets", "nologlinklocal4", "nologsnort2c"]:
             if self.params.get(param) is not None:
-                if (self.params[param] and param not in self.before or not self.params[param] and param in self.before):
+                if self.params[param] and param not in self.before or not self.params[param] and param in self.before:
                     cmd += "$retval |= filter_configure();\n"
                     break
 
         if self.params.get("nolognginx") is not None:
-            if (self.params["nolognginx"] and "nolognginx" not in self.before or not self.params["nolognginx"] and "nolognginx" in self.before):
+            if self.params["nolognginx"] and "nolognginx" not in self.before or not self.params["nolognginx"] and "nolognginx" in self.before:
                 cmd += "ob_flush();\n"
                 cmd += "flush();\n"
                 cmd += 'send_event("service restart webgui");\n'
@@ -474,12 +467,12 @@ $retval |= system_syslogd_start();"""
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "syslog"
 
     @staticmethod
     def _value_bool(settings, param):
-        """ return settings with the value of the boolean field param as True or False """
+        """return settings with the value of the boolean field param as True or False"""
         _param = params_map.get(param, param)
         if settings.get(_param) not in value_bools[param]:
             return settings
@@ -488,15 +481,16 @@ $retval |= system_syslogd_start();"""
         return result
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
 
         for param in LOG_SETTINGS_ARGUMENT_SPEC:
             _param = params_map.get(param, param)
             if param in value_bools:
                 # logged as true or false; another stored value (empty) is logged when it changes
-                values += self.format_updated_cli_field(self._value_bool(self.obj, param), self._value_bool(self.before, param), _param,
-                                                        add_comma=(values), log_none=False)
+                values += self.format_updated_cli_field(
+                    self._value_bool(self.obj, param), self._value_bool(self.before, param), _param, add_comma=(values), log_none=False
+                )
             elif LOG_SETTINGS_ARGUMENT_SPEC[param]["type"] == "bool":
                 values += self.format_updated_cli_field(self.obj, self.before, _param, fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
             else:
@@ -506,9 +500,7 @@ $retval |= system_syslogd_start();"""
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=LOG_SETTINGS_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=LOG_SETTINGS_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseLogSettingsModule(module)
     pfmodule.run(module.params)

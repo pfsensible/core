@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -19,7 +20,6 @@ from .test_pfsense_rule import TestPFSenseRuleModule
 
 
 class TestPFSenseNatPortForwardModule(TestPFSenseModule):
-
     module = pfsense_nat_port_forward
 
     def __init__(self, *args, **kwargs):
@@ -29,7 +29,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self._drift_associated_rule = False
 
     def load_fixtures(self):
-        """ loading data """
+        """loading data"""
         super(TestPFSenseNatPortForwardModule, self).load_fixtures()
         if self._drift_associated_rule:
             tree = ET.parse(self.tmp_file)
@@ -39,7 +39,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
             tree.write(self.tmp_file, encoding="utf-8", short_empty_elements=False)
 
     def check_target_addr(self, params, target_elt):
-        """ test the addresses definition """
+        """test the addresses definition"""
         parts = params["target"].split(":")
         self.assert_xml_elt_equal(target_elt, "target", parts[0])
         if len(parts) > 1:
@@ -48,14 +48,14 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
             self.assert_xml_elt_is_none_or_empty(target_elt, "local-port")
 
     def get_associated_rule_elt(self, params, ruleid):
-        """ check the associated rule """
+        """check the associated rule"""
         filters = dict()
         filters["interface"] = self.unalias_interface(params["interface"])
         filters["associated-rule-id"] = ruleid
         return self.assert_has_xml_tag("filter", filters)
 
     def check_target_elt(self, obj, target_elt, target_idx=-1):
-        """ test the xml definition """
+        """test the xml definition"""
         rules_tester = TestPFSenseRuleModule()
         rules_tester.check_rule_elt_addr(obj, target_elt, "source")
 
@@ -97,7 +97,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
             self.check_param_bool(obj, rule_elt, "disabled")
 
     def check_rule_idx(self, params, target_idx):
-        """ test the xml position """
+        """test the xml position"""
         rules_elt = self.assert_find_xml_elt(self.xml_result, "nat")
 
         idx = -1
@@ -114,7 +114,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.fail("rule not found " + str(idx))
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated xml definition """
+        """get the generated xml definition"""
         rules_elt = self.assert_find_xml_elt(self.xml_result, "nat")
 
         for item in rules_elt:
@@ -128,7 +128,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
     # tests
     #
     def test_nat_port_forward_create(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:443", destination="1.2.3.4:443", target="2.3.4.5:443", associated_rule="pass")
         command = (
             "create nat_port_forward 'test_pf', interface='lan', source='any:443', destination='1.2.3.4:443', target='2.3.4.5:443', associated_rule='pass'"
@@ -136,8 +136,15 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_port_forward_create_with_vip_descriptions(self):
-        obj = dict(descr="VIP forwarding", interface="lan", source="any", destination="!Forwarded VIP",
-                   destination_port="443", target="Forwarded VIP:8443", associated_rule="pass")
+        obj = dict(
+            descr="VIP forwarding",
+            interface="lan",
+            source="any",
+            destination="!Forwarded VIP",
+            destination_port="443",
+            target="Forwarded VIP:8443",
+            associated_rule="pass",
+        )
         with set_module_args(dict(obj, state="present")):
             result = self.execute_module(changed=True)
         after = result["diff"]["after"]
@@ -147,8 +154,16 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
 
     def test_nat_port_forward_interface_target_is_idempotent(self):
         self.load_fixtures()
-        obj = dict(descr="Redirect DNS", interface="vpn", protocol="tcp/udp", source="any",
-                   destination="!vpn", destination_port="53", target="vpn:53", associated_rule="pass")
+        obj = dict(
+            descr="Redirect DNS",
+            interface="vpn",
+            protocol="tcp/udp",
+            source="any",
+            destination="!vpn",
+            destination_port="53",
+            target="vpn:53",
+            associated_rule="pass",
+        )
         with set_module_args(obj):
             self.changed(True)
 
@@ -162,8 +177,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
                 self.assertEqual(self.changed(False)["commands"], [])
 
     def test_nat_port_forward_associated_rule_uses_interface_address(self):
-        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan",
-                   destination_port="22022-22023", target="IP:vpn:22-23", ipprotocol="inet6")
+        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan", destination_port="22022-22023", target="IP:vpn:22-23", ipprotocol="inet6")
         with set_module_args(obj):
             self.execute_module(changed=True)
 
@@ -181,15 +195,14 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
             self.assertEqual(self.changed(False)["commands"], [])
 
     def test_nat_port_forward_rejects_unknown_interface_target(self):
-        obj = dict(descr="Redirect DNS", interface="lan", source="any", destination="any",
-                   destination_port="53", associated_rule="pass")
+        obj = dict(descr="Redirect DNS", interface="lan", source="any", destination="any", destination_port="53", associated_rule="pass")
         for target in ("opt99ip:53", "IP:missing:53"):
             with self.subTest(target=target):
                 msg = f'"{target}" is not a valid redirect target IP address, host alias, virtual IP, or interface address.'
                 self.do_module_test(dict(obj, target=target), failed=True, msg=msg)
 
     def test_nat_port_forward_create_range(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:9000-10000", destination="1.2.3.4:9000-10000", target="2.3.4.5:9000", associated_rule="none")
         command = (
             "create nat_port_forward 'test_pf', interface='lan', source='any:9000-10000', destination='1.2.3.4:9000-10000', "
@@ -198,14 +211,14 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_port_forward_create_associated(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:443", destination="1.2.3.4:443", target="2.3.4.5:443", associated_rule="associated")
         cmd1 = "create rule 'NAT test_pf' on 'lan', source='any:443', destination='2.3.4.5:443', protocol='tcp'"
         cmd2 = "create nat_port_forward 'test_pf', interface='lan', source='any:443', destination='1.2.3.4:443', target='2.3.4.5:443'"
         self.do_module_test(obj, command=[cmd1, cmd2], target_idx=3)
 
     def test_nat_port_forward_create_unassociated(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:443", destination="1.2.3.4:443", target="2.3.4.5:443", associated_rule="unassociated")
         cmd1 = "create rule 'NAT test_pf' on 'lan', source='any:443', destination='2.3.4.5:443', protocol='tcp'"
         cmd2 = (
@@ -215,45 +228,61 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=[cmd1, cmd2], target_idx=3)
 
     def test_nat_port_forward_create_with_separate_ports(self):
-        obj = dict(descr="test_pf", interface="lan", source="any", source_port="5000-5002",
-                   destination="1.2.3.4", destination_port="8443", target="2.3.4.5:443")
+        obj = dict(
+            descr="test_pf", interface="lan", source="any", source_port="5000-5002", destination="1.2.3.4", destination_port="8443", target="2.3.4.5:443"
+        )
         cmd1 = "create rule 'NAT test_pf' on 'lan', source='any', source_port='5000-5002', destination='2.3.4.5:443', protocol='tcp'"
-        cmd2 = ("create nat_port_forward 'test_pf', interface='lan', source='any', source_port='5000-5002', "
-                "destination='1.2.3.4', destination_port='8443', target='2.3.4.5:443'")
+        cmd2 = (
+            "create nat_port_forward 'test_pf', interface='lan', source='any', source_port='5000-5002', "
+            "destination='1.2.3.4', destination_port='8443', target='2.3.4.5:443'"
+        )
         self.do_module_test(obj, command=[cmd1, cmd2], target_idx=3)
 
     def test_nat_port_forward_update_separate_ports_with_associated_rule(self):
-        obj = dict(descr="last", interface="wan", source="any", source_port="port_ssh",
-                   destination="IP:wan", destination_port="2222", target="10.255.1.20:22", associated_rule="associated")
+        obj = dict(
+            descr="last",
+            interface="wan",
+            source="any",
+            source_port="port_ssh",
+            destination="IP:wan",
+            destination_port="2222",
+            target="10.255.1.20:22",
+            associated_rule="associated",
+        )
         cmd1 = "update rule 'NAT last' on 'wan' set source_port='port_ssh'"
         cmd2 = "update nat_port_forward 'last' set source_port='port_ssh', destination_port='2222'"
         self.do_module_test(obj, command=[cmd1, cmd2], target_idx=2)
 
     def test_nat_port_forward_separate_port_matches_existing_inline_port(self):
-        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan",
-                   destination_port="22022", target="10.255.1.20:22", associated_rule="associated")
+        obj = dict(
+            descr="last", interface="wan", source="any", destination="IP:wan", destination_port="22022", target="10.255.1.20:22", associated_rule="associated"
+        )
         self.do_module_test(obj, target_idx=2, changed=False)
 
     def test_nat_port_forward_separate_port_overrides_inline_port(self):
-        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:1234",
-                   destination_port="22022", target="10.255.1.20:22", associated_rule="associated")
+        obj = dict(
+            descr="last",
+            interface="wan",
+            source="any",
+            destination="IP:wan:1234",
+            destination_port="22022",
+            target="10.255.1.20:22",
+            associated_rule="associated",
+        )
         self.do_module_test(obj, target_idx=2, changed=False)
 
     def test_nat_port_forward_rejects_invalid_destination_port(self):
-        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4",
-                   destination_port="65536", target="2.3.4.5:443")
+        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4", destination_port="65536", target="2.3.4.5:443")
         self.do_module_test(obj, failed=True, msg="Cannot parse port 65536, not port number or alias")
 
     def test_nat_port_forward_rejects_explicit_ports_with_icmp(self):
-        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4",
-                   target="2.3.4.5", protocol="icmp", associated_rule="pass")
+        obj = dict(descr="test_pf", interface="lan", source="any", destination="1.2.3.4", target="2.3.4.5", protocol="icmp", associated_rule="pass")
         for port_arg in ("source_port", "destination_port"):
             with self.subTest(port_arg=port_arg):
-                self.do_module_test(dict(obj, **{port_arg: "443"}), failed=True,
-                                    msg=f"Cannot specify {port_arg} with protocol \"icmp\".")
+                self.do_module_test(dict(obj, **{port_arg: "443"}), failed=True, msg=f'Cannot specify {port_arg} with protocol "icmp".')
 
     def test_nat_port_forward_create_top(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:443", destination="1.2.3.4:443", target="2.3.4.5:443", associated_rule="pass", after="top")
         command = (
             "create nat_port_forward 'test_pf', interface='lan', source='any:443', destination='1.2.3.4:443', target='2.3.4.5:443', "
@@ -262,7 +291,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_port_forward_create_after(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:443", destination="1.2.3.4:443", target="2.3.4.5:443", associated_rule="pass", after="one")
         command = (
             "create nat_port_forward 'test_pf', interface='lan', source='any:443', destination='1.2.3.4:443', target='2.3.4.5:443', "
@@ -271,7 +300,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=command, target_idx=1)
 
     def test_nat_port_forward_create_before(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="lan", source="any:443", destination="1.2.3.4:443", target="2.3.4.5:443", associated_rule="pass", before="two")
         command = (
             "create nat_port_forward 'test_pf', interface='lan', source='any:443', destination='1.2.3.4:443', target='2.3.4.5:443', "
@@ -280,62 +309,62 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=command, target_idx=1)
 
     def test_nat_port_forward_create_icmp(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="wan", protocol="icmp", source="any", destination="1.2.3.4", target="2.3.4.5", associated_rule="associated")
         command = [
             "create rule 'NAT test_pf' on 'wan', source='any', destination='2.3.4.5', protocol='icmp'",
-            "create nat_port_forward 'test_pf', interface='wan', protocol='icmp', source='any', destination='1.2.3.4', target='2.3.4.5'"
+            "create nat_port_forward 'test_pf', interface='wan', protocol='icmp', source='any', destination='1.2.3.4', target='2.3.4.5'",
         ]
         self.do_module_test(obj, command=command, target_idx=3)
 
     def test_nat_port_forward_create_tcp_fail_no_port(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="wan", source="any", destination="1.2.3.4", target="2.3.4.5", associated_rule="associated")
-        msg = "Must specify a target port with protocol \"tcp\"."
+        msg = 'Must specify a target port with protocol "tcp".'
         self.do_module_test(obj, failed=True, msg=msg)
 
     def test_nat_port_forward_create_icmp_fail_port(self):
-        """ test """
+        """test"""
         obj = dict(descr="test_pf", interface="wan", protocol="icmp", source="any", destination="1.2.3.4", target="2.3.4.5:443", associated_rule="associated")
-        msg = "Cannot specify a target port with protocol \"icmp\"."
+        msg = 'Cannot specify a target port with protocol "icmp".'
         self.do_module_test(obj, failed=True, msg=msg)
 
     def test_nat_port_forward_update_noop(self):
-        """ test """
+        """test"""
         obj = dict(descr="one", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="none")
         self.do_module_test(obj, target_idx=0, changed=False)
 
     def test_nat_port_forward_update_associated_noop(self):
-        """ test """
+        """test"""
         obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="associated")
         self.do_module_test(obj, target_idx=2, changed=False)
 
     def test_nat_port_forward_update_bottom(self):
-        """ test """
+        """test"""
         obj = dict(descr="one", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="none", before="bottom")
         command = "update nat_port_forward 'one' set before='bottom'"
         self.do_module_test(obj, command=command, target_idx=2)
 
     def test_nat_port_forward_update_top(self):
-        """ test """
+        """test"""
         obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="associated", after="top")
         command = "update nat_port_forward 'last' set after='top'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_port_forward_update_source(self):
-        """ test """
+        """test"""
         obj = dict(descr="one", interface="wan", source="1.2.3.4", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="none")
         command = "update nat_port_forward 'one' set source='1.2.3.4'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_port_forward_update_destination(self):
-        """ test """
+        """test"""
         obj = dict(descr="one", interface="wan", source="any", destination="1.2.3.4:22022", target="10.255.1.20:22", associated_rule="none")
         command = "update nat_port_forward 'one' set destination='1.2.3.4:22022'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_port_forward_update_target(self):
-        """ test """
+        """test"""
         obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.21:22", associated_rule="associated")
         cmd1 = "update rule 'NAT last' on 'wan' set destination='10.255.1.21'"
         cmd2 = "update nat_port_forward 'last' set target='10.255.1.21:22'"
@@ -343,7 +372,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.assert_xml_elt_equal(self.get_target_elt(obj), "associated-rule-id", "nat_5e03858acc6b82.92150982")
 
     def test_nat_port_forward_update_target_port(self):
-        """ test """
+        """test"""
         obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.20:2222", associated_rule="associated")
         cmd1 = "update rule 'NAT last' on 'wan' set destination_port='2222'"
         cmd2 = "update nat_port_forward 'last' set target='10.255.1.20:2222'"
@@ -351,13 +380,15 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.assert_xml_elt_equal(self.get_target_elt(obj), "associated-rule-id", "nat_5e03858acc6b82.92150982")
 
     def test_nat_port_forward_update_target_range(self):
-        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan",
-                   destination_port="22022-22025", target="10.255.1.20:22-25")
+        obj = dict(descr="last", interface="wan", source="any", destination="IP:wan", destination_port="22022-22025", target="10.255.1.20:22-25")
         with set_module_args(self.args_from_var(obj)):
-            self.execute_module(changed=True, commands=[
-                "update rule 'NAT last' on 'wan' set destination_port='22-25'",
-                "update nat_port_forward 'last' set destination_port='22022-22025'",
-            ])
+            self.execute_module(
+                changed=True,
+                commands=[
+                    "update rule 'NAT last' on 'wan' set destination_port='22-25'",
+                    "update nat_port_forward 'last' set destination_port='22022-22025'",
+                ],
+            )
             self.changed(changed=False)
 
         self.assertTrue(self.load_xml_result())
@@ -393,7 +424,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, failed=True, msg="The translated port range exceeds port 65535.")
 
     def test_nat_port_forward_update_target_ip_and_port(self):
-        """ test """
+        """test"""
         obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.21:2222", associated_rule="associated")
         cmd1 = "update rule 'NAT last' on 'wan' set destination='10.255.1.21', destination_port='2222'"
         cmd2 = "update nat_port_forward 'last' set target='10.255.1.21:2222'"
@@ -401,7 +432,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.assert_xml_elt_equal(self.get_target_elt(obj), "associated-rule-id", "nat_5e03858acc6b82.92150982")
 
     def test_nat_port_forward_repair_drifted_associated_rule(self):
-        """ test """
+        """test"""
         self._drift_associated_rule = True
         try:
             obj = dict(descr="last", interface="wan", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="associated")
@@ -412,13 +443,13 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
             self._drift_associated_rule = False
 
     def test_nat_port_forward_update_interface(self):
-        """ test """
+        """test"""
         obj = dict(descr="one", interface="vpn", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="none")
         command = "update nat_port_forward 'one' set interface='vpn'"
         self.do_module_test(obj, command=command, target_idx=0)
 
     def test_nat_port_forward_update_interface_associated(self):
-        """ test """
+        """test"""
         obj = dict(descr="last", interface="lan_100", source="any", destination="IP:wan:22022", target="10.255.1.20:22", associated_rule="associated")
         cmd1 = "delete rule 'NAT last' on 'wan'"
         cmd2 = "create rule 'NAT last' on 'lan_100', source='any', destination='10.255.1.20:22', protocol='tcp'"
@@ -426,7 +457,7 @@ class TestPFSenseNatPortForwardModule(TestPFSenseModule):
         self.do_module_test(obj, command=[cmd1, cmd2, cmd3], target_idx=2)
 
     def test_nat_port_forward_delete(self):
-        """ test """
+        """test"""
         obj = dict(descr="one")
         command = "delete nat_port_forward 'one'"
         self.do_module_test(obj, command=command, delete=True)

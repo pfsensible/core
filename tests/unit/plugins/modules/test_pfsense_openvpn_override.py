@@ -1,7 +1,8 @@
 # Copyright: (c) 2022, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -15,7 +16,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
-
     module = pfsense_openvpn_override
 
     def __init__(self, *args, **kwargs):
@@ -25,11 +25,11 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
 
     @staticmethod
     def runTest():
-        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        """dummy function needed to instantiate this test module from another in python 2.7"""
         pass
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         root_elt = self.xml_result.getroot().find("openvpn")
         result = root_elt.findall("openvpn-csc[common_name='{0}']".format(obj["name"]))
         if len(result) == 1:
@@ -40,7 +40,7 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
             return None
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
 
         self.check_param_equal(obj, target_elt, "name", xml_field="common_name")
         self.check_param_bool(obj, target_elt, "disable")
@@ -58,22 +58,22 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
     # tests
     #
     def test_openvpn_override_create(self):
-        """ test creation of a new OpenVPN override """
+        """test creation of a new OpenVPN override"""
         obj = dict(name="vpnuser1", block=True)
         self.do_module_test(obj, command="create openvpn_override 'vpnuser1', common_name='vpnuser1'")
 
     def test_openvpn_override_delete(self):
-        """ test deletion of a OpenVPN override """
+        """test deletion of a OpenVPN override"""
         obj = dict(name="delvpnuser")
         self.do_module_test(obj, command="delete openvpn_override 'delvpnuser'", delete=True)
 
     def test_openvpn_override_update_noop(self):
-        """ test not updating a OpenVPN override """
+        """test not updating a OpenVPN override"""
         obj = dict(name="delvpnuser", gwredir=True, server_list=1, custom_options="ifconfig-push 10.8.0.1 255.255.255.0")
         self.do_module_test(obj, changed=False)
 
     def test_openvpn_override_update_network(self):
-        """ test updating network of a OpenVPN override """
+        """test updating network of a OpenVPN override"""
         obj = dict(name="delvpnuser", gwredir=True, server_list=1, custom_options="ifconfig-push 10.8.0.1 255.255.255.0", tunnel_network="10.10.10.10/24")
         self.do_module_test(obj, command="update openvpn_override 'delvpnuser' set ")
 
@@ -81,11 +81,11 @@ class TestPFSenseOpenVPNOverrideModule(TestPFSenseModule):
     # misc
     #
     def test_create_openvpn_override_invalid_network(self):
-        """ test creation of a new OpenVPN override with invalid network """
+        """test creation of a new OpenVPN override with invalid network"""
         obj = dict(name="delvpnuser", remote_network="30.4.3.3/24")
         self.do_module_test(obj, failed=True, msg="A valid IPv4 network must be specified for remote_network.")
 
     def test_delete_nonexistent_openvpn_override(self):
-        """ test deletion of an nonexistent OpenVPN override """
+        """test deletion of an nonexistent OpenVPN override"""
         obj = dict(name="novpnuser")
         self.do_module_test(obj, commmand=None, state="absent", changed=False)

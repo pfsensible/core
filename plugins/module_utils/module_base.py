@@ -4,14 +4,17 @@
 # Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 from ansible_collections.pfsensible.core.plugins.module_utils.arg_route import p2o_interface
 
 BASE_ARG_ROUTE = dict(
-    interface=dict(parse=p2o_interface,),
+    interface=dict(
+        parse=p2o_interface,
+    ),
 )
 
 
@@ -46,7 +49,7 @@ def move_dict_key(obj, src, dst):
 
 
 class PFSenseModuleBase(object):
-    """ class providing base services for pfSense modules """
+    """class providing base services for pfSense modules"""
 
     ##############################
     # unit tests
@@ -54,16 +57,34 @@ class PFSenseModuleBase(object):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         raise NotImplementedError()
 
     ##############################
     # init
     #
-    def __init__(self, module, pfsense=None, package=None, name=None, root=None, root_is_exclusive=True, create_root=False, node=None, key="descr",
-                 update_php=None, arg_route=None, map_param=None, map_param_if=None, param_force=None, bool_style=None, bool_values=None, have_refid=False,
-                 create_default=None):
-        self.module = module         # ansible module
+    def __init__(
+        self,
+        module,
+        pfsense=None,
+        package=None,
+        name=None,
+        root=None,
+        root_is_exclusive=True,
+        create_root=False,
+        node=None,
+        key="descr",
+        update_php=None,
+        arg_route=None,
+        map_param=None,
+        map_param_if=None,
+        param_force=None,
+        bool_style=None,
+        bool_values=None,
+        have_refid=False,
+        create_default=None,
+    ):
+        self.module = module  # ansible module
         self.argument_spec = module.argument_spec  # Allow for being overriden for use with aggregate
 
         # pfSense helper module
@@ -71,14 +92,14 @@ class PFSenseModuleBase(object):
             pfsense = PFSenseModule(module)
         self.pfsense = pfsense
 
-        if name is not None:    # ansible module name
+        if name is not None:  # ansible module name
             self.name = name
         elif node is not None:
             self.name = "pfsense_" + node
         else:
             self.name = None
 
-        self.apply = True       # apply configuration at the end
+        self.apply = True  # apply configuration at the end
 
         # xml parent of target_elt, node named by root
         # TODO - handle paths with creation - e.g.  <nat> <outbound>
@@ -90,12 +111,10 @@ class PFSenseModuleBase(object):
                 if package is not None:
                     self.package_elt = self.pfsense.find_elt("package", package, search_field="name", root_elt=self.pfsense.root.find("installedpackages"))
                     if self.package_elt is None:
-                        self.module.fail_json(
-                            msg=f"Unable to find package {package} in installed packages.  Are you sure that it is installed?")
+                        self.module.fail_json(msg=f"Unable to find package {package} in installed packages.  Are you sure that it is installed?")
                     self.root_elt = self.pfsense.get_element(root, root_elt=self.pfsense.root.find("installedpackages"), create_node=create_root)
                     if self.root_elt is None:
-                        self.module.fail_json(
-                            msg=f"Unable to find configuration for the package {package}.  Are you sure that it is installed?")
+                        self.module.fail_json(msg=f"Unable to find configuration for the package {package}.  Are you sure that it is installed?")
                 else:
                     root_elt = self.pfsense.root
                     for this in root.split("/"):
@@ -118,8 +137,8 @@ class PFSenseModuleBase(object):
             self.elements = None
         self.node = node
 
-        self.key = key          # item that identifies a target element
-        self.obj = dict()       # dict holding target pfsense parameters
+        self.key = key  # item that identifies a target element
+        self.obj = dict()  # dict holding target pfsense parameters
         self.package = package
 
         # routing for argument handling
@@ -143,16 +162,16 @@ class PFSenseModuleBase(object):
             self.param_force = param_force  # parameters that are forced to be present
         else:
             self.param_force = list()
-        self.bool_style = bool_style         # default boolean value style for arguments
+        self.bool_style = bool_style  # default boolean value style for arguments
         if bool_values is not None:
-            self.bool_values = bool_values    # boolean values for specific arguments
+            self.bool_values = bool_values  # boolean values for specific arguments
         else:
             self.bool_values = dict()
         if create_default is not None:
             self.create_default = create_default  # default values for a created target
         else:
             self.create_default = dict()
-        self.have_refid = have_refid      # if the element has a refid item
+        self.have_refid = have_refid  # if the element has a refid item
         self.target_elt = None  # xml object holding target pfsense parameters
 
         self.update_php = update_php  # php code to update configuration
@@ -170,7 +189,7 @@ class PFSenseModuleBase(object):
     # params processing
     #
     def _get_ansible_param(self, obj, name, fname=None, force=False, exclude=None, force_value="", params=None):
-        """ get parameter from params and set it into obj """
+        """get parameter from params and set it into obj"""
         if fname is None:
             fname = name
         if params is None:
@@ -186,7 +205,7 @@ class PFSenseModuleBase(object):
             obj[fname] = force_value
 
     def _get_ansible_param_bool(self, obj, name, fname=None, force=False, value="yes", value_false=None, params=None):
-        """ get bool parameter from params and set it into obj """
+        """get bool parameter from params and set it into obj"""
         if fname is None:
             fname = name
         if params is None:
@@ -205,7 +224,7 @@ class PFSenseModuleBase(object):
             obj[fname] = value_false
 
     def _params_to_obj(self, obj=None):
-        """ return a dict from module params that sets self.obj """
+        """return a dict from module params that sets self.obj"""
         if obj is None:
             obj = dict()
         # Not all modules have 'state', treat them like they did
@@ -256,7 +275,7 @@ class PFSenseModuleBase(object):
     # params processing
     #
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
         # Not all modules have 'state', treat them like they did
         if self.params.get("state", "present") == "present":
@@ -269,15 +288,15 @@ class PFSenseModuleBase(object):
                         self.module.fail_json(msg=str(e))
 
     def _deprecated_params(self):
-        """ return deprecated params """
+        """return deprecated params"""
         return None
 
     def _onward_params(self):
-        """ return onwards params """
+        """return onwards params"""
         return None
 
     def _check_deprecated_params(self):
-        """ check if input parameters are deprecated """
+        """check if input parameters are deprecated"""
         deprecated_params = self._deprecated_params()
         if deprecated_params is None:
             return
@@ -287,7 +306,7 @@ class PFSenseModuleBase(object):
                 self.module.fail_json(msg="{0} is deprecated on pfSense {1}.".format(deprecated[0], self.pfsense.get_version()))
 
     def _check_onward_params(self):
-        """ check if input parameters are too recents """
+        """check if input parameters are too recents"""
         onwards_params = self._onward_params()
         if onwards_params is None:
             return
@@ -300,7 +319,7 @@ class PFSenseModuleBase(object):
     # XML processing
     #
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff["after"] = self.obj
         if self.root_is_exclusive:
@@ -311,7 +330,7 @@ class PFSenseModuleBase(object):
             self.elements = self.root_elt.findall(self.node)
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff["before"] = before
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
@@ -322,7 +341,7 @@ class PFSenseModuleBase(object):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         if self.node is not None:
             elt = self.pfsense.new_element(self.node)
             if self.have_refid:
@@ -345,7 +364,7 @@ class PFSenseModuleBase(object):
             return len(list(self.root_elt))
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         if self.node is not None:
             result = self.root_elt.findall("{node}[{key}='{value}']".format(node=self.node, key=self.key, value=self.obj[self.key]))
             if len(result) == 1:
@@ -358,7 +377,7 @@ class PFSenseModuleBase(object):
             raise NotImplementedError()
 
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are set to false """
+        """returns the list of params to remove if they are set to false"""
         to_remove = []
         # We need to remove any booleans set to false that are "None" when unset
         for param in [n for n in self.argument_spec.keys() if self.argument_spec[n].get("type") == "bool"]:
@@ -370,7 +389,7 @@ class PFSenseModuleBase(object):
         return to_remove
 
     def _remove_deleted_params(self):
-        """ Remove from target_elt a few deleted params """
+        """Remove from target_elt a few deleted params"""
         changed = False
         params = self._get_params_to_remove()
         for param in params:
@@ -380,7 +399,7 @@ class PFSenseModuleBase(object):
         return changed
 
     def _remove_target_elt(self):
-        """ delete target_elt from xml """
+        """delete target_elt from xml"""
         self.root_elt.remove(self.target_elt)
         self.result["changed"] = True
 
@@ -388,7 +407,7 @@ class PFSenseModuleBase(object):
     # run
     #
     def _add(self):
-        """ add or update obj """
+        """add or update obj"""
         if self.target_elt is None:
             self.target_elt = self._create_target()
             self._copy_and_add_target()
@@ -406,7 +425,7 @@ class PFSenseModuleBase(object):
             self.result["changed"] = changed
 
     def commit_changes(self):
-        """ apply changes and exit module """
+        """apply changes and exit module"""
         self.result["stdout"] = ""
         self.result["stderr"] = ""
         if self.result["changed"] and not self.module.check_mode:
@@ -423,15 +442,15 @@ class PFSenseModuleBase(object):
         self.module.exit_json(**self.result)
 
     def _post_remove_target_elt(self):
-        """ processing after removing elt """
+        """processing after removing elt"""
         pass
 
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
 
     def _remove(self):
-        """ delete obj """
+        """delete obj"""
         if self.target_elt is not None:
             self._pre_remove_target_elt()
             self._log_delete()
@@ -441,23 +460,23 @@ class PFSenseModuleBase(object):
 
     @staticmethod
     def _pre_update():
-        """ tasks to run before making config changes """
+        """tasks to run before making config changes"""
         return ("", "", "")
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         if self.update_php is not None:
             return self.pfsense.phpshell(self.update_php)
         else:
             return ("", "", "")
 
     def _run_post(self):
-        """ used to do some post-processing like adding results or decoding diff entries """
+        """used to do some post-processing like adding results or decoding diff entries"""
         pass
 
     # We take params here for use with pfsense_aggregate and the test framework
     def run(self, params):
-        """ process input params to add/update/delete """
+        """process input params to add/update/delete"""
         self.params = params
         self.target_elt = None
         self._check_deprecated_params()
@@ -479,19 +498,19 @@ class PFSenseModuleBase(object):
     # Logging
     #
     def _log_create(self):
-        """ generate pseudo-CLI command to create an obj """
+        """generate pseudo-CLI command to create an obj"""
         log = "create {0} {1}".format(self._get_module_name(True), self._get_obj_name())
         log += self._log_fields()
         self.result["commands"].append(log)
 
     def _log_delete(self):
-        """ generate pseudo-CLI command to delete an obj """
+        """generate pseudo-CLI command to delete an obj"""
         log = "delete {0} {1}".format(self._get_module_name(True), self._get_obj_name())
         log += self._log_fields_delete()
         self.result["commands"].append(log)
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             for param in [n for n in self.argument_spec.keys() if n != "state" and n != self.key]:
@@ -506,27 +525,27 @@ class PFSenseModuleBase(object):
 
     @staticmethod
     def _log_fields_delete():
-        """ generate pseudo-CLI command fields parameters to delete an obj """
+        """generate pseudo-CLI command fields parameters to delete an obj"""
         return ""
 
     def _log_update(self, before):
-        """ generate pseudo-CLI command to update an obj """
+        """generate pseudo-CLI command to update an obj"""
         log = "update {0} {1}".format(self._get_module_name(True), self._get_obj_name())
         values = self._log_fields(before)
         self.result["commands"].append(log + " set " + values)
 
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj[self.key])
 
     def _get_module_name(self, strip=False):
-        """ return ansible module's name """
+        """return ansible module's name"""
         if strip:
             return self.name.replace("pfsense_", "")
         return self.name
 
     def format_cli_field(self, after, field, log_none=False, add_comma=True, fvalue=None, default=None, fname=None, none_value=None, force=False):
-        """ format field for pseudo-CLI command """
+        """format field for pseudo-CLI command"""
         if fvalue is None:
             fvalue = self.fvalue_idem
 
@@ -554,7 +573,7 @@ class PFSenseModuleBase(object):
         return res
 
     def format_updated_cli_field(self, after, before, field, log_none=True, add_comma=True, fvalue=None, default=None, fname=None, none_value=None):
-        """ format field for pseudo-CLI update command """
+        """format field for pseudo-CLI update command"""
         log = False
         if none_value is None:
             none_value = "none"
@@ -580,12 +599,12 @@ class PFSenseModuleBase(object):
 
     @staticmethod
     def fvalue_idem(value):
-        """ dummy value formatting function """
+        """dummy value formatting function"""
         return value
 
     @staticmethod
     def fvalue_bool(value):
-        """ boolean value formatting function """
+        """boolean value formatting function"""
         if value is None or value is False or value == "none":
             return "False"
 

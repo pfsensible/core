@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
@@ -21,11 +22,11 @@ ROUTE_REQUIRED_IF = [
 
 
 class PFSenseRouteModule(PFSenseModuleBase):
-    """ module managing pfsense routes """
+    """module managing pfsense routes"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return ROUTE_ARGUMENT_SPEC
 
     ##############################
@@ -46,7 +47,7 @@ class PFSenseRouteModule(PFSenseModuleBase):
     # params processing
     #
     def _expand_alias(self, networks):
-        """ return real addresses of alias """
+        """return real addresses of alias"""
         ret = list()
 
         while len(networks) > 0:
@@ -62,7 +63,7 @@ class PFSenseRouteModule(PFSenseModuleBase):
         return ret
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -97,7 +98,7 @@ class PFSenseRouteModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         if params["state"] == "present":
@@ -105,24 +106,31 @@ class PFSenseRouteModule(PFSenseModuleBase):
             if gw_elt is None:
                 self.module.fail_json(msg="The gateway {0} does not exist".format(params["gateway"]))
 
-            if (self.pfsense.is_ipv4_address(params["network"]) and gw_elt.find("ipprotocol").text == "inet6" or
-                    self.pfsense.is_ipv6_address(params["network"]) and gw_elt.find("ipprotocol").text == "inet"):
+            if (
+                self.pfsense.is_ipv4_address(params["network"])
+                and gw_elt.find("ipprotocol").text == "inet6"
+                or self.pfsense.is_ipv6_address(params["network"])
+                and gw_elt.find("ipprotocol").text == "inet"
+            ):
                 msg = 'The gateway "{0}" is a different Address Family than network "{1}".'.format(gw_elt.find("gateway").text, params["network"])
                 self.module.fail_json(msg=msg)
 
-            if (not self.pfsense.is_ip_network(params["network"], False) and self.pfsense.find_alias(params["network"], aliastype="host") is None and
-                    self.pfsense.find_alias(params["network"], aliastype="network") is None):
+            if (
+                not self.pfsense.is_ip_network(params["network"], False)
+                and self.pfsense.find_alias(params["network"], aliastype="host") is None
+                and self.pfsense.find_alias(params["network"], aliastype="network") is None
+            ):
                 self.module.fail_json(msg="A valid IPv4 or IPv6 destination network or alias must be specified.")
 
     ##############################
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element("route")
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for route_elt in self.root_elt:
             if route_elt.find("descr").text == self.obj["descr"]:
                 return route_elt
@@ -130,14 +138,14 @@ class PFSenseRouteModule(PFSenseModuleBase):
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         return ["disabled"]
 
     ##############################
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         for cmd in self.route_cmd:
             self.module.run_command(cmd)
 
@@ -163,11 +171,11 @@ if ($retval == 0) clear_subsystem_dirty('staticroutes');
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["descr"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "network")

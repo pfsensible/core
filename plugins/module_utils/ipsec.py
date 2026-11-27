@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -17,9 +18,7 @@ IPSEC_ARGUMENT_SPEC = dict(
     interface=dict(required=False, type="str"),
     remote_gateway=dict(required=False, type="str"),
     nattport=dict(required=False, type="int"),
-
     disabled=dict(required=False, type="bool"),
-
     authentication_method=dict(choices=["pre_shared_key", "rsasig"]),
     mode=dict(required=False, choices=["main", "aggressive"]),
     myid_type=dict(default="myaddress", choices=["myaddress", "address", "fqdn", "user_fqdn", "asn1dn", "keyid tag", "dyn_dns", "auto"]),
@@ -29,12 +28,10 @@ IPSEC_ARGUMENT_SPEC = dict(
     certificate=dict(required=False, type="str"),
     certificate_authority=dict(required=False, type="str"),
     preshared_key=dict(required=False, type="str", no_log=True),
-
     lifetime=dict(default=28800, type="int"),
     rekey_time=dict(required=False, type="int"),
     reauth_time=dict(required=False, type="int"),
     rand_time=dict(required=False, type="int"),
-
     disable_rekey=dict(required=False, type="bool"),
     margintime=dict(required=False, type="int"),
     startaction=dict(default="", choices=["", "none", "start", "trap"]),
@@ -43,20 +40,17 @@ IPSEC_ARGUMENT_SPEC = dict(
     mobike=dict(default="off", choices=["on", "off"]),
     gw_duplicates=dict(required=False, type="bool"),
     splitconn=dict(default=False, type="bool"),
-
     nat_traversal=dict(default="on", choices=["on", "force"]),
     enable_dpd=dict(default=True, type="bool"),
     dpd_delay=dict(default=10, type="int"),
     dpd_maxfail=dict(default=5, type="int"),
     apply=dict(default=True, type="bool"),
-
     # Dropped in 2.5.2
     responderonly=dict(required=False, type="bool"),
 )
 
 IPSEC_REQUIRED_IF = [
     ["state", "present", ["remote_gateway", "interface", "iketype", "authentication_method"]],
-
     ["enable_dpd", True, ["dpd_delay", "dpd_maxfail"]],
     ["iketype", "auto", ["mode"]],
     ["iketype", "ikev1", ["mode"]],
@@ -68,7 +62,6 @@ IPSEC_REQUIRED_IF = [
     ["myid_type", "asn1dn", ["myid_data"]],
     ["myid_type", "keyid tag", ["myid_data"]],
     ["myid_type", "dyn_dns", ["myid_data"]],
-
     ["peerid_type", "address", ["peerid_data"]],
     ["peerid_type", "fqdn", ["peerid_data"]],
     ["peerid_type", "user_fqdn", ["peerid_data"]],
@@ -103,24 +96,27 @@ def p2o_ipsec_interface(self, name, params, obj):
 
 
 IPSEC_ARG_ROUTE = dict(
-    interface=dict(parse=p2o_ipsec_interface,),
+    interface=dict(
+        parse=p2o_ipsec_interface,
+    ),
 )
 
 
 class PFSenseIpsecModule(PFSenseModuleBase):
-    """ module managing pfsense ipsec tunnels phase 1 options """
+    """module managing pfsense ipsec tunnels phase 1 options"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return IPSEC_ARGUMENT_SPEC
 
     ##############################
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseIpsecModule, self).__init__(module, pfsense, arg_route=IPSEC_ARG_ROUTE, bool_values=IPSEC_BOOL_VALUES, map_param=IPSEC_MAP_PARAM,
-                                                 create_default=IPSEC_CREATE_DEFAULT)
+        super(PFSenseIpsecModule, self).__init__(
+            module, pfsense, arg_route=IPSEC_ARG_ROUTE, bool_values=IPSEC_BOOL_VALUES, map_param=IPSEC_MAP_PARAM, create_default=IPSEC_CREATE_DEFAULT
+        )
         # Override for use with aggregate
         self.argument_spec = IPSEC_ARGUMENT_SPEC
         self.name = "pfsense_ipsec"
@@ -132,13 +128,13 @@ class PFSenseIpsecModule(PFSenseModuleBase):
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         ipsec_elt = self.pfsense.new_element("phase1")
         self.obj["ikeid"] = str(self._find_free_ikeid())
         return ipsec_elt
 
     def _find_free_ikeid(self):
-        """ return first unused ikeid """
+        """return first unused ikeid"""
         ikeid = 1
         while True:
             found = False
@@ -153,13 +149,13 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             ikeid = ikeid + 1
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         if self.params.get("ikeid") is not None:
             return self.pfsense.find_ipsec_phase1(self.params["ikeid"], "ikeid")
         return self.pfsense.find_ipsec_phase1(self.obj["descr"])
 
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         params = ["disabled", "rekey_enable", "reauth_enable", "splitconn", "nattport", "gw_duplicates"]
         if self.params.get("disable_rekey"):
             params.append("margintime")
@@ -171,11 +167,11 @@ class PFSenseIpsecModule(PFSenseModuleBase):
         return params
 
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         self._remove_phases2()
 
     def _remove_phases2(self):
-        """ remove phase2 elts from xml """
+        """remove phase2 elts from xml"""
         ikeid_elt = self.target_elt.find("ikeid")
         if ikeid_elt is None:
             return
@@ -192,7 +188,7 @@ class PFSenseIpsecModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return an ipsec dict from module params """
+        """return an ipsec dict from module params"""
 
         ipsec = super(PFSenseIpsecModule, self)._params_to_obj()
         params = self.params
@@ -248,14 +244,18 @@ class PFSenseIpsecModule(PFSenseModuleBase):
         ]
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
         if params["state"] == "absent":
             return
 
         if params.get("lifetime") is not None:
-            if (params.get("rekey_time") is not None and params.get("rekey_time") >= params.get("lifetime") or
-                    params.get("reauth_time") is not None and params.get("reauth_time") >= params.get("lifetime")):
+            if (
+                params.get("rekey_time") is not None
+                and params.get("rekey_time") >= params.get("lifetime")
+                or params.get("reauth_time") is not None
+                and params.get("reauth_time") >= params.get("lifetime")
+            ):
                 self.module.fail_json(msg="Life Time must be larger than Rekey Time and Reauth Time.")
 
         for ipsec_elt in self.root_elt:
@@ -298,14 +298,14 @@ class PFSenseIpsecModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.apply_ipsec_changes()
 
     ##############################
     # Logging
     #
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "disabled", fvalue=self.fvalue_bool)
@@ -383,8 +383,9 @@ class PFSenseIpsecModule(PFSenseModuleBase):
             values += self.format_updated_cli_field(self.diff["after"], before, "rand_time", add_comma=(values))
 
             if self.diff["after"]["iketype"] == "ikev2":
-                values += self.format_updated_cli_field(self.diff["after"], before, "reauth_enable", add_comma=(values), fname="disable_reauth",
-                                                        fvalue=self.fvalue_bool)
+                values += self.format_updated_cli_field(
+                    self.diff["after"], before, "reauth_enable", add_comma=(values), fname="disable_reauth", fvalue=self.fvalue_bool
+                )
                 values += self.format_updated_cli_field(self.diff["after"], before, "mobike", add_comma=(values))
                 values += self.format_updated_cli_field(self.diff["after"], before, "splitconn", add_comma=(values), fvalue=self.fvalue_bool)
 
@@ -400,7 +401,7 @@ class PFSenseIpsecModule(PFSenseModuleBase):
         return values
 
     def _get_ref_names(self, before):
-        """ get cert and ca names """
+        """get cert and ca names"""
         if before["caref"] is not None and before["caref"] != "":
             elt = self.pfsense.find_ca_elt(before["caref"], "refid")
             if elt is not None:

@@ -5,12 +5,11 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -106,9 +105,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 
-PHP_SHELL_ARGUMENT_SPEC = dict(
-    cmd=dict(required=True, type="str")
-)
+PHP_SHELL_ARGUMENT_SPEC = dict(cmd=dict(required=True, type="str"))
 
 # pfSsh.php echoes each line it reads before running them all: the markers are split in the code, so that only the
 # lines printed when the code runs hold them whole.
@@ -119,11 +116,11 @@ echo "\\n" . "{marker[0]}" . "{marker[1]}" . json_encode(array("changed" => (boo
 
 
 class PFSensePHPShellModule(PFSenseModuleBase):
-    """ module run php code on pfsense """
+    """module run php code on pfsense"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return PHP_SHELL_ARGUMENT_SPEC
 
     ##############################
@@ -142,12 +139,14 @@ class PFSensePHPShellModule(PFSenseModuleBase):
         marker = ("ansible_" + marker[:16], marker[16:])
         (rc, stdout, stderr) = self.pfsense.phpshell(PHP_SHELL_CODE.format(marker=marker, cmd=params["cmd"]))
         (changed, stdout) = self._parse_output(stdout, "\n" + "".join(marker))
-        self.result.update({
-            "changed": changed,
-            "rc": rc,
-            "stdout": stdout,
-            "stderr": stderr,
-        })
+        self.result.update(
+            {
+                "changed": changed,
+                "rc": rc,
+                "stdout": stdout,
+                "stderr": stderr,
+            }
+        )
 
         if int(rc) != 0 or len(stderr) > 0:
             self.module.fail_json(msg="rc is not 0 or stderr contains output (you still could overwrite with failed_when)", **self.result)
@@ -156,27 +155,25 @@ class PFSensePHPShellModule(PFSenseModuleBase):
 
     @staticmethod
     def _parse_output(stdout, marker):
-        """ return the changed flag and what the code printed, between the two markers """
+        """return the changed flag and what the code printed, between the two markers"""
         start = stdout.find(marker + "\n")
         if start < 0:
             # PHP did not run the code: keep the shell's output, with the error
             return (True, stdout)
-        output = stdout[start + len(marker) + 1:]
+        output = stdout[start + len(marker) + 1:]  # fmt: skip
         end = output.rfind(marker + "{")
         if end < 0:
             # The code stopped early (exit, return)
             return (True, output)
         try:
-            changed = json.loads(output[end + len(marker):].splitlines()[0])["changed"]
+            changed = json.loads(output[end + len(marker):].splitlines()[0])["changed"]  # fmt: skip
         except (ValueError, KeyError, TypeError):
             changed = True
         return (bool(changed), output[:end])
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=PHP_SHELL_ARGUMENT_SPEC,
-        supports_check_mode=False)
+    module = AnsibleModule(argument_spec=PHP_SHELL_ARGUMENT_SPEC, supports_check_mode=False)
 
     pfmodule = PFSensePHPShellModule(module)
     pfmodule.run(module.params)

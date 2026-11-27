@@ -1,7 +1,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -50,12 +51,23 @@ class TestPFSenseDHCPv6ServerModule(TestPFSenseModule):
         return None if elt is None else elt
 
     def test_create_and_repeat(self):
-        params = dict(SERVERS, interface="opt1", dnsserver=["2001:db8::53", "2001:db8::54"], domain="example.com",
-                      domainsearchlist=["example.com", "corp.example.com"], defaultleasetime=7200, maxleasetime=86400)
+        params = dict(
+            SERVERS,
+            interface="opt1",
+            dnsserver=["2001:db8::53", "2001:db8::54"],
+            domain="example.com",
+            domainsearchlist=["example.com", "corp.example.com"],
+            defaultleasetime=7200,
+            maxleasetime=86400,
+        )
         result = self.run_module(changed=True, **params)
-        self.assertEqual(result["commands"], [
-            "create dhcpv6_server 'opt1', enable=True, range_from='2001:db8:1::1000', range_to='2001:db8:1::2000', defaultleasetime='7200', "
-            "maxleasetime='86400', dnsserver='2001:db8::53 2001:db8::54', domain='example.com', domainsearchlist='example.com;corp.example.com'"])
+        self.assertEqual(
+            result["commands"],
+            [
+                "create dhcpv6_server 'opt1', enable=True, range_from='2001:db8:1::1000', range_to='2001:db8:1::2000', defaultleasetime='7200', "
+                "maxleasetime='86400', dnsserver='2001:db8::53 2001:db8::54', domain='example.com', domainsearchlist='example.com;corp.example.com'"
+            ],
+        )
         server = self.server("opt1")
         self.assertEqual(server.findtext("range/from"), "2001:db8:1::1000")
         self.assertEqual([elt.text for elt in server.findall("dnsserver")], ["2001:db8::53", "2001:db8::54"])
@@ -105,8 +117,7 @@ class TestPFSenseDHCPv6ServerModule(TestPFSenseModule):
         self.assertEqual(self.server("opt1").findtext("range/from"), "2001:db8:1::1000")
 
     def test_prefix_delegation(self):
-        self.run_module(changed=True, interface="opt1", prefixrange_from="2001:db8:100::", prefixrange_to="2001:db8:1f0::",
-                        prefixrange_length=60)
+        self.run_module(changed=True, interface="opt1", prefixrange_from="2001:db8:100::", prefixrange_to="2001:db8:1f0::", prefixrange_length=60)
         prefixrange = self.server("opt1").find("prefixrange")
         self.assertEqual({child.tag: child.text for child in prefixrange}, {"from": "2001:db8:100::", "to": "2001:db8:1f0::", "prefixlength": "60"})
 
@@ -120,22 +131,24 @@ class TestPFSenseDHCPv6ServerModule(TestPFSenseModule):
         self.assertFalse(os.path.exists(self.backup_file))
         self.phpshell.assert_not_called()
 
-    @parameterized.expand([
-        ("is not a valid logical interface", dict(interface="opt9", **SERVERS)),
-        ("cannot be configured on the WAN", dict(interface="wan", **SERVERS)),
-        ("range_from and range_to must be given together", dict(interface="opt1", range_from="2001:db8:1::1000")),
-        ("range_to must be a valid IPv6 address", dict(interface="opt1", range_from="2001:db8:1::1000", range_to="192.168.2.10")),
-        ("must lie in the subnet of opt1", dict(interface="opt1", range_from="2001:db8:2::1000", range_to="2001:db8:2::2000")),
-        ("range_from must not be after range_to", dict(interface="opt1", range_from="2001:db8:1::2000", range_to="2001:db8:1::1000")),
-        ("must be a suffix", dict(interface="lan", range_from="2001:db8:1::1000", range_to="2001:db8:1::2000")),
-        ("must be the first address of a /60 prefix", UNALIGNED_PREFIX),
-        ("defaultleasetime must be at least 60", dict(interface="opt1", defaultleasetime=30)),
-        ("maxleasetime must be at least defaultleasetime", dict(interface="opt1", defaultleasetime=7200, maxleasetime=3600)),
-        ("dnsserver takes up to 4 addresses", dict(interface="opt1", dnsserver=["2001:db8::{0}".format(n) for n in range(1, 6)])),
-        ("8.8.8.8 is not one", dict(interface="opt1", dnsserver=["8.8.8.8"])),
-        ("is not a valid domain name", dict(interface="opt1", domainsearchlist=["example com"])),
-        ("A range is required to enable", dict(interface="opt2", enable=True)),
-    ])
+    @parameterized.expand(
+        [
+            ("is not a valid logical interface", dict(interface="opt9", **SERVERS)),
+            ("cannot be configured on the WAN", dict(interface="wan", **SERVERS)),
+            ("range_from and range_to must be given together", dict(interface="opt1", range_from="2001:db8:1::1000")),
+            ("range_to must be a valid IPv6 address", dict(interface="opt1", range_from="2001:db8:1::1000", range_to="192.168.2.10")),
+            ("must lie in the subnet of opt1", dict(interface="opt1", range_from="2001:db8:2::1000", range_to="2001:db8:2::2000")),
+            ("range_from must not be after range_to", dict(interface="opt1", range_from="2001:db8:1::2000", range_to="2001:db8:1::1000")),
+            ("must be a suffix", dict(interface="lan", range_from="2001:db8:1::1000", range_to="2001:db8:1::2000")),
+            ("must be the first address of a /60 prefix", UNALIGNED_PREFIX),
+            ("defaultleasetime must be at least 60", dict(interface="opt1", defaultleasetime=30)),
+            ("maxleasetime must be at least defaultleasetime", dict(interface="opt1", defaultleasetime=7200, maxleasetime=3600)),
+            ("dnsserver takes up to 4 addresses", dict(interface="opt1", dnsserver=["2001:db8::{0}".format(n) for n in range(1, 6)])),
+            ("8.8.8.8 is not one", dict(interface="opt1", dnsserver=["8.8.8.8"])),
+            ("is not a valid domain name", dict(interface="opt1", domainsearchlist=["example com"])),
+            ("A range is required to enable", dict(interface="opt2", enable=True)),
+        ]
+    )
     def test_invalid_option(self, msg, params):
         with set_module_args(params):
             self.assertIn(msg, self.failed()["msg"])

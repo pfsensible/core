@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -38,8 +39,10 @@ class TestPFSenseNotificationSlackModule(TestPFSenseModule):
 
     def test_disable_and_reenable_using_stored_settings(self):
         with open(self.tmp_file, "w") as config:
-            config.write("<pfsense><version>24.0</version><notifications><smtp><disable/></smtp>"
-                         "<slack><enabled/><api>{0}</api><channel>firewall</channel></slack></notifications></pfsense>".format(TOKEN))
+            config.write(
+                "<pfsense><version>24.0</version><notifications><smtp><disable/></smtp>"
+                "<slack><enabled/><api>{0}</api><channel>firewall</channel></slack></notifications></pfsense>".format(TOKEN)
+            )
 
         result = self.run_module(changed=True, enabled=False)
         config = ET.parse(self.tmp_file)
@@ -91,11 +94,18 @@ class TestPFSenseNotificationSlackModule(TestPFSenseModule):
         self.assertIsNone(self.slack_config())
         self.assertFalse(os.path.exists(self.backup_file))
 
-    @parameterized.expand([
-        ("api", "https://hooks.slack.com/services/example"), ("api", "xoxb-fake_token"), ("api", "xoxb-fake\n"),
-        ("channel", "#firewall"), ("channel", "Firewall"), ("channel", "firewall alerts"),
-        ("channel", "a" * 81), ("channel", "firewall\n"),
-    ])
+    @parameterized.expand(
+        [
+            ("api", "https://hooks.slack.com/services/example"),
+            ("api", "xoxb-fake_token"),
+            ("api", "xoxb-fake\n"),
+            ("channel", "#firewall"),
+            ("channel", "Firewall"),
+            ("channel", "firewall alerts"),
+            ("channel", "a" * 81),
+            ("channel", "firewall\n"),
+        ]
+    )
     def test_invalid_option(self, option, value):
         with set_module_args({"enabled": False, option: value}):
             result = self.failed()
@@ -103,10 +113,14 @@ class TestPFSenseNotificationSlackModule(TestPFSenseModule):
         self.assertNotIn(value, repr(result))
         self.assertFalse(os.path.exists(self.backup_file))
 
-    @parameterized.expand([
-        ("api", {"channel": "firewall"}), ("channel", {"api": TOKEN}),
-        ("api", {"api": "0", "channel": "firewall"}), ("channel", {"api": TOKEN, "channel": "0"}),
-    ])
+    @parameterized.expand(
+        [
+            ("api", {"channel": "firewall"}),
+            ("channel", {"api": TOKEN}),
+            ("api", {"api": "0", "channel": "firewall"}),
+            ("channel", {"api": TOKEN, "channel": "0"}),
+        ]
+    )
     def test_require_token_and_channel_when_enabled(self, option, params):
         with set_module_args(dict(params, enabled=True)):
             self.assertIn("{0} is required".format(option), self.failed()["msg"])

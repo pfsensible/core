@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import base64
@@ -35,8 +36,13 @@ OPENVPN_SERVER_ARGUMENT_SPEC = dict(
     shared_key=dict(required=False, type="str", no_log=True),
     dh_length=dict(default=2048, required=False, type="int"),
     ecdh_curve=dict(default="none", required=False, choices=["none", "prime256v1", "secp384r1", "secp521r1"]),
-    data_ciphers=dict(default=["AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"], required=False,
-                      choices=["AES-256-CBC", "AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"], type="list", elements="str"),
+    data_ciphers=dict(
+        default=["AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"],
+        required=False,
+        choices=["AES-256-CBC", "AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"],
+        type="list",
+        elements="str",
+    ),
     data_ciphers_fallback=dict(default="AES-256-CBC", required=False, choices=["AES-256-CBC", "AES-256-GCM", "AES-128-GCM", "CHACHA20-POLY1305"]),
     digest=dict(default="SHA256", required=False, type="str"),
     tunnel_network=dict(default="", required=False, type="str"),
@@ -84,10 +90,13 @@ alias_make_table();
 $ovpn = config_get_path('openvpn/openvpn-server')[{idx}];
 """
 
-OPENVPN_SERVER_PHP_COMMAND_SET = OPENVPN_SERVER_PHP_COMMAND_PREFIX + """
+OPENVPN_SERVER_PHP_COMMAND_SET = (
+    OPENVPN_SERVER_PHP_COMMAND_PREFIX
+    + """
 openvpn_resync('server',$ovpn);
 openvpn_resync_csc_all();
 """
+)
 
 # Run once config.xml no longer holds the server: openvpn_delete() only needs its vpnid.
 OPENVPN_SERVER_PHP_COMMAND_DEL = """
@@ -101,11 +110,11 @@ WINDOWS_LINE_ENDING = b"\r\n"
 
 
 class PFSenseOpenVPNServerModule(PFSenseModuleBase):
-    """ module managing pfSense OpenVPN configuration """
+    """module managing pfSense OpenVPN configuration"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return OPENVPN_SERVER_ARGUMENT_SPEC
 
     ##############################
@@ -117,9 +126,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         self.root_elt = self.pfsense.get_element("openvpn", create_node=True)
         self.obj = dict()
 
-        cmd = ('require_once("openvpn.inc");;'
-               '$digestlist = openvpn_get_digestlist();'
-               'echo json_encode($digestlist);')
+        cmd = 'require_once("openvpn.inc");;$digestlist = openvpn_get_digestlist();echo json_encode($digestlist);'
         self.digestlist = self.pfsense.php(cmd)
 
     ##############################
@@ -132,7 +139,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         self.module.fail_json(msg=f"Invalid digest '{digest}'")
 
     def _params_to_obj(self):
-        """ return dict from module params """
+        """return dict from module params"""
         obj = dict()
         obj["description"] = self.params["name"]
         if self.params["state"] == "present":
@@ -233,7 +240,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         # check name
@@ -270,8 +277,9 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                     params[param] = base64.b64encode(key).decode()
                 else:
                     key_decoded = base64.b64decode(key.encode()).decode()
-                    if not re.search("^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$",
-                                     key_decoded, flags=re.MULTILINE | re.DOTALL):
+                    if not re.search(
+                        "^-----BEGIN OpenVPN Static key V1-----.*-----END OpenVPN Static key V1-----$", key_decoded, flags=re.MULTILINE | re.DOTALL
+                    ):
                         self.module.fail_json(msg="Could not recognize {0} key format: {1}".format(param, key_decoded))
 
     def _openvpn_port_used(self, protocol, interface, port, vpnid=0):
@@ -281,14 +289,19 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                 continue
 
             this_vpnid = int(elt.find("vpnid").text)
-            if (this_vpnid == int(vpnid)):
+            if this_vpnid == int(vpnid):
                 continue
 
             this_interface = elt.find("interface").text
             this_protocol = elt.find("protocol").text
             # (TCP|UDP)(4|6) does not conflict unless interface is any
-            if ((this_interface != "any" and interface != "any") and (len(protocol) == 4) and
-                    (len(this_protocol) == 4) and (this_protocol[0:3] == protocol[0:3]) and (this_protocol[3] != protocol[3])):
+            if (
+                (this_interface != "any" and interface != "any")
+                and (len(protocol) == 4)
+                and (len(this_protocol) == 4)
+                and (this_protocol[0:3] == protocol[0:3])
+                and (this_protocol[3] != protocol[3])
+            ):
                 continue
 
             this_port_text = elt.find("local_port").text
@@ -296,12 +309,11 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
                 continue
 
             this_port = int(this_port_text)
-            if (this_port == port and (this_protocol[0:3] == protocol[0:3]) and
-                    (this_interface == interface or this_interface == "any" or interface == "any")):
+            if this_port == port and (this_protocol[0:3] == protocol[0:3]) and (this_interface == interface or this_interface == "any" or interface == "any"):
                 self.module.fail_json(msg="The specified local_port ({0}) is in use by vpn ID {1}".format(port, this_vpnid))
 
     def _nextvpnid(self):
-        """ find next available vpnid """
+        """find next available vpnid"""
         vpnid = 1
         while len(self.root_elt.findall("*[vpnid='{0}']".format(vpnid))) != 0:
             vpnid += 1
@@ -311,7 +323,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     # XML processing
     #
     def _find_openvpn_server(self, value, field="description"):
-        """ return openvpn-server element """
+        """return openvpn-server element"""
         i = 0
         for elt in self.root_elt.findall("openvpn-server"):
             field_elt = elt.find(field)
@@ -327,7 +339,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         return i
 
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         params_to_remove = []
         for param in ["disable", "push_register_dns", "remote_cert_tls"]:
             if not self.params[param]:
@@ -336,7 +348,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         return params_to_remove
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         (before, changed) = super(PFSenseOpenVPNServerModule, self)._copy_and_update_target()
 
         # Check if local port is used
@@ -349,7 +361,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         # Check if local port is used
         self._openvpn_port_used(self.params["protocol"], self.obj["interface"], self.params["local_port"])
         target_elt = self.pfsense.new_element("openvpn-server")
@@ -362,7 +374,7 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
         return target_elt
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         (target_elt, self.idx) = self._find_openvpn_server(self.obj["description"])
         # Moved off a virtual IP: clear the address it was bound to
         if self.params["state"] == "present" and target_elt is not None and "ipaddr" not in self.obj and target_elt.findtext("ipaddr"):
@@ -384,17 +396,20 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     # run
     #
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
 
         if len(self.pfsense.interfaces.findall("*[if='ovpns{0}']".format(self.diff["before"]["vpnid"]))) > 0:
-            self.module.fail_json(msg="Cannot delete the OpenVPN instance while the interface ovpns{0} is assigned. Remove the interface assignment first."
-                                      .format(self.diff["before"]["vpnid"]))
+            self.module.fail_json(
+                msg="Cannot delete the OpenVPN instance while the interface ovpns{0} is assigned. Remove the interface assignment first.".format(
+                    self.diff["before"]["vpnid"]
+                )
+            )
 
         self.result["vpnid"] = int(self.diff["before"]["vpnid"])
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         if self.params["state"] == "present":
             return self.pfsense.phpshell(OPENVPN_SERVER_PHP_COMMAND_SET.format(idx=self.idx))
         else:
@@ -404,11 +419,11 @@ class PFSenseOpenVPNServerModule(PFSenseModuleBase):
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'" + self.obj["description"] + "'"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "description")

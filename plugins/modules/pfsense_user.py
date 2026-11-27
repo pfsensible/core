@@ -4,7 +4,8 @@
 # Copyright: (c) 2019-2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -138,7 +139,9 @@ $groupindex = index_groups();
 $group_config = config_get_path('system/group');
 """
 
-USER_PHP_COMMAND_SET = USER_PHP_COMMAND_PREFIX + """
+USER_PHP_COMMAND_SET = (
+    USER_PHP_COMMAND_PREFIX
+    + """
 $userent = config_get_path('system/user')[{idx}];
 local_user_set($userent);
 foreach ({mod_groups} as $groupname) {{
@@ -149,9 +152,12 @@ if (is_dir("/etc/inc/privhooks")) {{
     run_plugins("/etc/inc/privhooks");
 }}
 """
+)
 
 # This runs after we remove the group from the config so we can't use $config
-USER_PHP_COMMAND_DEL = USER_PHP_COMMAND_PREFIX + """
+USER_PHP_COMMAND_DEL = (
+    USER_PHP_COMMAND_PREFIX
+    + """
 $userent['name'] = '{name}';
 $userent['uid'] = {uid};
 foreach ({mod_groups} as $groupname) {{
@@ -160,10 +166,11 @@ foreach ({mod_groups} as $groupname) {{
 }}
 local_user_del($userent);
 """
+)
 
 
 class PFSenseUserModule(PFSenseModuleBase):
-    """ module managing pfsense users """
+    """module managing pfsense users"""
 
     ##############################
     # unit tests
@@ -171,12 +178,13 @@ class PFSenseUserModule(PFSenseModuleBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return USER_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseUserModule, self).__init__(module, pfsense, root="system", node="user", key="name",
-                                                arg_route=USER_ARG_ROUTE, map_param=USER_MAP_PARAM, create_default=USER_CREATE_DEFAULT)
+        super(PFSenseUserModule, self).__init__(
+            module, pfsense, root="system", node="user", key="name", arg_route=USER_ARG_ROUTE, map_param=USER_MAP_PARAM, create_default=USER_CREATE_DEFAULT
+        )
         self.groups = self.root_elt.findall("group")
         self.user_groups = None
         self.mod_groups = []
@@ -206,7 +214,7 @@ class PFSenseUserModule(PFSenseModuleBase):
             return priv
 
     def _copy_and_add_target(self):
-        """ populate the XML target_elt """
+        """populate the XML target_elt"""
         obj = self.obj
         if "bcrypt-hash" not in obj:
             self.module.fail_json(msg="Password is required when adding a user")
@@ -221,7 +229,7 @@ class PFSenseUserModule(PFSenseModuleBase):
         self.elements = self.root_elt.findall(self.node)
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff["before"] = before
         if "priv" in before:
@@ -282,7 +290,7 @@ class PFSenseUserModule(PFSenseModuleBase):
         return changed
 
     def _remove_deleted_disabled_param(self):
-        """ Remove disabled param if user is re-enabled """
+        """Remove disabled param if user is re-enabled"""
         changed = False
 
         if self.pfsense.remove_deleted_param_from_elt(self.target_elt, "disabled", self.obj):
@@ -322,9 +330,7 @@ class PFSenseUserModule(PFSenseModuleBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=USER_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=USER_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseUserModule(module)
     # Pass params for testing framework

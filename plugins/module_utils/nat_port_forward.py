@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import re
@@ -32,20 +33,18 @@ NAT_PORT_FORWARD_ARGUMENT_SPEC = dict(
     before=dict(required=False, type="str"),
 )
 
-NAT_PORT_FORWARD_REQUIRED_IF = [
-    ["state", "present", ["interface", "source", "destination", "target"]]
-]
+NAT_PORT_FORWARD_REQUIRED_IF = [["state", "present", ["interface", "source", "destination", "target"]]]
 
 PORT_PROTOCOLS = ("tcp", "udp", "tcp/udp")
 NUMERIC_PORTS = re.compile(r"([0-9]{1,5})(?:-([0-9]{1,5}))?")
 
 
 class PFSenseNatPortForwardModule(PFSenseModuleBase):
-    """ module managing pfsense NAT rules """
+    """module managing pfsense NAT rules"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return NAT_PORT_FORWARD_ARGUMENT_SPEC
 
     ##############################
@@ -74,7 +73,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
 
         obj = dict()
         self.obj = obj
@@ -122,7 +121,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return obj
 
     def _parse_target_address(self, obj):
-        """ validate param address field and returns it as a dict """
+        """validate param address field and returns it as a dict"""
 
         if self.params.get("target") is None or self.params["target"] == "":
             self.module.fail_json(msg="The field Redirect target IP is required.")
@@ -163,8 +162,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     def _resolve_target_address(self, address, explicit_interface):
         """Resolve a target to the value pfSense stores in the NAT rule."""
         if not explicit_interface:
-            if (self._target_interface_id(address) or self.pfsense.is_ipv4_address(address)
-                    or self.pfsense.find_alias(address, "host") is not None):
+            if self._target_interface_id(address) or self.pfsense.is_ipv4_address(address) or self.pfsense.find_alias(address, "host") is not None:
                 return address
             vip = self.pfsense.get_virtual_ip_address(address)
             if vip is not None and self.pfsense.is_ipv4_address(vip):
@@ -176,7 +174,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return None
 
     def _parse_target_ports(self, ports, destination_port):
-        """ Return the NAT starting port and the firewall rule's translated ports. """
+        """Return the NAT starting port and the firewall rule's translated ports."""
         target = NUMERIC_PORTS.fullmatch(ports)
         if target is None or target[2] is None:
             if not self.pfsense.is_port_or_alias(ports):
@@ -206,7 +204,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return first, f"{first}-{start + width}" if width else first
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         if self.params.get("after") and self.params.get("before"):
             self.module.fail_json(msg="Cannot specify both after and before")
@@ -242,14 +240,14 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return params
 
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         self._set_associated_rule()
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff["after"] = self.pfsense.element_to_dict(self.target_elt)
         self._insert(self.target_elt)
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         before = self.pfsense.element_to_dict(self.target_elt)
         self.diff["before"] = before
         changed = self._set_associated_rule(before)
@@ -279,7 +277,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         self.result["commands"] += self.pfsense_rule_module.result["commands"]
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         target_elt = self.pfsense.new_element("rule")
         return target_elt
 
@@ -300,7 +298,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         self.result["commands"] += self.pfsense_rule_module.result["commands"]
 
     def _find_rule_by_descr(self, descr):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for idx, rule_elt in enumerate(self.root_elt):
             if rule_elt.tag != "rule":
                 continue
@@ -310,7 +308,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return (None, None)
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         for rule_elt in self.root_elt:
             if rule_elt.tag != "rule":
                 continue
@@ -320,7 +318,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return None
 
     def _get_expected_rule_position(self):
-        """ get expected rule position in interface/floating """
+        """get expected rule position in interface/floating"""
         if self.before == "bottom":
             return len(self.root_elt)
         elif self.after == "top":
@@ -340,7 +338,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return -1
 
     def _get_expected_rule_xml_index(self):
-        """ get expected rule index in xml """
+        """get expected rule index in xml"""
         if self.before == "bottom":
             return len(self.root_elt)
         elif self.after == "top":
@@ -366,11 +364,11 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         return ["disabled", "nordr", "nosync", "natreflection"]
 
     def _get_rule_position(self, descr=None, fail=True):
-        """ get rule position in interface/floating """
+        """get rule position in interface/floating"""
         if descr is None:
             descr = self.obj["descr"]
 
@@ -380,18 +378,18 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
         return idx
 
     def _insert(self, rule_elt):
-        """ insert rule into xml """
+        """insert rule into xml"""
         rule_xml_idx = self._get_expected_rule_xml_index()
         self.root_elt.insert(rule_xml_idx, rule_elt)
 
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         ruleid_elt = self.target_elt.find("associated-rule-id")
         if ruleid_elt is not None:
             self._delete_associated_rule(ruleid_elt.text, self.target_elt.findtext("interface"))
 
     def _set_associated_rule(self, before=None):
-        """ manage changes to the associated rule """
+        """manage changes to the associated rule"""
         if before is None:
             if self.params["associated_rule"] == "associated" or self.params["associated_rule"] == "unassociated":
                 self._create_associated_rule()
@@ -424,7 +422,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
             self.change_descr = "ansible {0} updated {1}".format(self._get_module_name(), self._get_obj_name())
 
     def _update_rule_position(self, rule_elt):
-        """ move rule in xml if required """
+        """move rule in xml if required"""
         current_position = self._get_rule_position()
         expected_position = self._get_expected_rule_position()
         if current_position == expected_position:
@@ -442,7 +440,7 @@ class PFSenseNatPortForwardModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell("""require_once("filter.inc");
 if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem_dirty('filter'); }""")
 
@@ -450,12 +448,12 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["descr"])
 
     @staticmethod
     def fassociate(value):
-        """ associated-rule-id value formatting function """
+        """associated-rule-id value formatting function"""
         if value is None or value == "":
             return "none"
 
@@ -466,7 +464,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
 
     @staticmethod
     def fnatreflection(value):
-        """ natreflection value formatting function """
+        """natreflection value formatting function"""
         if value is None or value == "none":
             return "'system-default'"
 
@@ -474,14 +472,14 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
 
     @staticmethod
     def fprotocol(value):
-        """ protocol value formatting function """
+        """protocol value formatting function"""
         if value is None or value == "none":
             return "any"
 
         return value
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "disabled", fvalue=self.fvalue_bool, default=False)
@@ -517,9 +515,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
             values += self.format_updated_cli_field(fafter, fbefore, "destination", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "destination_port", add_comma=(values))
             values += self.format_updated_cli_field(fafter, fbefore, "target", add_comma=(values))
-            values += self.format_updated_cli_field(
-                self.obj, before, "natreflection", fvalue=self.fnatreflection, default="system-default", add_comma=(values)
-            )
+            values += self.format_updated_cli_field(self.obj, before, "natreflection", fvalue=self.fnatreflection, default="system-default", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "associated-rule-id", fvalue=self.fassociate, fname="associated_rule", add_comma=(values))
             values += self.format_updated_cli_field(self.obj, before, "nosync", fvalue=self.fvalue_bool, default=False, add_comma=(values))
             if self.position_changed:
@@ -529,7 +525,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         return values
 
     def _obj_address_to_log_field(self, address, include_port):
-        """ return formated address from dict """
+        """return formated address from dict"""
         if not isinstance(address, dict):
             return address
 
@@ -550,7 +546,7 @@ if (filter_configure() == 0) { clear_subsystem_dirty('natconf'); clear_subsystem
         return field
 
     def _obj_to_log_fields(self, rule):
-        """ return formated source and destination from dict """
+        """return formated source and destination from dict"""
         res = {}
         for address in ("source", "destination"):
             port_arg = address + "_port"

@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -803,7 +802,7 @@ from ansible_collections.pfsensible.core.plugins.module_utils.nat_outbound impor
 from ansible_collections.pfsensible.core.plugins.module_utils.nat_port_forward import (
     PFSenseNatPortForwardModule,
     NAT_PORT_FORWARD_ARGUMENT_SPEC,
-    NAT_PORT_FORWARD_REQUIRED_IF
+    NAT_PORT_FORWARD_REQUIRED_IF,
 )
 from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule, RULE_ARGUMENT_SPEC
 from ansible_collections.pfsensible.core.plugins.module_utils.rule_separator import (
@@ -818,7 +817,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 class PFSenseModuleAggregate(object):
-    """ module managing pfsense aggregated aliases, rules, rule separators, interfaces, VLANs and DHCP static mappings """
+    """module managing pfsense aggregated aliases, rules, rule separators, interfaces, VLANs and DHCP static mappings"""
 
     def __init__(self, module):
         self.module = module
@@ -855,16 +854,20 @@ class PFSenseModuleAggregate(object):
         cmd += "if (filter_configure() == 0) { \n"
         if self.pfsense_aliases.result["changed"]:
             run = True
-            cmd += "clear_subsystem_dirty(\'aliases\');\n"
+            cmd += "clear_subsystem_dirty('aliases');\n"
 
         if self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_nat_outbounds.result["changed"]:
             run = True
-            cmd += "clear_subsystem_dirty(\'natconf\');\n"
+            cmd += "clear_subsystem_dirty('natconf');\n"
 
-        if (self.pfsense_rules.result["changed"] or self.pfsense_rule_separators.result["changed"] or
-                self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_nat_outbounds.result["changed"]):
+        if (
+            self.pfsense_rules.result["changed"]
+            or self.pfsense_rule_separators.result["changed"]
+            or self.pfsense_nat_port_forwards.result["changed"]
+            or self.pfsense_nat_outbounds.result["changed"]
+        ):
             run = True
-            cmd += "clear_subsystem_dirty(\'filter\');\n"
+            cmd += "clear_subsystem_dirty('filter');\n"
         cmd += "}"
         if run:
             return self.pfsense.phpshell(cmd)
@@ -872,7 +875,7 @@ class PFSenseModuleAggregate(object):
         return ("", "", "")
 
     def _parse_floating_interfaces(self, interfaces):
-        """ parse interfaces """
+        """parse interfaces"""
         res = set()
         for interface in interfaces.split(","):
             parsed = self.pfsense.parse_interface(interface, fail=False)
@@ -881,7 +884,7 @@ class PFSenseModuleAggregate(object):
         return res
 
     def want_rule(self, rule_elt, rules, name_field="name"):
-        """ return True if we want to keep rule_elt """
+        """return True if we want to keep rule_elt"""
         descr = rule_elt.find("descr")
         interface = rule_elt.find("interface")
         floating = rule_elt.find("floating") is not None
@@ -909,9 +912,9 @@ class PFSenseModuleAggregate(object):
             if rule[name_field] != descr.text:
                 continue
 
-            rule_floating = (rule.get("floating") is not None and
-                             (isinstance(rule["floating"], bool) and
-                             rule["floating"] or rule["floating"].lower() in ["yes", "true"]))
+            rule_floating = rule.get("floating") is not None and (
+                isinstance(rule["floating"], bool) and rule["floating"] or rule["floating"].lower() in ["yes", "true"]
+            )
             if floating != rule_floating:
                 continue
 
@@ -925,7 +928,7 @@ class PFSenseModuleAggregate(object):
         return False
 
     def want_rule_separator(self, separator_elt, rule_separators):
-        """ return True if we want to keep separator_elt """
+        """return True if we want to keep separator_elt"""
         name = separator_elt.find("text").text
         interface = separator_elt.find("if").text
 
@@ -944,7 +947,7 @@ class PFSenseModuleAggregate(object):
         return False
 
     def want_alias(self, alias_elt, aliases):
-        """ return True if we want to keep alias_elt """
+        """return True if we want to keep alias_elt"""
         name = alias_elt.find("name")
         alias_type = alias_elt.find("type")
 
@@ -964,7 +967,7 @@ class PFSenseModuleAggregate(object):
 
     @staticmethod
     def want_interface(interface_elt, interfaces):
-        """ return True if we want to keep interface_elt """
+        """return True if we want to keep interface_elt"""
         descr_elt = interface_elt.find("descr")
         if descr_elt is not None and descr_elt.text:
             name = descr_elt.text
@@ -980,7 +983,7 @@ class PFSenseModuleAggregate(object):
 
     @staticmethod
     def want_vlan(vlan_elt, vlans):
-        """ return True if we want to keep vlan_elt """
+        """return True if we want to keep vlan_elt"""
         tag = int(vlan_elt.find("tag").text)
         interface = vlan_elt.find("if")
 
@@ -1008,7 +1011,7 @@ class PFSenseModuleAggregate(object):
         return params["interface"].lower() not in interface_filter
 
     def run_rules(self):
-        """ process input params to add/update/delete all rules """
+        """process input params to add/update/delete all rules"""
 
         want = self.module.params["aggregated_rules"]
         interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
@@ -1081,8 +1084,7 @@ class PFSenseModuleAggregate(object):
             if params.get("state", "present") != "absent" and params.get("interface") is not None:
                 if params.get("floating"):
                     # For floating rules, filter out invalid interfaces from the list
-                    valid = [i for i in params["interface"].split(",")
-                             if i == "any" or self.pfsense.parse_interface(i, fail=False) is not None]
+                    valid = [i for i in params["interface"].split(",") if i == "any" or self.pfsense.parse_interface(i, fail=False) is not None]
                     if not valid:
                         continue
                     params["interface"] = ",".join(valid)
@@ -1092,7 +1094,7 @@ class PFSenseModuleAggregate(object):
             self.pfsense_rules.run(params)
 
     def run_nat_outbounds_rules(self):
-        """ process input params to add/update/delete all nat_outbound rules """
+        """process input params to add/update/delete all nat_outbound rules"""
 
         want = self.module.params["aggregated_nat_outbounds"]
         interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
@@ -1131,7 +1133,7 @@ class PFSenseModuleAggregate(object):
             self.pfsense_nat_outbounds.run(params)
 
     def run_nat_port_forwards_rules(self):
-        """ process input params to add/update/delete all nat_port_forwards_rule rules """
+        """process input params to add/update/delete all nat_port_forwards_rule rules"""
 
         want = self.module.params["aggregated_nat_port_forwards"]
         interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
@@ -1170,7 +1172,7 @@ class PFSenseModuleAggregate(object):
             self.pfsense_nat_port_forwards.run(params)
 
     def run_aliases(self):
-        """ process input params to add/update/delete all aliases """
+        """process input params to add/update/delete all aliases"""
         want = self.module.params["aggregated_aliases"]
 
         if want is None:
@@ -1194,7 +1196,7 @@ class PFSenseModuleAggregate(object):
                 self.pfsense_aliases.run(params)
 
     def run_dhcp_statics(self):
-        """ process input params to add/update/delete all DHCP static mappings """
+        """process input params to add/update/delete all DHCP static mappings"""
         want = self.module.params["aggregated_dhcp_statics"]
 
         if want is None:
@@ -1217,7 +1219,7 @@ class PFSenseModuleAggregate(object):
                         self.pfsense_dhcp_statics.remove_staticmap(dhcp_elt, staticmap_elt)
 
     def run_interfaces(self):
-        """ process input params to add/update/delete all interfaces """
+        """process input params to add/update/delete all interfaces"""
         want = self.module.params["aggregated_interfaces"]
 
         if want is None:
@@ -1243,7 +1245,7 @@ class PFSenseModuleAggregate(object):
                 self.pfsense_interfaces.run(params)
 
     def run_rule_separators(self):
-        """ process input params to add/update/delete all separators """
+        """process input params to add/update/delete all separators"""
         want = self.module.params["aggregated_rule_separators"]
         interface_filter = self.module.params["interface_filter"].lower().split(" ") if self.module.params.get("interface_filter") is not None else None
 
@@ -1283,7 +1285,7 @@ class PFSenseModuleAggregate(object):
                 self.pfsense_rule_separators.run(params)
 
     def run_vlans(self):
-        """ process input params to add/update/delete all VLANs """
+        """process input params to add/update/delete all VLANs"""
         want = self.module.params["aggregated_vlans"]
 
         if want is None:
@@ -1308,15 +1310,19 @@ class PFSenseModuleAggregate(object):
                 self.pfsense_vlans.run(params)
 
     def commit_changes(self):
-        """ apply changes and exit module """
+        """apply changes and exit module"""
         self.pfsense_aliases.validate_removals()
         stdout = ""
         stderr = ""
         changed = (
-            self.pfsense_aliases.result["changed"] or self.pfsense_dhcp_statics.result["changed"]
-            or self.pfsense_interfaces.result["changed"] or self.pfsense_nat_outbounds.result["changed"]
-            or self.pfsense_nat_port_forwards.result["changed"] or self.pfsense_rules.result["changed"]
-            or self.pfsense_rule_separators.result["changed"] or self.pfsense_vlans.result["changed"]
+            self.pfsense_aliases.result["changed"]
+            or self.pfsense_dhcp_statics.result["changed"]
+            or self.pfsense_interfaces.result["changed"]
+            or self.pfsense_nat_outbounds.result["changed"]
+            or self.pfsense_nat_port_forwards.result["changed"]
+            or self.pfsense_rules.result["changed"]
+            or self.pfsense_rule_separators.result["changed"]
+            or self.pfsense_vlans.result["changed"]
         )
 
         if changed and not self.module.check_mode:
@@ -1341,19 +1347,24 @@ class PFSenseModuleAggregate(object):
 def main():
     argument_spec = dict(
         aggregated_aliases=dict(
-            type="list", elements="dict", options=ALIAS_ARGUMENT_SPEC, mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE, required_if=ALIAS_REQUIRED_IF),
+            type="list", elements="dict", options=ALIAS_ARGUMENT_SPEC, mutually_exclusive=ALIAS_MUTUALLY_EXCLUSIVE, required_if=ALIAS_REQUIRED_IF
+        ),
         aggregated_dhcp_statics=dict(
-            type="list", elements="dict",
-            options=DHCP_STATIC_ARGUMENT_SPEC, required_if=DHCP_STATIC_REQUIRED_IF, required_one_of=DHCP_STATIC_REQUIRED_ONE_OF),
+            type="list", elements="dict", options=DHCP_STATIC_ARGUMENT_SPEC, required_if=DHCP_STATIC_REQUIRED_IF, required_one_of=DHCP_STATIC_REQUIRED_ONE_OF
+        ),
         aggregated_interfaces=dict(
-            type="list", elements="dict",
-            options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE),
+            type="list", elements="dict", options=INTERFACE_ARGUMENT_SPEC, required_if=INTERFACE_REQUIRED_IF, mutually_exclusive=INTERFACE_MUTUALLY_EXCLUSIVE
+        ),
         aggregated_rules=dict(type="list", elements="dict", options=RULE_ARGUMENT_SPEC),
         aggregated_nat_outbounds=dict(type="list", elements="dict", options=NAT_OUTBOUND_ARGUMENT_SPEC, required_if=NAT_OUTBOUND_REQUIRED_IF),
         aggregated_nat_port_forwards=dict(type="list", elements="dict", options=NAT_PORT_FORWARD_ARGUMENT_SPEC, required_if=NAT_PORT_FORWARD_REQUIRED_IF),
         aggregated_rule_separators=dict(
-            type="list", elements="dict",
-            options=RULE_SEPARATOR_ARGUMENT_SPEC, required_one_of=RULE_SEPARATOR_REQUIRED_ONE_OF, mutually_exclusive=RULE_SEPARATOR_MUTUALLY_EXCLUSIVE),
+            type="list",
+            elements="dict",
+            options=RULE_SEPARATOR_ARGUMENT_SPEC,
+            required_one_of=RULE_SEPARATOR_REQUIRED_ONE_OF,
+            mutually_exclusive=RULE_SEPARATOR_MUTUALLY_EXCLUSIVE,
+        ),
         aggregated_vlans=dict(type="list", elements="dict", options=VLAN_ARGUMENT_SPEC),
         order_rules=dict(default=False, type="bool"),
         purge_aliases=dict(default=False, type="bool"),
@@ -1369,21 +1380,20 @@ def main():
         ignored_rules=dict(type="list", elements="str", default=[]),
     )
 
-    required_one_of = [[
-        "aggregated_aliases",
-        "aggregated_dhcp_statics",
-        "aggregated_interfaces",
-        "aggregated_nat_outbounds",
-        "aggregated_nat_port_forwards",
-        "aggregated_rules",
-        "aggregated_rule_separators",
-        "aggregated_vlans"
-    ]]
+    required_one_of = [
+        [
+            "aggregated_aliases",
+            "aggregated_dhcp_statics",
+            "aggregated_interfaces",
+            "aggregated_nat_outbounds",
+            "aggregated_nat_port_forwards",
+            "aggregated_rules",
+            "aggregated_rule_separators",
+            "aggregated_vlans",
+        ]
+    ]
 
-    module = AnsibleModule(
-        argument_spec=argument_spec,
-        required_one_of=required_one_of,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=argument_spec, required_one_of=required_one_of, supports_check_mode=True)
 
     pfmodule = PFSenseModuleAggregate(module)
 

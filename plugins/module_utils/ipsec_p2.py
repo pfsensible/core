@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFSenseModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -14,16 +15,13 @@ IPSEC_P2_ARGUMENT_SPEC = dict(
     state=dict(default="present", choices=["present", "absent"]),
     descr=dict(required=True, type="str"),
     p1_descr=dict(required=True, type="str"),
-
     disabled=dict(default=False, type="bool"),
     mode=dict(choices=["tunnel", "tunnel6", "transport", "vti"], type="str"),
     protocol=dict(default="esp", choices=["esp", "ah"], type="str"),
-
     # addresses
     local=dict(required=False, type="str"),
     nat=dict(required=False, type="str"),
     remote=dict(required=False, type="str"),
-
     # encryptions
     aes=dict(required=False, type="bool"),
     aes128gcm=dict(required=False, type="bool"),
@@ -37,19 +35,15 @@ IPSEC_P2_ARGUMENT_SPEC = dict(
     aes192gcm_len=dict(required=False, choices=["auto", "64", "96", "128"], type="str"),
     aes256gcm_len=dict(required=False, choices=["auto", "64", "96", "128"], type="str"),
     blowfish_len=dict(required=False, choices=["auto", "128", "192", "256"], type="str"),
-
     # hashes
     sha1=dict(required=False, type="bool"),
     sha256=dict(required=False, type="bool"),
     sha384=dict(required=False, type="bool"),
     sha512=dict(required=False, type="bool"),
     aesxcbc=dict(required=False, type="bool"),
-
     # misc
     pfsgroup=dict(
-        default="14",
-        choices=["0", "1", "2", "5", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "28", "29", "30", "31", "32"],
-        type="str"
+        default="14", choices=["0", "1", "2", "5", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "28", "29", "30", "31", "32"], type="str"
     ),
     lifetime=dict(default=3600, type="int"),
     pinghost=dict(required=False, type="str"),
@@ -58,11 +52,9 @@ IPSEC_P2_ARGUMENT_SPEC = dict(
 
 IPSEC_P2_REQUIRED_IF = [
     ["state", "present", ["mode"]],
-
     ["mode", "tunnel", ["local", "remote"]],
     ["mode", "tunnel6", ["local", "remote"]],
     ["mode", "vti", ["local", "remote"]],
-
     # encryptions
     ["aes", True, ["aes_len"]],
     ["aes128gcm", True, ["aes128gcm_len"]],
@@ -73,11 +65,11 @@ IPSEC_P2_REQUIRED_IF = [
 
 
 class PFSenseIpsecP2Module(PFSenseModuleBase):
-    """ module managing pfsense ipsec phase 2 options and proposals """
+    """module managing pfsense ipsec phase 2 options and proposals"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return IPSEC_P2_ARGUMENT_SPEC
 
     ##############################
@@ -102,7 +94,8 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
     # params processing
     #
     def _check_for_duplicate_phase2(self, phase2):
-        """ check for another phase2 with same remote and local """
+        """check for another phase2 with same remote and local"""
+
         def strip_phase(phase):
             _phase2 = {}
             if phase.get("localid") is not None:
@@ -128,7 +121,8 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
                 self.module.fail_json(msg="Phase2 with this Local/Remote networks combination is already defined for this Phase1.")
 
     def _id_to_phase2(self, name, phase2, address, param_name):
-        """ setup ipsec phase2 with address """
+        """setup ipsec phase2 with address"""
+
         def set_ip_address():
             phase2[name]["type"] = "address"
             phase2[name]["address"] = address
@@ -137,6 +131,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             phase2[name]["type"] = "network"
             (phase2[name]["address"], phase2[name]["netbits"]) = self.pfsense.parse_ip_network(address, False)
             phase2[name]["netbits"] = str(phase2[name]["netbits"])
+
         phase2[name] = dict()
 
         interface = self.pfsense.parse_interface(address, fail=False, with_virtual=False)
@@ -165,7 +160,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             self.module.fail_json(msg="A valid IP address, network or interface must be specified in {0}.".format(param_name))
 
     def _params_to_obj(self):
-        """ return an phase2 dict from module params """
+        """return an phase2 dict from module params"""
         params = self.params
 
         obj = dict()
@@ -175,7 +170,6 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         if params["state"] == "present":
             obj["mode"] = params["mode"]
             if obj["mode"] != "transport":
-
                 if obj["mode"] == "vti" and not self.pfsense.is_ipv4_address(params["remote"]):
                     msg = "VTI requires a valid remote IP address for its endpoint address."
                     self.module.fail_json(msg=msg)
@@ -209,7 +203,8 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
+
         def has_one_of(bools):
             for name in bools:
                 if params.get(name):
@@ -245,14 +240,14 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
     # XML processing
     #
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self._sync_encryptions(self.target_elt)
         self._sync_hashes(self.target_elt)
         self.root_elt.append(self.target_elt)
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         self.before_elt = deepcopy(self.target_elt)
         before = self.pfsense.element_to_dict(self.target_elt)
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
@@ -269,7 +264,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         target_elt = self.pfsense.new_element("phase2")
         self.obj["ikeid"] = self._phase1.find("ikeid").text
         self.obj["uniqid"] = self.pfsense.uniqid()
@@ -277,7 +272,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return target_elt
 
     def _find_free_reqid(self):
-        """ return first unused reqid """
+        """return first unused reqid"""
         reqid = 1
         while True:
             found = False
@@ -294,7 +289,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
             reqid = reqid + 1
 
     def _find_target(self):
-        """ return ipsec phase2 elt if found """
+        """return ipsec phase2 elt if found"""
         ikeid = self._phase1.find("ikeid").text
         for phase2_elt in self.root_elt:
             if phase2_elt.tag != "phase2":
@@ -310,7 +305,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return None
 
     def _remove_deleted_ipsec_params(self):
-        """ Remove from phase2 a few deleted params """
+        """Remove from phase2 a few deleted params"""
         changed = False
         params = ["disabled"]
 
@@ -325,7 +320,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return changed
 
     def _remove_extra_deleted_ipsec_params(self, name):
-        """ Remove from phase2 a few extra deleted params """
+        """Remove from phase2 a few extra deleted params"""
         changed = False
 
         params = ["type", "address", "netbits"]
@@ -345,7 +340,8 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return changed
 
     def _sync_encryptions(self, phase2_elt):
-        """ sync encryptions params """
+        """sync encryptions params"""
+
         def get_encryption(encryptions_elt, name):
             for encryption_elt in encryptions_elt:
                 name_elt = encryption_elt.find("name")
@@ -395,7 +391,8 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return changed
 
     def _sync_hashes(self, phase2_elt):
-        """ sync hashes params """
+        """sync hashes params"""
+
         def get_hash(hashes_elt, name):
             for hash_elt in hashes_elt:
                 if hash_elt.text == name:
@@ -440,17 +437,19 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}' on '{1}'".format(self.obj["descr"], self.params["p1_descr"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
+
         def log_enc(name):
             log = ""
             log += self.format_cli_field(self.params, name, fvalue=self.fvalue_bool)
             if self.params.get(name) and self.params.get(name + "_len") is not None:
                 log += self.format_cli_field(self.params, name + "_len")
             return log
+
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "disabled", fvalue=self.fvalue_bool)
@@ -519,7 +518,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
         return values
 
     def _prepare_log_address(self, before, param, name):
-        """ reparse some params for logging """
+        """reparse some params for logging"""
         if before.get(name) is None or not isinstance(before[name], dict) or before[name].get("type") is None:
             before[param] = None
             return
@@ -533,7 +532,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
 
     @staticmethod
     def _prepare_log_encryptions(before, before_elt):
-        """ reparse some params for logging """
+        """reparse some params for logging"""
         encryptions_elt = before_elt.findall("encryption-algorithm-option")
         for encryption_elt in encryptions_elt:
             name = encryption_elt.find("name").text
@@ -553,7 +552,7 @@ class PFSenseIpsecP2Module(PFSenseModuleBase):
 
     @staticmethod
     def _prepare_log_hashes(before, before_elt):
-        """ reparse some params for logging """
+        """reparse some params for logging"""
         hashes_elt = before_elt.findall("hash-algorithm-option")
         for hash_elt in hashes_elt:
             name = hash_elt.text.replace("hmac_", "")

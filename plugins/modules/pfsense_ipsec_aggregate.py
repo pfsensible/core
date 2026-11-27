@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -444,7 +443,7 @@ from copy import deepcopy
 
 
 class PFSenseModuleIpsecAggregate(object):
-    """ module managing pfsense aggregated IPsec tunnels, phases 1, phases 2 and proposals """
+    """module managing pfsense aggregated IPsec tunnels, phases 1, phases 2 and proposals"""
 
     def __init__(self, module):
         self.module = module
@@ -461,7 +460,7 @@ class PFSenseModuleIpsecAggregate(object):
 
     @staticmethod
     def want_ipsec(ipsec_elt, ipsecs):
-        """ return True if we want to keep ipsec_elt """
+        """return True if we want to keep ipsec_elt"""
         descr = ipsec_elt.find("descr")
 
         if descr is None:
@@ -475,7 +474,7 @@ class PFSenseModuleIpsecAggregate(object):
         return False
 
     def proposal_elt_to_params(self, ipsec_elt, proposal_elt):
-        """ return the pfsense_ipsec_proposal params corresponding the proposal_elt """
+        """return the pfsense_ipsec_proposal params corresponding the proposal_elt"""
         params = {}
         proposal = self.pfsense.element_to_dict(proposal_elt)
         params["encryption"] = proposal["encryption-algorithm"]["name"]
@@ -499,7 +498,7 @@ class PFSenseModuleIpsecAggregate(object):
         return params
 
     def want_ipsec_proposal(self, ipsec_elt, proposal_elt, proposals):
-        """ return True if we want to keep proposal_elt """
+        """return True if we want to keep proposal_elt"""
         params_from_elt = self.proposal_elt_to_params(ipsec_elt, proposal_elt)
         params_from_elt["state"] = "present"
 
@@ -519,7 +518,7 @@ class PFSenseModuleIpsecAggregate(object):
         return False
 
     def want_ipsec_phase2(self, phase2_elt, phases2):
-        """ return True if we want to keep proposal_elt """
+        """return True if we want to keep proposal_elt"""
         ikeid_elt = phase2_elt.find("ikeid")
         descr = phase2_elt.find("descr")
 
@@ -543,7 +542,7 @@ class PFSenseModuleIpsecAggregate(object):
         return False
 
     def run_ipsecs(self):
-        """ process input params to add/update/delete all IPsec tunnels """
+        """process input params to add/update/delete all IPsec tunnels"""
         want = self.module.params["aggregated_ipsecs"]
 
         # processing aggregated parameter
@@ -569,7 +568,7 @@ class PFSenseModuleIpsecAggregate(object):
                 self.pfsense_ipsec.run(params)
 
     def run_ipsec_proposals(self):
-        """ process input params to add/update/delete all IPsec tunnels """
+        """process input params to add/update/delete all IPsec tunnels"""
         want = self.module.params["aggregated_ipsec_proposals"]
 
         # processing aggregated parameter
@@ -602,7 +601,7 @@ class PFSenseModuleIpsecAggregate(object):
                 self.pfsense_ipsec_proposal.run(params)
 
     def run_ipsec_p2s(self):
-        """ process input params to add/update/delete all IPsec tunnels """
+        """process input params to add/update/delete all IPsec tunnels"""
         want = self.module.params["aggregated_ipsec_p2s"]
 
         # processing aggregated parameter
@@ -629,7 +628,7 @@ class PFSenseModuleIpsecAggregate(object):
                 self.pfsense_ipsec_p2.run(params)
 
     def commit_changes(self):
-        """ apply changes and exit module """
+        """apply changes and exit module"""
         stdout = ""
         stderr = ""
         changed = self.pfsense_ipsec.result["changed"] or self.pfsense_ipsec_proposal.result["changed"] or self.pfsense_ipsec_p2.result["changed"]
@@ -662,10 +661,7 @@ def main():
 
     required_one_of = [["aggregated_ipsecs", "aggregated_ipsec_proposals", "aggregated_ipsec_p2s"]]
 
-    module = AnsibleModule(
-        argument_spec=argument_spec,
-        required_one_of=required_one_of,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=argument_spec, required_one_of=required_one_of, supports_check_mode=True)
 
     pfmodule = PFSenseModuleIpsecAggregate(module)
 

@@ -21,6 +21,7 @@ jobs:
           python-version: "3.10"
       - run: python -m pip install ruff==0.14.5
       - run: ruff check
+      - run: ruff format --check --diff
 
   build:
     # The type of runner that the job will run on

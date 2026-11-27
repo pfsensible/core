@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -113,7 +114,7 @@ GATEWAY_GROUP_REQUIRED_IF = [
 
 
 def p2o_members(self, name, params, obj):
-    """ parse the list of members into format required for the XML element """
+    """parse the list of members into format required for the XML element"""
     obj["item"] = []
     for member in params[name]:
         if member["virtualip"] != "address":
@@ -134,7 +135,7 @@ GATEWAY_GROUP_CREATE_DEFAULT = dict(
 
 
 class PFSenseGatewayGroupModule(PFSenseModuleBase):
-    """ module managing pfsense gateway groups """
+    """module managing pfsense gateway groups"""
 
     ##############################
     # unit tests
@@ -142,21 +143,25 @@ class PFSenseGatewayGroupModule(PFSenseModuleBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return GATEWAY_GROUP_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
         # apply the change as pfsense_gateway does
-        super(PFSenseGatewayGroupModule, self).__init__(module, pfsense, root="gateways", node="gateway_group", key="name",
-                                                        update_php=PFSenseGatewayModule.get_update_cmds(),
-                                                        arg_route=GATEWAY_GROUP_ARG_ROUTE, create_default=GATEWAY_GROUP_CREATE_DEFAULT)
+        super(PFSenseGatewayGroupModule, self).__init__(
+            module,
+            pfsense,
+            root="gateways",
+            node="gateway_group",
+            key="name",
+            update_php=PFSenseGatewayModule.get_update_cmds(),
+            arg_route=GATEWAY_GROUP_ARG_ROUTE,
+            create_default=GATEWAY_GROUP_CREATE_DEFAULT,
+        )
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=GATEWAY_GROUP_ARGUMENT_SPEC,
-        required_if=GATEWAY_GROUP_REQUIRED_IF,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=GATEWAY_GROUP_ARGUMENT_SPEC, required_if=GATEWAY_GROUP_REQUIRED_IF, supports_check_mode=True)
 
     pfmodule = PFSenseGatewayGroupModule(module)
     # Pass params for testing framework

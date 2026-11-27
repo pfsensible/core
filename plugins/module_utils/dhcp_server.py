@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ipaddress import ip_address, ip_network
@@ -58,7 +59,7 @@ DHCPSERVER_ARGUMENT_SPEC = dict(
 
 
 class PFSenseDHCPServerModule(PFSenseModuleBase):
-    """ module managing pfsense DHCP server settings """
+    """module managing pfsense DHCP server settings"""
 
     @staticmethod
     def get_argument_spec():
@@ -108,7 +109,7 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
                         if nic.find("subnet") is not None:
                             subnet = int(nic.find("subnet").text)
                             if subnet < 31:
-                                self.network = ip_network(u"{0}/{1}".format(ipaddr, subnet), strict=False)
+                                self.network = ip_network("{0}/{1}".format(ipaddr, subnet), strict=False)
                                 return True
         return False
 
@@ -123,19 +124,34 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
         self.obj = obj
 
         if params["state"] == "present":
-
             self._get_ansible_param(obj, "range", force_value={}, force=True)
             self._get_ansible_param(obj["range"], "range_from", fname="from", force=True)
             self._get_ansible_param(obj["range"], "range_to", fname="to", force=True)
 
             # Forced options
-            for option in ["failover_peerip", "defaultleasetime", "maxleasetime",
-                           "netmask", "gateway", "domain", "domainsearchlist",
-                           "ddnsdomain", "ddnsdomainprimary", "ddnsdomainkeyname",
-                           "ddnsdomainkeyalgorithm", "ddnsdomainkey",
-                           "ddnsclientupdates", "tftp", "ldap",
-                           "nextserver", "filename", "filename32", "filename64",
-                           "rootpath", "numberoptions"]:
+            for option in [
+                "failover_peerip",
+                "defaultleasetime",
+                "maxleasetime",
+                "netmask",
+                "gateway",
+                "domain",
+                "domainsearchlist",
+                "ddnsdomain",
+                "ddnsdomainprimary",
+                "ddnsdomainkeyname",
+                "ddnsdomainkeyalgorithm",
+                "ddnsdomainkey",
+                "ddnsclientupdates",
+                "tftp",
+                "ldap",
+                "nextserver",
+                "filename",
+                "filename32",
+                "filename64",
+                "rootpath",
+                "numberoptions",
+            ]:
                 self._get_ansible_param(obj, option, force=True)
 
             for option in MAC_LIST_OPTIONS:
@@ -145,8 +161,7 @@ class PFSenseDHCPServerModule(PFSenseModuleBase):
             for option in ["winsserver", "dnsserver", "ntpserver"]:
                 self._get_ansible_param(obj, option)
 
-            for option in ["enable", "ignorebootp", "nonak", "ignoreclientuids",
-                           "staticarp", "disablepingcheck"]:
+            for option in ["enable", "ignorebootp", "nonak", "ignoreclientuids", "staticarp", "disablepingcheck"]:
                 self._get_ansible_param_bool(obj, option, value="")
 
             for option in ["dhcpinlocaltime", "statsgraph"]:

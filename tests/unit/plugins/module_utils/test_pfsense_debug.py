@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -14,7 +15,6 @@ from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFS
 
 
 class TestPFSenseDebugFile(unittest.TestCase):
-
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -25,7 +25,7 @@ class TestPFSenseDebugFile(unittest.TestCase):
         self.addCleanup(debug_file.stop)
 
     def leave_previous_trace(self):
-        """ A trace written by an earlier version, readable by all """
+        """A trace written by an earlier version, readable by all"""
         with open(self.path, "w") as previous:
             previous.write("old secrets")
         os.chmod(self.path, 0o644)

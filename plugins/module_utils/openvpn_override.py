@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
@@ -31,17 +32,19 @@ OPENVPN_OVERRIDE_ARGUMENT_SPEC = dict(
     custom_options=dict(default=None, required=False, type="str"),
 )
 
-OPENVPN_OVERRIDE_REQUIRED_IF = [
-]
+OPENVPN_OVERRIDE_REQUIRED_IF = []
 
 OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX = """
 require_once('openvpn.inc');
 $csc = config_get_path('openvpn/openvpn-csc')[{idx}];
 """
 
-OPENVPN_OVERRIDE_PHP_COMMAND_SET = OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX + """
+OPENVPN_OVERRIDE_PHP_COMMAND_SET = (
+    OPENVPN_OVERRIDE_PHP_COMMAND_PREFIX
+    + """
 openvpn_resync_csc($csc);
 """
+)
 
 # Run once config.xml no longer holds the override: openvpn_delete_csc() only needs these two fields.
 OPENVPN_OVERRIDE_PHP_COMMAND_DEL = """
@@ -51,16 +54,16 @@ openvpn_delete_csc(array('common_name' => {common_name}, 'server_list' => {serve
 
 
 def php_string(value):
-    """ return value as a single-quoted PHP string """
+    """return value as a single-quoted PHP string"""
     return "'" + (value or "").replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
 class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
-    """ module managing pfSense OpenVPN Client Specific Overrides """
+    """module managing pfSense OpenVPN Client Specific Overrides"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return OPENVPN_OVERRIDE_ARGUMENT_SPEC
 
     ##############################
@@ -77,7 +80,7 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return dict from module params """
+        """return dict from module params"""
         obj = dict()
         obj["common_name"] = self.params["name"]
         if self.params["state"] == "present":
@@ -122,7 +125,7 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         # check name
@@ -148,7 +151,7 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
     # XML processing
     #
     def _find_openvpn_csc(self, value, field="common_name"):
-        """ return openvpn-csc element """
+        """return openvpn-csc element"""
         i = 0
         for csc_elt in self.openvpn_csc_elt:
             field_elt = csc_elt.find(field)
@@ -164,7 +167,7 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         return i
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         before = self.pfsense.element_to_dict(self.target_elt)
         changed = self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         if self._remove_deleted_params():
@@ -180,7 +183,7 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         target_elt = self.pfsense.new_element("openvpn-csc")
         self.diff["before"] = ""
         self.diff["after"] = self.obj
@@ -189,19 +192,19 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
         return target_elt
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         (target_elt, self.idx) = self._find_openvpn_csc(self.obj["common_name"])
         return target_elt
 
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         params_to_remove = []
         if self.pfsense.config_version >= 23.4:
             params_to_remove.append("push_reset")
         return params_to_remove
 
     def _remove_target_elt(self):
-        """ delete target_elt from xml """
+        """delete target_elt from xml"""
         super(PFSenseOpenVPNOverrideModule, self)._remove_target_elt()
         self.diff["before"] = self.pfsense.element_to_dict(self.target_elt)
 
@@ -209,27 +212,30 @@ class PFSenseOpenVPNOverrideModule(PFSenseModuleBase):
     # run
     #
     def _remove(self):
-        """ delete obj """
+        """delete obj"""
         self.diff["after"] = ""
         self.diff["before"] = ""
         super(PFSenseOpenVPNOverrideModule, self)._remove()
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         if self.params["state"] == "present":
             return self.pfsense.phpshell(OPENVPN_OVERRIDE_PHP_COMMAND_SET.format(idx=self.idx))
-        return self.pfsense.phpshell(OPENVPN_OVERRIDE_PHP_COMMAND_DEL.format(
-            common_name=php_string(self.diff["before"].get("common_name")), server_list=php_string(self.diff["before"].get("server_list"))))
+        return self.pfsense.phpshell(
+            OPENVPN_OVERRIDE_PHP_COMMAND_DEL.format(
+                common_name=php_string(self.diff["before"].get("common_name")), server_list=php_string(self.diff["before"].get("server_list"))
+            )
+        )
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'" + self.obj["common_name"] + "'"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "common_name")

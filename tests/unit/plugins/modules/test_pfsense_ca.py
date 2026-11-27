@@ -1,7 +1,8 @@
 # Copyright: (c) 2022, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -27,7 +28,8 @@ CERTIFICATE = (
     "VkhSTUVCVEFEQVFIL01Bc0dBMVVkRHdRRUF3SUJCakFOQmdrcWhraUcKOXcwQkFRc0ZBQU9DQVFFQVVIOUtDZG1KZG9BSmxVMHdCSkhZeGpMcktsbFBZNk9OYnpyNUpiaENNNjlIeHhZTgpCa2lpbXd1"
     "N09mRmFGZkZDT25NSjhvcStKVGxjMG9vREoxM2xCdHRONkdybnZrUTNQMXdZYkNFTmJuaWxPYVVCClRJcmlIeXRORFFhb3VOYS9LV3M3RmF1b2JjdEJsMXc5YXRvSFpzTjVvZWhUM3JBVHYxQ0NBdGpw"
     "YVRKSWZKUjMKMElRT1lrZTRvWTZEa0l3SHAydlBQbW9vR2dJdGJUdzNVK0U0MVlaZTdxQ21FLzd6TFRTWmtJTTJseDZ6RDQ2agpEZjRyZ044TVVMNnhpd09MbzlyQUp5ckRNM2JEeTJ1QjY0QkVzRFFM"
-    "a2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4CmgxL2d6RFpJRGkrV1hDWUFjYmdMaFpWQnF0bjYydW1GcE1SSXV3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=")
+    "a2huUE92ZWtETjQ1NnV6TmpYS0E3VnE4CmgxL2d6RFpJRGkrV1hDWUFjYmdMaFpWQnF0bjYydW1GcE1SSXV3PT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+)
 CRL1 = (
     "LS0tLS1CRUdJTiBYNTA5IENSTC0tLS0tCk1JSUNkRENDQVZ3Q0FRRXdEUVlKS29aSWh2Y05BUUVGQlFBd1hERVRNQkVHQTFVRUF4TUtiM0JsYm5ad2JpMWoKWVRFTE1Ba0dBMVVFQmhNQ1ZWTXhFVEFQ"
     "QmdOVkJBZ1RDRU52Ykc5eVlXUnZNUkF3RGdZRFZRUUhFd2RDYjNWcwpaR1Z5TVJNd0VRWURWUVFLRXdwd1psTmxibk5wWW14bEZ3MHlNakF5TVRrd05UVXhNRFphRncwME9UQTNNRFl3Ck5UVXhNRFph"
@@ -36,7 +38,8 @@ CRL1 = (
     "UVFLRXdwd1psTmxibk5wWW14bGdnZ1cKTVU2R3pXY3pOREFMQmdOVkhSUUVCQUlDSnhFd0RRWUpLb1pJaHZjTkFRRUZCUUFEZ2dFQkFGbXJ5cFUxU3p5dApNUUZCRWFZZk9waVpqRVhVajE5MVZuWENl"
     "b0tNMk83bVUzYW5HVXRZQUJMcG15dmN2YnU2ZkJCVEtYSTFEb0VvClJkV1VDTVMxbk5BTWwyU0N0ZmJ5RHNHNjZHczRiNnRZeXE1SW5LVFJJdldUeU5vS0JiUHc1OHZYV0ljNmVmUXgKSTYvZSt4U3di"
     "eE9MSFlRdGd4WTJOdk9xVGVnVE0rTHpIcmNJWmFPS09NbHNodTA4ajgzSnUxR0ttYlBKME1jZwpyVXNiYXRKcURUdWtQMi9VbmI0N1hwN21qUHVTY0Z5MjN2RGl2OHdvcjBYOEFSQW1ibTN4N2ZKeTlt"
-    "V2d1OVhMCmpNV1lxN1BEaXhwWElqTVdhZzN2bVYxOC9IdDIybW1xS1RPM3prVnJLUDA1TEhCNVloM2ZZcEpWdEhkeENlTzUKdmlvbU53SzA3QUE9Ci0tLS0tRU5EIFg1MDkgQ1JMLS0tLS0=")
+    "V2d1OVhMCmpNV1lxN1BEaXhwWElqTVdhZzN2bVYxOC9IdDIybW1xS1RPM3prVnJLUDA1TEhCNVloM2ZZcEpWdEhkeENlTzUKdmlvbU53SzA3QUE9Ci0tLS0tRU5EIFg1MDkgQ1JMLS0tLS0="
+)
 CRL2 = (
     "-----BEGIN X509 CRL-----\n"
     "MIICSDCCATACAQEwDQYJKoZIhvcNAQEFBQAwXDETMBEGA1UEAxMKb3BlbnZwbi1j\n"
@@ -52,11 +55,11 @@ CRL2 = (
     "Ny5w9dLF4s+6qFXjvfYmQ0FyeRcltUoF3kTabS1WCdkGjsUSeGHBFLM4NH2mJPMR\n"
     "0yfIGdipSonSTF51ICqgoUGAYPqObvlQZDMjFF+GFL3LNQ7gO+1R1OMMKAZ+96nX\n"
     "gwt+00UVYhQCCZ3k\n"
-    "-----END X509 CRL-----\n")
+    "-----END X509 CRL-----\n"
+)
 
 
 class TestPFSenseCAModule(TestPFSenseModule):
-
     module = pfsense_ca
 
     def __init__(self, *args, **kwargs):
@@ -65,7 +68,7 @@ class TestPFSenseCAModule(TestPFSenseModule):
         self.pfmodule = pfsense_ca.PFSenseCAModule
 
     def setUp(self):
-        """ mocking up """
+        """mocking up"""
 
         super(TestPFSenseCAModule, self).setUp()
 
@@ -75,11 +78,11 @@ class TestPFSenseCAModule(TestPFSenseModule):
 
     @staticmethod
     def runTest():
-        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        """dummy function needed to instantiate this test module from another in python 2.7"""
         pass
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         root_elt = self.xml_result.getroot()
         result = root_elt.findall("ca[descr='{0}']".format(obj["name"]))
         if len(result) == 1:
@@ -90,7 +93,7 @@ class TestPFSenseCAModule(TestPFSenseModule):
             return None
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
 
         self.check_param_equal(obj, target_elt, "name", xml_field="descr")
         if "trust" in obj:
@@ -104,37 +107,37 @@ class TestPFSenseCAModule(TestPFSenseModule):
     # tests
     #
     def test_ca_create(self):
-        """ test creation of a new ca """
+        """test creation of a new ca"""
         obj = dict(name="ca1", certificate=CERTIFICATE)
         self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_add_crl(self):
-        """ test adding a CRL """
+        """test adding a CRL"""
         obj = dict(name="ca1", certificate=CERTIFICATE, crl=CRL1)
         self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_change_crl(self):
-        """ test adding a CRL """
+        """test adding a CRL"""
         obj = dict(name="ca1", certificate=CERTIFICATE, crl=CRL2)
         self.do_module_test(obj, command="create ca 'ca1'")
 
     def test_ca_delete(self):
-        """ test deletion of a ca """
+        """test deletion of a ca"""
         obj = dict(name="testdel")
         self.do_module_test(obj, command="delete ca 'testdel'", delete=True)
 
     def test_ca_update_noop(self):
-        """ test not updating a ca """
+        """test not updating a ca"""
         obj = dict(name="testdel", certificate=CERTIFICATE)
         self.do_module_test(obj, changed=False)
 
     def test_ca_update_serial(self):
-        """ test updating serial of a ca """
+        """test updating serial of a ca"""
         obj = dict(name="testdel", certificate=CERTIFICATE, serial=10)
         self.do_module_test(obj, command="update ca 'testdel' set serial='10'")
 
     def test_ca_update_trust(self):
-        """ test updating trust of a ca """
+        """test updating trust of a ca"""
         obj = dict(name="testdel", certificate=CERTIFICATE, trust=False)
         self.do_module_test(obj, command="update ca 'testdel' set ")
 
@@ -142,11 +145,11 @@ class TestPFSenseCAModule(TestPFSenseModule):
     # misc
     #
     def test_create_ca_invalid_serial(self):
-        """ test creation of a new ca with invalid serial """
+        """test creation of a new ca with invalid serial"""
         obj = dict(name="ca1", certificate=CERTIFICATE, serial=-1)
         self.do_module_test(obj, failed=True, msg="serial must be greater than 0")
 
     def test_delete_nonexistent_ca(self):
-        """ test deletion of an nonexistent ca """
+        """test deletion of an nonexistent ca"""
         obj = dict(name="noca")
         self.do_module_test(obj, commmand=None, state="absent", changed=False)

@@ -1,6 +1,7 @@
 """Read appliance state independently of the collection's module utilities."""
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import argparse
@@ -15,8 +16,7 @@ import xml.etree.ElementTree as ET
 
 
 def pf_scopes():
-    anchors = subprocess.run(["/sbin/pfctl", "-v", "-s", "Anchors"],
-                             capture_output=True, text=True, check=True)
+    anchors = subprocess.run(["/sbin/pfctl", "-v", "-s", "Anchors"], capture_output=True, text=True, check=True)
     return [""] + sorted(set(line.strip() for line in anchors.stdout.splitlines() if line.strip()))
 
 
@@ -30,8 +30,7 @@ def read_pf_state(alias_name, rule_name):
         if matches:
             loaded_rules.extend(matches)
             rule_scopes.append(scope)
-        table = subprocess.run(command + ["-t", alias_name, "-T", "show"],
-                               capture_output=True, text=True, check=False)
+        table = subprocess.run(command + ["-t", alias_name, "-T", "show"], capture_output=True, text=True, check=False)
         if table.returncode == 0:
             tables[scope] = sorted(line.strip() for line in table.stdout.splitlines() if line.strip())
         else:
@@ -63,15 +62,20 @@ def observe_nat(rule_name, target):
         command = ["/sbin/pfctl", "-P"] + (["-a", scope] if scope else [])
         nat = subprocess.run(command + ["-sn"], capture_output=True, text=True, check=True)
         rules = subprocess.run(command + ["-sr"], capture_output=True, text=True, check=True)
-        redirects.extend(line.strip() for line in nat.stdout.splitlines()
-                         if re.search(r"^\s*rdr\b.* -> " + re.escape(target) + r"(?=\s|$)", line))
+        redirects.extend(line.strip() for line in nat.stdout.splitlines() if re.search(r"^\s*rdr\b.* -> " + re.escape(target) + r"(?=\s|$)", line))
         filters.extend(line.strip() for line in rules.stdout.splitlines() if filter_name in line)
     return {
         "config_sha256": hashlib.sha256(config).hexdigest(),
-        "nat_rules": [{field: rule.findtext(field) for field in match_fields + ("destination/network", "target", "local-port")}
-                      for rule in root.findall("nat/rule") if rule.findtext("descr") == rule_name],
-        "filter_rules": [{field: rule.findtext(field) for field in match_fields + ("destination/address", "type")}
-                         for rule in root.findall("filter/rule") if rule.findtext("descr") == filter_name],
+        "nat_rules": [
+            {field: rule.findtext(field) for field in match_fields + ("destination/network", "target", "local-port")}
+            for rule in root.findall("nat/rule")
+            if rule.findtext("descr") == rule_name
+        ],
+        "filter_rules": [
+            {field: rule.findtext(field) for field in match_fields + ("destination/address", "type")}
+            for rule in root.findall("filter/rule")
+            if rule.findtext("descr") == filter_name
+        ],
         "redirects": redirects,
         "filters": filters,
         "filter_reload": read_reload_status(),
@@ -106,8 +110,7 @@ def observe_vip(address):
     fields = ("mode", "type", "subnet_bits", "interface", "descr", "vhid")
     return {
         "config_sha256": hashlib.sha256(config).hexdigest(),
-        "vips": [{field: entry.findtext(field) for field in fields} for entry in root.findall("virtualip/vip")
-                 if entry.findtext("subnet") == str(vip.ip)],
+        "vips": [{field: entry.findtext(field) for field in fields} for entry in root.findall("virtualip/vip") if entry.findtext("subnet") == str(vip.ip)],
         "devices": devices,
         "proxy_interfaces": sorted(proxy_interfaces),
     }
@@ -122,8 +125,7 @@ def nat_converged(state, ports=None):
     # PF prints equality for matched ports and a plain port for translation.
     redirect = rf"^rdr\b.*\bfrom .+ port = {source} to .+ port = {destination} -> \S+ port {target}(?=\s|$)"
     rule = rf"^pass\b.*\bfrom .+ port = {source} to .+ port = {target}(?=\s|$)"
-    return (len(redirects) == len(filters) == 1
-            and re.search(redirect, redirects[0]) is not None and re.search(rule, filters[0]) is not None)
+    return len(redirects) == len(filters) == 1 and re.search(redirect, redirects[0]) is not None and re.search(rule, filters[0]) is not None
 
 
 def observe_interface(description, port, gateway_name):
@@ -150,7 +152,8 @@ echo json_encode($gateway === null ? null : array_intersect_key(
         ],
         "gateways": [
             {field: gateway.findtext(field) for field in ("name", "interface", "gateway", "ipprotocol")}
-            for gateway in root.findall("gateways/gateway_item") if gateway.findtext("name") == gateway_name
+            for gateway in root.findall("gateways/gateway_item")
+            if gateway.findtext("name") == gateway_name
         ],
         "native_gateway": json.loads(native.stdout),
         "live_ipv4_addresses": re.findall(r"^\s+inet\s+(\S+)", ifconfig.stdout, re.MULTILINE),
@@ -160,12 +163,12 @@ echo json_encode($gateway === null ? null : array_intersect_key(
 def observe(alias_name, rule_name):
     config = Path("/cf/conf/config.xml").read_bytes()
     root = ET.fromstring(config)
-    aliases = [dict((child.tag, child.text or "") for child in alias)
-               for alias in root.findall("aliases/alias")
-               if alias.findtext("name") == alias_name]
-    rules = [dict((key, rule.findtext(key)) for key in ("descr", "type", "interface", "source/address"))
-             for rule in root.findall("filter/rule")
-             if rule.findtext("descr") == rule_name]
+    aliases = [dict((child.tag, child.text or "") for child in alias) for alias in root.findall("aliases/alias") if alias.findtext("name") == alias_name]
+    rules = [
+        dict((key, rule.findtext(key)) for key in ("descr", "type", "interface", "source/address"))
+        for rule in root.findall("filter/rule")
+        if rule.findtext("descr") == rule_name
+    ]
     cache = Path("/var/db/aliastables") / (alias_name + ".txt")
     state = {
         "config_sha256": hashlib.sha256(config).hexdigest(),
@@ -183,8 +186,7 @@ def read_reload_status(path=Path("/var/run/filter_reload_status")):
     """Native progress is diagnostic; an old Done is not proof of this apply."""
     try:
         messages = path.read_text(errors="replace").splitlines()
-        return {"mtime_ns": path.stat().st_mtime_ns,
-                "last_message": messages[-1] if messages else "", "messages": messages}
+        return {"mtime_ns": path.stat().st_mtime_ns, "last_message": messages[-1] if messages else "", "messages": messages}
     except FileNotFoundError:
         return None
     except OSError as error:
@@ -196,11 +198,14 @@ def pf_converged(state, action, expected_entry=None):
     if action == "absent":
         return not state["loaded_rules"]
     expected_entries = [expected_entry]
-    return (bool(state["loaded_rules"]) and
-            all(line.startswith(action + " ") for line in state["loaded_rules"]) and
-            state["table_exists"] and state["table_entries"] == expected_entries and
-            bool(state["rule_tables"]) and
-            all(entries == expected_entries for entries in state["rule_tables"].values()))
+    return (
+        bool(state["loaded_rules"])
+        and all(line.startswith(action + " ") for line in state["loaded_rules"])
+        and state["table_exists"]
+        and state["table_entries"] == expected_entries
+        and bool(state["rule_tables"])
+        and all(entries == expected_entries for entries in state["rule_tables"].values())
+    )
 
 
 if __name__ == "__main__":

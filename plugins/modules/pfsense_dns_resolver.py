@@ -5,12 +5,11 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -351,7 +350,6 @@ DNS_RESOLVER_HOST_SPEC = dict(
 
 DNS_RESOLVER_ARGUMENT_SPEC = dict(
     state=dict(default="present", choices=["present", "absent"]),
-
     # General Settings
     port=dict(type="int"),
     enablessl=dict(type="bool"),
@@ -431,8 +429,21 @@ DNS_RESOLVER_CREATE_DEFAULT = dict(
 )
 
 DNS_RESOLVER_BOOL_PARAMS = (
-    "hideidentity", "hideversion", "dnssecstripped", "forwarding", "regdhcp", "regdhcpstatic", "regovpnclients", "enablessl", "dnssec",
-    "forward_tls_upstream", "prefetch", "prefetchkey", "strictout", "qname_minimisation", "qname_minimisation_strict",
+    "hideidentity",
+    "hideversion",
+    "dnssecstripped",
+    "forwarding",
+    "regdhcp",
+    "regdhcpstatic",
+    "regovpnclients",
+    "enablessl",
+    "dnssec",
+    "forward_tls_upstream",
+    "prefetch",
+    "prefetchkey",
+    "strictout",
+    "qname_minimisation",
+    "qname_minimisation_strict",
 )
 
 # Parameters stored under another name in the configuration
@@ -445,11 +456,11 @@ DNS_RESOLVER_REQUIRED_IF = []
 
 
 class PFSenseDNSResolverModule(PFSenseModuleBase):
-    """ module managing pfsense dns resolver (unbound) """
+    """module managing pfsense dns resolver (unbound)"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return DNS_RESOLVER_ARGUMENT_SPEC
 
     ##############################
@@ -458,9 +469,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
     def __init__(self, module, pfsense=None):
         super(PFSenseDNSResolverModule, self).__init__(module, pfsense, name="pfsense_dns_resolver", root="pfsense", node="unbound")
 
-        cmd = ('require_once("interfaces.inc");;'
-               '$iflist = get_possible_listen_ips(true);'
-               'echo json_encode($iflist);')
+        cmd = 'require_once("interfaces.inc");;$iflist = get_possible_listen_ips(true);echo json_encode($iflist);'
         self.iflist = self.pfsense.php(cmd)
 
     def _get_interface_name(self, iface: str):
@@ -477,7 +486,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         self.module.fail_json(msg=f"Invalid interface '{iface}'")
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         if params["state"] == "absent":
@@ -505,9 +514,24 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
             self._get_ansible_param_bool(obj, param, fname=DNS_RESOLVER_FIELDS.get(param), value="")
         # pfSense stores enabled or disabled, and treats a missing value as enabled
         self._get_ansible_param_bool(obj, "infra_keep_probing", value="enabled", value_false="disabled")
-        for param in ("port", "tlsport", "system_domain_local_zone_type", "sock_queue_timeout", "msgcachesize", "outgoing_num_tcp",
-                      "incoming_num_tcp", "edns_buffer_size", "num_queries_per_thread", "jostle_timeout", "cache_max_ttl", "cache_min_ttl",
-                      "infra_host_ttl", "infra_cache_numhosts", "unwanted_reply_threshold", "log_verbosity"):
+        for param in (
+            "port",
+            "tlsport",
+            "system_domain_local_zone_type",
+            "sock_queue_timeout",
+            "msgcachesize",
+            "outgoing_num_tcp",
+            "incoming_num_tcp",
+            "edns_buffer_size",
+            "num_queries_per_thread",
+            "jostle_timeout",
+            "cache_max_ttl",
+            "cache_min_ttl",
+            "infra_host_ttl",
+            "infra_cache_numhosts",
+            "unwanted_reply_threshold",
+            "log_verbosity",
+        ):
             self._get_ansible_param(obj, param)
         if params["sslcert"]:
             obj["sslcertref"] = self.pfsense.find_cert_elt(params["sslcert"]).find("refid").text
@@ -532,10 +556,15 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
                 self._get_ansible_param_bool(override, "forward_tls_upstream", value="", params=override)
                 obj["domainoverrides"].append(override)
 
-        if ("active_interface" in obj and self.pfsense.config_get_path("system/dnslocalhost") != "remote" and
-                "lo0" not in obj["active_interface"] and "all" not in obj["active_interface"]):
-            self.module.fail_json(msg="This system is configured to use the DNS Resolver as its DNS server, so Localhost or All must be selected in"
-                                      " active_interface.")
+        if (
+            "active_interface" in obj
+            and self.pfsense.config_get_path("system/dnslocalhost") != "remote"
+            and "lo0" not in obj["active_interface"]
+            and "all" not in obj["active_interface"]
+        ):
+            self.module.fail_json(
+                msg="This system is configured to use the DNS Resolver as its DNS server, so Localhost or All must be selected in active_interface."
+            )
 
         return obj
 
@@ -553,11 +582,11 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         return None
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         if params["sslcert"] and not self.pfsense.find_cert_elt(params["sslcert"]):
-            self.module.fail_json(msg=f'sslcert, {params["sslcert"]} is not a valid description of cert')
+            self.module.fail_json(msg=f"sslcert, {params['sslcert']} is not a valid description of cert")
 
         for host in params["hosts"] or []:
             for ipaddr in host["ip"].split(","):
@@ -567,7 +596,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
         if params["domainoverrides"] is not None:
             for domain in params["domainoverrides"]:
                 if not self.pfsense.is_ipv4_address(domain["ip"]) and not self.pfsense.is_ipv6_address(domain["ip"]):
-                    self.module.fail_json(msg=f'ip, {domain["ip"]} is not a ipv4/ipv6 address')
+                    self.module.fail_json(msg=f"ip, {domain['ip']} is not a ipv4/ipv6 address")
 
         # The web GUI field only takes a whole number of seconds, 0 or more
         if params["sock_queue_timeout"] is not None and params["sock_queue_timeout"] < 0:
@@ -577,15 +606,15 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
     # XML processing
     #
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         return self.pfsense.get_element(self.node, root_elt=self.root_elt)
 
     def _get_params_to_remove(self):
-        """ return boolean flags explicitly set to false """
+        """return boolean flags explicitly set to false"""
         return [DNS_RESOLVER_FIELDS.get(param, param) for param in DNS_RESOLVER_BOOL_PARAMS if self.params[param] is False]
 
     def _remove_target_elt(self):
-        """ disable the resolver: target_elt is the unbound root, so only clear its enable flag """
+        """disable the resolver: target_elt is the unbound root, so only clear its enable flag"""
         if self.pfsense.remove_deleted_param_from_elt(self.target_elt, "enable", {}):
             self.result["changed"] = True
 
@@ -593,7 +622,7 @@ class PFSenseDNSResolverModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         return self.pfsense.phpshell("""
 require_once("unbound.inc");
 require_once("pfsense-utils.inc");
@@ -609,11 +638,11 @@ clear_subsystem_dirty("unbound");
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return self.name
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         after = self.diff["after"]
         previous = before if before is not None else {}
         values = ""
@@ -635,10 +664,12 @@ clear_subsystem_dirty("unbound");
         values += self.format_updated_cli_field(after, previous, "regdhcpstatic", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "prefetch", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "prefetchkey", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
-        values += self.format_updated_cli_field(after, previous, "qname-minimisation", fvalue=self.fvalue_bool, add_comma=(values), log_none=False,
-                                                fname="qname_minimisation")
-        values += self.format_updated_cli_field(after, previous, "qname-minimisation-strict", fvalue=self.fvalue_bool, add_comma=(values),
-                                                log_none=False, fname="qname_minimisation_strict")
+        values += self.format_updated_cli_field(
+            after, previous, "qname-minimisation", fvalue=self.fvalue_bool, add_comma=(values), log_none=False, fname="qname_minimisation"
+        )
+        values += self.format_updated_cli_field(
+            after, previous, "qname-minimisation-strict", fvalue=self.fvalue_bool, add_comma=(values), log_none=False, fname="qname_minimisation_strict"
+        )
         values += self.format_updated_cli_field(after, previous, "sock_queue_timeout", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "msgcachesize", add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(after, previous, "outgoing_num_tcp", add_comma=(values), log_none=False)
@@ -659,10 +690,7 @@ clear_subsystem_dirty("unbound");
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=DNS_RESOLVER_ARGUMENT_SPEC,
-        required_if=DNS_RESOLVER_REQUIRED_IF,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=DNS_RESOLVER_ARGUMENT_SPEC, required_if=DNS_RESOLVER_REQUIRED_IF, supports_check_mode=True)
 
     pfmodule = PFSenseDNSResolverModule(module)
     pfmodule.run(module.params)

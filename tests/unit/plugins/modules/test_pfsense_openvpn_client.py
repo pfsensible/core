@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 from ansible_collections.community.internal_test_tools.tests.unit.compat.mock import patch
@@ -10,7 +11,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseOpenVPNClientModule(TestPFSenseModule):
-
     module = pfsense_openvpn_client
 
     def __init__(self, *args, **kwargs):
@@ -35,7 +35,7 @@ class TestPFSenseOpenVPNClientModule(TestPFSenseModule):
                 self.execute_module(failed=True, msg="{0} is required for mode={1}".format(credential, mode))
 
     def test_openvpn_client_vip(self):
-        """ a client bound to a VIP stores its interface and address apart, as the web GUI does """
+        """a client bound to a VIP stores its interface and address apart, as the web GUI does"""
         obj = dict(name="c1", ca="OpenVPN CA", server_addr="203.0.113.1", interface="Backup WAN IP", data_ciphers=["AES-256-GCM"])
         with set_module_args(obj):
             result = self.execute_module(changed=True)

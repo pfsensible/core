@@ -1,7 +1,8 @@
 # Copyright: (c) 2022, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -15,7 +16,6 @@ from .pfsense_module import TestPFSenseModule
 
 
 class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
-
     module = pfsense_authserver_ldap
 
     def __init__(self, *args, **kwargs):
@@ -25,11 +25,11 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
 
     @staticmethod
     def runTest():
-        """ dummy function needed to instantiate this test module from another in python 2.7 """
+        """dummy function needed to instantiate this test module from another in python 2.7"""
         pass
 
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ return target elt from XML """
+        """return target elt from XML"""
         root_elt = self.assert_find_xml_elt(self.xml_result, "system")
         result = root_elt.findall("authserver[name='{0}']".format(obj["name"]))
         if len(result) == 1:
@@ -40,7 +40,7 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
             return None
 
     def check_target_elt(self, obj, target_elt):
-        """ check XML definition of target elt """
+        """check XML definition of target elt"""
 
         urltype = dict({"tcp": "Standard TCP", "starttls": "STARTTLS Encrypted", "ssl": "SSL/TLS Encrypted"})
         self.check_param_equal(obj, target_elt, "name")
@@ -68,27 +68,27 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
     # tests
     #
     def test_authserver_create(self):
-        """ test creation of a new authserver """
+        """test creation of a new authserver"""
         obj = dict(name="authserver1", host="ldap.example.com", transport="tcp", scope="one", authcn="CN=Users")
         self.do_module_test(obj, command="create authserver_ldap 'authserver1', host='ldap.example.com'")
 
     def test_authserver_delete(self):
-        """ test deletion of a authserver """
+        """test deletion of a authserver"""
         obj = dict(name="DELLDAP")
         self.do_module_test(obj, command="delete authserver_ldap 'DELLDAP'", delete=True)
 
     def test_authserver_update_noop(self):
-        """ test not updating a authserver """
+        """test not updating a authserver"""
         obj = dict(name="DELLDAP", host="ldap.example.com", transport="tcp", scope="one", authcn="CN=Users", timeout=25)
         self.do_module_test(obj, command="delete authserver_ldap 'DELLDAP'", changed=False)
 
     def test_authserver_update_host(self):
-        """ test updating host of a authserver """
+        """test updating host of a authserver"""
         obj = dict(name="DELLDAP", ldap_timeout=5, host="ldap2.blah.com", transport="tcp", scope="one", authcn="CN=Users")
         self.do_module_test(obj, command="update authserver_ldap 'DELLDAP' set host='ldap2.blah.com'")
 
     def test_authserver_disable_allow_unauthenticated(self):
-        """ test disabling ldap_allow_unauthenticated """
+        """test disabling ldap_allow_unauthenticated"""
         obj = dict(name="DELLDAP", host="ldap.example.com", transport="tcp", scope="one", authcn="CN=Users", ldap_allow_unauthenticated=False)
         self.do_module_test(obj, command="update authserver_ldap 'DELLDAP' set ldap_allow_unauthenticated=False")
 
@@ -96,11 +96,11 @@ class TestPFSenseAuthserverLDAPModule(TestPFSenseModule):
     # misc
     #
     def test_create_authserver_invalid_timeout(self):
-        """ test creation of a new authserver with invalid timeout """
+        """test creation of a new authserver with invalid timeout"""
         obj = dict(name="DELLDAP", host="ldap.example.com", transport="tcp", scope="one", authcn="CN=Users", timeout=0)
         self.do_module_test(obj, command="update authserver_ldap 'DELLDAP'", failed=True, msg="timeout 0 must be greater than 1")
 
     def test_delete_inexistent_authserver(self):
-        """ test deletion of an inexistent authserver """
+        """test deletion of an inexistent authserver"""
         obj = dict(name="noauthserver")
         self.do_module_test(obj, state="absent", changed=False)

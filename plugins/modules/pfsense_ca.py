@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -185,16 +184,90 @@ PFSENSE_CA_ARGUMENT_SPEC = dict(
         type="str",
         default="prime256v1",
         choices=[
-            "secp112r1", "secp112r2", "secp128r1", "secp128r2", "secp160k1", "secp160r1", "secp160r2",
-            "secp192k1", "secp224k1", "secp224r1", "secp256k1", "secp384r1", "secp521r1", "prime192v1", "prime192v2", "prime192v3", "prime239v1",
-            "prime239v2", "prime239v3", "prime256v1", "sect113r1", "sect113r2", "sect131r1", "sect131r2", "sect163k1", "sect163r1", "sect163r2",
-            "sect193r1", "sect193r2", "sect233k1", "sect233r1", "sect239k1", "sect283k1", "sect283r1", "sect409k1", "sect409r1", "sect571k1", "sect571r1",
-            "c2pnb163v1", "c2pnb163v2", "c2pnb163v3", "c2pnb176v1", "c2tnb191v1", "c2tnb191v2", "c2tnb191v3", "c2pnb208w1", "c2tnb239v1", "c2tnb239v2",
-            "c2tnb239v3", "c2pnb272w1", "c2pnb304w1", "c2tnb359v1", "c2pnb368w1", "c2tnb431r1", "wap-wsg-idm-ecid-wtls1", "wap-wsg-idm-ecid-wtls3",
-            "wap-wsg-idm-ecid-wtls4", "wap-wsg-idm-ecid-wtls5", "wap-wsg-idm-ecid-wtls6", "wap-wsg-idm-ecid-wtls7", "wap-wsg-idm-ecid-wtls8",
-            "wap-wsg-idm-ecid-wtls9", "wap-wsg-idm-ecid-wtls10", "wap-wsg-idm-ecid-wtls11", "wap-wsg-idm-ecid-wtls12", "Oakley-EC2N-3", "Oakley-EC2N-4",
-            "brainpoolP160r1", "brainpoolP160t1", "brainpoolP192r1", "brainpoolP192t1", "brainpoolP224r1", "brainpoolP224t1", "brainpoolP256r1",
-            "brainpoolP256t1", "brainpoolP320r1", "brainpoolP320t1", "brainpoolP384r1", "brainpoolP384t1", "brainpoolP512r1", "brainpoolP512t1", "SM2"]),
+            "secp112r1",
+            "secp112r2",
+            "secp128r1",
+            "secp128r2",
+            "secp160k1",
+            "secp160r1",
+            "secp160r2",
+            "secp192k1",
+            "secp224k1",
+            "secp224r1",
+            "secp256k1",
+            "secp384r1",
+            "secp521r1",
+            "prime192v1",
+            "prime192v2",
+            "prime192v3",
+            "prime239v1",
+            "prime239v2",
+            "prime239v3",
+            "prime256v1",
+            "sect113r1",
+            "sect113r2",
+            "sect131r1",
+            "sect131r2",
+            "sect163k1",
+            "sect163r1",
+            "sect163r2",
+            "sect193r1",
+            "sect193r2",
+            "sect233k1",
+            "sect233r1",
+            "sect239k1",
+            "sect283k1",
+            "sect283r1",
+            "sect409k1",
+            "sect409r1",
+            "sect571k1",
+            "sect571r1",
+            "c2pnb163v1",
+            "c2pnb163v2",
+            "c2pnb163v3",
+            "c2pnb176v1",
+            "c2tnb191v1",
+            "c2tnb191v2",
+            "c2tnb191v3",
+            "c2pnb208w1",
+            "c2tnb239v1",
+            "c2tnb239v2",
+            "c2tnb239v3",
+            "c2pnb272w1",
+            "c2pnb304w1",
+            "c2tnb359v1",
+            "c2pnb368w1",
+            "c2tnb431r1",
+            "wap-wsg-idm-ecid-wtls1",
+            "wap-wsg-idm-ecid-wtls3",
+            "wap-wsg-idm-ecid-wtls4",
+            "wap-wsg-idm-ecid-wtls5",
+            "wap-wsg-idm-ecid-wtls6",
+            "wap-wsg-idm-ecid-wtls7",
+            "wap-wsg-idm-ecid-wtls8",
+            "wap-wsg-idm-ecid-wtls9",
+            "wap-wsg-idm-ecid-wtls10",
+            "wap-wsg-idm-ecid-wtls11",
+            "wap-wsg-idm-ecid-wtls12",
+            "Oakley-EC2N-3",
+            "Oakley-EC2N-4",
+            "brainpoolP160r1",
+            "brainpoolP160t1",
+            "brainpoolP192r1",
+            "brainpoolP192t1",
+            "brainpoolP224r1",
+            "brainpoolP224t1",
+            "brainpoolP256r1",
+            "brainpoolP256t1",
+            "brainpoolP320r1",
+            "brainpoolP320t1",
+            "brainpoolP384r1",
+            "brainpoolP384t1",
+            "brainpoolP512r1",
+            "brainpoolP512t1",
+            "SM2",
+        ],
+    ),
     keylen=dict(type="str", default="2048", choices=["1024", "2048", "3072", "4096", "6144", "7680", "8192", "15360", "16384"]),
     digest_alg=dict(type="str", default="sha256", choices=["sha1", "sha224", "sha256", "sha384", "sha512"]),
     lifetime=dict(default=3650, type="int"),
@@ -222,30 +295,29 @@ CA_BOOL_VALUES = dict(
 
 
 class PFSenseCAModule(PFSenseModuleBase):
-    """ module managing pfsense certificate authorities """
+    """module managing pfsense certificate authorities"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return PFSENSE_CA_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseCAModule, self).__init__(module, pfsense, root="pfsense", node="ca", have_refid=True, create_default=CA_CREATE_DEFAULT,
-                                              bool_values=CA_BOOL_VALUES)
+        super(PFSenseCAModule, self).__init__(
+            module, pfsense, root="pfsense", node="ca", have_refid=True, create_default=CA_CREATE_DEFAULT, bool_values=CA_BOOL_VALUES
+        )
         self.name = "pfsense_ca"
         self.refresh_crls = False
         self.crl = None
 
-        cmd = ('require_once("certs.inc");'
-               '$max_lifetime = cert_get_max_lifetime();'
-               'echo json_encode($max_lifetime);')
+        cmd = 'require_once("certs.inc");$max_lifetime = cert_get_max_lifetime();echo json_encode($max_lifetime);'
         self.max_lifetime = int(self.pfsense.php(cmd))
 
     ##############################
     # params processing
     #
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         if params["state"] == "absent":
@@ -300,13 +372,12 @@ class PFSenseCAModule(PFSenseModuleBase):
                 self.module.fail_json(msg="serial must be greater than 0")
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
         obj["descr"] = params["name"]
         if params["state"] == "present":
-
             if params["method"] == "existing":
                 if "certificate" in params and params["certificate"] is not None:
                     obj["crt"] = params["certificate"]
@@ -357,7 +428,7 @@ class PFSenseCAModule(PFSenseModuleBase):
             return None
 
     def _copy_and_add_target(self):
-        """ populate the XML target_elt """
+        """populate the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff["after"] = self.pfsense.element_to_dict(self.target_elt)
         self.root_elt.insert(self._find_last_element_index(), self.target_elt)
@@ -372,7 +443,7 @@ class PFSenseCAModule(PFSenseModuleBase):
             self.refresh_crls = True
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         (before, changed) = super(PFSenseCAModule, self)._copy_and_update_target()
 
         if self.crl is not None:
@@ -425,15 +496,18 @@ class PFSenseCAModule(PFSenseModuleBase):
                 # ca_import will base64 encode the cert + key and will fix 'caref' for CAs that reference each other
                 # $ca needs to be an existing reference (particularly 'refid' must be set) before calling ca_import
                 # key and serial are optional arguments. TODO - handle key and serial
-                (dummy, stdout, stderr) = self.pfsense.phpshell("""
+                (dummy, stdout, stderr) = self.pfsense.phpshell(
+                    """
                     $caent =& lookup_ca('{refid}');
                     $ca =& $caent['item'];
                     ca_import($ca, '{cert}');
                     config_set_path("ca/{{$caent['idx']}}", $ca);
                     write_config('Update CA reference');
                     ca_setup_trust_store();
-                    cert_restart_services(ca_get_all_services('{refid}'));""".format(refid=self.target_elt.find("refid").text,
-                                                                                     cert=base64.b64decode(self.target_elt.find("crt").text.encode()).decode()))
+                    cert_restart_services(ca_get_all_services('{refid}'));""".format(
+                        refid=self.target_elt.find("refid").text, cert=base64.b64decode(self.target_elt.find("crt").text.encode()).decode()
+                    )
+                )
                 if self.refresh_crls:
                     (dummy, crl_stdout, crl_stderr) = self.pfsense.phpshell("""
                         require_once("openvpn.inc");
@@ -445,7 +519,8 @@ class PFSenseCAModule(PFSenseModuleBase):
 
             if self.params["method"] == "internal":
                 # Create an internal CA
-                (dummy, stdout, stderr) = self.pfsense.phpshell("""
+                (dummy, stdout, stderr) = self.pfsense.phpshell(
+                    """
                     $caent =& lookup_ca('{refid}');
                     $ca =& $caent['item'];
 
@@ -484,18 +559,21 @@ class PFSenseCAModule(PFSenseModuleBase):
                     $savemsg = sprintf(gettext("Created internal Certificate Authority %s"), $ca['descr']);
                     config_set_path("ca/{{$caent['idx']}}", $ca);
                     write_config($savemsg);
-                    ca_setup_trust_store();""".format(refid=self.target_elt.find("refid").text,
-                                                      dn_commonname=self.params["dn_commonname"],
-                                                      dn_country=self.params["dn_country"],
-                                                      dn_state=self.params["dn_state"],
-                                                      dn_city=self.params["dn_city"],
-                                                      dn_organization=self.params["dn_organization"],
-                                                      dn_organizationalunit=self.params["dn_organizationalunit"],
-                                                      keylen=self.params["keylen"],
-                                                      lifetime=self.params["lifetime"],
-                                                      keytype=self.params["keytype"],
-                                                      digest_alg=self.params["digest_alg"],
-                                                      ecname=self.params["ecname"]))
+                    ca_setup_trust_store();""".format(
+                        refid=self.target_elt.find("refid").text,
+                        dn_commonname=self.params["dn_commonname"],
+                        dn_country=self.params["dn_country"],
+                        dn_state=self.params["dn_state"],
+                        dn_city=self.params["dn_city"],
+                        dn_organization=self.params["dn_organization"],
+                        dn_organizationalunit=self.params["dn_organizationalunit"],
+                        keylen=self.params["keylen"],
+                        lifetime=self.params["lifetime"],
+                        keytype=self.params["keytype"],
+                        digest_alg=self.params["digest_alg"],
+                        ecname=self.params["ecname"],
+                    )
+                )
 
         return (dummy, stdout, stderr)
 
@@ -513,9 +591,7 @@ class PFSenseCAModule(PFSenseModuleBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=PFSENSE_CA_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=PFSENSE_CA_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseCAModule(module)
     pfmodule.run(module.params)

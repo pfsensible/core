@@ -4,7 +4,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -147,12 +148,12 @@ REDACTED = "VALUE_SPECIFIED_IN_NO_LOG_PARAMETER"
 
 
 def is_secret(field):
-    """ the stored passwords (including the gold_* ones of the former package) and the device key """
+    """the stored passwords (including the gold_* ones of the former package) and the device key"""
     return "password" in field or field == "device_key"
 
 
 class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
-    """ module managing pfSense AutoConfigBackup settings """
+    """module managing pfSense AutoConfigBackup settings"""
 
     ##############################
     # unit tests
@@ -160,12 +161,17 @@ class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return AUTOCONFIGBACKUP_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
         super(PFSenseAutoConfigBackupModule, self).__init__(
-            module, pfsense, name="pfsense_autoconfigbackup", root="system", node="acb", create_root=True,
+            module,
+            pfsense,
+            name="pfsense_autoconfigbackup",
+            root="system",
+            node="acb",
+            create_root=True,
             bool_values=dict(enable=("", "yes"), reverse=("", "yes")),
         )
         self.new_key = False
@@ -183,7 +189,7 @@ class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
         return self._stored(field)
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         params = self.params
 
         if params.get("minute") is not None:
@@ -211,7 +217,7 @@ class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
             self.module.fail_json(msg="encryption_password is required to enable AutoConfigBackup")
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         obj = super(PFSenseAutoConfigBackupModule, self)._params_to_obj()
 
         # A false option that is not stored is already false: do not add an empty element for it
@@ -243,7 +249,7 @@ class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
     # run
     #
     def _update(self):
-        """ install the cron jobs and create the revision, as the web GUI does """
+        """install the cron jobs and create the revision, as the web GUI does"""
         return self.pfsense.phpshell("$new_key = {0};\n{1}".format("true" if self.new_key else "false", AUTOCONFIGBACKUP_PHP_COMMAND))
 
     ##############################
@@ -251,12 +257,12 @@ class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "acb"
 
     @staticmethod
     def fvalue_bool(value):
-        """ enable and reverse are stored as 'yes' when set """
+        """enable and reverse are stored as 'yes' when set"""
         return "True" if value == "yes" else "False"
 
     def format_cli_field(self, after, field, *args, **kwargs):
@@ -267,9 +273,7 @@ class PFSenseAutoConfigBackupModule(PFSenseModuleConfigBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=AUTOCONFIGBACKUP_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=AUTOCONFIGBACKUP_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseAutoConfigBackupModule(module)
     # Pass params for testing framework

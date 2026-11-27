@@ -5,11 +5,13 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 import re
 from ansible_collections.pfsensible.core.plugins.module_utils.gateway import GATEWAY_ARGUMENT_SPEC, PFSenseGatewayModule
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 from ansible_collections.pfsensible.core.plugins.module_utils.rule import PFSenseRuleModule
+
 try:
     from ipaddress import ip_network
 except ImportError:
@@ -51,11 +53,11 @@ INTERFACE_MUTUALLY_EXCLUSIVE = [["interface", "interface_descr"]]
 
 
 class PFSenseInterfaceModule(PFSenseModuleBase):
-    """ module managing pfsense interfaces """
+    """module managing pfsense interfaces"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return INTERFACE_ARGUMENT_SPEC
 
     ##############################
@@ -77,12 +79,12 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     # params processing
     #
     def _check_overlaps(self, ipfield, netfield):
-        """ check new address does not overlaps with one existing """
+        """check new address does not overlaps with one existing"""
 
         if not self.obj.get(ipfield) or self.obj.get(netfield) is None:
             return
 
-        our_addr = ip_network(u"{0}/{1}".format(self.obj[ipfield], self.obj[netfield]), strict=False)
+        our_addr = ip_network("{0}/{1}".format(self.obj[ipfield], self.obj[netfield]), strict=False)
 
         for iface in self.root_elt:
             if iface == self.target_elt:
@@ -93,7 +95,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             if ipaddr_elt is None or subnet_elt is None or ipaddr_elt.text in ["dhcp", None] or ipaddr_elt.text in ["dhcpv6", None]:
                 continue
 
-            other_addr = ip_network(u"{0}/{1}".format(ipaddr_elt.text, subnet_elt.text), strict=False)
+            other_addr = ip_network("{0}/{1}".format(ipaddr_elt.text, subnet_elt.text), strict=False)
             if our_addr.overlaps(other_addr):
                 descr_elt = iface.find("descr")
                 if descr_elt is not None and descr_elt.text:
@@ -101,16 +103,12 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
                 else:
                     ifname = iface.tag
                 msg = "IP address {0}/{1} is being used by or overlaps with: {2} ({3}/{4})".format(
-                    self.obj[ipfield],
-                    self.obj[netfield],
-                    ifname,
-                    ipaddr_elt.text,
-                    subnet_elt.text
+                    self.obj[ipfield], self.obj[netfield], ifname, ipaddr_elt.text, subnet_elt.text
                 )
                 self.module.fail_json(msg=msg)
 
     def _params_to_obj(self):
-        """ return an interface dict from module params """
+        """return an interface dict from module params"""
         params = self.params
 
         obj = dict()
@@ -154,7 +152,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         params = self.params
 
@@ -189,7 +187,8 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             if params.get("interface") is not None:
                 if params["interface"] not in interfaces.keys():
                     self.module.fail_json(
-                        msg="{0} can\'t be assigned. Interface may only be one the following: {1}".format(params["interface"], list(interfaces.keys())))
+                        msg="{0} can't be assigned. Interface may only be one the following: {1}".format(params["interface"], list(interfaces.keys()))
+                    )
             elif params.get("interface_descr") is not None:
                 for interface, attributes in interfaces.items():
                     if "descr" in attributes and attributes["descr"] == params["interface_descr"]:
@@ -217,14 +216,14 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     # XML processing
     #
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.diff["after"] = self.obj
         self.setup_interface_cmds += "interface_configure('{0}', true);\n".format(self.target_elt.tag)
         self.result["ifname"] = self.target_elt.tag
 
     def _copy_and_update_target(self):
-        """ update the XML target_elt """
+        """update the XML target_elt"""
         (before, changed) = super(PFSenseInterfaceModule, self)._copy_and_update_target()
 
         if changed:
@@ -238,7 +237,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return (before, changed)
 
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         # wan can't be deleted, so the first interface we can create is lan
         if self.pfsense.get_interface_elt("lan") is None:
             interface_elt = self.pfsense.new_element("lan")
@@ -257,7 +256,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             i = i + 1
 
     def _get_interface_elt_by_port_and_display_name(self, interface_port, name):
-        """ return pfsense interface_elt """
+        """return pfsense interface_elt"""
         for iface in self.root_elt:
             descr_elt = iface.find("descr")
             if descr_elt is None:
@@ -267,7 +266,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return None
 
     def _get_interface_elt_by_display_name(self, name):
-        """ return pfsense interface by name """
+        """return pfsense interface by name"""
         for iface in self.root_elt:
             descr_elt = iface.find("descr")
             if descr_elt is None:
@@ -277,7 +276,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return None
 
     def _get_interface_display_name_by_port(self, interface_port):
-        """ return pfsense interface physical name """
+        """return pfsense interface physical name"""
         for iface in self.root_elt:
             if iface.find("if").text.strip() == interface_port:
                 descr_elt = iface.find("descr")
@@ -288,14 +287,14 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return None
 
     def _get_interface_elt_by_port(self, interface_port):
-        """ find pfsense interface by port name """
+        """find pfsense interface by port name"""
         for iface in self.root_elt:
             if iface.find("if").text.strip() == interface_port:
                 return iface
         return None
 
     def _find_matching_interface(self):
-        """ return target interface """
+        """return target interface"""
 
         # we first try to find an interface having same port and display name
         interface_elt = self._get_interface_elt_by_port_and_display_name(self.obj["if"], self.obj["descr"])
@@ -315,17 +314,17 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return self._get_interface_elt_by_port(self.obj["if"])
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         return self.target_elt
 
     @staticmethod
     def _get_params_to_remove():
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         params = ["mtu", "mss", "gateway", "enable", "mac", "media", "ipaddr", "subnet", "ipaddrv6", "subnetv6", "gatewayv6", "blockpriv", "blockbogons"]
         return params
 
     def _pre_remove_target_elt(self):
-        """ processing before removing elt """
+        """processing before removing elt"""
         super(PFSenseInterfaceModule, self)._pre_remove_target_elt()
         self.obj["if"] = self.target_elt.find("if").text
 
@@ -335,8 +334,9 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
                 if ifgroup_elt.find("members") is not None:
                     members = ifgroup_elt.find("members").text.split()
                     if ifname in members:
-                        self.module.fail_json(msg="The interface is part of the group {0}. Please remove it from the group first.".format(
-                                              ifgroup_elt.find("ifname").text))
+                        self.module.fail_json(
+                            msg="The interface is part of the group {0}. Please remove it from the group first.".format(ifgroup_elt.find("ifname").text)
+                        )
 
         self._remove_all_separators(ifname)
         self._remove_all_rules(ifname)
@@ -345,7 +345,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         self.result["ifname"] = ifname
 
     def _remove_all_rules(self, interface):
-        """ delete all interface rules """
+        """delete all interface rules"""
 
         # we use the pfsense_rule module to delete the rules since, at least for floating rules,
         # it implies to recalculate separators positions
@@ -360,7 +360,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
                         interfaces.remove(interface)
                         new_ifs = ",".join([self.pfsense.get_interface_display_name(new_interface) for new_interface in interfaces])
                         rule_elt.find("interface").text = ",".join(interfaces)
-                        cmd = "update rule \'{0}\' on \'floating({1})\' set interface=\'{2}\'".format(rule_elt.find("descr").text, old_ifs, new_ifs)
+                        cmd = "update rule '{0}' on 'floating({1})' set interface='{2}'".format(rule_elt.find("descr").text, old_ifs, new_ifs)
                         self.result["commands"].append(cmd)
                         continue
                     todel.append(rule_elt)
@@ -385,7 +385,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
                 self.result["commands"].extend(pfsense_rules.result["commands"])
 
     def _remove_all_separators(self, interface):
-        """ delete all interface separators """
+        """delete all interface separators"""
         todel = []
         separators = self.pfsense.rules.find("separator") or []
         for interface_elt in separators:
@@ -394,7 +394,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             for separator_elt in interface_elt:
                 todel.append(separator_elt)
             for separator_elt in todel:
-                cmd = "delete rule_separator \'{0}\', interface=\'{1}\'".format(separator_elt.find("text").text, interface)
+                cmd = "delete rule_separator '{0}', interface='{1}'".format(separator_elt.find("text").text, interface)
                 self.result["commands"].append(cmd)
                 interface_elt.remove(separator_elt)
             separators.remove(interface_elt)
@@ -404,7 +404,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
     # run
     #
     def _run_post(self):
-        """ Resolve gateways against the interface configuration staged for this task. """
+        """Resolve gateways against the interface configuration staged for this task."""
         if self.params["state"] != "present":
             return
 
@@ -488,27 +488,29 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
             "$ipsec_descrs = interface_ipsec_vti_list_all();"
             "foreach ($ipsec_descrs as $ifname => $ifdescr) $portlist[$ifname] = array('descr' => $ifdescr);"
             ""
-            "echo json_encode($portlist, JSON_PRETTY_PRINT);")
+            "echo json_encode($portlist, JSON_PRETTY_PRINT);"
+        )
 
     def _get_media_mode(self, interface):
-        """ Find all possible media options for the interface """
+        """Find all possible media options for the interface"""
         return self.pfsense.php(
-            '$mediaopts_list = array();\n'
-            'exec("/sbin/ifconfig -m ' + interface + ' | grep \'media \'", $mediaopts);\n'
-            'foreach ($mediaopts as $mediaopt) {\n'
+            "$mediaopts_list = array();\n"
+            'exec("/sbin/ifconfig -m ' + interface + " | grep 'media '\", $mediaopts);\n"
+            "foreach ($mediaopts as $mediaopt) {\n"
             '        preg_match("/media (.*)/", $mediaopt, $matches);\n'
             '        if (preg_match("/(.*) mediaopt (.*)/", $matches[1], $matches1)) {\n'
             '                // there is media + mediaopt like "media 1000baseT mediaopt full-duplex"\n'
             '                array_push($mediaopts_list, $matches1[1] . " " . $matches1[2]);\n'
-            '        } else {\n'
+            "        } else {\n"
             '                // there is only media like "media 1000baseT"\n'
-            '                array_push($mediaopts_list, $matches[1]);\n'
-            '        }\n'
-            '}\n'
-            'echo json_encode($mediaopts_list);')
+            "                array_push($mediaopts_list, $matches[1]);\n"
+            "        }\n"
+            "}\n"
+            "echo json_encode($mediaopts_list);"
+        )
 
     def get_pre_update_cmds(self):
-        """ build and return php commands to setup interfaces before changing config """
+        """build and return php commands to setup interfaces before changing config"""
         cmd = 'require_once("filter.inc");\n'
         cmd += 'require_once("interfaces.inc");\n'
 
@@ -518,7 +520,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return cmd
 
     def get_update_cmds(self):
-        """ build and return php commands to setup interfaces """
+        """build and return php commands to setup interfaces"""
         cmd = 'require_once("filter.inc");\n'
         cmd += 'require_once("interfaces.inc");\n'
         cmd += 'require_once("services.inc");\n'
@@ -543,22 +545,22 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return cmd
 
     def _pre_update(self):
-        """ tasks to run before making config changes """
+        """tasks to run before making config changes"""
         return self.pfsense.phpshell(self.get_pre_update_cmds())
 
     def _update(self):
-        """ make the target pfsense reload interfaces """
+        """make the target pfsense reload interfaces"""
         return self.pfsense.phpshell(self.get_update_cmds())
 
     ##############################
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}'".format(self.obj["descr"])
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "if", fname="port")
@@ -607,7 +609,7 @@ class PFSenseInterfaceModule(PFSenseModuleBase):
         return values
 
     def _log_update(self, before):
-        """ generate pseudo-CLI command to update an interface """
+        """generate pseudo-CLI command to update an interface"""
         log = "update {0} '{1}'".format(
             self._get_module_name(True),
             # pfSense doesn't enforce a descr on an interface, especially on

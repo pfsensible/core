@@ -5,12 +5,11 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -746,28 +745,32 @@ from ansible_collections.pfsensible.core.plugins.module_utils.pfsense import PFS
 from ansible_collections.pfsensible.core.plugins.module_utils.openvpn_client import (
     PFSenseOpenVPNClientModule,
     OPENVPN_CLIENT_ARGUMENT_SPEC,
-    OPENVPN_CLIENT_REQUIRED_IF
+    OPENVPN_CLIENT_REQUIRED_IF,
 )
 from ansible_collections.pfsensible.core.plugins.module_utils.openvpn_override import (
     PFSenseOpenVPNOverrideModule,
     OPENVPN_OVERRIDE_ARGUMENT_SPEC,
     OPENVPN_OVERRIDE_REQUIRED_IF,
-    php_string
+    php_string,
 )
 from ansible_collections.pfsensible.core.plugins.module_utils.openvpn_server import (
     PFSenseOpenVPNServerModule,
     OPENVPN_SERVER_ARGUMENT_SPEC,
-    OPENVPN_SERVER_REQUIRED_IF
+    OPENVPN_SERVER_REQUIRED_IF,
 )
 
-RESYNC = ("foreach (config_get_path('openvpn/openvpn-{mode}', []) as $ovpn) {{ "
-          "if (in_array($ovpn['vpnid'], array({vpnids}), true)) {{ openvpn_resync('{mode}', $ovpn); }} }}\n")
-RESYNC_CSC = ("foreach (config_get_path('openvpn/openvpn-csc', []) as $csc) {{ "
-              "if (in_array($csc['common_name'], array({names}), true)) {{ openvpn_resync_csc($csc); }} }}\n")
+RESYNC = (
+    "foreach (config_get_path('openvpn/openvpn-{mode}', []) as $ovpn) {{ "
+    "if (in_array($ovpn['vpnid'], array({vpnids}), true)) {{ openvpn_resync('{mode}', $ovpn); }} }}\n"
+)
+RESYNC_CSC = (
+    "foreach (config_get_path('openvpn/openvpn-csc', []) as $csc) {{ "
+    "if (in_array($csc['common_name'], array({names}), true)) {{ openvpn_resync_csc($csc); }} }}\n"
+)
 
 
 class PFSenseModuleOpenVPNAggregate(object):
-    """ module managing pfsense aggregated OpenVPN servers, clients and overrides """
+    """module managing pfsense aggregated OpenVPN servers, clients and overrides"""
 
     def __init__(self, module):
         self.module = module
@@ -780,7 +783,7 @@ class PFSenseModuleOpenVPNAggregate(object):
         self.resync = dict(server=[], client=[], csc=[])
 
     def run(self, pfmodule, mode, want, purge, tag, field, argument_spec):
-        """ process input params to add/update/delete entries, then delete the others if required """
+        """process input params to add/update/delete entries, then delete the others if required"""
         if want is None:
             return
 
@@ -810,16 +813,19 @@ class PFSenseModuleOpenVPNAggregate(object):
                 self._deleted(pfmodule, mode)
 
     def _deleted(self, pfmodule, mode):
-        """ keep the PHP that stops a deleted entry """
+        """keep the PHP that stops a deleted entry"""
         if mode == "csc":
             before = pfmodule.diff["before"]
-            self.deleted.append("openvpn_delete_csc(array('common_name' => {0}, 'server_list' => {1}));\n".format(
-                php_string(before.get("common_name")), php_string(before.get("server_list"))))
+            self.deleted.append(
+                "openvpn_delete_csc(array('common_name' => {0}, 'server_list' => {1}));\n".format(
+                    php_string(before.get("common_name")), php_string(before.get("server_list"))
+                )
+            )
         else:
             self.deleted.append("openvpn_delete('{0}', array('vpnid' => '{1}'));\n".format(mode, pfmodule.result["vpnid"]))
 
     def _update(self):
-        """ stop the deleted entries and restart the changed ones """
+        """stop the deleted entries and restart the changed ones"""
         cmd = "require_once('openvpn.inc');\n" + "".join(self.deleted)
         if self.resync["server"] or self.resync["client"]:
             cmd += "alias_make_table();\n"
@@ -833,12 +839,10 @@ class PFSenseModuleOpenVPNAggregate(object):
         return self.pfsense.phpshell(cmd)
 
     def commit_changes(self):
-        """ apply changes and exit module """
+        """apply changes and exit module"""
         stdout = ""
         stderr = ""
-        changed = (
-            self.pfsense_servers.result["changed"] or self.pfsense_clients.result["changed"] or self.pfsense_overrides.result["changed"]
-        )
+        changed = self.pfsense_servers.result["changed"] or self.pfsense_clients.result["changed"] or self.pfsense_overrides.result["changed"]
 
         if changed and not self.module.check_mode:
             self.pfsense.write_config(descr="aggregated change")
@@ -864,27 +868,47 @@ def main():
         purge_openvpn_overrides=dict(default=False, type="bool"),
     )
 
-    required_one_of = [[
-        "aggregated_openvpn_servers",
-        "aggregated_openvpn_clients",
-        "aggregated_openvpn_overrides",
-    ]]
+    required_one_of = [
+        [
+            "aggregated_openvpn_servers",
+            "aggregated_openvpn_clients",
+            "aggregated_openvpn_overrides",
+        ]
+    ]
 
-    module = AnsibleModule(
-        argument_spec=argument_spec,
-        required_one_of=required_one_of,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=argument_spec, required_one_of=required_one_of, supports_check_mode=True)
 
     pfmodule = PFSenseModuleOpenVPNAggregate(module)
     params = module.params
 
     # servers first: overrides find them by name
-    pfmodule.run(pfmodule.pfsense_servers, "server", params["aggregated_openvpn_servers"], params["purge_openvpn_servers"],
-                 "openvpn-server", "description", OPENVPN_SERVER_ARGUMENT_SPEC)
-    pfmodule.run(pfmodule.pfsense_clients, "client", params["aggregated_openvpn_clients"], params["purge_openvpn_clients"],
-                 "openvpn-client", "description", OPENVPN_CLIENT_ARGUMENT_SPEC)
-    pfmodule.run(pfmodule.pfsense_overrides, "csc", params["aggregated_openvpn_overrides"], params["purge_openvpn_overrides"],
-                 "openvpn-csc", "common_name", OPENVPN_OVERRIDE_ARGUMENT_SPEC)
+    pfmodule.run(
+        pfmodule.pfsense_servers,
+        "server",
+        params["aggregated_openvpn_servers"],
+        params["purge_openvpn_servers"],
+        "openvpn-server",
+        "description",
+        OPENVPN_SERVER_ARGUMENT_SPEC,
+    )
+    pfmodule.run(
+        pfmodule.pfsense_clients,
+        "client",
+        params["aggregated_openvpn_clients"],
+        params["purge_openvpn_clients"],
+        "openvpn-client",
+        "description",
+        OPENVPN_CLIENT_ARGUMENT_SPEC,
+    )
+    pfmodule.run(
+        pfmodule.pfsense_overrides,
+        "csc",
+        params["aggregated_openvpn_overrides"],
+        params["purge_openvpn_overrides"],
+        "openvpn-csc",
+        "common_name",
+        OPENVPN_OVERRIDE_ARGUMENT_SPEC,
+    )
 
     pfmodule.commit_changes()
 

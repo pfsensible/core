@@ -1,6 +1,7 @@
 """Alias XML and runtime initialization regressions, without a firewall."""
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import ast
@@ -80,8 +81,7 @@ class AliasTests(unittest.TestCase):
 
     def params(self, **changes):
         params = {name: spec.get("default") for name, spec in alias.ALIAS_ARGUMENT_SPEC.items()}
-        params.update(name="fail2ban", state="present", type="urltable",
-                      url="https://127.0.0.1/aliastables/fail2ban", updatefreq=128)
+        params.update(name="fail2ban", state="present", type="urltable", url="https://127.0.0.1/aliastables/fail2ban", updatefreq=128)
         params.update(changes)
         return params
 
@@ -108,8 +108,15 @@ class AliasTests(unittest.TestCase):
                 self.helper.root = ET.fromstring("<pfsense><aliases/><interfaces/></pfsense>")
                 self.helper.aliases = self.helper.root.find("aliases")
                 self.alias = alias.PFSenseAliasModule(self.module, self.helper)
-                self.alias.run(self.params(name="test_alias", type="port" if "port" in field else "host",
-                                           url=None, address="1024" if "port" in field else "192.0.2.1", updatefreq=None))
+                self.alias.run(
+                    self.params(
+                        name="test_alias",
+                        type="port" if "port" in field else "host",
+                        url=None,
+                        address="1024" if "port" in field else "192.0.2.1",
+                        updatefreq=None,
+                    )
+                )
                 self.alias.run(self.params(name="test_alias", state="absent"))
                 entry = self.helper.root
                 for tag in section.split("/") + field.split("/"):
@@ -271,8 +278,7 @@ class AliasTests(unittest.TestCase):
         # Execute the actual aggregate method without importing unrelated
         # module implementations or requiring an Ansible runtime.
         tree = ast.parse((CORE / "plugins/modules/pfsense_aggregate.py").read_text())
-        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef)
-                   and node.name == "PFSenseModuleAggregate")
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "PFSenseModuleAggregate")
         method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "_update")
         namespace = {}
         exec(compile(ast.Module(body=[method], type_ignores=[]), "<aggregate update>", "exec"), namespace)
@@ -292,8 +298,9 @@ class AliasTests(unittest.TestCase):
             content = (source_dir / filename).read_text()
             return re.search(r"^function " + re.escape(name) + r"\(.*?^}", content, re.M | re.S).group()
 
-        functions = "\n".join((function("pfsense-utils.inc", "process_alias_urltable"),
-                               function("util.inc", "alias_make_table"), function("util.inc", "alias_expand")))
+        functions = "\n".join(
+            (function("pfsense-utils.inc", "process_alias_urltable"), function("util.inc", "alias_make_table"), function("util.inc", "alias_expand"))
+        )
         with tempfile.TemporaryDirectory(prefix="urltable-native-") as directory:
             source = Path(directory) / "download.txt"
             source.write_text("127.0.0.100\n")
@@ -315,17 +322,22 @@ function download_file($url, $destination, $verify) { return copy(%s, $destinati
 function mwexec($command) { return 0; }
 function parse_aliases_file($path, $type, $count, $keep) { return file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES); }
 function group_ports($ports, $group) { return $ports; }
-""" % (json.dumps(directory), "json_decode(" + json.dumps(json.dumps([
-                self.helper.element_to_dict(self.helper.find_alias("fail2ban"))])) + ", true)", json.dumps(str(source)))
+""" % (
+                json.dumps(directory),
+                "json_decode(" + json.dumps(json.dumps([self.helper.element_to_dict(self.helper.find_alias("fail2ban"))])) + ", true)",
+                json.dumps(str(source)),
+            )
 
             def native(command):
-                command = command.replace("require_once(\"pfsense-utils.inc\");", stubs + functions)
+                command = command.replace('require_once("pfsense-utils.inc");', stubs + functions)
                 command = command.replace("/var/db/aliastables/", directory + "/cache/")
-                command = command.replace("echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated));",
-                                          "alias_make_table(); $resolved = alias_expand('fail2ban'); "
-                                          "unset($config_aliases[0]['address']); alias_make_table(); "
-                                          "echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated, 'resolved' => $resolved, "
-                                          "'without_address' => alias_expand('fail2ban')));")
+                command = command.replace(
+                    "echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated));",
+                    "alias_make_table(); $resolved = alias_expand('fail2ban'); "
+                    "unset($config_aliases[0]['address']); alias_make_table(); "
+                    "echo json_encode(array('failed_aliases' => $failed, 'updated_aliases' => $updated, 'resolved' => $resolved, "
+                    "'without_address' => alias_expand('fail2ban')));",
+                )
                 result = subprocess.run([PHP_BINARY, "-r", command], capture_output=True, text=True, check=False)
                 self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
                 result = json.loads(result.stdout)

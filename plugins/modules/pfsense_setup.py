@@ -5,12 +5,11 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -345,20 +344,42 @@ SETUP_ARGUMENT_SPEC = dict(
     dns_hostnames=dict(required=False, type="str"),
     dns_gateways=dict(required=False, type="str"),
     dnsallowoverride=dict(required=False, type="bool"),
-    dnslocalhost=dict(required=False, type="str", choices=[
-        "",
-        "local",
-        "remote",
-        "true",
-        "false",
-    ]),
+    dnslocalhost=dict(
+        required=False,
+        type="str",
+        choices=[
+            "",
+            "local",
+            "remote",
+            "true",
+            "false",
+        ],
+    ),
     timezone=dict(required=False, type="str"),
     timeservers=dict(required=False, type="str"),
     language=dict(
         required=False,
         type="str",
-        choices=["bs", "de_DE", "en_US", "es_AR", "es_ES", "fr_FR", "it_IT", "ko_FR", "nb_NO", "nl_NL", "pl_PL", "pt_BR", "pt_PT", "ru_RU", "zh_CN",
-                 "zh_Hans_CN", "zh_Hans_HK", "zh_Hant_TW"],
+        choices=[
+            "bs",
+            "de_DE",
+            "en_US",
+            "es_AR",
+            "es_ES",
+            "fr_FR",
+            "it_IT",
+            "ko_FR",
+            "nb_NO",
+            "nl_NL",
+            "pl_PL",
+            "pt_BR",
+            "pt_PT",
+            "ru_RU",
+            "zh_CN",
+            "zh_Hans_CN",
+            "zh_Hans_HK",
+            "zh_Hant_TW",
+        ],
     ),
     session_timeout=dict(required=False, type="int"),
     authmode=dict(required=False, type="str"),
@@ -450,7 +471,7 @@ def p2o_logincss(self, name, params, obj):
 
 
 def validate_webguicss(self, webguicss):
-    """ check css style """
+    """check css style"""
     path = "/usr/local/www/css/"
     themes = [f for f in listdir(path) if isfile(join(path, f)) and f.endswith(".css") and f.find("login") == -1 and f.find("logo") == -1]
     themes = map(lambda x: x.replace(".css", ""), themes)
@@ -508,19 +529,28 @@ SETUP_MAP_PARAM = [
 
 
 class PFSenseSetupModule(PFSenseModuleConfigBase):
-    """ module managing pfsense routes """
+    """module managing pfsense routes"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return SETUP_ARGUMENT_SPEC
 
     ##############################
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseSetupModule, self).__init__(module, pfsense, name="pfsense_setup", root="pfsense", node="system", arg_route=SETUP_ARG_ROUTE,
-                                                 bool_style="absent/present", bool_values=SETUP_BOOL_VALUES, map_param=SETUP_MAP_PARAM)
+        super(PFSenseSetupModule, self).__init__(
+            module,
+            pfsense,
+            name="pfsense_setup",
+            root="pfsense",
+            node="system",
+            arg_route=SETUP_ARG_ROUTE,
+            bool_style="absent/present",
+            bool_values=SETUP_BOOL_VALUES,
+            map_param=SETUP_MAP_PARAM,
+        )
         self.route_cmds = list()
         self.params_to_delete = list()
 
@@ -579,7 +609,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
                 self.params_to_delete.append(key)
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         obj = super(PFSenseSetupModule, self)._params_to_obj()
         webgui = obj.get("webgui") or {}
         # Mapped WebGUI flags are stored by presence. Drop disabled flags from the copied configuration.
@@ -597,7 +627,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
         return obj
 
     def _validate_hostname(self, hostname, name, strict=False):
-        """ check hostname, if strict is true, check if domain is omitted """
+        """check hostname, if strict is true, check if domain is omitted"""
         host = hostname.lower()
         groups = re.match(r"^(?:(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9])\.)*(?:[a-z_0-9]|[a-z_0-9][a-z_0-9\-]*[a-z_0-9\.])$", host)
         if groups is None:
@@ -609,7 +639,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
                 self.module.fail_json(msg="A valid {0} is specified, but the domain name part should be omitted".format(name))
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
         super(PFSenseSetupModule, self)._validate_params()
         params = self.params
 
@@ -659,9 +689,11 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
                 if params.get("shellauth") is not None and params.get("shellauth") is True:
                     if authserver_elt.find("type").text == "ldap":
                         # check if ldap_pam_groupdn is set
-                        if authserver_elt.find("ldap_pam_groupdn") is None or \
-                           authserver_elt.find("ldap_pam_groupdn").text is None or \
-                           authserver_elt.find("ldap_pam_groupdn").text == "":
+                        if (
+                            authserver_elt.find("ldap_pam_groupdn") is None
+                            or authserver_elt.find("ldap_pam_groupdn").text is None
+                            or authserver_elt.find("ldap_pam_groupdn").text == ""
+                        ):
                             self.module.fail_json(msg="ldap_pam_groupdn not set for authserver '{0}'.".format(value))
 
         # DNS
@@ -702,7 +734,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
                     )
 
     def _validate_timezone(self, timezone):
-        """ check timezone """
+        """check timezone"""
         path = "/usr/share/zoneinfo/"
         if not isfile(path + timezone) or timezone[:1] < "A" or timezone[:1] > "Z":
             self.module.fail_json(msg="The submitted timezone is invalid")
@@ -711,7 +743,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     # XML processing
     #
     def _get_params_to_remove(self):
-        """ returns the list of params to remove if they are not set """
+        """returns the list of params to remove if they are not set"""
         to_remove = super(PFSenseSetupModule, self)._get_params_to_remove()
         to_remove.extend(self.params_to_delete)
         return to_remove
@@ -721,7 +753,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
     #
     @staticmethod
     def _diff_fields(values):
-        """ the fields of the system section the module manages """
+        """the fields of the system section the module manages"""
         mapped = dict(SETUP_MAP_PARAM)
         webgui_fields = [path.split("/", 1)[1] for path in mapped.values()]
         fields = dict()
@@ -739,7 +771,7 @@ class PFSenseSetupModule(PFSenseModuleConfigBase):
             self.diff[side] = self._diff_fields(self.diff.get(side) or {})
 
     def _update(self):
-        """ make the target pfsense reload """
+        """make the target pfsense reload"""
         for cmd in self.route_cmds:
             self.module.run_command(cmd)
 
@@ -763,8 +795,12 @@ load_crypto();
 load_thermal_hardware();"""
 
         if self.params.get("dnsallowoverride") is not None:
-            if (self.params["dnsallowoverride"] and "dnsallowoverride" not in self.diff["before"] or
-                    not self.params["dnsallowoverride"] and "dnsallowoverride" in self.diff["before"]):
+            if (
+                self.params["dnsallowoverride"]
+                and "dnsallowoverride" not in self.diff["before"]
+                or not self.params["dnsallowoverride"]
+                and "dnsallowoverride" in self.diff["before"]
+            ):
                 cmd += '$retval |= send_event("service reload dns");\n'
 
         if self.params.get("shellauth") is not None:
@@ -802,11 +838,11 @@ load_thermal_hardware();"""
     #
     @staticmethod
     def _get_obj_name():
-        """ return obj's name """
+        """return obj's name"""
         return "general"
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         bwebgui = self.diff["before"].get("webgui") or {}
         webgui = self.obj.get("webgui") or {}
 
@@ -865,7 +901,7 @@ load_thermal_hardware();"""
         return values
 
     def _prepare_dns_log(self, obj):
-        """ construct dict for logging """
+        """construct dict for logging"""
         ret = dict()
         webgui = obj.get("webgui") or {}
 
@@ -880,9 +916,7 @@ load_thermal_hardware();"""
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=SETUP_ARGUMENT_SPEC,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=SETUP_ARGUMENT_SPEC, supports_check_mode=True)
 
     pfmodule = PFSenseSetupModule(module)
     pfmodule.run(module.params)

@@ -1,7 +1,8 @@
 # Copyright: (c) 2026, Romain Tiennot
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -15,8 +16,10 @@ from .pfsense_module import TestPFSenseModule
 
 
 PSK = "tunnel-test-psk"
-TUNNEL = ("<client></client><phase1><ikeid>1</ikeid><descr>tunnel</descr><authentication_method>pre_shared_key</authentication_method>"
-          "<pre-shared-key>{0}</pre-shared-key></phase1><phase2><ikeid>1</ikeid><mode>tunnel</mode></phase2>".format(PSK))
+TUNNEL = (
+    "<client></client><phase1><ikeid>1</ikeid><descr>tunnel</descr><authentication_method>pre_shared_key</authentication_method>"
+    "<pre-shared-key>{0}</pre-shared-key></phase1><phase2><ikeid>1</ikeid><mode>tunnel</mode></phase2>".format(PSK)
+)
 
 # The levels pfSense uses when none is stored (ipsec_get_loglevels() of /etc/inc/ipsec.inc)
 DEFAULT_LEVELS = dict(dmn=1, mgr=1, ike=2, chd=2, job=1, cfg=2, knl=1, net=1, asn=1, enc=1, imc=1, imv=1, pts=1, tls=1, esp=1, lib=1)
@@ -24,14 +27,17 @@ STORED_LEVELS = dict((cat, str(level)) for cat, level in DEFAULT_LEVELS.items())
 LEVELS_COMMAND = ", ".join("logging.{0}='{1}'".format(cat, level) for cat, level in DEFAULT_LEVELS.items())
 
 # What a save of the page with its defaults and Auto-exclude LAN address unchecked leaves
-SAVED = ("<logging>{0}</logging><async_crypto>enabled</async_crypto><uniqueids>replace</uniqueids>"
-         "<noshuntlaninterfaces></noshuntlaninterfaces><filtermode>enc</filtermode><bypassrules></bypassrules>").format(
-    "".join("<{0}>{1}</{0}>".format(cat, level) for cat, level in DEFAULT_LEVELS.items()))
+SAVED = (
+    "<logging>{0}</logging><async_crypto>enabled</async_crypto><uniqueids>replace</uniqueids>"
+    "<noshuntlaninterfaces></noshuntlaninterfaces><filtermode>enc</filtermode><bypassrules></bypassrules>"
+).format("".join("<{0}>{1}</{0}>".format(cat, level) for cat, level in DEFAULT_LEVELS.items()))
 STORED_SAVED = dict(logging=STORED_LEVELS, async_crypto="enabled", uniqueids="replace", noshuntlaninterfaces="", filtermode="enc", bypassrules=[])
 
 RULES = [dict(source="192.168.1.0/24", destination="192.168.2.0/24"), dict(source="fd00:1::/64", destination="fd00:2::/64")]
-STORED_RULES = [dict(source="192.168.1.0", srcmask="24", destination="192.168.2.0", dstmask="24"),
-                dict(source="fd00:1::", srcmask="64", destination="fd00:2::", dstmask="64")]
+STORED_RULES = [
+    dict(source="192.168.1.0", srcmask="24", destination="192.168.2.0", dstmask="24"),
+    dict(source="fd00:1::", srcmask="64", destination="fd00:2::", dstmask="64"),
+]
 
 
 class TestPFSenseIpsecSettingsModule(TestPFSenseModule):
@@ -50,7 +56,7 @@ class TestPFSenseIpsecSettingsModule(TestPFSenseModule):
             return self.changed(changed)
 
     def stored(self):
-        """ the settings stored in <ipsec>, without the tunnels """
+        """the settings stored in <ipsec>, without the tunnels"""
         values = dict()
         for elt in ET.parse(self.tmp_file).find("ipsec"):
             if elt.tag in ["client", "phase1", "phase2"]:
@@ -81,8 +87,7 @@ class TestPFSenseIpsecSettingsModule(TestPFSenseModule):
 
     def test_saved_page_is_unchanged(self):
         self.write_config(SAVED)
-        self.run_module(async_crypto=True, logging=DEFAULT_LEVELS, uniqueids="replace", filtermode="enc", noshuntlaninterfaces=True,
-                        ipsecbypass=False)
+        self.run_module(async_crypto=True, logging=DEFAULT_LEVELS, uniqueids="replace", filtermode="enc", noshuntlaninterfaces=True, ipsecbypass=False)
         self.assertEqual(self.stored(), STORED_SAVED)
         self.assertFalse(os.path.exists(self.backup_file))
         self.phpshell.assert_not_called()
@@ -136,8 +141,7 @@ class TestPFSenseIpsecSettingsModule(TestPFSenseModule):
     def test_numbers(self):
         params = dict(port=1500, port_nat_t=4501, maxexchange=10, ikev2_retransmit_timeout=4.0, ikev2_retransmit_base=1.5)
         self.run_module(changed=True, **params)
-        self.assertEqual(self.stored(), dict(maxexchange="10", port="1500", port_nat_t="4501", ikev2_retransmit_timeout="4",
-                                             ikev2_retransmit_base="1.5"))
+        self.assertEqual(self.stored(), dict(maxexchange="10", port="1500", port_nat_t="4501", ikev2_retransmit_timeout="4", ikev2_retransmit_base="1.5"))
         self.run_module(**params)
         result = self.run_module(changed=True, port=0, maxexchange=0)
         self.assertEqual(result["commands"], ["update ipsec_settings ipsec set maxexchange=none, port=none"])
@@ -150,24 +154,28 @@ class TestPFSenseIpsecSettingsModule(TestPFSenseModule):
 
     def test_bypass_rules(self):
         result = self.run_module(changed=True, ipsecbypass=True, bypassrules=RULES)
-        self.assertEqual(result["commands"], ["update ipsec_settings ipsec set ipsecbypass=True, bypassrules='192.168.1.0/24 to 192.168.2.0/24, "
-                                              "fd00:1::/64 to fd00:2::/64'"])
+        self.assertEqual(
+            result["commands"], ["update ipsec_settings ipsec set ipsecbypass=True, bypassrules='192.168.1.0/24 to 192.168.2.0/24, fd00:1::/64 to fd00:2::/64'"]
+        )
         self.assertEqual(self.stored(), dict(ipsecbypass="", bypassrules=STORED_RULES))
         self.run_module(ipsecbypass=True, bypassrules=RULES)
         self.run_module(changed=True, bypassrules=RULES[1:])
         self.assertEqual(self.stored(), dict(ipsecbypass="", bypassrules=STORED_RULES[1:]))
 
     def test_bypass_off_removes_rules(self):
-        self.write_config("<ipsecbypass></ipsecbypass><bypassrules><rule><source>192.168.1.0</source><srcmask>24</srcmask>"
-                          "<destination>192.168.2.0</destination><dstmask>24</dstmask></rule></bypassrules>")
+        self.write_config(
+            "<ipsecbypass></ipsecbypass><bypassrules><rule><source>192.168.1.0</source><srcmask>24</srcmask>"
+            "<destination>192.168.2.0</destination><dstmask>24</dstmask></rule></bypassrules>"
+        )
         result = self.run_module(changed=True, ipsecbypass=False)
         self.assertEqual(result["commands"], ["update ipsec_settings ipsec set ipsecbypass=False, bypassrules=none"])
         self.assertEqual(self.stored(), dict(bypassrules=[]))
         self.run_module(ipsecbypass=False)
 
     def test_pkcs11_off_when_unused(self):
-        self.write_config("<pkcs11support></pkcs11support>", tunnel=TUNNEL.replace("<descr>", "<disabled></disabled><descr>").replace(
-            "pre_shared_key<", "pkcs11<"))
+        self.write_config(
+            "<pkcs11support></pkcs11support>", tunnel=TUNNEL.replace("<descr>", "<disabled></disabled><descr>").replace("pre_shared_key<", "pkcs11<")
+        )
         self.run_module(changed=True, pkcs11support=False)
         self.assertEqual(self.stored(), dict())
         self.assertIn("ipsec_configure(true, false);", self.php_command())
@@ -192,25 +200,27 @@ class TestPFSenseIpsecSettingsModule(TestPFSenseModule):
         self.run_module(changed=True, async_crypto=True)
         self.assertEqual(self.stored(), dict(async_crypto="enabled"))
 
-    @parameterized.expand([
-        ("maxexchange must be between 3 and 64", dict(maxexchange=2)),
-        ("maxexchange must be between 3 and 64", dict(maxexchange=65)),
-        ("port must be between 1 and 65535", dict(port=65536)),
-        ("port_nat_t must be between 1 and 65535", dict(port_nat_t=70000)),
-        ("dns_interval must be 0 or more", dict(dns_interval=-1)),
-        ("ikev2_retransmit_tries must be 0 or more", dict(ikev2_retransmit_tries=-1)),
-        ("ikev2_retransmit_base must be 0 or more", dict(ikev2_retransmit_base=-1.8)),
-        ("port and port_nat_t must be different", dict(port=4500, port_nat_t=4500)),
-        ("192.168.1.0 is not a valid source network", dict(ipsecbypass=True, bypassrules=[dict(source="192.168.1.0", destination="10.0.0.0/8")])),
-        ("10.0.0.0/33 is not a valid destination", dict(ipsecbypass=True, bypassrules=[dict(source="192.168.1.0/24", destination="10.0.0.0/33")])),
-        ("fw1/24 is not a valid source", dict(ipsecbypass=True, bypassrules=[dict(source="fw1/24", destination="10.0.0.0/8")])),
-        ("same address family", dict(ipsecbypass=True, bypassrules=[dict(source="192.168.1.0/24", destination="fd00::/64")])),
-        ("bypassrules requires ipsecbypass", dict(bypassrules=[dict(source="192.168.1.0/24", destination="10.0.0.0/8")])),
-        ("bypassrules requires ipsecbypass", dict(ipsecbypass=False, bypassrules=RULES)),
-        ("bypassrules is required with ipsecbypass", dict(ipsecbypass=True)),
-        ("bypassrules is required with ipsecbypass", dict(ipsecbypass=True, bypassrules=[])),
-        ("value of ike must be one of", dict(logging=dict(ike=5))),
-    ])
+    @parameterized.expand(
+        [
+            ("maxexchange must be between 3 and 64", dict(maxexchange=2)),
+            ("maxexchange must be between 3 and 64", dict(maxexchange=65)),
+            ("port must be between 1 and 65535", dict(port=65536)),
+            ("port_nat_t must be between 1 and 65535", dict(port_nat_t=70000)),
+            ("dns_interval must be 0 or more", dict(dns_interval=-1)),
+            ("ikev2_retransmit_tries must be 0 or more", dict(ikev2_retransmit_tries=-1)),
+            ("ikev2_retransmit_base must be 0 or more", dict(ikev2_retransmit_base=-1.8)),
+            ("port and port_nat_t must be different", dict(port=4500, port_nat_t=4500)),
+            ("192.168.1.0 is not a valid source network", dict(ipsecbypass=True, bypassrules=[dict(source="192.168.1.0", destination="10.0.0.0/8")])),
+            ("10.0.0.0/33 is not a valid destination", dict(ipsecbypass=True, bypassrules=[dict(source="192.168.1.0/24", destination="10.0.0.0/33")])),
+            ("fw1/24 is not a valid source", dict(ipsecbypass=True, bypassrules=[dict(source="fw1/24", destination="10.0.0.0/8")])),
+            ("same address family", dict(ipsecbypass=True, bypassrules=[dict(source="192.168.1.0/24", destination="fd00::/64")])),
+            ("bypassrules requires ipsecbypass", dict(bypassrules=[dict(source="192.168.1.0/24", destination="10.0.0.0/8")])),
+            ("bypassrules requires ipsecbypass", dict(ipsecbypass=False, bypassrules=RULES)),
+            ("bypassrules is required with ipsecbypass", dict(ipsecbypass=True)),
+            ("bypassrules is required with ipsecbypass", dict(ipsecbypass=True, bypassrules=[])),
+            ("value of ike must be one of", dict(logging=dict(ike=5))),
+        ]
+    )
     def test_invalid_option(self, msg, params):
         with set_module_args(params):
             self.assertIn(msg, self.failed()["msg"])

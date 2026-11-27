@@ -5,6 +5,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
@@ -23,11 +24,11 @@ RULE_SEPARATOR_MUTUALLY_EXCLUSIVE = [["interface", "floating"]]
 
 
 class PFSenseRuleSeparatorModule(PFSenseModuleBase):
-    """ module managing pfsense rule separators """
+    """module managing pfsense rule separators"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return RULE_SEPARATOR_ARGUMENT_SPEC
 
     ##############################
@@ -55,10 +56,10 @@ class PFSenseRuleSeparatorModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return an separator dict from module params """
+        """return an separator dict from module params"""
         params = self.params
 
-        self._floating = (params.get("floating"))
+        self._floating = params.get("floating")
         self._after = params.get("after")
         self._before = params.get("before")
 
@@ -87,17 +88,17 @@ class PFSenseRuleSeparatorModule(PFSenseModuleBase):
     # XML processing
     #
     def _create_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         return self.pfsense.new_element("sep")
 
     def _copy_and_add_target(self):
-        """ create the XML target_elt """
+        """create the XML target_elt"""
         self.pfsense.copy_dict_to_element(self.obj, self.target_elt)
         self.root_elt.append(self.target_elt)
         self._recompute_separators_tag()
 
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         if_elt = self.separators.find(self.obj["if"])
         if if_elt is not None:
             for separator_elt in if_elt:
@@ -106,7 +107,7 @@ class PFSenseRuleSeparatorModule(PFSenseModuleBase):
         return None
 
     def _get_expected_separator_position(self):
-        """ get expected separator position in interface/floating """
+        """get expected separator position in interface/floating"""
         if self._before == "bottom":
             return self.pfsense.get_interface_rules_count(self.obj["if"], self._floating)
         elif self._after == "top":
@@ -123,25 +124,25 @@ class PFSenseRuleSeparatorModule(PFSenseModuleBase):
         return -1
 
     def _get_rule_position(self, descr):
-        """ get rule position in interface/floating """
+        """get rule position in interface/floating"""
         res = self.pfsense.get_rule_position(descr, self.obj["if"], self._floating)
         if res is None:
             self.module.fail_json(msg="Failed to find rule=%s interface=%s" % (descr, self._interface_name))
         return res
 
     def _get_separator_position(self):
-        """ get separator position in interface/floating """
+        """get separator position in interface/floating"""
         separator_elt = self._find_target()
         if separator_elt is not None:
             return int(separator_elt.find("row").text.replace("fr", ""))
         return None
 
     def _post_remove_target_elt(self):
-        """ processing after removing elt """
+        """processing after removing elt"""
         self._recompute_separators_tag()
 
     def _recompute_separators_tag(self):
-        """ recompute separators tag name """
+        """recompute separators tag name"""
         if_elt = self.separators.find(self.obj["if"])
         if if_elt is not None:
             i = 0
@@ -155,7 +156,7 @@ class PFSenseRuleSeparatorModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ make the target pfsense reload separators """
+        """make the target pfsense reload separators"""
         return self.pfsense.phpshell("""require_once("filter.inc");
 if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
 
@@ -163,11 +164,11 @@ if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }""")
     # Logging
     #
     def _get_obj_name(self):
-        """ return obj's name """
+        """return obj's name"""
         return "'{0}' on '{1}'".format(self.obj["text"], self._interface_name)
 
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.params, "color")

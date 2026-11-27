@@ -4,7 +4,8 @@
 # Copyright: (c) 2024, Orion Poplawski <orion@nwra.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 DOCUMENTATION = r"""
@@ -71,7 +72,10 @@ SHELLCMD_ARGUMENT_SPEC = dict(
     description=dict(required=True, type="str"),
     state=dict(type="str", default="present", choices=["present", "absent"]),
     cmd=dict(type="str"),
-    cmdtype=dict(type="str", choices=["shellcmd", "earlyshellcmd", "afterfilterchangeshellcmd", "disabled"],),
+    cmdtype=dict(
+        type="str",
+        choices=["shellcmd", "earlyshellcmd", "afterfilterchangeshellcmd", "disabled"],
+    ),
 )
 
 SHELLCMD_REQUIRED_IF = [
@@ -90,7 +94,7 @@ shellcmd_sync_package();
 
 
 class PFSenseShellcmdModule(PFSenseModuleBase):
-    """ module managing pfsense shellcmds """
+    """module managing pfsense shellcmds"""
 
     ##############################
     # unit tests
@@ -98,18 +102,26 @@ class PFSenseShellcmdModule(PFSenseModuleBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return SHELLCMD_ARGUMENT_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseShellcmdModule, self).__init__(module, pfsense, package="Shellcmd", root="shellcmdsettings", node="config", key="description",
-                                                    update_php=SHELLCMD_PHP_COMMAND_SET, create_default=SHELLCMD_CREATE_DEFAULT)
+        super(PFSenseShellcmdModule, self).__init__(
+            module,
+            pfsense,
+            package="Shellcmd",
+            root="shellcmdsettings",
+            node="config",
+            key="description",
+            update_php=SHELLCMD_PHP_COMMAND_SET,
+            create_default=SHELLCMD_CREATE_DEFAULT,
+        )
 
     ##############################
     # XML processing
     #
     def _find_target(self):
-        """ find the XML target_elt """
+        """find the XML target_elt"""
         # There can be only one 'afterfilterchangeshellcmd' shellcmd
         if self.params["cmdtype"] == "afterfilterchangeshellcmd":
             result = self.root_elt.findall("{node}[{key}='{value}']".format(node=self.node, key="cmdtype", value="afterfilterchangeshellcmd"))
@@ -124,10 +136,7 @@ class PFSenseShellcmdModule(PFSenseModuleBase):
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=SHELLCMD_ARGUMENT_SPEC,
-        required_if=SHELLCMD_REQUIRED_IF,
-        supports_check_mode=True)
+    module = AnsibleModule(argument_spec=SHELLCMD_ARGUMENT_SPEC, required_if=SHELLCMD_REQUIRED_IF, supports_check_mode=True)
 
     pfmodule = PFSenseShellcmdModule(module)
     # Pass params for testing framework

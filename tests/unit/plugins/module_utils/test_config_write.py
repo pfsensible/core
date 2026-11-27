@@ -1,6 +1,7 @@
 """Standalone regression tests; no Ansible installation or firewall required."""
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import errno
@@ -20,8 +21,7 @@ import xml.etree.ElementTree as ET
 
 
 CORE = Path(__file__).resolve().parents[4]
-SPEC = importlib.util.spec_from_file_location(
-    "pfsense_config_test", CORE / "plugins/module_utils/pfsense.py")
+SPEC = importlib.util.spec_from_file_location("pfsense_config_test", CORE / "plugins/module_utils/pfsense.py")
 pfsense = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(pfsense)
 PHP_BINARY = os.environ.get("PFSENSE_PHP_BINARY") or shutil.which("php")
@@ -102,8 +102,7 @@ class ConfigWriteTests(unittest.TestCase):
         self.assertEqual(self.backup.read_bytes(), CONFIG)
         self.assertEqual(stat.S_IMODE(self.backup.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(self.path.stat().st_mode), 0o640)
-        self.assertEqual((self.path.stat().st_uid, self.path.stat().st_gid),
-                         (metadata.st_uid, metadata.st_gid))
+        self.assertEqual((self.path.stat().st_uid, self.path.stat().st_gid), (metadata.st_uid, metadata.st_gid))
         self.assertEqual(self.helper().root.findtext("system/hostname"), "changed")
         self.assertFalse(self.cache.exists())
         self.assertTrue(self.lock.exists())
@@ -111,19 +110,22 @@ class ConfigWriteTests(unittest.TestCase):
 
     def test_native_failure_reports_only_stage_and_exit_code(self):
         stages = {
-            10: "load_parser", 11: "parse_candidate", 12: "serialize_candidate",
-            13: "write_formatted_candidate", 14: "parse_formatted_candidate",
-            15: "compare_native_roundtrip", 255: "php_command", -9: "php_command",
+            10: "load_parser",
+            11: "parse_candidate",
+            12: "serialize_candidate",
+            13: "write_formatted_candidate",
+            14: "parse_formatted_candidate",
+            15: "compare_native_roundtrip",
+            255: "php_command",
+            -9: "php_command",
         }
         for exit_code, stage in stages.items():
             with self.subTest(exit_code=exit_code):
                 helper = self.helper()
-                with patch.object(helper.module, "run_command",
-                                  return_value=(exit_code, "private stdout", "private stderr")):
+                with patch.object(helper.module, "run_command", return_value=(exit_code, "private stdout", "private stderr")):
                     with self.assertRaises(ModuleFailure) as failure:
                         helper.write_config()
-                self.assertEqual(failure.exception.result["native_validation"],
-                                 {"stage": stage, "exit_code": exit_code})
+                self.assertEqual(failure.exception.result["native_validation"], {"stage": stage, "exit_code": exit_code})
                 self.assertIn(stage, failure.exception.result["msg"])
                 self.assertNotIn("private", str(failure.exception.result))
                 self.assertFalse(failure.exception.result["changed"])
@@ -141,8 +143,7 @@ class ConfigWriteTests(unittest.TestCase):
         with patch.object(helper.module, "run_command", side_effect=change_candidate):
             with self.assertRaises(ModuleFailure) as failure:
                 helper.write_config()
-        self.assertEqual(failure.exception.result["config_mismatch"],
-                         {"path": "/pfsense[1]/system[1]/hostname[1]", "reason": "text differs"})
+        self.assertEqual(failure.exception.result["config_mismatch"], {"path": "/pfsense[1]/system[1]/hostname[1]", "reason": "text differs"})
         self.assertEqual(failure.exception.result["native_validation"]["stage"], "compare_native_roundtrip")
         self.assertNotIn("private", str(failure.exception.result))
         self.assert_original()
@@ -165,10 +166,8 @@ class ConfigWriteTests(unittest.TestCase):
         with patch.object(helper.module, "run_command", side_effect=format_candidate):
             with self.assertRaises(ModuleFailure) as failure:
                 helper.write_config()
-        self.assertEqual(failure.exception.result["native_validation"],
-                         {"stage": "compare_native_roundtrip", "exit_code": 15})
-        self.assertEqual(failure.exception.result["config_mismatch"],
-                         {"path": "/pfsense[1]/system[1]/hostname[1]", "reason": "text differs"})
+        self.assertEqual(failure.exception.result["native_validation"], {"stage": "compare_native_roundtrip", "exit_code": 15})
+        self.assertEqual(failure.exception.result["config_mismatch"], {"path": "/pfsense[1]/system[1]/hostname[1]", "reason": "text differs"})
         self.assertFalse(failure.exception.result["changed"])
         self.assert_original()
         self.assert_no_temporary_files()
@@ -202,13 +201,42 @@ class ConfigWriteTests(unittest.TestCase):
         # Pin the native list independently of the implementation, including
         # prefix matches rather than only exact field-name matches.
         prefixes = (
-            "aclname", "auth_pass", "auth_prompt", "auth_user", "certca", "certname",
-            "city", "common_name", "descr", "detail", "email", "encryption_password",
-            "hint", "ldap_attr", "ldap_authcn", "ldap_basedn", "ldap_basedomain",
-            "ldap_bind", "ldapbinddn", "ldapbindpass", "ldap_extended_query",
-            "ldap_filter", "ldap_pam_groupdn", "ldap_pass", "ldap_user", "login_banner",
-            "organization", "password", "proxypass", "proxyuser", "rangedescr",
-            "state", "text", "username", "varusersusername", "varuserspassword",
+            "aclname",
+            "auth_pass",
+            "auth_prompt",
+            "auth_user",
+            "certca",
+            "certname",
+            "city",
+            "common_name",
+            "descr",
+            "detail",
+            "email",
+            "encryption_password",
+            "hint",
+            "ldap_attr",
+            "ldap_authcn",
+            "ldap_basedn",
+            "ldap_basedomain",
+            "ldap_bind",
+            "ldapbinddn",
+            "ldapbindpass",
+            "ldap_extended_query",
+            "ldap_filter",
+            "ldap_pam_groupdn",
+            "ldap_pass",
+            "ldap_user",
+            "login_banner",
+            "organization",
+            "password",
+            "proxypass",
+            "proxyuser",
+            "rangedescr",
+            "state",
+            "text",
+            "username",
+            "varusersusername",
+            "varuserspassword",
         )
         fields = list(prefixes) + [prefix + "_extra" for prefix in prefixes] + ["description"]
         container = ET.SubElement(helper.root, "cdata_test")
@@ -298,14 +326,14 @@ class ConfigWriteTests(unittest.TestCase):
         ET.SubElement(authserver, "radius_secret").text = "synthetic&secret"
         ET.SubElement(authserver, "ldap_basedn").text = "DC=example,DC=test"
         server = ET.SubElement(ET.SubElement(helper.root, "openvpn"), "openvpn-server")
-        ET.SubElement(server, "custom_options").text = "server example;\npush \"example\";"
+        ET.SubElement(server, "custom_options").text = 'server example;\npush "example";'
         package = ET.SubElement(helper.root.find("installedpackages"), "package")
         ET.SubElement(package, "url").text = "/pkg_edit.php?xml=example.xml&id=0"
         ET.SubElement(package, "descr").text = "Package 'example'"
         for cycle in range(2):
             helper.write_config("native format")
             xml = self.path.read_bytes()
-            self.assertTrue(xml.startswith(b"<?xml version=\"1.0\"?>\n<pfsense>\n"))
+            self.assertTrue(xml.startswith(b'<?xml version="1.0"?>\n<pfsense>\n'))
             self.assertTrue(xml.endswith(b"</pfsense>\n"))
             self.assertIn(b"\n\t<openvpn>\n\t\t<openvpn-server>\n", xml)
             self.assertIn(b"<radius_secret>synthetic&amp;secret</radius_secret>", xml)
@@ -315,8 +343,7 @@ class ConfigWriteTests(unittest.TestCase):
             self.assertIn(b"<url>/pkg_edit.php?xml=example.xml&amp;id=0</url>", xml)
             self.assertIn(b"<descr><![CDATA[Package &apos;example&apos;]]></descr>", xml)
             helper = self.helper()
-            self.assertEqual(helper.root.findtext("openvpn/openvpn-server/custom_options"),
-                             "server example;\npush \"example\";")
+            self.assertEqual(helper.root.findtext("openvpn/openvpn-server/custom_options"), 'server example;\npush "example";')
             self.assertIsNone(helper.root.find("interfaces/opt9"))
             self.assertIsNone(helper.root.find("virtualip_carp_maintenancemode"))
 
@@ -396,8 +423,7 @@ class ConfigWriteTests(unittest.TestCase):
                 self.assert_original()
 
     def test_wrong_root_and_duplicate_version_are_rejected(self):
-        for mutate in (lambda root: setattr(root, "tag", "wrong"),
-                       lambda root: ET.SubElement(root, "version")):
+        for mutate in (lambda root: setattr(root, "tag", "wrong"), lambda root: ET.SubElement(root, "version")):
             helper = self.helper()
             mutate(helper.root)
             with self.assertRaises(ModuleFailure):
@@ -405,8 +431,7 @@ class ConfigWriteTests(unittest.TestCase):
             self.assert_original()
 
     def test_emptied_or_duplicated_critical_section_is_rejected(self):
-        for mutate in (lambda root: root.find("system").clear(),
-                       lambda root: ET.SubElement(root, "interfaces")):
+        for mutate in (lambda root: root.find("system").clear(), lambda root: ET.SubElement(root, "interfaces")):
             helper = self.helper()
             mutate(helper.root)
             with self.assertRaises(ModuleFailure):
@@ -493,8 +518,7 @@ class ConfigWriteTests(unittest.TestCase):
         with patch.object(helper.module, "run_command", side_effect=change_candidate):
             with self.assertRaisesRegex(ModuleFailure, "formatting changed configuration values") as failure:
                 helper.write_config()
-        self.assertEqual(failure.exception.result["config_mismatch"],
-                         {"path": "/pfsense[1]/system[1]/hostname[1]", "reason": "text differs"})
+        self.assertEqual(failure.exception.result["config_mismatch"], {"path": "/pfsense[1]/system[1]/hostname[1]", "reason": "text differs"})
         self.assertNotIn("changed unexpectedly", str(failure.exception.result))
         self.assert_original()
         self.assert_no_temporary_files()
@@ -519,8 +543,7 @@ class ConfigWriteTests(unittest.TestCase):
         with patch.object(helper.module, "run_command", side_effect=reorder_rules):
             with self.assertRaisesRegex(ModuleFailure, "formatting changed configuration values") as failure:
                 helper.write_config()
-        self.assertEqual(failure.exception.result["config_mismatch"],
-                         {"path": "/pfsense[1]/filter[1]/rule[1]/descr[1]", "reason": "text differs"})
+        self.assertEqual(failure.exception.result["config_mismatch"], {"path": "/pfsense[1]/filter[1]/rule[1]/descr[1]", "reason": "text differs"})
         self.assertNotIn("synthetic private description", str(failure.exception.result))
         self.assertFalse(failure.exception.result["changed"])
         self.assert_original()
@@ -560,8 +583,7 @@ class ConfigWriteTests(unittest.TestCase):
         with patch.object(helper.module, "run_command", side_effect=remove_field):
             with self.assertRaises(ModuleFailure) as failure:
                 helper.write_config()
-        self.assertEqual(failure.exception.result["config_mismatch"],
-                         {"path": "/pfsense[1]/filter[1]", "reason": "element count differs"})
+        self.assertEqual(failure.exception.result["config_mismatch"], {"path": "/pfsense[1]/filter[1]", "reason": "element count differs"})
         self.assert_original()
 
     def test_formatted_candidate_sync_failure_aborts_replacement(self):
@@ -589,8 +611,7 @@ class ConfigWriteTests(unittest.TestCase):
         helper.root.find("system/password").text = "line\rvalue"
         with self.assertRaisesRegex(ModuleFailure, "live configuration was not replaced") as failure:
             helper.write_config()
-        self.assertEqual(failure.exception.result["config_mismatch"],
-                         {"path": "/pfsense[1]/system[1]/password[1]", "reason": "text differs"})
+        self.assertEqual(failure.exception.result["config_mismatch"], {"path": "/pfsense[1]/system[1]/password[1]", "reason": "text differs"})
         self.assert_original()
         self.assert_no_temporary_files()
 
@@ -682,9 +703,13 @@ class ConfigWriteTests(unittest.TestCase):
         }
         for path, value in expected.items():
             self.assertEqual(helper.root.findtext(path), value)
-        for value in ("literal &amp; &copy; &#65; &#x41;", "quotes: ' \" < > & ]]> café 中文",
-                      "regex: ^[a-z]+\\s+(foo|bar)$", "invalid entity: &#1;",
-                      "line one\nline two\tvalue"):
+        for value in (
+            "literal &amp; &copy; &#65; &#x41;",
+            "quotes: ' \" < > & ]]> café 中文",
+            "regex: ^[a-z]+\\s+(foo|bar)$",
+            "invalid entity: &#1;",
+            "line one\nline two\tvalue",
+        ):
             helper.root.find("system/password").text = value
             for cycle in range(3):
                 helper.write_config("unrelated change {0}".format(cycle))
@@ -696,24 +721,18 @@ class ConfigWriteTests(unittest.TestCase):
 
     def test_xml_only_decoding_matches_native_entity_rules(self):
         decode = pfsense.PFSenseModule._decode_xml_entities
-        self.assertEqual(decode("&copy; &not; &amp; &apos; &#65; &#x1f600;"),
-                         "&copy; &not; & ' A 😀")
+        self.assertEqual(decode("&copy; &not; &amp; &apos; &#65; &#x1f600;"), "&copy; &not; & ' A 😀")
         self.assertEqual(decode("&amp;lt;"), "&lt;")
-        self.assertEqual(decode("&#0; &#1; &#xD800; &#1114112;"),
-                         "&#0; &#1; &#xD800; &#1114112;")
+        self.assertEqual(decode("&#0; &#1; &#xD800; &#1114112;"), "&#0; &#1; &#xD800; &#1114112;")
 
-    @unittest.skipUnless(NATIVE_PHP,
-                         "requires PHP XML extension and PFSENSE_XMLPARSE_INC")
+    @unittest.skipUnless(NATIVE_PHP, "requires PHP XML extension and PFSENSE_XMLPARSE_INC")
     def test_native_php_parser_round_trip(self):
         helper = self.helper()
         value = "literal &amp; &copy; &#65; quotes: ' \" < > & ]]> café"
         helper.root.find("system/password").text = value
         helper.write_config()
-        command = ("require $argv[1]; "
-                   "$c = parse_xml_config($argv[2], array(\"pfsense\")); "
-                   "echo json_encode($c[\"system\"][\"password\"]);")
-        result = subprocess.run([PHP_BINARY, "-r", command, XMLPARSE, str(self.path)],
-                                check=True, capture_output=True, text=True)
+        command = 'require $argv[1]; $c = parse_xml_config($argv[2], array("pfsense")); echo json_encode($c["system"]["password"]);'
+        result = subprocess.run([PHP_BINARY, "-r", command, XMLPARSE, str(self.path)], check=True, capture_output=True, text=True)
         self.assertEqual(json.loads(result.stdout), value)
 
 

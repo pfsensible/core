@@ -5,11 +5,10 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-ANSIBLE_METADATA = {"metadata_version": "1.1",
-                    "status": ["preview"],
-                    "supported_by": "community"}
+ANSIBLE_METADATA = {"metadata_version": "1.1", "status": ["preview"], "supported_by": "community"}
 
 DOCUMENTATION = """
 ---
@@ -149,24 +148,14 @@ from ansible_collections.pfsensible.core.plugins.module_utils.module_base import
 
 PFSENSE_AUTHSERVER_LDAP_SPEC = {
     "name": {"required": True, "type": "str"},
-    "state": {
-        "default": "present",
-        "choices": ["present", "absent"]
-    },
+    "state": {"default": "present", "choices": ["present", "absent"]},
     "host": {"type": "str"},
     "port": {"default": "389", "type": "str"},
-    "transport": {
-        "choices": ["tcp", "starttls", "ssl"]
-    },
+    "transport": {"choices": ["tcp", "starttls", "ssl"]},
     "ca": {"default": "global", "type": "str"},
-    "protver": {
-        "default": "3",
-        "choices": ["2", "3"]
-    },
+    "protver": {"default": "3", "choices": ["2", "3"]},
     "timeout": {"default": "25", "type": "str"},
-    "scope": {
-        "choices": ["one", "subtree"]
-    },
+    "scope": {"choices": ["one", "subtree"]},
     "basedn": {"required": False, "type": "str"},
     "authcn": {"required": False, "type": "str"},
     "extended_enabled": {"default": False, "type": "bool"},
@@ -185,9 +174,7 @@ PFSENSE_AUTHSERVER_LDAP_SPEC = {
     "ldap_allow_unauthenticated": {"required": False, "type": "bool"},
 }
 
-AUTHSERVER_LDAP_CREATE_DEFAULT = dict(
-    ldap_allow_unauthenticated=None
-)
+AUTHSERVER_LDAP_CREATE_DEFAULT = dict(ldap_allow_unauthenticated=None)
 
 AUTHSERVER_LDAP_PHP_COMMAND = """
 require_once('auth.inc');
@@ -199,7 +186,7 @@ if (config_path_enabled('system/webgui', 'shellauth') &&
 
 
 class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
-    """ module managing pfsense LDAP authentication """
+    """module managing pfsense LDAP authentication"""
 
     ##############################
     # unit tests
@@ -207,24 +194,33 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
     # Must be class method for unit test usage
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return PFSENSE_AUTHSERVER_LDAP_SPEC
 
     def __init__(self, module, pfsense=None):
-        super(PFSenseAuthserverLDAPModule, self).__init__(module, pfsense, name="pfsense_authserver_ldap", root="system", node="authserver", key="name",
-                                                          bool_style="absent/present", have_refid=True, create_default=AUTHSERVER_LDAP_CREATE_DEFAULT)
+        super(PFSenseAuthserverLDAPModule, self).__init__(
+            module,
+            pfsense,
+            name="pfsense_authserver_ldap",
+            root="system",
+            node="authserver",
+            key="name",
+            bool_style="absent/present",
+            have_refid=True,
+            create_default=AUTHSERVER_LDAP_CREATE_DEFAULT,
+        )
 
     ##############################
     # params processing
     #
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         if int(self.params["timeout"]) < 1:
             self.module.fail_json(msg="timeout {0} must be greater than 1".format(self.params["timeout"]))
 
     def _params_to_obj(self):
-        """ return a dict from module params """
+        """return a dict from module params"""
         params = self.params
 
         obj = dict()
@@ -302,7 +298,7 @@ class PFSenseAuthserverLDAPModule(PFSenseModuleBase):
     # run
     #
     def _update(self):
-        """ update system configuration if needed """
+        """update system configuration if needed"""
         return self.pfsense.phpshell(AUTHSERVER_LDAP_PHP_COMMAND.format(name=self.obj["name"]))
 
 
@@ -312,7 +308,8 @@ def main():
         required_if=[
             ["state", "present", ["host", "port", "transport", "scope", "authcn"]],
         ],
-        supports_check_mode=True)
+        supports_check_mode=True,
+    )
 
     pfmodule = PFSenseAuthserverLDAPModule(module)
     pfmodule.run(module.params)

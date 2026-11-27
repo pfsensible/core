@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -15,12 +16,11 @@ from .test_pfsense_rule import TestPFSenseRuleModule
 
 
 class TestPFSenseRuleMiscModule(TestPFSenseRuleModule):
-
     ##############
     # delete
     #
     def test_rule_delete(self):
-        """ test deleting a rule """
+        """test deleting a rule"""
         obj = dict(name="test_rule_3", source="any", destination="any", interface="wan", protocol="tcp")
         command = "delete rule 'test_rule_3' on 'wan'"
         self.do_module_test(obj, command=command, delete=True)
@@ -29,7 +29,7 @@ class TestPFSenseRuleMiscModule(TestPFSenseRuleModule):
     # misc
     #
     def test_check_mode(self):
-        """ test check mode """
+        """test check mode"""
         obj = dict(name="one_rule", source="any", destination="any", interface="lan")
         with set_module_args(self.args_from_var(obj, _ansible_check_mode=True)):
             self.execute_module(changed=True)

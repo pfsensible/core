@@ -4,6 +4,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 import re
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
@@ -27,11 +28,11 @@ interface_group_setup($ifgroupentry);"""
 
 
 class PFSenseInterfaceGroupModule(PFSenseModuleBase):
-    """ module managing pfsense interfaces """
+    """module managing pfsense interfaces"""
 
     @staticmethod
     def get_argument_spec():
-        """ return argument spec """
+        """return argument spec"""
         return INTERFACE_GROUP_ARGUMENT_SPEC
 
     ##############################
@@ -45,7 +46,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     # params processing
     #
     def _params_to_obj(self):
-        """ return an interface dict from module params """
+        """return an interface dict from module params"""
         params = self.params
 
         obj = dict()
@@ -67,7 +68,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
         return obj
 
     def _validate_params(self):
-        """ do some extra checks on input parameters """
+        """do some extra checks on input parameters"""
 
         params = self.params
 
@@ -88,7 +89,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     # XML processing
     #
     def _remove_all_rules(self, interface):
-        """ delete all interface rules """
+        """delete all interface rules"""
 
         # we use the pfsense_rule module to delete the rules since, at least for floating rules,
         # it implies to recalculate separators positions
@@ -103,7 +104,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
                         interfaces.remove(interface)
                         new_ifs = ",".join([self.pfsense.get_interface_display_name(new_interface) for new_interface in interfaces])
                         rule_elt.find("interface").text = ",".join(interfaces)
-                        cmd = "update rule \'{0}\' on \'floating({1})\' set interface=\'{2}\'".format(rule_elt.find("descr").text, old_ifs, new_ifs)
+                        cmd = "update rule '{0}' on 'floating({1})' set interface='{2}'".format(rule_elt.find("descr").text, old_ifs, new_ifs)
                         self.result["commands"].append(cmd)
                         continue
                     todel.append(rule_elt)
@@ -128,7 +129,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
                 self.result["commands"].extend(pfsense_rules.result["commands"])
 
     def _remove_all_separators(self, interface):
-        """ delete all interface separators """
+        """delete all interface separators"""
         todel = []
         separators = self.pfsense.rules.find("separator")
         for interface_elt in separators:
@@ -137,7 +138,7 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
             for separator_elt in interface_elt:
                 todel.append(separator_elt)
             for separator_elt in todel:
-                cmd = "delete rule_separator \'{0}\', interface=\'{1}\'".format(separator_elt.find("text").text, interface)
+                cmd = "delete rule_separator '{0}', interface='{1}'".format(separator_elt.find("text").text, interface)
                 self.result["commands"].append(cmd)
                 interface_elt.remove(separator_elt)
             separators.remove(interface_elt)
@@ -148,14 +149,14 @@ class PFSenseInterfaceGroupModule(PFSenseModuleBase):
     #
 
     def _update(self):
-        """ make the target pfsense reload interfaces """
+        """make the target pfsense reload interfaces"""
         return self.pfsense.phpshell(INTERFACE_GROUP_PHP_COMMAND.format(self.pfsense.dict_to_php(self.obj, "ifgroupentry")))
 
     ##############################
     # Logging
     #
     def _log_fields(self, before=None):
-        """ generate pseudo-CLI command fields parameters to create an obj """
+        """generate pseudo-CLI command fields parameters to create an obj"""
         values = ""
         if before is None:
             values += self.format_cli_field(self.obj, "descr")

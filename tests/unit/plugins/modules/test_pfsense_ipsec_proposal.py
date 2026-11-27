@@ -1,7 +1,8 @@
 # Copyright: (c) 2018, Frederic Bor <frederic.bor@wanadoo.fr>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
@@ -17,7 +18,6 @@ from parameterized import parameterized
 
 
 class TestPFSenseIpsecProposalModule(TestPFSenseModule):
-
     module = pfsense_ipsec_proposal
 
     def __init__(self, *args, **kwargs):
@@ -25,7 +25,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
         self.pfmodule = PFSenseIpsecProposalModule
 
     def get_config_file(self):
-        """ get config file """
+        """get config file"""
         if self.get_version.return_value.startswith("2.4."):
             return "2.4/pfsense_ipsec_proposal_config.xml"
 
@@ -35,7 +35,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
     # tests utils
     #
     def get_target_elt(self, obj, absent=False, module_result=None):
-        """ get the generated proposal xml definition """
+        """get the generated proposal xml definition"""
         elt_filter = {}
         elt_filter["descr"] = obj["descr"]
 
@@ -77,12 +77,12 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
         return None
 
     def check_target_elt(self, obj, target_elt):
-        """ test the xml definition of proposal elt """
+        """test the xml definition of proposal elt"""
         if target_elt is None:
             self.fail("Unable to find proposal on " + obj["descr"])
 
     def strip_commands(self, commands):
-        """ remove old or new parameters """
+        """remove old or new parameters"""
         if self.get_version.return_value.startswith("2.4."):
             commands = commands.replace(", prf='sha256'", "")
         return commands
@@ -92,7 +92,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
     #
     @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_create(self, pfsense_version):
-        """ test creation of a new proposal """
+        """test creation of a new proposal"""
         self.get_version.return_value = pfsense_version
         proposal = dict(descr="test_tunnel", encryption="aes128gcm", key_length=128, hash="sha256", dhgroup=21)
         command = "create ipsec_proposal 'test_tunnel', encryption='aes128gcm', key_length=128, hash='sha256', dhgroup='21', prf='sha256'"
@@ -100,7 +100,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
 
     @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_create_nokeylen(self, pfsense_version):
-        """ test creation of a new proposal """
+        """test creation of a new proposal"""
         self.get_version.return_value = pfsense_version
         proposal = dict(descr="test_tunnel2", encryption="cast128", hash="sha256", dhgroup=21)
         command = "create ipsec_proposal 'test_tunnel2', encryption='cast128', hash='sha256', dhgroup='21', prf='sha256'"
@@ -108,7 +108,7 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
 
     @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_delete(self, pfsense_version):
-        """ test deletion of an ipsec proposal """
+        """test deletion of an ipsec proposal"""
         self.get_version.return_value = pfsense_version
         proposal = dict(descr="test_tunnel", encryption="aes128gcm", key_length=128, hash="sha256", dhgroup=14, state="absent")
         command = "delete ipsec_proposal 'test_tunnel', encryption='aes128gcm', key_length=128, hash='sha256', dhgroup='14', prf='sha256'"
@@ -116,25 +116,25 @@ class TestPFSenseIpsecProposalModule(TestPFSenseModule):
 
     @parameterized.expand([["2.4.4"], ["2.5.0"], ["2.5.2"]])
     def test_ipsec_proposal_update_noop(self, pfsense_version):
-        """ test not updating a ipsec proposal """
+        """test not updating a ipsec proposal"""
         self.get_version.return_value = pfsense_version
         proposal = dict(descr="test_tunnel", encryption="aes128gcm", key_length=128, hash="sha256", dhgroup=14)
         self.do_module_test(proposal, changed=False)
 
     def test_ipsec_proposal_wrong_keylen(self):
-        """ test using a wrong key_length """
+        """test using a wrong key_length"""
         proposal = dict(descr="test_tunnel", encryption="aes128gcm", key_length=256, hash="sha256", dhgroup=14)
         msg = "key_length for encryption aes128gcm must be one of: 64, 96, 128."
         self.do_module_test(proposal, msg=msg, failed=True)
 
     def test_ipsec_proposal_wrong_tunnel(self):
-        """ test using a wrong tunnel """
+        """test using a wrong tunnel"""
         proposal = dict(descr="test_tunnel3", encryption="aes128gcm", key_length=128, hash="sha256", dhgroup=14)
         msg = "No ipsec tunnel named test_tunnel3"
         self.do_module_test(proposal, msg=msg, failed=True)
 
     def test_ipsec_proposal_wrong_encryption(self):
-        """ test using a wrong encryption """
+        """test using a wrong encryption"""
         proposal = dict(descr="test_tunnel2", encryption="aes128gcm", key_length=128, hash="sha256", dhgroup=14)
         msg = "Encryption Algorithm AES-GCM can only be used with IKEv2"
         self.do_module_test(proposal, msg=msg, failed=True)

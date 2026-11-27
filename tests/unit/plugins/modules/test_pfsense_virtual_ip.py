@@ -1,6 +1,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import xml.etree.ElementTree as ET
@@ -25,15 +26,25 @@ class TestVirtualIP(TestPFSenseModule):
         vips = tree.getroot().find("virtualip")
         if vips is None:
             vips = ET.SubElement(tree.getroot(), "virtualip")
-        fields = dict(mode=self.existing_mode, descr="Backup WAN IP", subnet="192.0.2.10", subnet_bits="24", type="single",
-                      interface="lan", vhid="11", password="previous-carp-password", uniqid="testcarp")
+        fields = dict(
+            mode=self.existing_mode,
+            descr="Backup WAN IP",
+            subnet="192.0.2.10",
+            subnet_bits="24",
+            type="single",
+            interface="lan",
+            vhid="11",
+            password="previous-carp-password",
+            uniqid="testcarp",
+        )
         vip = ET.SubElement(vips, "vip")
         for key, value in fields.items():
             ET.SubElement(vip, key).text = value
         if self.stacked:
             child = ET.SubElement(vips, "vip")
-            for key, value in dict(mode="ipalias", type="single", subnet="198.51.100.12", subnet_bits="29",
-                                   interface="_viptestcarp", uniqid="testalias").items():
+            for key, value in dict(
+                mode="ipalias", type="single", subnet="198.51.100.12", subnet_bits="29", interface="_viptestcarp", uniqid="testalias"
+            ).items():
                 ET.SubElement(child, key).text = value
         tree.write(self.tmp_file, encoding="utf-8", short_empty_elements=False)
 
