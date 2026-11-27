@@ -25,6 +25,7 @@ options:
     description:
       - Branch of updates, as the page lists them (the repository's name, stored in C(pkg_repo_conf_path)). The module checks it
         against the repositories of the firewall.
+      - For example C(26.07.2), the name of the stable branch on pfSense Plus 26.07.2.
       - As the page does, a change switches the package repository.
     type: str
   disablecheck:
@@ -44,6 +45,10 @@ EXAMPLES = r"""
   pfsensible.core.pfsense_update_settings:
     disablecheck: false
     disableautobe: false
+
+- name: Follow the 26.07.2 branch
+  pfsensible.core.pfsense_update_settings:
+    branch: "26.07.2"
 """
 
 RETURN = r"""
