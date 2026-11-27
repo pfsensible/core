@@ -169,6 +169,7 @@ The following modules are currently available:
 * [pfsense_route](https://github.com/pfsensible/core/wiki/pfsense_route) for routes
 * [pfsense_rule](https://github.com/pfsensible/core/wiki/pfsense_rule) for firewall rules
 * [pfsense_rule_separator](https://github.com/pfsensible/core/wiki/pfsense_rule_separator) for firewall rule separators
+* [pfsense_servicewatchdog](plugins/modules/pfsense_servicewatchdog.py) for monitoring services with the Service Watchdog package
 * [pfsense_setup](https://github.com/pfsensible/core/wiki/pfsense_setup) for general setup
 * [pfsense_shellcmd](https://github.com/pfsensible/core/wiki/pfsense_shellcmd) for shellcmd package
 * [pfsense_update_settings](https://github.com/pfsensible/core/wiki/pfsense_update_settings) for the update settings
