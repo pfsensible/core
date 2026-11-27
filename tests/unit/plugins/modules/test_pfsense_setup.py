@@ -436,6 +436,52 @@ class TestPFSenseSetupModule(TestPFSenseModule):
         self.assertEqual(result["commands"], ["update setup general set statepolicy='if-bound'"])
         self.assertEqual(ET.parse(self.tmp_file).findtext("system/statepolicy"), "if-bound")
 
+    def test_setup_ipsec_mb(self):
+        """ test setup ipsec_mb: off (absent in the fixture), on, again (no change), then off """
+        self.load_fixtures()
+        with set_module_args(dict(ipsec_mb=False)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+        with set_module_args(dict(ipsec_mb=True, _ansible_diff=True)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set ipsec_mb=True"])
+        self.assertNotIn("ipsec_mb", result["diff"]["before"])
+        self.assertEqual(result["diff"]["after"]["ipsec_mb"], "")
+        ipsec_mb = ET.parse(self.tmp_file).find("system/ipsec_mb")
+        self.assertIsNotNone(ipsec_mb)
+        self.assertFalse(ipsec_mb.text)
+        # The usual apply step (it already runs load_crypto()), and nothing more
+        self.assertIn("load_crypto();", self.phpshell.call_args[0][0])
+        for step in ("setup_loader_settings();", "prefer_ipv4_or_ipv6();", "activate_powerd();"):
+            self.assertNotIn(step, self.phpshell.call_args[0][0])
+        self.phpshell.reset_mock()
+        with set_module_args(dict(ipsec_mb=True)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        self.phpshell.assert_not_called()
+        with set_module_args(dict(ipsec_mb=False)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set ipsec_mb=False"])
+        self.assertIsNone(ET.parse(self.tmp_file).find("system/ipsec_mb"))
+        self.assertIn("load_crypto();", self.phpshell.call_args[0][0])
+
+    def test_setup_ipsec_mb_omitted(self):
+        """ test that ipsec_mb set by pfSense is kept when omitted, then removed with false """
+        self.load_fixtures()
+        tree = ET.parse(self.tmp_file)
+        ET.SubElement(tree.find("system"), "ipsec_mb")
+        tree.write(self.tmp_file)
+        with set_module_args(dict(hostname="acme")):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set hostname='acme'"])
+        self.assertIsNotNone(ET.parse(self.tmp_file).find("system/ipsec_mb"))
+        with set_module_args(dict(ipsec_mb=True)):
+            self.assertEqual(self.changed(False)["commands"], [])
+        with set_module_args(dict(ipsec_mb=False)):
+            result = self.changed(True)
+        self.assertEqual(result["commands"], ["update setup general set ipsec_mb=False"])
+        self.assertIsNone(ET.parse(self.tmp_file).find("system/ipsec_mb"))
+        self.assertIn("load_crypto();", self.phpshell.call_args[0][0])
+
     def test_setup_dns_addresses(self):
         """ test setup dns """
         setup = dict(dns_addresses="8.8.4.4 8.8.8.8", dns_hostnames="acme1 acme2", dns_gateways="none GW_WAN")

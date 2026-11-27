@@ -249,6 +249,16 @@ options:
     type: str
     choices: ['', 'aesni', 'aesni_cryptodev', 'qat']
     version_added: 0.7.2
+  ipsec_mb:
+    description: >
+      IPsec-MB Cryptographic Acceleration (System > Advanced > Miscellaneous, pfSense Plus only). IPsec-MB assists VPN performance by replacing the
+      cryptographic functions provided by the kernel for some algorithms with accelerated functions that use the optimal CPU SIMD instruction set available.
+      This benefits any VPN using the accelerated algorithms in the kernel, which includes IPsec, OpenVPN DCO and WireGuard. A change takes effect at the
+      next reboot. pfSense CE ignores this setting. pfSense Plus shows it only on supported hardware, and the module checks neither the edition nor the
+      hardware, so set it only where the web GUI shows the checkbox. Elsewhere, saving the Miscellaneous page removes it.
+    required: false
+    type: bool
+    version_added: 0.8.0
   thermal_hardware:
     description: >
       With a supported CPU, selecting a thermal sensor will load the appropriate driver to read its temperature. Setting this to "None" will attempt to read
@@ -358,6 +368,7 @@ SETUP_ARGUMENT_SPEC = dict(
     gw_down_kill_states=dict(required=False, type="str", choices=["none", "down", "all"]),
     statepolicy=dict(required=False, type="str", choices=["if-bound", "floating"]),
     crypto_hardware=dict(required=False, type="str", choices=["", "aesni", "aesni_cryptodev", "qat"]),
+    ipsec_mb=dict(required=False, type="bool"),
     thermal_hardware=dict(required=False, type="str", choices=["", "coretemp", "amdtemp"]),
     althostnames=dict(required=False, type="list", elements="str"),
     ipv6allow=dict(required=False, type="bool"),
@@ -814,6 +825,7 @@ load_thermal_hardware();"""
         values += self.format_updated_cli_field(webgui, bwebgui, "althostnames", add_comma=(values), log_none=True)
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "ipv6allow", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
         values += self.format_updated_cli_field(self.obj, self.diff["before"], "maximumstates", add_comma=(values), log_none=True)
+        values += self.format_updated_cli_field(self.obj, self.diff["before"], "ipsec_mb", fvalue=self.fvalue_bool, add_comma=(values), log_none=False)
 
         return values
 

@@ -1,0 +1,2 @@
+minor_changes:
+  - pfsense_setup - add the ``ipsec_mb`` option (System > Advanced > Miscellaneous, IPsec-MB Cryptographic Acceleration, pfSense Plus only).
