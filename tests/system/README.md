@@ -231,6 +231,7 @@ cleanup. The files are organized by responsibility:
 | `modules/alias/` | Alias creation, idempotence, check mode, URL updates, cache repair, and deletion |
 | `modules/interface/` | Static interface and gateway creation, native gateway visibility, check mode, idempotence, update, and cleanup |
 | `modules/nat_port_forward/` | NAT match and translated ports, associated filter rule, idempotence, check mode, and deletion |
+| `modules/nat_1to1/` | Subnet translation in saved configuration and live PF, interface and destination changes, disabling, exclusion, check mode, and deletion |
 | `modules/openvpn/` | OpenVPN TLS connections and live tunnel addresses assigned by client-specific overrides |
 | `modules/rule/` | Rule apply/verification, idempotence, action changes, and deletion |
 | `modules/virtual_ip/` | Saved VIP entries, interface addresses, CARP VHIDs, Proxy ARP registrations, and deletion |

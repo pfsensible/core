@@ -1,0 +1,5 @@
+---
+- name: Apply the 1:1 NAT rule using the collection under test
+  pfsensible.core.pfsense_nat_1to1: "{{ system_case.args }}"
+  check_mode: "{{ system_case.check_mode | default(false) }}"
+  register: system_change_result

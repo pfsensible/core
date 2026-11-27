@@ -1,0 +1,30 @@
+---
+- name: Observe saved and active 1:1 NAT rules
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/observe.yml"
+  vars:
+    pf_binat_args: "{{ ['--binat-rule', binat_args.descr, binat_args.source, '--expect-binat', system_case.expected_pf] }}"
+
+- name: Verify the mapping is absent
+  ansible.builtin.assert:
+    that:
+      - not appliance.binat_rules
+      - not appliance.live_binat_rules
+  when: (system_case.expected | default(system_case.args)).state | default('present') == 'absent'
+
+- name: Verify the saved 1:1 NAT rule
+  ansible.builtin.assert:
+    that:
+      - appliance.binat_rules | length == 1
+      - rule.interface == (expected.interface | default('wan'))
+      - rule.ipprotocol == 'inet'
+      - rule.external == expected.external
+      - rule['source/address'] == expected.source
+      - rule.destination_any == (expected.destination is undefined)
+      - rule['destination/address'] == (expected.destination | default(none))
+      - rule.disabled == (expected.disabled | default(false))
+      - rule.nobinat == (expected.nobinat | default(false))
+      - rule.natreflection == (expected.natreflection | default(none))
+  vars:
+    expected: "{{ system_case.expected | default(system_case.args) }}"
+    rule: "{{ appliance.binat_rules[0] }}"
+  when: expected.state | default('present') == 'present'

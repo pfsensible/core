@@ -1,0 +1,68 @@
+---
+- name: Exercise a 1:1 NAT subnet mapping on the disposable appliance
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/nat_1to1/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/nat_1to1/verify.yml"
+    binat_args:
+      descr: CI 1-to-1 NAT test
+      source: 172.20.42.0/24
+      external: 198.51.100.0
+    binat_updated: "{{ binat_args | combine({'interface': 'lan', 'external': '203.0.113.0', 'destination': '192.0.2.42', 'natreflection': 'disable'}) }}"
+    binat_absent:
+      descr: "{{ binat_args.descr }}"
+      state: absent
+    binat_initial_pf: 'binat on vtnet0 inet from 172\.20\.42\.0/24 to any -> 198\.51\.100\.0/24'
+    binat_updated_pf: 'binat on vtnet1 inet from 172\.20\.42\.0/24 to 192\.0\.2\.42 -> 203\.0\.113\.0/24'
+  block:
+    - name: Apply and verify 1:1 NAT cases
+      ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+      loop_control:
+        loop_var: system_case
+        label: "{{ system_case.name }}"
+      loop:
+        - name: Preview creating the mapping
+          args: "{{ binat_args }}"
+          expected: "{{ binat_absent }}"
+          expected_pf: absent
+          changed: true
+          check_mode: true
+        - name: Create the subnet mapping
+          args: "{{ binat_args }}"
+          expected_pf: "{{ binat_initial_pf }}"
+          changed: true
+        - name: Reapply the same mapping
+          args: "{{ binat_args }}"
+          expected_pf: "{{ binat_initial_pf }}"
+          changed: false
+          unchanged_config: true
+        - name: Preview moving and updating the mapping
+          args: "{{ binat_updated }}"
+          expected: "{{ binat_args }}"
+          expected_pf: "{{ binat_initial_pf }}"
+          changed: true
+          check_mode: true
+        - name: Move the mapping and restrict the remote destination
+          args: "{{ binat_updated }}"
+          expected_pf: "{{ binat_updated_pf }}"
+          changed: true
+        - name: Disable the mapping
+          args: "{{ binat_updated | combine({'disabled': true}) }}"
+          expected_pf: absent
+          changed: true
+        - name: Enable the mapping again
+          args: "{{ binat_updated }}"
+          expected_pf: "{{ binat_updated_pf }}"
+          changed: true
+        - name: Apply a no BINAT exception
+          args: "{{ binat_updated | combine({'nobinat': true}) }}"
+          expected_pf: 'no binat on vtnet1 inet from 172\.20\.42\.0/24 to 192\.0\.2\.42'
+          changed: true
+        - name: Delete the rule by description
+          args: "{{ binat_absent }}"
+          expected_pf: absent
+          changed: true
+        - name: Repeat the deletion
+          args: "{{ binat_absent }}"
+          expected_pf: absent
+          changed: false
+          unchanged_config: true
