@@ -1,0 +1,48 @@
+---
+- name: Exercise a VLAN on the unused adapter
+  vars:
+    system_apply_tasks: "{{ playbook_dir }}/modules/vlan/apply.yml"
+    system_verify_tasks: "{{ playbook_dir }}/modules/vlan/verify.yml"
+    vlan_args:
+      interface: vtnet2
+      vlan_id: 247
+      priority: 4
+      descr: "CI's VLAN"
+    vlan_updated_args: "{{ vlan_args | combine({'priority': 6}) }}"
+    vlan_remove_args:
+      interface: "{{ vlan_args.interface }}"
+      vlan_id: "{{ vlan_args.vlan_id }}"
+      state: absent
+  ansible.builtin.include_tasks: "{{ playbook_dir }}/common/change_apply_verify.yml"
+  loop_control:
+    loop_var: system_case
+    label: "{{ system_case.name }}"
+  loop:
+    - name: Preview VLAN creation
+      args: "{{ vlan_args }}"
+      changed: true
+      check_mode: true
+      expect_absent: true
+    - name: Create the VLAN
+      args: "{{ vlan_args }}"
+      changed: true
+    - name: Repeat VLAN creation
+      args: "{{ vlan_args }}"
+      changed: false
+      unchanged_config: true
+    - name: Change the VLAN priority
+      args: "{{ vlan_updated_args }}"
+      changed: true
+    - name: Preview VLAN deletion
+      args: "{{ vlan_remove_args }}"
+      changed: true
+      check_mode: true
+    - name: Delete the VLAN
+      args: "{{ vlan_remove_args }}"
+      changed: true
+      expect_absent: true
+    - name: Repeat VLAN deletion
+      args: "{{ vlan_remove_args }}"
+      changed: false
+      expect_absent: true
+      unchanged_config: true

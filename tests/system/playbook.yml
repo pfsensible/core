@@ -12,6 +12,9 @@
     - name: Test configuring an interface with an upstream gateway
       ansible.builtin.include_tasks: modules/interface/main.yml
 
+    - name: Test adding, updating, and removing a VLAN
+      ansible.builtin.include_tasks: modules/vlan/main.yml
+
     - name: Test aliases and prepare a referencing rule
       ansible.builtin.include_tasks: modules/alias/main.yml
 

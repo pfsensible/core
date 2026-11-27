@@ -6,6 +6,10 @@
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
+
+from base64 import b64encode
+import json
+
 from ansible_collections.pfsensible.core.plugins.module_utils.module_base import PFSenseModuleBase
 
 VLAN_ARGUMENT_SPEC = dict(
@@ -15,6 +19,32 @@ VLAN_ARGUMENT_SPEC = dict(
     priority=dict(default=None, required=False, type="int"),
     descr=dict(default="", type="str"),
 )
+
+
+# Follow the runtime operations in interfaces_vlan_edit.php and interfaces_vlan.php.
+APPLY_PHP = r"""
+require_once("interfaces.inc");
+foreach (json_decode(base64_decode("%s"), true) as $change) {
+    if (isset($change["remove"])) {
+        $vlanif = $change["remove"];
+        if (does_interface_exist($vlanif, true)) {
+            pfSense_interface_destroy($vlanif);
+        }
+        if (does_interface_exist($vlanif, true)) {
+            fwrite(STDERR, "Could not remove VLAN interface {$vlanif}\n");
+            exit(1);
+        }
+    } else {
+        $vlan = $change["configure"];
+        $vlanif = interface_vlan_configure($vlan);
+        if ($vlanif !== $vlan["vlanif"] || !does_interface_exist($vlanif)) {
+            pfSense_interface_destroy($vlan["vlanif"]);
+            fwrite(STDERR, "Could not configure VLAN interface {$vlan['vlanif']}\n");
+            exit(1);
+        }
+    }
+}
+"""
 
 
 class PFSenseVlanModule(PFSenseModuleBase):
@@ -29,18 +59,19 @@ class PFSenseVlanModule(PFSenseModuleBase):
     # init
     #
     def __init__(self, module, pfsense=None):
-        super(PFSenseVlanModule, self).__init__(module, pfsense)
-        self.name = "pfsense_vlan"
-        # Override for use with aggregate
-        self.argument_spec = VLAN_ARGUMENT_SPEC
-        self.root_elt = self.pfsense.get_element("vlans")
-        self.obj = dict()
-
-        if self.root_elt is None:
-            self.root_elt = self.pfsense.new_element("vlans")
-            self.pfsense.root.append(self.root_elt)
-
-        self.setup_vlan_cmds = ""
+        super(PFSenseVlanModule, self).__init__(
+            module,
+            pfsense,
+            root="vlans",
+            create_root=True,
+            node="vlan",
+            key="vlanif",
+            arg_route=dict(interface=dict(parse=PFSenseVlanModule._parse_parent)),
+            map_param=[("interface", "if"), ("vlan_id", "tag"), ("priority", "pcp")],
+            create_default=dict(tag_type="ctag"),
+        )
+        self.argument_spec = VLAN_ARGUMENT_SPEC  # Also used with pfsense_aggregate.
+        self.vlan_changes = []
 
         # get physical interfaces on which vlans can be set
         get_interface_cmd = (
@@ -77,44 +108,33 @@ class PFSenseVlanModule(PFSenseModuleBase):
     ##############################
     # params processing
     #
+    def _parent_port(self, name):
+        """Resolve a physical port or one of its assignments."""
+        if name in self.interfaces:
+            return name
+        port = self.pfsense.get_interface_port_by_display_name(name)
+        if port is None:
+            port = self.pfsense.get_interface_port(name)
+        if port is None or port not in self.interfaces:
+            self.module.fail_json(msg=f"Vlans can't be set on interface {name}")
+        return port
+
+    def _parse_parent(self, name, params, obj):
+        obj[name] = self._parent_port(params[name])
+
     def _params_to_obj(self):
-        """return a dict from module params"""
-        params = self.params
+        """Retain the parent and tag as the identity for both states."""
+        if self.params.get("state") == "absent":
+            return {"if": self._parent_port(self.params["interface"]), "tag": str(self.params["vlan_id"])}
 
-        obj = dict()
-
-        obj["tag"] = str(params["vlan_id"])
-        if params["interface"] not in self.interfaces:
-            obj["if"] = self.pfsense.get_interface_port_by_display_name(params["interface"])
-            if obj["if"] is None:
-                obj["if"] = self.pfsense.get_interface_port(params["interface"])
-        else:
-            obj["if"] = params["interface"]
-
-        if params["state"] == "present":
-            if params["priority"] is not None:
-                obj["pcp"] = str(params["priority"])
-            else:
-                obj["pcp"] = ""
-
-            obj["descr"] = params["descr"]
-            obj["vlanif"] = "{0}.{1}".format(obj["if"], obj["tag"])
-
+        obj = super(PFSenseVlanModule, self)._params_to_obj()
+        obj.setdefault("pcp", "")
+        obj["vlanif"] = "{if}.{tag}".format(**obj)
         return obj
 
     def _validate_params(self):
-        """do some extra checks on input parameters"""
+        """Check VLAN tag and priority ranges."""
         params = self.params
-
-        # check interface
-        if params["interface"] not in self.interfaces:
-            # check with assign or friendly name
-            interface = self.pfsense.get_interface_port_by_display_name(params["interface"])
-            if interface is None:
-                interface = self.pfsense.get_interface_port(params["interface"])
-
-            if interface is None or interface not in self.interfaces:
-                self.module.fail_json(msg="Vlans can't be set on interface {0}".format(params["interface"]))
 
         # check vlan
         if params["vlan_id"] < 1 or params["vlan_id"] > 4094:
@@ -127,73 +147,44 @@ class PFSenseVlanModule(PFSenseModuleBase):
     ##############################
     # XML processing
     #
-    def _cmd_create(self):
-        """return the php shell to create the vlan's interface"""
-        cmd = "$vlan = array();\n"
-        cmd += "$vlan['if'] = '{0}';\n".format(self.obj["if"])
-        cmd += "$vlan['tag'] = '{0}';\n".format(self.obj["tag"])
-        cmd += "$vlan['pcp'] = '{0}';\n".format(self.obj["pcp"])
-        cmd += "$vlan['descr'] = '{0}';\n".format(self.obj["descr"])
-        cmd += "$vlan['vlanif'] = '{0}';\n".format(self.obj["vlanif"])
-        cmd += "$vlanif = interface_vlan_configure($vlan);\n"
-
-        cmd += "if ($vlanif == NULL || $vlanif != $vlan['vlanif']) {pfSense_interface_destroy('%s');} else {\n" % (self.obj["vlanif"])
-
-        # if vlan is assigned to an interface, configuration needs to be applied again
-        interface = self.pfsense.get_interface_by_port("{0}.{1}".format(self.obj["if"], self.obj["tag"]))
-        if interface is not None:
-            cmd += "interface_configure('{0}', true);\n".format(interface)
-
-        cmd += "}\n"
-
-        return cmd
+    def _queue_configure(self):
+        vlan = self.pfsense.element_to_dict(self.target_elt)
+        vlan.setdefault("tag_type", "ctag")
+        self.vlan_changes.append({"configure": vlan})
 
     def _copy_and_add_target(self):
-        """create the XML target_elt"""
         super(PFSenseVlanModule, self)._copy_and_add_target()
-        self.setup_vlan_cmds += self._cmd_create()
+        self._queue_configure()
 
     def _copy_and_update_target(self):
-        """update the XML target_elt"""
-        old_vlanif = self.target_elt.find("vlanif").text
-        (before, changed) = super(PFSenseVlanModule, self)._copy_and_update_target()
+        # Preserve names already in use by interface assignments.
+        self.obj["vlanif"] = self.target_elt.findtext("vlanif") or self.obj["vlanif"]
+        before, changed = super(PFSenseVlanModule, self)._copy_and_update_target()
         if changed:
-            self.setup_vlan_cmds += "pfSense_interface_destroy('{0}');\n".format(old_vlanif)
-            self.setup_vlan_cmds += self._cmd_create()
-
-        return (before, changed)
-
-    def _create_target(self):
-        """create the XML target_elt"""
-        return self.pfsense.new_element("vlan")
+            self._queue_configure()
+        return before, changed
 
     def _find_target(self):
-        """find the XML target_elt"""
+        """Find the VLAN by its parent port and tag."""
         return self.pfsense.find_vlan(self.obj["if"], self.obj["tag"])
 
     def _pre_remove_target_elt(self):
-        """processing before removing elt"""
-        if self.pfsense.get_interface_by_port("{0}.{1}".format(self.obj["if"], self.obj["tag"])) is not None:
-            self.module.fail_json(
-                msg="vlan {0} on {1} cannot be deleted because it is still being used as an interface".format(self.obj["tag"], self.obj["if"])
-            )
-        self.setup_vlan_cmds += "pfSense_interface_destroy('{0}');\n".format(self.target_elt.find("vlanif").text)
+        super(PFSenseVlanModule, self)._pre_remove_target_elt()
+        vlanif = self.target_elt.findtext("vlanif") or "{if}.{tag}".format(**self.obj)
+        if self.pfsense.get_interface_by_port(vlanif) is not None:
+            self.module.fail_json(msg="vlan {tag} on {if} cannot be deleted because it is still being used as an interface".format(**self.obj))
+        self.vlan_changes.append({"remove": vlanif})
 
-    ##############################
-    # run
-    #
     def get_update_cmds(self):
-        """build and return php commands to setup interfaces"""
-        cmd = 'require_once("filter.inc");\n'
-        if self.setup_vlan_cmds != "":
-            cmd += 'require_once("interfaces.inc");\n'
-            cmd += self.setup_vlan_cmds
-        cmd += "if (filter_configure() == 0) { clear_subsystem_dirty('filter'); }"
-        return cmd
+        """Build the PHP for both standalone and aggregate updates."""
+        encoded = b64encode(json.dumps(self.vlan_changes).encode()).decode()
+        return APPLY_PHP % encoded
 
     def _update(self):
-        """make the target pfsense reload"""
-        return self.pfsense.phpshell(self.get_update_cmds())
+        rc, stdout, stderr = self.pfsense.phpshell(self.get_update_cmds(), debug=False)
+        if rc != 0:
+            self.module.fail_json(msg="VLAN configuration was saved, but pfSense could not apply it", changed=True, rc=rc, stderr=stderr)
+        return rc, stdout, stderr
 
     ##############################
     # Logging

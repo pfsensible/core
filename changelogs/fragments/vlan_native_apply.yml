@@ -1,0 +1,5 @@
+bugfixes:
+  - >-
+    pfsense_vlan and pfsense_aggregate - apply VLAN changes using the same
+    interface operations as the pfSense web UI, preserve existing VLAN names
+    and tag types on updates, and report failures to apply changes.
