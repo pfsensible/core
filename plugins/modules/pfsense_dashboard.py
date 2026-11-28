@@ -137,7 +137,7 @@ class PFSenseDashboardModule(PFSenseModuleConfigBase):
         try:
             return self._widget_ids(sequence)
         except ValueError as error:
-            self.module.fail_json(msg="The existing dashboard configuration has an invalid sequence: {0}".format(error))
+            raise ValueError("The existing dashboard configuration has an invalid sequence: {0}".format(error)) from error
 
     def _validate_sequence(self, sequence):
         """Validate the requested dashboard sequence and its widget identifiers."""
