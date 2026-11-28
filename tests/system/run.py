@@ -9,6 +9,7 @@ import atexit
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import shlex
 import signal
@@ -17,6 +18,8 @@ import subprocess
 import sys
 import tempfile
 import time
+
+import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -105,6 +108,17 @@ def main():
     args = parser.parse_args()
     if not 1024 <= args.ssh_port <= 65535:
         parser.error("--ssh-port must be between 1024 and 65535")
+    galaxy_path = ROOT / "galaxy.yml"
+    try:
+        collection = yaml.safe_load(galaxy_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError) as error:
+        parser.error(f"Unable to read {galaxy_path}: {error}")
+    if not isinstance(collection, dict):
+        parser.error(f"{galaxy_path} must contain a YAML mapping")
+    for field in ("namespace", "name"):
+        value = collection.get(field)
+        if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_]+", value):
+            parser.error(f"{galaxy_path} must define a valid collection {field}")
     image = args.image.resolve(strict=True)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -129,9 +143,9 @@ def main():
     overlay = output / "appliance.qcow2"
     run(["qemu-img", "create", "-f", "qcow2", "-F", "qcow2", "-b", str(image), str(overlay)])
 
-    collection_path = output / "collections/ansible_collections/pfsensible"
+    collection_path = output / "collections" / "ansible_collections" / collection["namespace"]
     collection_path.mkdir(parents=True)
-    (collection_path / "core").symlink_to(ROOT, target_is_directory=True)
+    (collection_path / collection["name"]).symlink_to(ROOT, target_is_directory=True)
     ssh_options = [
         "-o",
         "BatchMode=yes",
