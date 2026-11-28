@@ -66,6 +66,11 @@ class TestPFSenseDashboardModule(TestPFSenseModule):
         with set_module_args(dict(sequence="traffic_graphs:col7:open:0")):
             self.assertIn("Invalid dashboard sequence entry", self.failed()["msg"])
 
+    def test_options_only_rejects_invalid_existing_sequence(self):
+        self.write_config("<widgets><sequence>traffic_graphs:col7:open:0</sequence></widgets>")
+        with set_module_args(dict(options={"traffic_graphs": {"filter": "wan"}})):
+            self.assertIn("The existing dashboard configuration has an invalid sequence", self.failed()["msg"])
+
     def test_options_widget_must_be_in_sequence(self):
         with set_module_args(dict(sequence=SEQUENCE, options={"missing_widget": {"filter": "wan"}})):
             self.assertIn("is not present in the sequence", self.failed()["msg"])
